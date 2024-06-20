@@ -1,0 +1,72 @@
+{
+  "name": "@jrmc/adonis-attachment",
+  "version": "1.0.0-1",
+  "type": "module",
+  "description": "Turn any field on your Lucid model to an attachment data type",
+  "engines": {
+    "node": ">=20.12.0"
+  },
+  "main": "build/index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/batosai/attachment.git"
+  },
+  "author": "Jeremy Chaufourier jeremy@chaufourier.fr",
+  "license": "MIT",
+  "keywords": [
+    "adonisjs",
+    "lucid",
+    "attachment",
+    "attachment-advanced",
+    "image-attachment",
+    "image-manipulation",
+    "responsive-images",
+    "responsive-image",
+    "resize-images",
+    "optimize-images",
+    "image",
+    "pdf",
+    "video",
+    "document",
+    "word",
+    "sharp"
+  ],
+  "files": [
+    "build"
+  ],
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build": "tsc",
+    "prepublishOnly": "npm run build",
+    "format": "prettier --write ."
+  },
+  "exports": {
+    ".": "./build/index.js",
+    "./types": "./build/src/types.js",
+    "./mixins": "./build/src/mixins/attacher.js",
+    "./decorators": "./build/src/decorators/attachment.js",
+    "./services/*": "./build/services/*.js",
+    "./attachment_service": "./build/services/attachment_service.js",
+    "./attachment_provider": "./build/providers/attachment_provider.js"
+  },
+  "dependencies": {
+    "exifreader": "^4.23.3",
+    "file-type": "^19.0.0"
+  },
+  "devDependencies": {
+    "@adonisjs/assembler": "^7.7.0",
+    "@adonisjs/core": "^6.10.1",
+    "@adonisjs/lucid": "^20.6.0",
+    "@adonisjs/prettier-config": "^1.3.0",
+    "@adonisjs/tsconfig": "^1.3.0",
+    "@types/node": "^20.14.2",
+    "luxon": "^3.4.4",
+    "prettier": "^3.3.1",
+    "typescript": "^5.4.5"
+  },
+  "prettier": "@adonisjs/prettier-config",
+  "publishConfig": {
+    "access": "public",
+    "tag": "beta"
+  }
+}

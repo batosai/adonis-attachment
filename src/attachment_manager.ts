@@ -6,7 +6,6 @@ import string from '@adonisjs/core/helpers/string'
 import { fileTypeFromBuffer } from 'file-type'
 import { Exception } from '@poppinss/utils'
 import { Attachment } from '../services/attachment_service.js'
-import { AttachmentService } from '../src/types.js'
 import fs, { readFile, mkdir } from 'node:fs/promises'
 
 const REQUIRED_ATTRIBUTES = ['name', 'size', 'extname', 'mimeType']
@@ -74,7 +73,7 @@ export class AttachmentManager {
     return new Attachment(attributes, buffer)
   }
 
-  async save(attachment: AttachmentService) {
+  async save(attachment: Attachment) {
     await attachment.beforeSave()
     const publicPath = this.#app.publicPath(attachment.path!)
 
@@ -86,7 +85,7 @@ export class AttachmentManager {
     }
   }
 
-  async delete(attachment: AttachmentService) {
+  async delete(attachment: Attachment) {
     if (attachment.attributes.path) {
       try {
         const path = this.#app.publicPath(`${attachment.path}`)

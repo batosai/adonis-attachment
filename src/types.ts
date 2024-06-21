@@ -25,7 +25,7 @@ export type Exif = {
   }
 }
 
-export type AttachmentService  = {
+export type Attachment  = {
   attributes: AttachmentAttributes
   buffer?: Buffer
 
@@ -38,7 +38,7 @@ export type AttachmentService  = {
 
   options?: AttachmentOptions
 
-  setOptions(options: AttachmentOptions): AttachmentService
+  setOptions(options: AttachmentOptions): Attachment
   beforeSave(): Promise<void>
 
   toObject(): AttachmentAttributes
@@ -61,7 +61,7 @@ export type AttachmentAttributes = {
 
 export type ModelWithAttachment = LucidRow & {
   attachments: {
-    attached: AttachmentService[],
-    detached: AttachmentService[],
+    attached: Attachment[],
+    detached: Attachment[],
   }
 }

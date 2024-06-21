@@ -8,7 +8,7 @@
 import { cuid } from '@adonisjs/core/helpers'
 import path from 'node:path'
 import { exif } from '../src/adapters/exif.js'
-import type { AttachmentOptions, AttachmentAttributes, AttachmentService, Exif } from '../src/types.js'
+import type { AttachmentOptions, AttachmentAttributes, Attachment as AttachmentService, Exif } from '../src/types.js'
 
 export class Attachment implements AttachmentService {
 

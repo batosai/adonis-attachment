@@ -5,8 +5,8 @@
  * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
  */
 
-// import attachmentManager from '../../services/main.js'
-import type { ModelWithAttachment, AttachmentService } from '../types.js'
+import attachmentManager from '../../services/main.js'
+import type { ModelWithAttachment, Attachment } from '../types.js'
 import { getOptions } from './helpers.js'
 
 /**
@@ -14,8 +14,8 @@ import { getOptions } from './helpers.js'
  */
 export async function commit(modelInstance: ModelWithAttachment): Promise<void> {
   await Promise.allSettled(
-    modelInstance.attachments.detached.map((attachment: AttachmentService) =>
-      console.log(attachment)//attachmentManager.delete(attachment)
+    modelInstance.attachments.detached.map((attachment: Attachment) =>
+      attachmentManager.delete(attachment)
     )
   )
 }
@@ -25,8 +25,8 @@ export async function commit(modelInstance: ModelWithAttachment): Promise<void> 
  */
 export async function rollback(modelInstance: ModelWithAttachment) {
   await Promise.allSettled(
-    modelInstance.attachments.attached.map((attachment: AttachmentService) =>
-      console.log(attachment)//attachmentManager.delete(attachment)
+    modelInstance.attachments.attached.map((attachment: Attachment) =>
+      attachmentManager.delete(attachment)
     )
   )
 }
@@ -38,8 +38,8 @@ export async function persistAttachment(
   modelInstance: ModelWithAttachment,
   property: string
 ) {
-  const existingFile = modelInstance.$original[property] as AttachmentService
-  const newFile = modelInstance.$attributes[property] as AttachmentService
+  const existingFile = modelInstance.$original[property] as Attachment
+  const newFile = modelInstance.$attributes[property] as Attachment
   const options = getOptions(modelInstance, property)
 
   /**
@@ -80,6 +80,6 @@ export async function persistAttachment(
     /**
      * Also write the file to the disk right away
      */
-    // await attachmentManager.save(newFile)
+    await attachmentManager.save(newFile)
   }
 }

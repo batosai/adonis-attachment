@@ -13,6 +13,11 @@ This package is currently development and will replace [attachment-advanced](htt
 - [ ] command regenerate
 - [ ] adonis-drive/flydrive
 - [ ] jobs
+- [ ] edge component
+
+### File sytem
+
+Upload file in public folder.
 
 ### Meta data list (if available)
 

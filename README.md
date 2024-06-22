@@ -49,16 +49,17 @@ Couple with a job package
 
 
 ## Setup
-Install the package from the npm registry as follows.
-
-```sh
-npm i @jrmc/adonis-attachment
-```
-
-Next, configure the package by running the following ace command.
+Install and configure the package:
 
 ```sh
 node ace add @jrmc/adonis-attachment
+```
+
+Or:
+
+```sh
+npm i @jrmc/adonis-attachment
+node ace configure @jrmc/adonis-attachment
 ```
 
 ## Usage

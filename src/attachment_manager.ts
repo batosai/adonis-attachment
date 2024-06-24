@@ -78,7 +78,7 @@ export class AttachmentManager {
     const publicPath = this.#app.publicPath(attachment.path!)
 
     try {
-      await mkdir(this.#app.publicPath(attachment.options!.folder), { recursive: true })
+      await mkdir(this.#app.publicPath(attachment.options!.folder!), { recursive: true })
       await fs.writeFile(publicPath, attachment.buffer!)
     } catch (err) {
       console.error('Error send file :', err)

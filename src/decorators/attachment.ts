@@ -21,15 +21,18 @@ export const attachment = (options?: AttachmentOptions) => {
     const Model = target.constructor as LucidModel
     Model.boot()
 
-    const { disk, folder, ...columnOptions } = options || {
-      disk: 'fs',
-      folder: 'uploads'
+    const { disk, folder, ...columnOptions } = {
+      disk: 'local',
+      folder: 'uploads',
+      ...options
     }
 
     Model.$addColumn(propertyKey, {
       consume: (value) => {
         if (value) {
-          return attachmentManager.createFromDbResponse(value)
+          const attachment = attachmentManager.createFromDbResponse(value)
+          attachment?.setOptions({ disk, folder })
+          return attachment
         } else {
           return null
         }

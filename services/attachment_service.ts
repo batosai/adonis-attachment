@@ -35,19 +35,22 @@ export class Attachment implements AttachmentService {
     this.path = attributes.path
 
     this.options = {
-      disk: 'fs',
-      folder: 'public/uploads'
+      disk: 'local',
+      folder: 'uploads'
     }
   }
 
   setOptions(options: AttachmentOptions) {
-    this.options = options
+    this.options = { 
+      ...this.options,
+      ...options
+    }
     return this
   }
 
   async beforeSave() {
     const name = `${cuid()}.${this.attributes.extname}`
-    const outputPath = path.join(this.options!.folder, name)
+    const outputPath = path.join(this.options!.folder!, name)
 
     this.meta = await exif(this.buffer!)
     this.path = outputPath

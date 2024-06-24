@@ -46,8 +46,8 @@ export type Attachment  = {
 }
 
 export type AttachmentOptions = {
-  disk: string,
-  folder: string
+  disk?: string,
+  folder?: string
 }
 
 export type AttachmentAttributes = {

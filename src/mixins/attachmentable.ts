@@ -10,12 +10,15 @@ import type { NormalizeConstructor } from '@adonisjs/core/types/helpers'
 import type { Attachment } from '../types.js'
 import {
   beforeSave,
+  afterSave,
   beforeDelete
 } from '@adonisjs/lucid/orm'
+import attachmentManager from '../../services/main.js'
 import {
   persistAttachment,
   commit,
-  rollback
+  rollback,
+  initVariants
 } from '../utils/actions.js'
 import { getAttributeAttachments } from '../utils/helpers.js'
 
@@ -58,6 +61,25 @@ export const Attachmentable = <Model extends NormalizeConstructor<typeof BaseMod
         await rollback(modelInstance)
         throw error
       }
+    }
+
+    @afterSave()
+    static async afterSaveHook(modelInstance: ModelWithAttachment) {
+      const attributeAttachments = getAttributeAttachments(modelInstance)
+
+       /**
+       * 
+       */
+      await Promise.all(
+        attributeAttachments.map(
+          (property) => {
+            if (modelInstance.$attributes[property]) {
+              attachmentManager.getConverter('key')
+              initVariants(modelInstance, property)
+            }
+          }
+        )
+      )
     }
 
     @beforeDelete()

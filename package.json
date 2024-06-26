@@ -46,6 +46,7 @@
     "./mixins": "./build/src/mixins/attachmentable.js",
     "./decorators": "./build/src/decorators/attachment.js",
     "./services/*": "./build/services/*.js",
+    "./converters/*": "./build/converters/*.js",
     "./attachment_service": "./build/services/attachment_service.js",
     "./attachment_provider": "./build/providers/attachment_provider.js"
   },

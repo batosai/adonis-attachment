@@ -83,3 +83,16 @@ export async function persistAttachment(
     await attachmentManager.save(newFile)
   }
 }
+
+/**
+ * Launch coverter by variant
+ */
+export async function initVariants(
+  modelInstance: ModelWithAttachment,
+  property: string
+) {
+  const options = getOptions(modelInstance, property)
+
+  console.log('-------- initVariants: options ')
+  console.log(options)
+}

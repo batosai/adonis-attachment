@@ -8,31 +8,15 @@
 import { cuid } from '@adonisjs/core/helpers'
 import path from 'node:path'
 import { exif } from '../src/adapters/exif.js'
-import type { AttachmentOptions, AttachmentAttributes, Attachment as AttachmentService, Exif } from '../src/types.js'
+import type { AttachmentOptions, AttachmentAttributes, Attachment as AttachmentService, Variant } from '../src/types.js'
+import { AttachmentBase } from './attachment_base_service.js'
 
-export class Attachment implements AttachmentService {
-
-  attributes: AttachmentAttributes
-  buffer?: Buffer
-
-  name: string
-  size: number
-  meta?: Exif
-  extname: string
-  mimeType: string
-  path?: string
-
+export class Attachment extends AttachmentBase implements AttachmentService {
   options?: AttachmentOptions
+  variants?: Variant[]
 
   constructor(attributes: AttachmentAttributes, buffer?: Buffer) {
-    this.attributes = attributes
-    this.buffer = buffer
-
-    this.name = attributes.name
-    this.size = attributes.size
-    this.extname = attributes.extname
-    this.mimeType = attributes.mimeType
-    this.path = attributes.path
+    super(attributes, buffer)
 
     this.options = {
       disk: 'local',
@@ -48,29 +32,15 @@ export class Attachment implements AttachmentService {
     return this
   }
 
+  addVariant(variant: Variant) {
+    this.variants?.push(variant)
+  }
+
   async beforeSave() {
-    const name = `${cuid()}.${this.attributes.extname}`
+    const name = `${cuid()}.${this.extname}`
     const outputPath = path.join(this.options!.folder!, name)
 
     this.meta = await exif(this.buffer!)
     this.path = outputPath
-  }
-
-  toObject(): AttachmentAttributes {
-    return {
-      name: this.name,
-      extname: this.extname,
-      size: this.size,
-      meta: this.meta,
-      mimeType: this.mimeType,
-      path: this.path
-    }
-  }
-
-  toJSON(): AttachmentAttributes & { url?: string } {
-    return {
-      // ...(this.url ? { url: this.url } : {}),
-      ...this.toObject(),
-    }
   }
 }

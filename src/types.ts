@@ -25,8 +25,7 @@ export type Exif = {
   }
 }
 
-export type Attachment  = {
-  attributes: AttachmentAttributes
+export type AttachmentBase = {
   buffer?: Buffer
 
   name: string
@@ -36,13 +35,22 @@ export type Attachment  = {
   mimeType: string
   path?: string
 
-  options?: AttachmentOptions
-
-  setOptions(options: AttachmentOptions): Attachment
   beforeSave(): Promise<void>
 
   toObject(): AttachmentAttributes
   toJSON(): AttachmentAttributes & { url?: string }
+}
+
+export type Attachment = AttachmentBase & {
+  options?: AttachmentOptions
+  variants?: Variant[]
+
+  setOptions(options: AttachmentOptions): Attachment
+  addVariant(variant: Variant): void
+}
+
+export type Variant = AttachmentBase & {
+  key: string
 }
 
 export type AttachmentOptions = {
@@ -64,4 +72,10 @@ export type ModelWithAttachment = LucidRow & {
     attached: Attachment[],
     detached: Attachment[],
   }
+}
+
+
+export type AttachmentConfig = {
+  basePath: string,
+  converters?: Object
 }

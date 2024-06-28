@@ -8,18 +8,8 @@
 import type { BaseModel } from '@adonisjs/lucid/orm'
 import type { NormalizeConstructor } from '@adonisjs/core/types/helpers'
 import type { Attachment } from '../types.js'
-import {
-  beforeSave,
-  afterSave,
-  beforeDelete
-} from '@adonisjs/lucid/orm'
-import attachmentManager from '../../services/main.js'
-import {
-  persistAttachment,
-  commit,
-  rollback,
-  initVariants
-} from '../utils/actions.js'
+import { beforeSave, afterSave, beforeDelete } from '@adonisjs/lucid/orm'
+import { persistAttachment, commit, rollback, initVariants } from '../utils/actions.js'
 import { getAttributeAttachments } from '../utils/helpers.js'
 
 export const Attachmentable = <Model extends NormalizeConstructor<typeof BaseModel>>(
@@ -27,8 +17,8 @@ export const Attachmentable = <Model extends NormalizeConstructor<typeof BaseMod
 ) => {
   class ModelWithAttachment extends superclass {
     attachments: {
-      attached: Attachment[],
-      detached: Attachment[],
+      attached: Attachment[]
+      detached: Attachment[]
     } = {
       attached: [],
       detached: [],
@@ -36,18 +26,15 @@ export const Attachmentable = <Model extends NormalizeConstructor<typeof BaseMod
 
     @beforeSave()
     static async beforeSaveHook(modelInstance: ModelWithAttachment) {
-
       const attributeAttachments = getAttributeAttachments(modelInstance)
 
       /**
-      * Persist attachments before saving the model to the database. This
-      * way if file saving fails we will not write anything to the
-      * database
-      */
+       * Persist attachments before saving the model to the database. This
+       * way if file saving fails we will not write anything to the
+       * database
+       */
       await Promise.all(
-        attributeAttachments.map(
-          (property) => persistAttachment(modelInstance, property)
-        )
+        attributeAttachments.map((property) => persistAttachment(modelInstance, property))
       )
 
       try {
@@ -67,18 +54,11 @@ export const Attachmentable = <Model extends NormalizeConstructor<typeof BaseMod
     static async afterSaveHook(modelInstance: ModelWithAttachment) {
       const attributeAttachments = getAttributeAttachments(modelInstance)
 
-       /**
-       * 
+      /**
+       *
        */
       await Promise.all(
-        attributeAttachments.map(
-          (property) => {
-            if (modelInstance.$attributes[property]) {
-              attachmentManager.getConverter('key')
-              initVariants(modelInstance, property)
-            }
-          }
-        )
+        attributeAttachments.map((property) => initVariants(modelInstance, property))
       )
     }
 
@@ -89,13 +69,11 @@ export const Attachmentable = <Model extends NormalizeConstructor<typeof BaseMod
       /**
        * Mark all attachments for deletion
        */
-      attributeAttachments.map(
-        (property) => {
-          if (modelInstance.$attributes[property]) {
-            modelInstance.attachments.detached.push(modelInstance.$attributes[property])
-          }
+      attributeAttachments.map((property) => {
+        if (modelInstance.$attributes[property]) {
+          modelInstance.attachments.detached.push(modelInstance.$attributes[property])
         }
-      )
+      })
 
       /**
        * If model is using transaction, then wait for the transaction

@@ -5,7 +5,11 @@
  * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
  */
 
-import type { AttachmentAttributes, AttachmentBase as AttachmentService, Exif } from '../src/types.js'
+import type {
+  AttachmentAttributes,
+  AttachmentBase as AttachmentService,
+  Exif,
+} from '../src/types.js'
 
 export class AttachmentBase implements AttachmentService {
   buffer?: Buffer
@@ -27,8 +31,7 @@ export class AttachmentBase implements AttachmentService {
     this.path = attributes.path
   }
 
-  async beforeSave() {
-  }
+  async beforeSave() {}
 
   toObject(): AttachmentAttributes {
     return {
@@ -37,7 +40,7 @@ export class AttachmentBase implements AttachmentService {
       size: this.size,
       meta: this.meta,
       mimeType: this.mimeType,
-      path: this.path
+      path: this.path,
     }
   }
 

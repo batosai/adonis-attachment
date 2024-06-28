@@ -16,7 +16,12 @@ export function cleanObject(obj: any) {
     if (obj.hasOwnProperty(key)) {
       const cleanedValue = cleanObject(obj[key])
 
-      if (cleanedValue !== null && cleanedValue !== undefined && cleanedValue !== 0 && cleanedValue !== '') {
+      if (
+        cleanedValue !== null &&
+        cleanedValue !== undefined &&
+        cleanedValue !== 0 &&
+        cleanedValue !== ''
+      ) {
         cleanedObj[key] = cleanedValue
       }
     }

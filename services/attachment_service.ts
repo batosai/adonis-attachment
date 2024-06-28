@@ -8,7 +8,12 @@
 import { cuid } from '@adonisjs/core/helpers'
 import path from 'node:path'
 import { exif } from '../src/adapters/exif.js'
-import type { AttachmentOptions, AttachmentAttributes, Attachment as AttachmentService, Variant } from '../src/types.js'
+import type {
+  AttachmentOptions,
+  AttachmentAttributes,
+  Attachment as AttachmentService,
+  Variant,
+} from '../src/types.js'
 import { AttachmentBase } from './attachment_base_service.js'
 
 export class Attachment extends AttachmentBase implements AttachmentService {
@@ -20,14 +25,14 @@ export class Attachment extends AttachmentBase implements AttachmentService {
 
     this.options = {
       disk: 'local',
-      folder: 'uploads'
+      folder: 'uploads',
     }
   }
 
   setOptions(options: AttachmentOptions) {
-    this.options = { 
+    this.options = {
       ...this.options,
-      ...options
+      ...options,
     }
     return this
   }

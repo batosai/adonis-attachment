@@ -20,14 +20,14 @@ export const exif = async (buffer: Buffer): Promise<Exif> => {
     if (tags.exif['PixelXDimension'] && tags.exif['PixelYDimension']) {
       data.dimension = {
         width: tags.exif['PixelXDimension'].value,
-        height: tags.exif['PixelYDimension'].value
+        height: tags.exif['PixelYDimension'].value,
       }
     }
 
     if (tags.exif['Orientation']) {
       data.orientation = {
         value: tags.exif['Orientation'].value,
-        description: tags.exif['Orientation'].description
+        description: tags.exif['Orientation'].description,
       }
     }
   }
@@ -36,7 +36,7 @@ export const exif = async (buffer: Buffer): Promise<Exif> => {
     data.gps = {
       latitude: tags.gps['Latitude'],
       longitude: tags.gps['Longitude'],
-      altitude: tags.gps['Altitude']
+      altitude: tags.gps['Altitude'],
     }
   }
 
@@ -44,7 +44,7 @@ export const exif = async (buffer: Buffer): Promise<Exif> => {
     if (tags.png['Image Width'] && tags.png['Image Height']) {
       data.dimension = {
         width: tags.png['Image Width'].value,
-        height: tags.png['Image Height'].value
+        height: tags.png['Image Height'].value,
       }
     }
     if (tags.png['Software']) data.host = tags.png['Software'].description
@@ -55,7 +55,7 @@ export const exif = async (buffer: Buffer): Promise<Exif> => {
     if (tags.pngFile['Image Width'] && tags.pngFile['Image Height']) {
       data.dimension = {
         width: tags.pngFile['Image Width'].value,
-        height: tags.pngFile['Image Height'].value
+        height: tags.pngFile['Image Height'].value,
       }
     }
   }
@@ -64,7 +64,7 @@ export const exif = async (buffer: Buffer): Promise<Exif> => {
     if (tags.file['Image Width'] && tags.file['Image Height']) {
       data.dimension = {
         width: tags.file['Image Width'].value,
-        height: tags.file['Image Height'].value
+        height: tags.file['Image Height'].value,
       }
     }
   }
@@ -76,7 +76,7 @@ export const exif = async (buffer: Buffer): Promise<Exif> => {
     if (tags.icc['Image Width'] && tags.icc['Image Height']) {
       data.dimension = {
         width: parseInt(tags.icc['Image Width'].value),
-        height: parseInt(tags.icc['Image Height'].value)
+        height: parseInt(tags.icc['Image Height'].value),
       }
     }
   }

@@ -1,3 +1,10 @@
+/**
+ * @jrmc/adonis-attachment
+ *
+ * @license MIT
+ * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
+ */
+
 import type { AttachmentConfig } from './types.js'
 import { InvalidArgumentsException } from '@poppinss/utils'
 

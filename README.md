@@ -31,7 +31,7 @@ Upload file in public folder.
 
 ### Variables
 
-Configure differents images sizes and formats 
+Configure differents images sizes and formats
 
 ### Regenerate
 
@@ -45,10 +45,8 @@ Use drive for private file and cloud services
 
 Couple with a job package
 
-
-
-
 ## Setup
+
 Install and configure the package:
 
 ```sh
@@ -64,7 +62,7 @@ node ace configure @jrmc/adonis-attachment
 
 ## Usage
 
-Often times, the size of the image metadata could exceed the allowable length of an SQL `String` data type. So, it is recommended to create/modify the column which will hold the metadata to use a `JSON` data type. 
+Often times, the size of the image metadata could exceed the allowable length of an SQL `String` data type. So, it is recommended to create/modify the column which will hold the metadata to use a `JSON` data type.
 
 If you are creating the column for the first time, make sure that you use the JSON data type. Example:
 
@@ -72,7 +70,7 @@ If you are creating the column for the first time, make sure that you use the JS
   // Within the migration file
 
   protected tableName = 'users'
-  
+
   public async up() {
     this.schema.createTable(this.tableName, (table) => {
       table.increments()
@@ -90,7 +88,7 @@ node ace make:migration change_avatar_column_to_json --table=users
 
 ```ts
   // Within the migration file
-  
+
   protected tableName = 'users'
 
   public async up() {
@@ -142,3 +140,4 @@ class User extends BaseModel {
   @attachment({ folder: 'avatars' })
   public avatar: Attachment
 }
+```

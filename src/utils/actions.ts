@@ -34,10 +34,7 @@ export async function rollback(modelInstance: ModelWithAttachment) {
 /**
  * Persist attachment for a given attachment property
  */
-export async function persistAttachment(
-  modelInstance: ModelWithAttachment,
-  property: string
-) {
+export async function persistAttachment(modelInstance: ModelWithAttachment, property: string) {
   const existingFile = modelInstance.$original[property] as Attachment
   const newFile = modelInstance.$attributes[property] as Attachment
   const options = getOptions(modelInstance, property)
@@ -87,11 +84,18 @@ export async function persistAttachment(
 /**
  * Launch coverter by variant
  */
-export async function initVariants(
-  modelInstance: ModelWithAttachment,
-  property: string
-) {
+export async function initVariants(modelInstance: ModelWithAttachment, property: string) {
   const options = getOptions(modelInstance, property)
+
+  const attachment = modelInstance.$attributes[property] as Attachment
+  const converter = await attachmentManager.getConverter('thumbnail')
+
+  if (attachment && converter) {
+    converter.handle({
+      record: modelInstance,
+      attribute: property
+    })
+  }
 
   console.log('-------- initVariants: options ')
   console.log(options)

@@ -54,8 +54,13 @@ export const Attachmentable = <Model extends NormalizeConstructor<typeof BaseMod
     static async afterSaveHook(modelInstance: ModelWithAttachment) {
       const attributeAttachments = getAttributeAttachments(modelInstance)
 
+      modelInstance.attachments = {
+        attached: [],
+        detached: [],
+      }
+
       /**
-       *
+       * Launch async generation variants
        */
       await Promise.all(
         attributeAttachments.map((property) => initVariants(modelInstance, property))

@@ -7,7 +7,7 @@
 
 import type { LucidModel } from '@adonisjs/lucid/types/model'
 import type { AttachmentOptions } from '../types.js'
-import  { optionsSym } from '../utils/symbols.js'
+import { optionsSym } from '../utils/symbols.js'
 import attachmentManager from '../../services/main.js'
 
 export const attachment = (options?: AttachmentOptions) => {
@@ -24,7 +24,7 @@ export const attachment = (options?: AttachmentOptions) => {
     const { disk, folder, ...columnOptions } = {
       disk: 'local',
       folder: 'uploads',
-      ...options
+      ...options,
     }
 
     Model.$addColumn(propertyKey, {
@@ -43,6 +43,3 @@ export const attachment = (options?: AttachmentOptions) => {
     })
   }
 }
-
-
-

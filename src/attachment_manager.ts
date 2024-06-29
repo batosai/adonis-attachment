@@ -1,3 +1,9 @@
+/**
+ * @jrmc/adonis-attachment
+ *
+ * @license MIT
+ * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
+ */
 
 import type { ApplicationService, LoggerService } from '@adonisjs/core/types'
 import type { MultipartFile } from '@adonisjs/core/bodyparser'
@@ -8,16 +14,17 @@ import { Exception } from '@poppinss/utils'
 import { Attachment } from '../services/attachment_service.js'
 import fs, { readFile, mkdir } from 'node:fs/promises'
 import { Variant } from '../services/attachment_variant_service.js'
-import { AttachmentConfig } from './types.js'
+import type { ResolvedAttachmentConfig } from './types.js'
+import BaseConverter from './converters/base_converter.js'
 
 const REQUIRED_ATTRIBUTES = ['name', 'size', 'extname', 'mimeType']
 
 export class AttachmentManager {
   #app: ApplicationService
   #logger: LoggerService
-  #config: AttachmentConfig
+  #config: ResolvedAttachmentConfig
 
-  constructor(config: AttachmentConfig , logger: LoggerService, app: ApplicationService) {
+  constructor(config: ResolvedAttachmentConfig, logger: LoggerService, app: ApplicationService) {
     this.#logger = logger
     this.#app = app
     this.#config = config
@@ -46,11 +53,11 @@ export class AttachmentManager {
       name: file.clientName,
       extname: file.extname!,
       mimeType: `${file.type}/${file.subtype}`,
-      size: file.size!
+      size: file.size!,
     }
 
     if (!file.tmpPath) {
-      throw new Error('It\'s not a valid file')
+      throw new Error("It's not a valid file")
     }
 
     const buffer = await readFile(file.tmpPath)
@@ -70,15 +77,14 @@ export class AttachmentManager {
     return new Variant(key, attributes, buffer)
   }
 
-  async getConverter(key: string) {
+  async getConverter(key: string): Promise<void | BaseConverter> {
     if (this.#config.converters) {
-      Object.keys(this.#config.converters).forEach((k) => {
-        console.log('------ k')
-        console.log(k)
-      })
+      for (const c of this.#config.converters) {
+        if (c.key === key) {
+          return c.converter as BaseConverter
+        }
+      }
     }
-    console.log('------ key')
-    console.log(key)
   }
 
   async save(attachment: Attachment) {
@@ -89,7 +95,7 @@ export class AttachmentManager {
       await mkdir(this.#app.publicPath(attachment.options!.folder!), { recursive: true })
       await fs.writeFile(publicPath, attachment.buffer!)
     } catch (err) {
-      console.error('Error send file :', err)
+      this.#logger.error({ err }, 'Error send file')
     }
   }
 
@@ -118,7 +124,7 @@ export class AttachmentManager {
       name: name,
       extname: fileType!.ext,
       mimeType: fileType!.mime,
-      size: buffer.length
-    } 
+      size: buffer.length,
+    }
   }
 }

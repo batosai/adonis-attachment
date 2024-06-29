@@ -7,7 +7,9 @@
 
 import type { ApplicationService } from '@adonisjs/core/types'
 import type { AttachmentManager } from '../src/attachment_manager.js'
-import { AttachmentConfig } from '../src/types.js'
+import type { ResolvedAttachmentConfig } from '../src/types.js'
+import { configProvider } from '@adonisjs/core'
+import { RuntimeException } from '@poppinss/utils'
 
 declare module '@adonisjs/core/types' {
   export interface ContainerBindings {
@@ -24,8 +26,15 @@ export default class AttachmentProvider {
     this.app.container.singleton('jrmc.attachment', async () => {
       const { AttachmentManager } = await import('../src/attachment_manager.js')
 
-      const config = this.app.config.get<AttachmentConfig>('attachment')
+      const attachmentConfig = this.app.config.get<ResolvedAttachmentConfig>('attachment')
+      const config = await configProvider.resolve<ResolvedAttachmentConfig>(this.app, attachmentConfig)
       const logger = await this.app.container.make('logger')
+
+      if (!config) {
+        throw new RuntimeException(
+          'Invalid config exported from "config/attachment.ts" file. Make sure to use the defineConfig method'
+        )
+      }
 
       this.#manager = new AttachmentManager(config, logger, this.app)
 

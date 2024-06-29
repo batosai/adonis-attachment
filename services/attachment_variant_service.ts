@@ -14,6 +14,7 @@ export class Variant extends AttachmentBase implements VariantService {
   constructor(key: string, attributes: AttachmentAttributes, buffer?: Buffer) {
     super(attributes, buffer)
 
+    this.meta = attributes.meta
     this.key = key
   }
 }

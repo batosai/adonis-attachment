@@ -38,7 +38,10 @@ export class Attachment extends AttachmentBase implements AttachmentService {
   }
 
   addVariant(variant: Variant) {
-    this.variants?.push(variant)
+    if (this.variants === undefined) {
+      this.variants = []
+      this.variants.push(variant)
+    }
   }
 
   async beforeSave() {
@@ -47,5 +50,14 @@ export class Attachment extends AttachmentBase implements AttachmentService {
 
     this.meta = await exif(this.buffer!)
     this.path = outputPath
+  }
+
+  toObject(): AttachmentAttributes {
+    const variants = this.variants?.map((v) => v.toObject())
+
+    return {
+      ...super.toObject(),
+      variants
+    }
   }
 }

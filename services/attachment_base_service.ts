@@ -40,7 +40,7 @@ export class AttachmentBase implements AttachmentService {
       size: this.size,
       meta: this.meta,
       mimeType: this.mimeType,
-      path: this.path,
+      path: this.path
     }
   }
 

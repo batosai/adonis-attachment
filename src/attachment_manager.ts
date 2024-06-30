@@ -16,6 +16,7 @@ import fs, { readFile, mkdir } from 'node:fs/promises'
 import { Variant } from '../services/attachment_variant_service.js'
 import type { ResolvedAttachmentConfig } from './types.js'
 import BaseConverter from './converters/base_converter.js'
+import { exif } from './adapters/exif.js'
 
 const REQUIRED_ATTRIBUTES = ['name', 'size', 'extname', 'mimeType']
 
@@ -74,7 +75,7 @@ export class AttachmentManager {
   async createVariant(buffer: Buffer, key: string) {
     const attributes = await this.#attributesTransform(buffer)
 
-    return new Variant(key, attributes, buffer)
+    return new Variant({ key, ...attributes }, buffer)
   }
 
   async getConverter(key: string): Promise<void | BaseConverter> {
@@ -111,8 +112,10 @@ export class AttachmentManager {
     }
   }
 
+  // TODO move helper
   async #attributesTransform(buffer: Buffer, name?: string) {
     const fileType = await fileTypeFromBuffer(buffer)
+    const meta = await exif(buffer)
 
     if (name) {
       name = string.slug(name)
@@ -121,10 +124,11 @@ export class AttachmentManager {
     }
 
     return {
-      name: name,
+      name,
       extname: fileType!.ext,
       mimeType: fileType!.mime,
       size: buffer.length,
+      meta
     }
   }
 }

@@ -14,7 +14,7 @@ import { getOptions } from './helpers.js'
  */
 export async function commit(modelInstance: ModelWithAttachment): Promise<void> {
   await Promise.allSettled(
-    modelInstance.attachments.detached.map((attachment: Attachment) =>
+    modelInstance.$attachments.detached.map((attachment: Attachment) =>
       attachmentManager.delete(attachment)
     )
   )
@@ -25,7 +25,7 @@ export async function commit(modelInstance: ModelWithAttachment): Promise<void> 
  */
 export async function rollback(modelInstance: ModelWithAttachment) {
   await Promise.allSettled(
-    modelInstance.attachments.attached.map((attachment: Attachment) =>
+    modelInstance.$attachments.attached.map((attachment: Attachment) =>
       attachmentManager.delete(attachment)
     )
   )
@@ -52,7 +52,7 @@ export async function persistAttachment(modelInstance: ModelWithAttachment, prop
    */
   if (existingFile && !newFile) {
     existingFile.setOptions(options)
-    modelInstance['attachments'].detached.push(existingFile)
+    modelInstance.$attachments.detached.push(existingFile)
     return
   }
 
@@ -64,14 +64,14 @@ export async function persistAttachment(modelInstance: ModelWithAttachment, prop
   if (newFile) {
     newFile.setOptions(options)
 
-    modelInstance.attachments.attached.push(newFile)
+    modelInstance.$attachments.attached.push(newFile)
 
     /**
      * If there was an existing file, then we must get rid of it
      */
     if (existingFile) {
       existingFile.setOptions(options)
-      modelInstance.attachments.detached.push(existingFile)
+      modelInstance.$attachments.detached.push(existingFile)
     }
 
     /**
@@ -82,21 +82,23 @@ export async function persistAttachment(modelInstance: ModelWithAttachment, prop
 }
 
 /**
- * Launch coverter by variant
+ * Launch converter by variant option
  */
-export async function initVariants(modelInstance: ModelWithAttachment, property: string) {
+export async function generateVariants(modelInstance: ModelWithAttachment, property: string) {
   const options = getOptions(modelInstance, property)
 
-  const attachment = modelInstance.$attributes[property] as Attachment
-  const converter = await attachmentManager.getConverter('thumbnail')
+  if (options.variants) {
+    options.variants.forEach(async (option) => {
+      const attachment = modelInstance.$attributes[property] as Attachment
+      const converter = await attachmentManager.getConverter(option)
 
-  if (attachment && converter) {
-    converter.handle({
-      record: modelInstance,
-      attribute: property
+      if (attachment && converter) {
+        converter.initialize({
+          record: modelInstance,
+          attribute: property,
+          key: option
+        })
+      }
     })
   }
-
-  console.log('-------- initVariants: options ')
-  console.log(options)
 }

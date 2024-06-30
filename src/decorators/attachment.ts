@@ -12,7 +12,6 @@ import attachmentManager from '../../services/main.js'
 
 export const attachment = (options?: AttachmentOptions) => {
   return function (target: any, propertyKey: string) {
-    // let value = target[propertyKey] // as Attachment
     if (!target[optionsSym]) {
       target[optionsSym] = {}
     }
@@ -21,9 +20,10 @@ export const attachment = (options?: AttachmentOptions) => {
     const Model = target.constructor as LucidModel
     Model.boot()
 
-    const { disk, folder, ...columnOptions } = {
+    const { disk, folder, variants, ...columnOptions } = {
       disk: 'local',
       folder: 'uploads',
+      variants: [],
       ...options,
     }
 
@@ -31,7 +31,7 @@ export const attachment = (options?: AttachmentOptions) => {
       consume: (value) => {
         if (value) {
           const attachment = attachmentManager.createFromDbResponse(value)
-          attachment?.setOptions({ disk, folder })
+          attachment?.setOptions({ disk, folder, variants })
           return attachment
         } else {
           return null

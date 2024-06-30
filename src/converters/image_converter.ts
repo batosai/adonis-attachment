@@ -5,17 +5,13 @@
  * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
  */
 
-import { cuid } from '@adonisjs/core/helpers'
-import { Variant } from '../../services/attachment_variant_service.js'
-import { exif } from '../adapters/exif.js'
+import attachmentManager from '../../services/main.js'
 import type { ConverterAttributes } from '../types.js'
 import BaseConverter from './base_converter.js'
 import logger from '@adonisjs/core/services/logger'
 
 export default class ImageConverter extends BaseConverter {
-  async handle({ record, attribute }: ConverterAttributes) {
-    super.handle({ record, attribute })
-
+  async handle({ key, buffer, options }: ConverterAttributes) {
     let sharp
     try {
       const module = 'sharp'
@@ -26,8 +22,8 @@ export default class ImageConverter extends BaseConverter {
     }
 
     if (sharp) {
-      const resize = this.options?.resize || {}
-      let format = this.options?.format || 'webp'
+      const resize = options?.resize || {}
+      let format = options?.format || 'webp'
       let formatoptions = {}
 
       if (typeof format !== 'string') {
@@ -35,36 +31,13 @@ export default class ImageConverter extends BaseConverter {
         format = format.format
       }
 
-      const buffer = await sharp(this.buffer)
+      const newBuffer = await sharp(buffer)
       .withMetadata()
       .resize(resize)
       .toFormat(format, formatoptions)
       .toBuffer()
 
-      const meta = await exif(buffer)
-      console.log(meta)
-      const variant = new Variant('test', {
-        name: `${cuid()}.${format}`,
-        path: '',
-        size: buffer.length,
-        extname: format,
-        mimeType: `image/${format}`,
-        meta: meta
-      })
-
-      await record.refresh()
-
-      const attachment = record.$attributes[attribute]
-      attachment.addVariant(variant)
-      record.$attributes[attribute] = attachment
-
-      // record.$dirty = record
-      // record.$isDirty = true
-
-      record.save()
-
-      await record.refresh()
-      console.log(record)
+      return await attachmentManager.createVariant(newBuffer, key)
     }
   }
 }

@@ -5,7 +5,7 @@
  * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
  */
 
-import type { ModelWithAttachment } from '../types.js'
+import type { AttachmentOptions, ModelWithAttachment } from '../types.js'
 import { Attachment } from '../../services/attachment_service.js'
 import { optionsSym } from './symbols.js'
 
@@ -15,6 +15,6 @@ export function getAttributeAttachments(modelInstance: ModelWithAttachment) {
   )
 }
 
-export function getOptions(modelInstance: ModelWithAttachment, property: string) {
+export function getOptions(modelInstance: ModelWithAttachment, property: string): AttachmentOptions {
   return modelInstance.constructor.prototype[optionsSym]?.[property]
 }

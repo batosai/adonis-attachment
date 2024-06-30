@@ -6,7 +6,7 @@
  */
 
 import type {
-  AttachmentAttributes,
+  AttachmentBaseAttributes,
   AttachmentBase as AttachmentService,
   Exif,
 } from '../src/types.js'
@@ -21,7 +21,7 @@ export class AttachmentBase implements AttachmentService {
   mimeType: string
   path?: string
 
-  constructor(attributes: AttachmentAttributes, buffer?: Buffer) {
+  constructor(attributes: AttachmentBaseAttributes, buffer?: Buffer) {
     this.buffer = buffer
 
     this.name = attributes.name
@@ -33,7 +33,7 @@ export class AttachmentBase implements AttachmentService {
 
   async beforeSave() {}
 
-  toObject(): AttachmentAttributes {
+  toObject(): AttachmentBaseAttributes {
     return {
       name: this.name,
       extname: this.extname,
@@ -44,7 +44,7 @@ export class AttachmentBase implements AttachmentService {
     }
   }
 
-  toJSON(): AttachmentAttributes & { url?: string } {
+  toJSON(): AttachmentBaseAttributes & { url?: string } {
     return {
       // ...(this.url ? { url: this.url } : {}),
       ...this.toObject(),

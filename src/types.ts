@@ -47,34 +47,48 @@ export type Attachment = AttachmentBase & {
 
   setOptions(options: AttachmentOptions): Attachment
   addVariant(variant: Variant): void
+  toObject(): AttachmentAttributes
 }
 
 export type Variant = AttachmentBase & {
   key: string
+
+  toObject(): VariantAttributes
 }
 
 export type AttachmentOptions = {
   disk?: string
   folder?: string
+  variants?: string[]
 }
 
-export type AttachmentAttributes = {
+export type AttachmentBaseAttributes = {
   name: string
   path?: string
   size: number
   meta?: Exif
   extname: string
   mimeType: string
-  variants?: AttachmentAttributes[] | Variant[]
+}
+
+export type AttachmentAttributes = AttachmentBaseAttributes & {
+  variants?: VariantAttributes[]
+}
+
+export type VariantAttributes = AttachmentBaseAttributes & {
+  key: string
 }
 
 // --- Mixin
 
+export type ModelWithAttachmentAttribute = {
+  attached: Attachment[]
+  detached: Attachment[]
+  propertiesModified: string[]
+}
+
 export type ModelWithAttachment = LucidRow & {
-  attachments: {
-    attached: Attachment[]
-    detached: Attachment[]
-  }
+  $attachments: ModelWithAttachmentAttribute
 }
 
 // --- Converter & Config
@@ -84,14 +98,23 @@ export type BaseConverter = {
   options?: Object
   record?: ModelWithAttachment
   attribute?: string
+  variant?: Variant
 
-  handle?(attributes: ConverterAttributes): void
+  initialize(attributes: ConverterInitializeAttributes): void
+  handle(attributes: ConverterAttributes): Promise<Variant | undefined>
   save(): void
 }
 
-export type ConverterAttributes = {
+export type ConverterInitializeAttributes = {
   record: ModelWithAttachment
-  attribute: string
+  attribute: string,
+  key: string
+}
+
+export type ConverterAttributes = {
+  key: string
+  buffer: Buffer,
+  options: ConverterOptions
 }
 
 type ImportConverter = {

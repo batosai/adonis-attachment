@@ -10,7 +10,7 @@ import type { NormalizeConstructor } from '@adonisjs/core/types/helpers'
 import type { ModelWithAttachmentAttribute } from '../types.js'
 import { beforeSave, afterSave, beforeDelete } from '@adonisjs/lucid/orm'
 import { persistAttachment, commit, rollback, generateVariants } from '../utils/actions.js'
-import { getAttributeAttachments } from '../utils/helpers.js'
+import { getAttachmentTypeAttributes } from '../utils/helpers.js'
 
 export const Attachmentable = <Model extends NormalizeConstructor<typeof BaseModel>>(
   superclass: Model
@@ -24,7 +24,7 @@ export const Attachmentable = <Model extends NormalizeConstructor<typeof BaseMod
 
     @beforeSave()
     static async beforeSaveHook(modelInstance: ModelWithAttachment) {
-      const attributeAttachments = getAttributeAttachments(modelInstance)
+      const attributeAttachments = getAttachmentTypeAttributes(modelInstance)
 
       /**
        * Set properties modified
@@ -59,7 +59,7 @@ export const Attachmentable = <Model extends NormalizeConstructor<typeof BaseMod
 
     @afterSave()
     static async afterSaveHook(modelInstance: ModelWithAttachment) {
-      const attributeAttachments = getAttributeAttachments(modelInstance)
+      const attributeAttachments = getAttachmentTypeAttributes(modelInstance)
 
       /**
        * For all properties Attachment
@@ -76,7 +76,7 @@ export const Attachmentable = <Model extends NormalizeConstructor<typeof BaseMod
 
     @beforeDelete()
     static async beforeDeleteHook(modelInstance: ModelWithAttachment) {
-      const attributeAttachments = getAttributeAttachments(modelInstance)
+      const attributeAttachments = getAttachmentTypeAttributes(modelInstance)
 
       /**
        * Mark all attachments for deletion

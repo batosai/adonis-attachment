@@ -5,16 +5,16 @@
  * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
  */
 
-import type { BaseConverter as Base, ConverterAttributes, ConverterInitializeAttributes, ConverterOptions, ModelWithAttachment, Variant } from '../types.js'
+import type { BaseConverter as Base, ConverterAttributes, ConverterInitializeAttributes, ConverterOptions, ModelWithAttachment } from '../types.js'
 import { LucidModel } from '@adonisjs/lucid/types/model'
 import db from '@adonisjs/lucid/services/db'
+import attachmentManager from '../../services/main.js'
 export default class BaseConverter implements Base {
   #key?: string
   #buffer?: Buffer
   #options?: ConverterOptions
   #record?: ModelWithAttachment
   #attribute?: string
-  #variant?: Variant
 
   constructor(options?: ConverterOptions) {
     this.#options = options
@@ -25,27 +25,26 @@ export default class BaseConverter implements Base {
     this.#record = record
     this.#attribute = attribute
 
-    this.#buffer = record.$attributes[attribute].buffer
+    const buffer = record.$attributes[attribute].buffer
 
     if (typeof this.handle === 'function') {
-      this.#variant = await this.handle({
+      this.#buffer = await this.handle({
         key: this.#key!,
-        buffer: this.#buffer!,
+        buffer: buffer,
         options: this.#options!
       })
-    }
 
-    this.save()
+      this.save()
+    }
   }
 
-  async handle(attributes: ConverterAttributes): Promise<Variant | undefined> {
+  async handle(attributes: ConverterAttributes): Promise<Buffer | undefined> {
     console.log(attributes)
     return undefined
   }
 
   async save() {
     const record = this.#record!
-    const variant = this.#variant!
     const attribute = this.#attribute!
 
     await record.refresh()
@@ -55,16 +54,25 @@ export default class BaseConverter implements Base {
     const attachment = record.$attributes[attribute]
     const data: any = {}
 
-    attachment.addVariant(variant)
+    const variant = await attachment.createVariant(this.#key, this.#buffer)
     
     data[attribute] = JSON.stringify(attachment.toObject())
 
-    // TODO trx https://lucid.adonisjs.com/docs/transactions
-    // storage
+    const trx = await db.transaction()
 
-    return db
-      .from(Model.table)
-      .where('id', id)
-      .update(data)
+    trx.after('commit', () => attachmentManager.save(variant))
+    trx.after('rollback', () => attachmentManager.delete(variant))
+
+    try {
+      await trx
+        .query()
+        .from(Model.table)
+        .where('id', id)
+        .update(data)
+    
+      return await trx.commit()
+    } catch (error) {
+      return await trx.rollback()
+    }
   }
 }

@@ -10,6 +10,7 @@ import type {
   AttachmentBase as AttachmentService,
   Exif,
 } from '../src/types.js'
+import { cuid } from '@adonisjs/core/helpers'
 
 export class AttachmentBase implements AttachmentService {
   buffer?: Buffer
@@ -19,16 +20,23 @@ export class AttachmentBase implements AttachmentService {
   meta?: Exif
   extname: string
   mimeType: string
+  folder?: string
   path?: string
 
   constructor(attributes: AttachmentBaseAttributes, buffer?: Buffer) {
     this.buffer = buffer
-
-    this.name = attributes.name
+    
     this.size = attributes.size
     this.extname = attributes.extname
     this.mimeType = attributes.mimeType
+    this.folder = attributes.folder
     this.path = attributes.path
+
+    if (attributes.name) {
+      this.name = attributes.name
+    } else {
+      this.name = `${cuid()}.${this.extname}`
+    }
   }
 
   async beforeSave() {}

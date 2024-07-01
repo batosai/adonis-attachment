@@ -7,16 +7,12 @@
 
 import type { ApplicationService, LoggerService } from '@adonisjs/core/types'
 import type { MultipartFile } from '@adonisjs/core/bodyparser'
-import { cuid } from '@adonisjs/core/helpers'
-import string from '@adonisjs/core/helpers/string'
-import { fileTypeFromBuffer } from 'file-type'
 import { Exception } from '@poppinss/utils'
 import { Attachment } from '../services/attachment_service.js'
 import fs, { readFile, mkdir } from 'node:fs/promises'
-import { Variant } from '../services/attachment_variant_service.js'
-import type { ResolvedAttachmentConfig } from './types.js'
+import type { AttachmentBase, ResolvedAttachmentConfig, Variant } from './types.js'
 import BaseConverter from './converters/base_converter.js'
-import { exif } from './adapters/exif.js'
+import { attachmentParams } from './utils/helpers.js'
 
 const REQUIRED_ATTRIBUTES = ['name', 'size', 'extname', 'mimeType']
 
@@ -51,7 +47,7 @@ export class AttachmentManager {
 
   async createFromFile(file: MultipartFile) {
     const attributes = {
-      name: file.clientName,
+      originalName: file.clientName,
       extname: file.extname!,
       mimeType: `${file.type}/${file.subtype}`,
       size: file.size!,
@@ -67,15 +63,9 @@ export class AttachmentManager {
   }
 
   async createFromBuffer(buffer: Buffer, name?: string) {
-    const attributes = await this.#attributesTransform(buffer, name)
+    const attributes = await attachmentParams(buffer, name)
 
     return new Attachment(attributes, buffer)
-  }
-
-  async createVariant(buffer: Buffer, key: string) {
-    const attributes = await this.#attributesTransform(buffer)
-
-    return new Variant({ key, ...attributes }, buffer)
   }
 
   async getConverter(key: string): Promise<void | BaseConverter> {
@@ -88,47 +78,38 @@ export class AttachmentManager {
     }
   }
 
-  async save(attachment: Attachment) {
+  async save(attachment: AttachmentBase) {
     await attachment.beforeSave()
     const publicPath = this.#app.publicPath(attachment.path!)
 
     try {
-      await mkdir(this.#app.publicPath(attachment.options!.folder!), { recursive: true })
+      await mkdir(this.#app.publicPath(attachment.folder!), { recursive: true })
       await fs.writeFile(publicPath, attachment.buffer!)
     } catch (err) {
       this.#logger.error({ err }, 'Error send file')
     }
   }
 
-  async delete(attachment: Attachment) {
+  async delete(attachment: Attachment | Variant) {
     if (attachment.path) {
       try {
-        const path = this.#app.publicPath(`${attachment.path}`)
+        const path = this.#app.publicPath(attachment.path)
         await fs.access(path)
-        fs.unlink(path)
+        await fs.unlink(path)
+
+        if (attachment instanceof Attachment) {
+          if (attachment.variants) {
+            await Promise.all(
+              attachment.variants.map((v) => this.delete(v))
+            )
+            const path = this.#app.publicPath(attachment.variants[0].folder + '/')
+            await fs.rm(path, { recursive: true, force: true })
+          }
+        }
+
       } catch (error) {
         this.#logger.error(error)
       }
-    }
-  }
-
-  // TODO move helper
-  async #attributesTransform(buffer: Buffer, name?: string) {
-    const fileType = await fileTypeFromBuffer(buffer)
-    const meta = await exif(buffer)
-
-    if (name) {
-      name = string.slug(name)
-    } else {
-      name = `${cuid()}.${fileType!.ext}`
-    }
-
-    return {
-      name,
-      extname: fileType!.ext,
-      mimeType: fileType!.mime,
-      size: buffer.length,
-      meta
     }
   }
 }

@@ -33,25 +33,28 @@ export type AttachmentBase = {
   meta?: Exif
   extname: string
   mimeType: string
+  folder?: string
   path?: string
 
   beforeSave(): Promise<void>
 
-  toObject(): AttachmentAttributes
-  toJSON(): AttachmentAttributes & { url?: string }
+  toObject(): AttachmentBaseAttributes
+  toJSON(): AttachmentBaseAttributes & { url?: string }
 }
 
 export type Attachment = AttachmentBase & {
+  originalName: string
   options?: AttachmentOptions
   variants?: Variant[]
 
   setOptions(options: AttachmentOptions): Attachment
-  addVariant(variant: Variant): void
+  createVariant(key:string, buffer: Buffer): Promise<Variant>
   toObject(): AttachmentAttributes
 }
 
 export type Variant = AttachmentBase & {
   key: string
+  folder: string
 
   toObject(): VariantAttributes
 }
@@ -63,20 +66,23 @@ export type AttachmentOptions = {
 }
 
 export type AttachmentBaseAttributes = {
-  name: string
-  path?: string
+  name?: string
   size: number
   meta?: Exif
   extname: string
   mimeType: string
+  folder?: string
+  path?: string
 }
 
 export type AttachmentAttributes = AttachmentBaseAttributes & {
   variants?: VariantAttributes[]
+  originalName: string,
 }
 
 export type VariantAttributes = AttachmentBaseAttributes & {
   key: string
+  folder: string
 }
 
 // --- Mixin
@@ -98,10 +104,9 @@ export type BaseConverter = {
   options?: Object
   record?: ModelWithAttachment
   attribute?: string
-  variant?: Variant
 
   initialize(attributes: ConverterInitializeAttributes): void
-  handle(attributes: ConverterAttributes): Promise<Variant | undefined>
+  handle(attributes: ConverterAttributes): Promise<Buffer | undefined>
   save(): void
 }
 

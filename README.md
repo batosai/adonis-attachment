@@ -6,13 +6,13 @@ This package is currently development and will replace [attachment-advanced](htt
 
 - [x] attachment file by file system
 - [x] save meta data
-- [ ] variables
+- [ ] variantes
   - [ ] images
   - [ ] documents
   - [ ] videos
 - [ ] command regenerate
 - [ ] adonis-drive/flydrive
-- [ ] jobs
+- [ ] jobs queue
 - [ ] edge component
 
 ### File sytem

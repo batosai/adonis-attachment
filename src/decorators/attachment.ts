@@ -6,7 +6,7 @@
  */
 
 import type { LucidModel } from '@adonisjs/lucid/types/model'
-import type { AttachmentOptions } from '../types.js'
+import type { AttachmentOptions } from '../types/attachment.js'
 import { optionsSym } from '../utils/symbols.js'
 import attachmentManager from '../../services/main.js'
 

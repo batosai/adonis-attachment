@@ -5,12 +5,15 @@
  * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
  */
 
-import type { AttachmentOptions, ModelWithAttachment } from '../types.js'
+import type { AttachmentOptions } from '../types/attachment.js'
+import type { Input } from '../types/input.js'
+import type { ModelWithAttachment } from '../types/mixin.js'
+import fs from 'node:fs/promises'
 import { cuid } from '@adonisjs/core/helpers'
 import string from '@adonisjs/core/helpers/string'
 import { Attachment } from '../../services/attachment_service.js'
 import { optionsSym } from './symbols.js'
-import { fileTypeFromBuffer } from 'file-type'
+import { fileTypeFromBuffer, fileTypeFromFile } from 'file-type'
 import { exif } from '../adapters/exif.js'
 
 export function getAttachmentTypeAttributes(modelInstance: ModelWithAttachment) {
@@ -23,9 +26,17 @@ export function getOptions(modelInstance: ModelWithAttachment, property: string)
   return modelInstance.constructor.prototype[optionsSym]?.[property]
 }
 
-export async function attachmentParams(buffer: Buffer, name?: string) {
-  const fileType = await fileTypeFromBuffer(buffer)
-  const meta = await exif(buffer)
+export async function attachmentParams(input: Input, name?: string) {
+  let fileType
+  let meta
+  if (Buffer.isBuffer(input)) {
+    fileType = await fileTypeFromBuffer(input)
+    meta = await exif(input)
+  } else {
+    fileType = await fileTypeFromFile(input)
+    const buffer = await fs.readFile(input)
+    meta = await exif(buffer)
+  }
 
   if (name) {
     name = string.slug(name)
@@ -37,7 +48,7 @@ export async function attachmentParams(buffer: Buffer, name?: string) {
     originalName: name,
     extname: fileType!.ext,
     mimeType: fileType!.mime,
-    size: buffer.length,
+    size: input.length,
     meta
   }
 }

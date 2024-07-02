@@ -6,7 +6,8 @@
  */
 
 import attachmentManager from '../../services/main.js'
-import type { ModelWithAttachment, Attachment } from '../types.js'
+import type { Attachment } from '../types/attachment.js'
+import type { ModelWithAttachment } from '../types/mixin.js'
 import { getOptions } from './helpers.js'
 
 /**

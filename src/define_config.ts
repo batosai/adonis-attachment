@@ -5,7 +5,7 @@
  * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
  */
 
-import type { AttachmentConfig, ResolvedAttachmentConfig, ResolvedConverter } from './types.js'
+import type { AttachmentConfig, ResolvedAttachmentConfig, ResolvedConverter } from './types/config.js'
 import { ConfigProvider } from '@adonisjs/core/types'
 import { configProvider } from '@adonisjs/core'
 import BaseConverter from './converters/base_converter.js'

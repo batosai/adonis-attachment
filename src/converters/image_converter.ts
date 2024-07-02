@@ -4,12 +4,12 @@
  * @license MIT
  * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
  */
-import type { ConverterAttributes } from '../types.js'
+import type { ConverterAttributes } from '../types/converter.js'
 import BaseConverter from './base_converter.js'
 import logger from '@adonisjs/core/services/logger'
 
 export default class ImageConverter extends BaseConverter {
-  async handle({ buffer, options }: ConverterAttributes) {
+  async handle({ input, options }: ConverterAttributes) {
     let sharp
     try {
       const module = 'sharp'
@@ -29,13 +29,13 @@ export default class ImageConverter extends BaseConverter {
         format = format.format
       }
 
-      const newBuffer = await sharp(buffer)
+      const buffer = await sharp(input)
       .withMetadata()
       .resize(resize)
       .toFormat(format, formatoptions)
       .toBuffer()
 
-      return newBuffer
+      return buffer
     }
   }
 }

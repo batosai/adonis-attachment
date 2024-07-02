@@ -5,13 +5,15 @@
  * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
  */
 
-import type { BaseConverter as Base, ConverterAttributes, ConverterInitializeAttributes, ConverterOptions, ModelWithAttachment } from '../types.js'
+import type { BaseConverter as Base, ConverterAttributes, ConverterInitializeAttributes, ConverterOptions } from '../types/converter.js'
+import type { ModelWithAttachment } from '../types/mixin.js'
 import { LucidModel } from '@adonisjs/lucid/types/model'
 import db from '@adonisjs/lucid/services/db'
 import attachmentManager from '../../services/main.js'
+import type { Input } from '../types/input.js'
 export default class BaseConverter implements Base {
   #key?: string
-  #buffer?: Buffer
+  #input?: Input
   #options?: ConverterOptions
   #record?: ModelWithAttachment
   #attribute?: string
@@ -25,12 +27,12 @@ export default class BaseConverter implements Base {
     this.#record = record
     this.#attribute = attribute
 
-    const buffer = record.$attributes[attribute].buffer
+    const input = record.$attributes[attribute].input
 
     if (typeof this.handle === 'function') {
-      this.#buffer = await this.handle({
+      this.#input = await this.handle({
         key: this.#key!,
-        buffer: buffer,
+        input,
         options: this.#options!
       })
 
@@ -38,7 +40,7 @@ export default class BaseConverter implements Base {
     }
   }
 
-  async handle(attributes: ConverterAttributes): Promise<Buffer | undefined> {
+  async handle(attributes: ConverterAttributes): Promise<Input | undefined> {
     console.log(attributes)
     return undefined
   }
@@ -54,7 +56,7 @@ export default class BaseConverter implements Base {
     const attachment = record.$attributes[attribute]
     const data: any = {}
 
-    const variant = await attachment.createVariant(this.#key, this.#buffer)
+    const variant = await attachment.createVariant(this.#key, this.#input)
     
     data[attribute] = JSON.stringify(attachment.toObject())
 

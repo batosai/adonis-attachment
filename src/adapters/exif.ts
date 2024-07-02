@@ -6,7 +6,7 @@
  */
 
 import ExifReader from 'exifreader'
-import type { Exif } from '../types.js'
+import type { Exif } from '../types/input.js'
 import { cleanObject } from '../utils/clean_object.js'
 
 export const exif = async (buffer: Buffer): Promise<Exif> => {

@@ -5,15 +5,12 @@
  * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
  */
 
-import type {
-  AttachmentBaseAttributes,
-  AttachmentBase as AttachmentService,
-  Exif,
-} from '../src/types.js'
+import type { AttachmentBaseAttributes, AttachmentBase as AttachmentService } from '../src/types/attachment.js'
+import type { Exif, Input } from '../src/types/input.js'
 import { cuid } from '@adonisjs/core/helpers'
 
 export class AttachmentBase implements AttachmentService {
-  buffer?: Buffer
+  input?: Input
 
   name: string
   size: number
@@ -23,10 +20,11 @@ export class AttachmentBase implements AttachmentService {
   folder?: string
   path?: string
 
-  constructor(attributes: AttachmentBaseAttributes, buffer?: Buffer) {
-    this.buffer = buffer
+  constructor(attributes: AttachmentBaseAttributes, input?: Input) {
+    this.input = input
     
     this.size = attributes.size
+    this.meta = attributes.meta
     this.extname = attributes.extname
     this.mimeType = attributes.mimeType
     this.folder = attributes.folder

@@ -6,12 +6,12 @@
  */
 
 import path from 'node:path'
-import { exif } from '../src/adapters/exif.js'
 import type {
   AttachmentOptions,
   AttachmentAttributes,
   Attachment as AttachmentService,
-} from '../src/types.js'
+} from '../src/types/attachment.js'
+import type { Input } from '../src/types/input.js'
 import { AttachmentBase } from './attachment_base_service.js'
 import { Variant } from './attachment_variant_service.js'
 import { attachmentParams } from '../src/utils/helpers.js'
@@ -21,8 +21,8 @@ export class Attachment extends AttachmentBase implements AttachmentService {
   options?: AttachmentOptions
   variants?: Variant[]
 
-  constructor(attributes: AttachmentAttributes, buffer?: Buffer) {
-    super(attributes, buffer)
+  constructor(attributes: AttachmentAttributes, input?: Input) {
+    super(attributes, input)
 
     this.originalName = attributes.originalName
 
@@ -47,14 +47,14 @@ export class Attachment extends AttachmentBase implements AttachmentService {
     return this
   }
 
-  async createVariant(key:string, buffer: Buffer): Promise<Variant> {
+  async createVariant(key:string, input: Input): Promise<Variant> {
     const attributes = {
-      ...await attachmentParams(buffer),
+      ...await attachmentParams(input),
       key,
       folder: path.join(this.options!.folder!, 'variants', this.name)
     }
 
-    const variant = new Variant(attributes, buffer)
+    const variant = new Variant(attributes, input)
 
     if (this.variants === undefined) {
       this.variants = []
@@ -69,7 +69,9 @@ export class Attachment extends AttachmentBase implements AttachmentService {
     const outputPath = path.join(this.folder, this.name)
 
     if (!this.meta) {
-      this.meta = await exif(this.buffer!)
+      const data = await attachmentParams(this.input!)
+
+      this.meta = data.meta
     }
     this.path = outputPath
   }

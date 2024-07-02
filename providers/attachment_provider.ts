@@ -7,7 +7,7 @@
 
 import type { ApplicationService } from '@adonisjs/core/types'
 import type { AttachmentManager } from '../src/attachment_manager.js'
-import type { ResolvedAttachmentConfig } from '../src/types.js'
+import type { ResolvedAttachmentConfig } from '../src/types/config.js'
 import { configProvider } from '@adonisjs/core'
 import { RuntimeException } from '@poppinss/utils'
 

@@ -7,7 +7,7 @@
 
 import type { BaseModel } from '@adonisjs/lucid/orm'
 import type { NormalizeConstructor } from '@adonisjs/core/types/helpers'
-import type { ModelWithAttachmentAttribute } from '../types.js'
+import type { ModelWithAttachmentAttribute } from '../types/mixin.js'
 import { beforeSave, afterSave, beforeDelete } from '@adonisjs/lucid/orm'
 import { persistAttachment, commit, rollback, generateVariants } from '../utils/actions.js'
 import { getAttachmentTypeAttributes } from '../utils/helpers.js'

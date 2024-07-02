@@ -9,8 +9,9 @@ import type { ApplicationService, LoggerService } from '@adonisjs/core/types'
 import type { MultipartFile } from '@adonisjs/core/bodyparser'
 import { Exception } from '@poppinss/utils'
 import { Attachment } from '../services/attachment_service.js'
-import fs, { readFile, mkdir } from 'node:fs/promises'
-import type { AttachmentBase, ResolvedAttachmentConfig, Variant } from './types.js'
+import fs from 'node:fs/promises'
+import type { AttachmentBase, Variant } from './types/attachment.js'
+import type { ResolvedAttachmentConfig } from './types/config.js'
 import BaseConverter from './converters/base_converter.js'
 import { attachmentParams } from './utils/helpers.js'
 
@@ -57,9 +58,10 @@ export class AttachmentManager {
       throw new Error("It's not a valid file")
     }
 
-    const buffer = await readFile(file.tmpPath)
+    // const buffer = await fs.readFile(file.tmpPath)
 
-    return new Attachment(attributes, buffer)
+    return new Attachment(attributes, file.tmpPath)
+    // return new Attachment(attributes, buffer)
   }
 
   async createFromBuffer(buffer: Buffer, name?: string) {
@@ -83,8 +85,12 @@ export class AttachmentManager {
     const publicPath = this.#app.publicPath(attachment.path!)
 
     try {
-      await mkdir(this.#app.publicPath(attachment.folder!), { recursive: true })
-      await fs.writeFile(publicPath, attachment.buffer!)
+      await fs.mkdir(this.#app.publicPath(attachment.folder!), { recursive: true })
+      if (Buffer.isBuffer(attachment.input)) {
+        await fs.writeFile(publicPath, attachment.input)
+      } else if (attachment.input) {
+        await fs.copyFile(attachment.input, publicPath)
+      }
     } catch (err) {
       this.#logger.error({ err }, 'Error send file')
     }

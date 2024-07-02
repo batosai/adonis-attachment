@@ -42,7 +42,7 @@
   },
   "exports": {
     ".": "./build/index.js",
-    "./types": "./build/src/types.js",
+    "./types": "./build/src/types/*.js",
     "./mixins": "./build/src/mixins/attachmentable.js",
     "./decorators": "./build/src/decorators/attachment.js",
     "./services/*": "./build/services/*.js",

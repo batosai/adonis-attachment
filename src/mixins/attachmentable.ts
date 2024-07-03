@@ -7,31 +7,29 @@
 
 import type { BaseModel } from '@adonisjs/lucid/orm'
 import type { NormalizeConstructor } from '@adonisjs/core/types/helpers'
-import type { ModelWithAttachmentAttribute } from '../types/mixin.js'
+import type { AttributeOfModelWithAttachment } from '../types/mixin.js'
+
 import { beforeSave, afterSave, beforeDelete } from '@adonisjs/lucid/orm'
 import { persistAttachment, commit, rollback, generateVariants } from '../utils/actions.js'
-import { getAttachmentTypeAttributes } from '../utils/helpers.js'
+import { getAttachmentAttributeNames } from '../utils/helpers.js'
+import { defaultStateAttributeMixin } from '../utils/default_values.js'
 
 export const Attachmentable = <Model extends NormalizeConstructor<typeof BaseModel>>(
   superclass: Model
 ) => {
   class ModelWithAttachment extends superclass {
-    $attachments: ModelWithAttachmentAttribute = {
-      attached: [],
-      detached: [],
-      propertiesModified: []
-    }
+    $attachments: AttributeOfModelWithAttachment = defaultStateAttributeMixin
 
     @beforeSave()
     static async beforeSaveHook(modelInstance: ModelWithAttachment) {
-      const attributeAttachments = getAttachmentTypeAttributes(modelInstance)
+      const attachmentAttributeNames = getAttachmentAttributeNames(modelInstance)
 
       /**
-       * Set properties modified
+       * Set attributes Attachment type modified
        */
-      attributeAttachments.forEach((property) => {
-        if (modelInstance.$dirty[property]) {
-          modelInstance.$attachments.propertiesModified.push(property)
+      attachmentAttributeNames.forEach((attributeName) => {
+        if (modelInstance.$dirty[attributeName]) {
+          modelInstance.$attachments.attributesModified.push(attributeName)
         }
       })
 
@@ -41,7 +39,9 @@ export const Attachmentable = <Model extends NormalizeConstructor<typeof BaseMod
        * database
        */
       await Promise.all(
-        attributeAttachments.map((property) => persistAttachment(modelInstance, property))
+        attachmentAttributeNames.map((attributeName) =>
+          persistAttachment(modelInstance, attributeName)
+        )
       )
 
       try {
@@ -59,16 +59,16 @@ export const Attachmentable = <Model extends NormalizeConstructor<typeof BaseMod
 
     @afterSave()
     static async afterSaveHook(modelInstance: ModelWithAttachment) {
-      const attributeAttachments = getAttachmentTypeAttributes(modelInstance)
+      const attachmentAttributeNames = getAttachmentAttributeNames(modelInstance)
 
       /**
        * For all properties Attachment
        * Launch async generation variants
        */
       await Promise.all(
-        attributeAttachments.map((property) => {
-          if (modelInstance.$attachments.propertiesModified.includes(property)) {
-            return generateVariants(modelInstance, property)
+        attachmentAttributeNames.map((attributeName) => {
+          if (modelInstance.$attachments.attributesModified.includes(attributeName)) {
+            return generateVariants(modelInstance, attributeName)
           }
         })
       )
@@ -76,14 +76,14 @@ export const Attachmentable = <Model extends NormalizeConstructor<typeof BaseMod
 
     @beforeDelete()
     static async beforeDeleteHook(modelInstance: ModelWithAttachment) {
-      const attributeAttachments = getAttachmentTypeAttributes(modelInstance)
+      const attachmentAttributeNames = getAttachmentAttributeNames(modelInstance)
 
       /**
        * Mark all attachments for deletion
        */
-      attributeAttachments.map((property) => {
-        if (modelInstance.$attributes[property]) {
-          modelInstance.$attachments.detached.push(modelInstance.$attributes[property])
+      attachmentAttributeNames.map((attributeName) => {
+        if (modelInstance.$attributes[attributeName]) {
+          modelInstance.$attachments.detached.push(modelInstance.$attributes[attributeName])
         }
       })
 

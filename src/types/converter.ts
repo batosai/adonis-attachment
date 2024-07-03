@@ -5,36 +5,36 @@
  * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
  */
 
-import type { Input } from "./input.js"
-import type { ModelWithAttachment } from "./mixin.js"
+import type { Input } from './input.js'
+import type { ModelWithAttachment } from './mixin.js'
 
-export type BaseConverter = {
+export type Converter = {
   input?: Input
   options?: Object
   record?: ModelWithAttachment
-  attribute?: string
+  attributeName?: string
 
-  initialize(attributes: ConverterInitializeAttributes): void
+  initialize(attributes?: ConverterInitializeAttributes): void
   handle(attributes: ConverterAttributes): Promise<Input | undefined>
   save(): void
 }
 
 export type ConverterInitializeAttributes = {
   record: ModelWithAttachment
-  attribute: string,
+  attributeName: string
   key: string
 }
 
 export type ConverterAttributes = {
   key: string
-  input: Input,
+  input: Input
   options: ConverterOptions
 }
 
 type jpeg = {
-  format: 'jpeg',
+  format: 'jpeg'
   options: {
-    quality?: number,
+    quality?: number
     progressive?: Boolean
     chromaSubsampling?: string
     optimiseCoding?: Boolean
@@ -51,9 +51,9 @@ type jpeg = {
 }
 
 type png = {
-  format: 'png',
+  format: 'png'
   options: {
-    quality?: number,
+    quality?: number
     progressive?: Boolean
     compressionLevel?: number
     adaptiveFiltering?: Boolean
@@ -67,9 +67,9 @@ type png = {
 }
 
 type gif = {
-  format: 'gif',
+  format: 'gif'
   options: {
-    reuse?: Boolean,
+    reuse?: Boolean
     progressive?: Boolean
     colours?: number
     colors?: number
@@ -84,9 +84,9 @@ type gif = {
 }
 
 type webp = {
-  format: 'webp',
+  format: 'webp'
   options: {
-    quality?: number,
+    quality?: number
     alphaQuality?: number
     lossless?: Boolean
     nearLossless?: Boolean
@@ -102,22 +102,25 @@ type webp = {
 }
 
 export type ConverterOptions = {
-  resize: number | {
-    width?: number,
-    height?: number,
-    fit?: string,
-    position?: string,
-    background?: string | {
-      r: number,
-      g: number,
-      b: number,
-      alpha: number
-    },
-    kernel?: string,
-    withoutEnlargement?: Boolean,
-    withoutReduction?: Boolean,
-    fastShrinkOnLoad?: Boolean,
-
-  },
+  resize:
+    | number
+    | {
+        width?: number
+        height?: number
+        fit?: string
+        position?: string
+        background?:
+          | string
+          | {
+              r: number
+              g: number
+              b: number
+              alpha: number
+            }
+        kernel?: string
+        withoutEnlargement?: Boolean
+        withoutReduction?: Boolean
+        fastShrinkOnLoad?: Boolean
+      }
   format?: string | jpeg | png | gif | webp
 }

@@ -5,9 +5,10 @@
  * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
  */
 
-import ExifReader from 'exifreader'
 import type { Exif } from '../types/input.js'
-import { cleanObject } from '../utils/clean_object.js'
+
+import ExifReader from 'exifreader'
+import { cleanObject } from '../utils/helpers.js'
 
 export const exif = async (buffer: Buffer): Promise<Exif> => {
   const tags = await ExifReader.load(buffer, { expanded: true })

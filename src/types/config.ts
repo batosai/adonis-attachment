@@ -5,13 +5,13 @@
  * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
  */
 
-import type { BaseConverter, ConverterOptions } from "./converter.js"
+import type { Converter, ConverterOptions } from './converter.js'
 
 type ImportConverter = {
   default: unknown
 }
 
-type Converter = {
+type ConverterConfig = {
   key: string
   converter: () => Promise<ImportConverter>
   options?: ConverterOptions
@@ -19,12 +19,12 @@ type Converter = {
 
 export type AttachmentConfig = {
   basePath: string
-  converters?: Converter[]
+  converters?: ConverterConfig[]
 }
 
 export type ResolvedConverter = {
   key: string
-  converter: BaseConverter
+  converter: Converter
 }
 
 export type ResolvedAttachmentConfig = {

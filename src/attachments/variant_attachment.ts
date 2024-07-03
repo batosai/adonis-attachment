@@ -5,12 +5,13 @@
  * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
  */
 
-import path from 'node:path'
-import type { VariantAttributes, Variant as VariantService } from '../src/types/attachment.js'
-import type { Input } from '../src/types/input.js'
-import { AttachmentBase } from './attachment_base_service.js'
+import type { VariantAttributes, Variant as VariantInterface } from '../types/attachment.js'
+import type { Input } from '../types/input.js'
 
-export class Variant extends AttachmentBase implements VariantService {
+import path from 'node:path'
+import { AttachmentBase } from './attachment_base.js'
+
+export class Variant extends AttachmentBase implements VariantInterface {
   key: string
   folder: string
 

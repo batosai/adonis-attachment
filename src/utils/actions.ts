@@ -5,9 +5,10 @@
  * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
  */
 
-import attachmentManager from '../../services/main.js'
 import type { Attachment } from '../types/attachment.js'
 import type { ModelWithAttachment } from '../types/mixin.js'
+
+import attachmentManager from '../../services/main.js'
 import { getOptions } from './helpers.js'
 
 /**
@@ -85,19 +86,19 @@ export async function persistAttachment(modelInstance: ModelWithAttachment, prop
 /**
  * Launch converter by variant option
  */
-export async function generateVariants(modelInstance: ModelWithAttachment, property: string) {
-  const options = getOptions(modelInstance, property)
+export async function generateVariants(modelInstance: ModelWithAttachment, attributeName: string) {
+  const options = getOptions(modelInstance, attributeName)
 
   if (options.variants) {
     options.variants.forEach(async (option) => {
-      const attachment = modelInstance.$attributes[property] as Attachment
+      const attachment = modelInstance.$attributes[attributeName] as Attachment
       const converter = await attachmentManager.getConverter(option)
 
       if (attachment && converter) {
         converter.initialize({
-          record: modelInstance,
-          attribute: property,
-          key: option
+          record: modelInstance, // TODO ne pas donner l'instance
+          attributeName,
+          key: option,
         })
       }
     })

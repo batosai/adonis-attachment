@@ -7,27 +7,27 @@
 
 import type { LucidModel } from '@adonisjs/lucid/types/model'
 import type { AttachmentOptions } from '../types/attachment.js'
-import { optionsSym } from '../utils/symbols.js'
+
 import attachmentManager from '../../services/main.js'
+import { optionsSym } from '../utils/symbols.js'
+import { defaultOptionsDecorator } from '../utils/default_values.js'
 
 export const attachment = (options?: AttachmentOptions) => {
-  return function (target: any, propertyKey: string) {
+  return function (target: any, attributeName: string) {
     if (!target[optionsSym]) {
       target[optionsSym] = {}
     }
-    target[optionsSym][propertyKey] = options
+    target[optionsSym][attributeName] = options
 
     const Model = target.constructor as LucidModel
     Model.boot()
 
     const { disk, folder, variants, ...columnOptions } = {
-      disk: 'local',
-      folder: 'uploads',
-      variants: [],
+      ...defaultOptionsDecorator,
       ...options,
     }
 
-    Model.$addColumn(propertyKey, {
+    Model.$addColumn(attributeName, {
       consume: (value) => {
         if (value) {
           const attachment = attachmentManager.createFromDbResponse(value)

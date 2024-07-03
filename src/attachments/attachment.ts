@@ -5,18 +5,20 @@
  * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
  */
 
-import path from 'node:path'
 import type {
   AttachmentOptions,
   AttachmentAttributes,
-  Attachment as AttachmentService,
-} from '../src/types/attachment.js'
-import type { Input } from '../src/types/input.js'
-import { AttachmentBase } from './attachment_base_service.js'
-import { Variant } from './attachment_variant_service.js'
-import { attachmentParams } from '../src/utils/helpers.js'
+  Attachment as AttachmentInterface,
+} from '../types/attachment.js'
+import type { Input } from '../types/input.js'
 
-export class Attachment extends AttachmentBase implements AttachmentService {
+import path from 'node:path'
+import { AttachmentBase } from './attachment_base.js'
+import { Variant } from './variant_attachment.js'
+import { createAttachmentAttributes } from '../utils/helpers.js'
+import { defaultOptionsDecorator } from '../utils/default_values.js'
+
+export class Attachment extends AttachmentBase implements AttachmentInterface {
   originalName: string
   options?: AttachmentOptions
   variants?: Variant[]
@@ -26,17 +28,12 @@ export class Attachment extends AttachmentBase implements AttachmentService {
 
     this.originalName = attributes.originalName
 
-    this.options = {
-      disk: 'local',
-      folder: 'uploads',
-      variants: []
-    }
+    this.options = defaultOptionsDecorator
 
     if (attributes.variants) {
       this.variants = []
       attributes.variants.forEach((v) => this.variants!.push(new Variant(v)))
     }
-    // TODO promise.all this.createVariant
   }
 
   setOptions(options: AttachmentOptions) {
@@ -47,11 +44,11 @@ export class Attachment extends AttachmentBase implements AttachmentService {
     return this
   }
 
-  async createVariant(key:string, input: Input): Promise<Variant> {
+  async createVariant(key: string, input: Input): Promise<Variant> {
     const attributes = {
-      ...await attachmentParams(input),
+      ...(await createAttachmentAttributes(input)),
       key,
-      folder: path.join(this.options!.folder!, 'variants', this.name)
+      folder: path.join(this.options!.folder!, 'variants', this.name),
     }
 
     const variant = new Variant(attributes, input)
@@ -69,7 +66,7 @@ export class Attachment extends AttachmentBase implements AttachmentService {
     const outputPath = path.join(this.folder, this.name)
 
     if (!this.meta) {
-      const data = await attachmentParams(this.input!)
+      const data = await createAttachmentAttributes(this.input!)
 
       this.meta = data.meta
     }
@@ -82,7 +79,7 @@ export class Attachment extends AttachmentBase implements AttachmentService {
     return {
       ...super.toObject(),
       originalName: this.originalName,
-      variants
+      variants,
     }
   }
 }

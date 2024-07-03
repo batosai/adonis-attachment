@@ -5,16 +5,16 @@
  * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
  */
 
-import type { Exif, Input } from "./input.js"
+import type { Exif, Input } from './input.js'
 
 export type AttachmentBase = {
   input?: Input
 
   name: string
   size: number
-  meta?: Exif
   extname: string
   mimeType: string
+  meta?: Exif
   folder?: string
   path?: string
 
@@ -30,7 +30,7 @@ export type Attachment = AttachmentBase & {
   variants?: Variant[]
 
   setOptions(options: AttachmentOptions): Attachment
-  createVariant(key:string, input: Input): Promise<Variant>
+  createVariant(key: string, input: Input): Promise<Variant>
   toObject(): AttachmentAttributes
 }
 
@@ -59,7 +59,7 @@ export type AttachmentBaseAttributes = {
 
 export type AttachmentAttributes = AttachmentBaseAttributes & {
   variants?: VariantAttributes[]
-  originalName: string,
+  originalName: string
 }
 
 export type VariantAttributes = AttachmentBaseAttributes & {

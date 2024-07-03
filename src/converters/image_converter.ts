@@ -5,10 +5,11 @@
  * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
  */
 import type { ConverterAttributes } from '../types/converter.js'
-import BaseConverter from './base_converter.js'
-import logger from '@adonisjs/core/services/logger'
 
-export default class ImageConverter extends BaseConverter {
+import logger from '@adonisjs/core/services/logger'
+import Converter from './converter.js'
+
+export default class ImageConverter extends Converter {
   async handle({ input, options }: ConverterAttributes) {
     let sharp
     try {
@@ -30,10 +31,10 @@ export default class ImageConverter extends BaseConverter {
       }
 
       const buffer = await sharp(input)
-      .withMetadata()
-      .resize(resize)
-      .toFormat(format, formatoptions)
-      .toBuffer()
+        .withMetadata()
+        .resize(resize)
+        .toFormat(format, formatoptions)
+        .toBuffer()
 
       return buffer
     }

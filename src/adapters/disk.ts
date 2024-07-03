@@ -1,9 +1,3 @@
-
-
 export default class Disk {
-    static mkdir() {
-
-    }
-
-    
+  static mkdir() {}
 }

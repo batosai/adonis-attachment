@@ -8,25 +8,29 @@
 import type { AttachmentOptions } from '../types/attachment.js'
 import type { Input } from '../types/input.js'
 import type { ModelWithAttachment } from '../types/mixin.js'
+
 import fs from 'node:fs/promises'
 import { cuid } from '@adonisjs/core/helpers'
 import string from '@adonisjs/core/helpers/string'
-import { Attachment } from '../../services/attachment_service.js'
-import { optionsSym } from './symbols.js'
 import { fileTypeFromBuffer, fileTypeFromFile } from 'file-type'
+import { Attachment } from '../attachments/attachment.js'
+import { optionsSym } from './symbols.js'
 import { exif } from '../adapters/exif.js'
 
-export function getAttachmentTypeAttributes(modelInstance: ModelWithAttachment) {
+export function getAttachmentAttributeNames(modelInstance: ModelWithAttachment) {
   return Object.keys(modelInstance.$attributes).filter(
     (attr) => modelInstance.$attributes[attr] instanceof Attachment
   )
 }
 
-export function getOptions(modelInstance: ModelWithAttachment, property: string): AttachmentOptions {
-  return modelInstance.constructor.prototype[optionsSym]?.[property]
+export function getOptions(
+  modelInstance: ModelWithAttachment,
+  attributeName: string
+): AttachmentOptions {
+  return modelInstance.constructor.prototype[optionsSym]?.[attributeName]
 }
 
-export async function attachmentParams(input: Input, name?: string) {
+export async function createAttachmentAttributes(input: Input, name?: string) {
   let fileType
   let meta
   if (Buffer.isBuffer(input)) {
@@ -49,6 +53,31 @@ export async function attachmentParams(input: Input, name?: string) {
     extname: fileType!.ext,
     mimeType: fileType!.mime,
     size: input.length,
-    meta
+    meta,
   }
+}
+
+export function cleanObject(obj: any) {
+  if (obj === null || typeof obj !== 'object') {
+    return obj
+  }
+
+  const cleanedObj: any = Array.isArray(obj) ? [] : {}
+
+  for (const key in obj) {
+    if (obj.hasOwnProperty(key)) {
+      const cleanedValue = cleanObject(obj[key])
+
+      if (
+        cleanedValue !== null &&
+        cleanedValue !== undefined &&
+        cleanedValue !== 0 &&
+        cleanedValue !== ''
+      ) {
+        cleanedObj[key] = cleanedValue
+      }
+    }
+  }
+
+  return cleanedObj
 }

@@ -5,35 +5,42 @@
  * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
  */
 
-import type { BaseConverter as Base, ConverterAttributes, ConverterInitializeAttributes, ConverterOptions } from '../types/converter.js'
+import type { LucidModel } from '@adonisjs/lucid/types/model'
+import type {
+  Converter as ConverterInterface,
+  ConverterAttributes,
+  ConverterInitializeAttributes,
+  ConverterOptions,
+} from '../types/converter.js'
 import type { ModelWithAttachment } from '../types/mixin.js'
-import { LucidModel } from '@adonisjs/lucid/types/model'
-import db from '@adonisjs/lucid/services/db'
-import attachmentManager from '../../services/main.js'
 import type { Input } from '../types/input.js'
-export default class BaseConverter implements Base {
+
+import db from '@adonisjs/lucid/services/db'
+import { RuntimeException } from '@poppinss/utils'
+import attachmentManager from '../../services/main.js'
+export default class Converter implements ConverterInterface {
   #key?: string
   #input?: Input
   #options?: ConverterOptions
   #record?: ModelWithAttachment
-  #attribute?: string
+  #attributeName?: string
 
   constructor(options?: ConverterOptions) {
     this.#options = options
   }
 
-  async initialize({ record, attribute, key }: ConverterInitializeAttributes) {
+  async initialize({ record, attributeName, key }: ConverterInitializeAttributes) {
     this.#key = key
     this.#record = record
-    this.#attribute = attribute
+    this.#attributeName = attributeName
 
-    const input = record.$attributes[attribute].input
+    const input = record.$attributes[attributeName].input
 
     if (typeof this.handle === 'function') {
       this.#input = await this.handle({
         key: this.#key!,
         input,
-        options: this.#options!
+        options: this.#options!,
       })
 
       this.save()
@@ -42,12 +49,12 @@ export default class BaseConverter implements Base {
 
   async handle(attributes: ConverterAttributes): Promise<Input | undefined> {
     console.log(attributes)
-    return undefined
+    throw new RuntimeException('Invalid converter. Missing handle method')
   }
 
   async save() {
     const record = this.#record!
-    const attribute = this.#attribute!
+    const attribute = this.#attributeName!
 
     await record.refresh()
 
@@ -57,7 +64,7 @@ export default class BaseConverter implements Base {
     const data: any = {}
 
     const variant = await attachment.createVariant(this.#key, this.#input)
-    
+
     data[attribute] = JSON.stringify(attachment.toObject())
 
     const trx = await db.transaction()
@@ -66,12 +73,8 @@ export default class BaseConverter implements Base {
     trx.after('rollback', () => attachmentManager.delete(variant))
 
     try {
-      await trx
-        .query()
-        .from(Model.table)
-        .where('id', id)
-        .update(data)
-    
+      await trx.query().from(Model.table).where('id', id).update(data)
+
       return await trx.commit()
     } catch (error) {
       return await trx.rollback()

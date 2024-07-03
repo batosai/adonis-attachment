@@ -1,5 +1,5 @@
 export { configure } from './configure.js'
-export { Attachment } from './services/attachment_service.js'
+export { Attachment } from './src/attachments/attachment.js'
 export { attachment } from './src/decorators/attachment.js'
 export { defineConfig } from './src/define_config.js'
 export { Attachmentable } from './src/mixins/attachmentable.js'

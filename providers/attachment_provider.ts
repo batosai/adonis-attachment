@@ -8,6 +8,7 @@
 import type { ApplicationService } from '@adonisjs/core/types'
 import type { AttachmentManager } from '../src/attachment_manager.js'
 import type { ResolvedAttachmentConfig } from '../src/types/config.js'
+
 import { configProvider } from '@adonisjs/core'
 import { RuntimeException } from '@poppinss/utils'
 
@@ -27,7 +28,10 @@ export default class AttachmentProvider {
       const { AttachmentManager } = await import('../src/attachment_manager.js')
 
       const attachmentConfig = this.app.config.get<ResolvedAttachmentConfig>('attachment')
-      const config = await configProvider.resolve<ResolvedAttachmentConfig>(this.app, attachmentConfig)
+      const config = await configProvider.resolve<ResolvedAttachmentConfig>(
+        this.app,
+        attachmentConfig
+      )
       const logger = await this.app.container.make('logger')
 
       if (!config) {
@@ -36,7 +40,8 @@ export default class AttachmentProvider {
         )
       }
 
-      this.#manager = new AttachmentManager(config, logger, this.app)
+      // this.#manager = new AttachmentManager(config, logger, this.app)
+      this.#manager = new AttachmentManager(config, logger)
 
       return this.#manager
     })

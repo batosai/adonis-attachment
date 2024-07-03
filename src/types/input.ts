@@ -24,5 +24,3 @@ export type Exif = {
 }
 
 export type Input = Buffer | string
-  
-  

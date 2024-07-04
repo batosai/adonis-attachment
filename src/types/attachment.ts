@@ -31,6 +31,8 @@ export type Attachment = AttachmentBase & {
 
   setOptions(options: AttachmentOptions): Attachment
   createVariant(key: string, input: Input): Promise<Variant>
+  getVariant(variantName: string): Variant | undefined
+  getUrl(variantName?: string): string | undefined
   toObject(): AttachmentAttributes
 }
 
@@ -38,6 +40,7 @@ export type Variant = AttachmentBase & {
   key: string
   folder: string
 
+  getUrl(): string | undefined
   toObject(): VariantAttributes
 }
 

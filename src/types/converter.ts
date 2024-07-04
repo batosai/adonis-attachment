@@ -9,24 +9,18 @@ import type { Input } from './input.js'
 import type { ModelWithAttachment } from './mixin.js'
 
 export type Converter = {
-  input?: Input
-  options?: Object
-  record?: ModelWithAttachment
-  attributeName?: string
-
-  initialize(attributes?: ConverterInitializeAttributes): void
-  handle(attributes: ConverterAttributes): Promise<Input | undefined>
-  save(): void
+  options?: ConverterOptions
+  handle?: (attributes: ConverterAttributes) => Promise<Input | undefined>
 }
 
 export type ConverterInitializeAttributes = {
   record: ModelWithAttachment
   attributeName: string
   key: string
+  converter: Converter
 }
 
 export type ConverterAttributes = {
-  key: string
   input: Input
   options: ConverterOptions
 }

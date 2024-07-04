@@ -61,6 +61,23 @@ export class Attachment extends AttachmentBase implements AttachmentInterface {
     return variant
   }
 
+  getVariant(variantName: string) {
+    return this.variants?.find((v) => v.key === variantName)
+  }
+
+  getUrl(variantName?: string) {
+    if (variantName) {
+      const variant = this.getVariant(variantName)
+      if (variant) {
+        return variant.getUrl()
+      }
+    }
+
+    if (this.path) {
+      return path.join(path.sep, this.path)
+    }
+  }
+
   async beforeSave() {
     this.folder = this.options!.folder!
     const outputPath = path.join(this.folder, this.name)

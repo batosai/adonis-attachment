@@ -24,6 +24,12 @@ export class Variant extends AttachmentBase implements VariantInterface {
     this.path = path.join(this.folder, this.name)
   }
 
+  getUrl() {
+    if (this.path) {
+      return path.join(path.sep, this.path)
+    }
+  }
+
   toObject(): VariantAttributes {
     return {
       key: this.key,

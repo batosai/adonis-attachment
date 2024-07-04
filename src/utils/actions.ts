@@ -10,6 +10,7 @@ import type { ModelWithAttachment } from '../types/mixin.js'
 
 import attachmentManager from '../../services/main.js'
 import { getOptions } from './helpers.js'
+import { ConverterManager } from '../converter_manager.js'
 
 /**
  * During commit, we should cleanup the old detached files
@@ -95,11 +96,13 @@ export async function generateVariants(modelInstance: ModelWithAttachment, attri
       const converter = await attachmentManager.getConverter(option)
 
       if (attachment && converter) {
-        converter.initialize({
-          record: modelInstance, // TODO ne pas donner l'instance
+        const converterManager = new ConverterManager({
+          record: modelInstance,
           attributeName,
           key: option,
+          converter,
         })
+        converterManager.save()
       }
     })
   }

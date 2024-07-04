@@ -6,14 +6,15 @@ This package is currently development and will replace [attachment-advanced](htt
 
 - [x] attachment file by file system
 - [x] save meta data
-- [ ] variantes
-  - [ ] images
+- [x] variantes
+  - [x] images
   - [ ] documents
   - [ ] videos
 - [ ] command regenerate
 - [ ] adonis-drive/flydrive
 - [ ] jobs queue
 - [ ] edge component
+- [ ] serialize
 
 ### File sytem
 
@@ -41,9 +42,9 @@ Regenerate variantes files
 
 Use drive for private file and cloud services
 
-### Job
+### Jobs queue
 
-Couple with a job package
+Couple with a job queue (recommended, optional)
 
 ## Setup
 

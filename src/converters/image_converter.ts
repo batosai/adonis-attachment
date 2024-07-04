@@ -4,6 +4,7 @@
  * @license MIT
  * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
  */
+
 import type { ConverterAttributes } from '../types/converter.js'
 
 import logger from '@adonisjs/core/services/logger'

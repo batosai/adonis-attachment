@@ -165,7 +165,7 @@ user.avatar.getUrl('thumbnail')
 ```
 
 ```edge
-  <img src="{{ user.avatar.getUrl('thumbnail') }}" loading="lazy" alt="" />
+<img src="{{ user.avatar.getUrl('thumbnail') }}" loading="lazy" alt="" />
 ```
 
 ## Configuration
@@ -224,3 +224,7 @@ Variant image is generate by [sharp module](https://sharp.pixelplumbing.com)
 Options resize is `number` or `object`(options) details in documentation : [sharp api resize](https://sharp.pixelplumbing.com/api-resize)
 
 Options format is `string` or `array` [ format,  options ] details in documentation : [sharp api outpout](https://sharp.pixelplumbing.com/api-output#toformat)
+
+```sh
+npm install sharp
+```

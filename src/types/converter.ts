@@ -96,7 +96,7 @@ type webp = {
 }
 
 export type ConverterOptions = {
-  resize:
+  resize?:
     | number
     | {
         width?: number

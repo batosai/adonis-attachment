@@ -1,0 +1,41 @@
+{{{
+  exports({ to: app.configPath('attachment.ts') })
+}}}
+import { defineConfig } from '@jrmc/adonis-attachment'
+import app from '@adonisjs/core/services/app'
+
+export default defineConfig({
+  basePath: app.publicPath(),
+  converters: [
+    {
+      key: 'thumbnail',
+      converter: () => import('@jrmc/adonis-attachment/converters/image_converter'),
+      options: {
+        resize: 300,
+        format: 'webp',
+      }
+    },
+    {
+      key: 'medium',
+      converter: () => import('@jrmc/adonis-attachment/converters/image_converter'),
+      options: {
+        resize: 600,
+        format: 'jpeg',
+      }
+    },
+    {
+      key: 'large',
+      converter: () => import('@jrmc/adonis-attachment/converters/image_converter'),
+      options: {
+        resize: 1024,
+        format: {
+          format: 'jpeg',
+          options: {
+            quality: 80
+          }
+        }
+
+      }
+    },
+  ]
+})

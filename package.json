@@ -36,8 +36,10 @@
   ],
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "build": "tsc",
+    "build": "npm run clean && tsc && npm run copyfiles",
     "prepublishOnly": "npm run build",
+    "clean": "del-cli build",
+    "copyfiles": "copyfiles \"stubs/**/**/*.stub\" build",
     "format": "prettier --write ."
   },
   "exports": {
@@ -51,6 +53,7 @@
     "./attachment_provider": "./build/providers/attachment_provider.js"
   },
   "dependencies": {
+    "@poppinss/utils": "^6.7.3",
     "exifreader": "^4.23.3",
     "file-type": "^19.0.0"
   },
@@ -61,9 +64,14 @@
     "@adonisjs/prettier-config": "^1.3.0",
     "@adonisjs/tsconfig": "^1.3.0",
     "@types/node": "^20.14.2",
-    "luxon": "^3.4.4",
+    "copyfiles": "^2.4.1",
+    "del-cli": "^5.1.0",
     "prettier": "^3.3.1",
     "typescript": "^5.4.5"
+  },
+  "peerDependencies": {
+    "@adonisjs/core": "^6.10.1",
+    "@adonisjs/lucid": "^20.6.0"
   },
   "prettier": "@adonisjs/prettier-config",
   "publishConfig": {

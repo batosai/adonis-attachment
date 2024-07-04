@@ -30,7 +30,7 @@ Upload file in public folder.
 - mime type
 - gps
 
-### Variables
+### Variants
 
 Configure differents images sizes and formats
 
@@ -107,18 +107,18 @@ Next, in the model, import the `attachment` decorator, `Attachmentable` mixin an
 import { BaseModel } from '@adonisjs/lucid/orm'
 import { compose } from '@adonisjs/core/helpers'
 import { attachment, Attachmentable } from '@jrmc/adonis-attachment'
-import type { Attachment } from '@jrmc/adonis-attachment/types'
+import type { Attachment } from '@jrmc/adonis-attachment/types/attachment'
 
 class User extends compose(BaseModel, Attachmentable) {
   @attachment()
-  public avatar: Attachment
+  declare avatar: Attachment
 }
 ```
 
 Now you can create an attachment from the user uploaded file as follows.
 
 ```ts
-import attachmentManager from '@jrmc/adonis-attachment/services/main'
+import { attachmentManager } from '@jrmc/adonis-attachment'
 
 class UsersController {
   public store({ request }: HttpContext) {
@@ -138,7 +138,89 @@ You can also store files inside the subfolder by defining the `folder` property 
 
 ```ts
 class User extends BaseModel {
-  @attachment({ folder: 'avatars' })
-  public avatar: Attachment
+  @attachment({ folder: 'uploads/avatars' })
+  declare avatar: Attachment
 }
 ```
+
+## Specifying variants
+
+It is possible to limit the variants on an attachment
+
+```ts
+class User extends BaseModel {
+  @attachment({
+    variants: ['thumbnail', 'medium', 'large']
+  })
+  declare avatar: Attachment
+}
+```
+
+## URLs
+
+```ts
+user.avatar.getUrl()
+user.avatar.getUrl('thumbnail')
+// or await user.avatar.getVariant('thumbnail').getUrl()
+```
+
+```edge
+  <img src="{{ user.avatar.getUrl('thumbnail') }}" loading="lazy" alt="" />
+```
+
+## Configuration
+
+Configuration for variants files (config/attachment.ts)
+
+```ts
+import { defineConfig } from '@jrmc/adonis-attachment'
+import app from '@adonisjs/core/services/app'
+import sharp from 'sharp'
+
+export default defineConfig({
+  basePath: app.publicPath(),
+  converters: [
+    {
+      key: 'thumbnail',
+      converter: () => import('@jrmc/adonis-attachment/converters/image_converter'),
+      options: {
+        resize: 300,
+        format: 'webp',
+      }
+    },
+    {
+      key: 'medium',
+      converter: () => import('@jrmc/adonis-attachment/converters/image_converter'),
+      options: {
+        format: 'jpeg',
+        resize: { // https://sharp.pixelplumbing.com/api-resize
+          width: 400,
+          height: 400,
+          fit: sharp.fit.cover,
+          position: 'top'
+        },
+      }
+    },
+    {
+      key: 'large',
+      converter: () => import('@jrmc/adonis-attachment/converters/image_converter'),
+      options: {
+        resize: 1024,
+        format: {
+          format: 'png',
+          options: {
+            quality: 80
+          }
+        }
+
+      }
+    },
+  ]
+})
+```
+
+Variant image is generate by [sharp module](https://sharp.pixelplumbing.com)
+
+Options resize is `number` or `object`(options) details in documentation : [sharp api resize](https://sharp.pixelplumbing.com/api-resize)
+
+Options format is `string` or `array` [ format,  options ] details in documentation : [sharp api outpout](https://sharp.pixelplumbing.com/api-output#toformat)

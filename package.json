@@ -1,6 +1,6 @@
 {
   "name": "@jrmc/adonis-attachment",
-  "version": "1.0.0-3",
+  "version": "1.0.0",
   "type": "module",
   "description": "Turn any field on your Lucid model to an attachment data type",
   "engines": {
@@ -9,7 +9,7 @@
   "main": "build/index.js",
   "repository": {
     "type": "git",
-    "url": "https://github.com/batosai/attachment.git"
+    "url": "https://github.com/batosai/adonis-attachment.git"
   },
   "author": "Jeremy Chaufourier jeremy@chaufourier.fr",
   "license": "MIT",
@@ -76,6 +76,6 @@
   "prettier": "@adonisjs/prettier-config",
   "publishConfig": {
     "access": "public",
-    "tag": "beta"
+    "tag": "latest"
   }
 }

@@ -81,3 +81,7 @@ export function cleanObject(obj: any) {
 
   return cleanedObj
 }
+
+export function clone(object: Object) {
+  return JSON.parse(JSON.stringify(object))
+}

@@ -102,19 +102,32 @@ export class AttachmentManager {
   async delete(attachment: Attachment | Variant) {
     if (attachment.path) {
       try {
-        const filePath = path.join(this.#config.basePath, attachment.path!)
-        await fs.access(filePath)
-        await fs.unlink(filePath)
+        const filePath = path.join(this.#config.basePath, attachment.path)
+
+        try {
+          await fs.access(filePath)
+          await fs.unlink(filePath)
+        } catch (accessError) {
+          if (accessError.code === 'ENOENT') {
+            this.#logger.warn(`File not found: ${filePath}`)
+          } else {
+            throw accessError
+          }
+        }
 
         if (attachment instanceof Attachment) {
           if (attachment.variants) {
-            await Promise.all(attachment.variants.map((v) => this.delete(v)))
-            const filePath = path.join(this.#config.basePath, attachment.variants[0].folder, '/')
-            await fs.rm(filePath, { recursive: true, force: true })
+            // await Promise.all(attachment.variants.map((v) => this.delete(v)))
+            const variantPath = path.join(this.#config.basePath, attachment.variants[0].folder, path.sep)
+            try {
+              await fs.rm(variantPath, { recursive: true, force: true })
+            } catch (rmError) {
+              this.#logger.error(`Failed to remove variants folder: ${rmError.message}`)
+            }
           }
         }
       } catch (error) {
-        this.#logger.error(error)
+        this.#logger.error(error);
       }
     }
   }

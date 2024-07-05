@@ -223,7 +223,7 @@ Variant image is generate by [sharp module](https://sharp.pixelplumbing.com)
 
 Options resize is `number` or `object`(options) details in documentation : [sharp api resize](https://sharp.pixelplumbing.com/api-resize)
 
-Options format is `string` or `array` [ format,  options ] details in documentation : [sharp api outpout](https://sharp.pixelplumbing.com/api-output#toformat)
+Options format is `string` or `object` [ format,  options ] details in documentation : [sharp api outpout](https://sharp.pixelplumbing.com/api-output#toformat)
 
 ```sh
 npm install sharp

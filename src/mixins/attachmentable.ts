@@ -11,18 +11,23 @@ import type { AttributeOfModelWithAttachment } from '../types/mixin.js'
 
 import { beforeSave, afterSave, beforeDelete } from '@adonisjs/lucid/orm'
 import { persistAttachment, commit, rollback, generateVariants } from '../utils/actions.js'
-import { getAttachmentAttributeNames } from '../utils/helpers.js'
+import { clone, getAttachmentAttributeNames } from '../utils/helpers.js'
 import { defaultStateAttributeMixin } from '../utils/default_values.js'
 
 export const Attachmentable = <Model extends NormalizeConstructor<typeof BaseModel>>(
   superclass: Model
 ) => {
   class ModelWithAttachment extends superclass {
-    $attachments: AttributeOfModelWithAttachment = defaultStateAttributeMixin
+    $attachments: AttributeOfModelWithAttachment = clone(defaultStateAttributeMixin)
 
     @beforeSave()
     static async beforeSaveHook(modelInstance: ModelWithAttachment) {
       const attachmentAttributeNames = getAttachmentAttributeNames(modelInstance)
+
+      /**
+       * Empty previous $attachments
+       */
+      modelInstance.$attachments = clone(defaultStateAttributeMixin)
 
       /**
        * Set attributes Attachment type modified

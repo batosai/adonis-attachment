@@ -174,7 +174,7 @@ user.avatar.getUrl('thumbnail')
 user.avatar.toJSON()
 ```
 
-```vuejs
+```html
 <img :src="user.avatar.thumbnail" loading="lazy" alt="" />
 ```
 

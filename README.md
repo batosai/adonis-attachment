@@ -2,6 +2,8 @@
 
 This package is currently development and will replace [attachment-advanced](https://github.com/batosai/attachment-advanced) for AdonisJS 6.
 
+Project sample : [adonis-starter-kit](https://github.com/batosai/adonis-starter-kit)
+
 ## Roadmap
 
 - [x] attachment file by file system

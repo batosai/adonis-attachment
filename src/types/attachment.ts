@@ -21,7 +21,7 @@ export type AttachmentBase = {
   beforeSave(): Promise<void>
 
   toObject(): AttachmentBaseAttributes
-  toJSON(): AttachmentBaseAttributes & { url?: string }
+  toJSON(): Object
 }
 
 export type Attachment = AttachmentBase & {

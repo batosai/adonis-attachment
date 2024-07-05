@@ -54,7 +54,7 @@ export class AttachmentBase implements AttachmentBaseInterface {
     }
   }
 
-  toJSON(): AttachmentBaseAttributes & { url?: string } {
+  toJSON(): Object {
     return {
       // ...(this.url ? { url: this.url } : {}),
       ...this.toObject(),

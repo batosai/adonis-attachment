@@ -14,7 +14,7 @@ This package is currently development and will replace [attachment-advanced](htt
 - [ ] adonis-drive/flydrive
 - [ ] jobs queue
 - [ ] edge component
-- [ ] serialize
+- [x] serialize
 
 ### File sytem
 
@@ -166,6 +166,16 @@ user.avatar.getUrl('thumbnail')
 
 ```edge
 <img src="{{ user.avatar.getUrl('thumbnail') }}" loading="lazy" alt="" />
+```
+
+### by serialize
+
+```ts
+user.avatar.toJSON()
+```
+
+```vuejs
+<img :src="user.avatar.thumbnail" loading="lazy" alt="" />
 ```
 
 ## Configuration

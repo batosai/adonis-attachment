@@ -99,4 +99,21 @@ export class Attachment extends AttachmentBase implements AttachmentInterface {
       variants,
     }
   }
+
+  toJSON(): Object {
+    const data: any = {
+      // ...(this.url ? { url: this.url } : {}),
+      // ...this.toObject(),
+      name: this.name,
+      originalName: this.originalName,
+      size: this.size,
+      extname: this.extname,
+      mimetype: this.mimeType,
+      meta: this.meta,
+    }
+
+    this.variants?.forEach((v) => data[v.key] = v.getUrl())
+
+    return data
+  }
 }

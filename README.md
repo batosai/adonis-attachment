@@ -34,15 +34,15 @@ Upload file in public folder.
 
 Configure differents images sizes and formats
 
-### Regenerate
+### Regenerate (coming soon)
 
 Regenerate variantes files
 
-### Drive
+### Drive (coming soon)
 
 Use drive for private file and cloud services
 
-### Jobs queue
+### Jobs queue (coming soon)
 
 Couple with a job queue (recommended, optional)
 

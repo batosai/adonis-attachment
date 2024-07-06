@@ -110,9 +110,10 @@ export class Attachment extends AttachmentBase implements AttachmentInterface {
       extname: this.extname,
       mimetype: this.mimeType,
       meta: this.meta,
+      url: this.getUrl()
     }
 
-    this.variants?.forEach((v) => data[v.key] = v.getUrl())
+    this.variants?.forEach((v) => data[v.key] = this.getUrl(v.key))
 
     return data
   }

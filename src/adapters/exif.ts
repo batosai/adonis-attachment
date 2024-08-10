@@ -5,12 +5,45 @@
  * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
  */
 
-import type { Exif } from '../types/input.js'
+import type { Exif, Input } from '../types/input.js'
 
+import fs from 'node:fs/promises'
 import ExifReader from 'exifreader'
+import logger from '@adonisjs/core/services/logger'
+import { fileTypeFromBuffer, fileTypeFromFile } from 'file-type'
 import { cleanObject } from '../utils/helpers.js'
 
-export const exif = async (buffer: Buffer): Promise<Exif> => {
+export const exif = async (input: Input): Promise<Exif|undefined> => {
+
+  let fileType
+  let buffer
+
+  if (Buffer.isBuffer(input)) {
+    fileType = await fileTypeFromBuffer(input)
+
+    if (fileType?.mime.includes('image')) {
+      buffer = input
+    }
+  } else {
+    fileType = await fileTypeFromFile(input)
+
+    if (fileType?.mime.includes('image')) {
+      buffer = await fs.readFile(input)
+    }
+  }
+
+  if (fileType?.mime.includes('video')) {
+    return videoExif(input)
+  }
+
+  if (buffer && fileType?.mime.includes('image')) {
+    return imageExif(buffer)
+  }
+
+  return undefined
+}
+
+async function imageExif(buffer: Buffer) {
   const tags = await ExifReader.load(buffer, { expanded: true })
   const data: Exif = {}
 
@@ -83,4 +116,26 @@ export const exif = async (buffer: Buffer): Promise<Exif> => {
   }
 
   return cleanObject(data)
+}
+
+
+async function videoExif(input: Input) {
+  return new Promise<Exif|undefined>(async (resolve) => {
+    const module = 'fluent-ffmpeg'
+    const result = await import(module)
+    const ffmpeg = result.default
+
+    ffmpeg(input).ffprobe(0, (err: unknown, data: any) => {
+      if (err) {
+        logger.error({ err })
+      }
+
+      resolve({
+        dimension: {
+          width: data.streams[0].width,
+          height: data.streams[0].height,
+        }
+      })
+    })
+  })
 }

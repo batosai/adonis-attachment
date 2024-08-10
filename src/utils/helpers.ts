@@ -9,7 +9,6 @@ import type { AttachmentOptions } from '../types/attachment.js'
 import type { Input } from '../types/input.js'
 import type { ModelWithAttachment } from '../types/mixin.js'
 
-import fs from 'node:fs/promises'
 import { cuid } from '@adonisjs/core/helpers'
 import string from '@adonisjs/core/helpers/string'
 import { fileTypeFromBuffer, fileTypeFromFile } from 'file-type'
@@ -32,18 +31,13 @@ export function getOptions(
 
 export async function createAttachmentAttributes(input: Input, name?: string) {
   let fileType
-  let meta
   if (Buffer.isBuffer(input)) {
     fileType = await fileTypeFromBuffer(input)
-    meta = await exif(input)
   } else {
     fileType = await fileTypeFromFile(input)
-
-    if (fileType?.mime.includes('image')) {
-      const buffer = await fs.readFile(input)
-      meta = await exif(buffer)
-    }
   }
+
+  const meta = await exif(input)
 
   if (name) {
     name = string.slug(name)
@@ -56,7 +50,7 @@ export async function createAttachmentAttributes(input: Input, name?: string) {
     extname: fileType!.ext,
     mimeType: fileType!.mime,
     size: input.length,
-    meta,
+    meta: meta,
   }
 }
 

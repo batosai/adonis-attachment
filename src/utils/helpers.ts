@@ -38,8 +38,11 @@ export async function createAttachmentAttributes(input: Input, name?: string) {
     meta = await exif(input)
   } else {
     fileType = await fileTypeFromFile(input)
-    const buffer = await fs.readFile(input)
-    meta = await exif(buffer)
+
+    if (fileType?.mime.includes('image')) {
+      const buffer = await fs.readFile(input)
+      meta = await exif(buffer)
+    }
   }
 
   if (name) {

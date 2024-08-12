@@ -250,6 +250,7 @@ npm install sharp
 ```
 
 Variants thumbnail videos are generate by [fluent-ffmpeg](https://www.npmjs.com/package/fluent-ffmpeg)
+
 By default, image format is PNG and size is video size. `options` attribute use image_converter (and sharp)
 
 ```sh

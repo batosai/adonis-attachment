@@ -10,7 +10,7 @@ import type { ConverterAttributes } from '../types/converter.js'
 import { fileTypeFromBuffer, fileTypeFromFile } from 'file-type'
 import Converter from './converter.js'
 import ImageConverter from './image_converter.js'
-import VideoConverter from './video_converter.js'
+import VideoThumnailConverter from './video_thumbnail_converter.js'
 
 export default class AutodetectConverter extends Converter {
 
@@ -28,7 +28,7 @@ export default class AutodetectConverter extends Converter {
     if (fileType?.mime.includes('image')) {
       converter = new ImageConverter()
     } else if (fileType?.mime.includes('video')) {
-      converter = new VideoConverter()
+      converter = new VideoThumnailConverter()
     }
 
     if (converter) {

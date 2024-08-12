@@ -15,7 +15,7 @@ import Converter from './converter.js'
 import ImageConverter from './image_converter.js'
 import { Input } from '../types/input.js'
 
-export default class VideoConverter extends Converter {
+export default class VideoThumbnailConvert extends Converter {
 
   async handle({ input, options }: ConverterAttributes) {
     let ffmpeg

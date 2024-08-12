@@ -10,8 +10,8 @@ Project sample : [adonis-starter-kit](https://github.com/batosai/adonis-starter-
 - [x] save meta data
 - [x] variantes
   - [x] images
-  - [ ] documents
-  - [ ] videos
+  - [ ] documents thumbnail
+  - [x] videos thumbnail
 - [ ] command regenerate
 - [ ] adonis-drive/flydrive
 - [ ] jobs queue
@@ -227,11 +227,19 @@ export default defineConfig({
 
       }
     },
+    {
+      key: 'preview',
+      converter: () => import('@jrmc/adonis-attachment/converters/video_thumbnail_converter'),
+      options: {
+        format: 'jpeg',
+        resize: 720
+      }
+    },
   ]
 })
 ```
 
-Variant image is generate by [sharp module](https://sharp.pixelplumbing.com)
+Variants images are generates by [sharp module](https://sharp.pixelplumbing.com)
 
 Options resize is `number` or `object`(options) details in documentation : [sharp api resize](https://sharp.pixelplumbing.com/api-resize)
 
@@ -239,4 +247,11 @@ Options format is `string` or `object` [ format,  options ] details in documenta
 
 ```sh
 npm install sharp
+```
+
+Variants thumbnail videos are generate by [fluent-ffmpeg](https://www.npmjs.com/package/fluent-ffmpeg)
+By default, image format is PNG and size is video size. `options` attribute use image_converter (and sharp)
+
+```sh
+npm install fluent-ffmpeg
 ```

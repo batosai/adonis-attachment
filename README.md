@@ -4,6 +4,8 @@ This package is currently development and will replace [attachment-advanced](htt
 
 Project sample : [adonis-starter-kit](https://github.com/batosai/adonis-starter-kit)
 
+🔥 New [beta version](https://github.com/batosai/adonis-attachment/tree/1.2.0) for @adonisjs/drive support.
+
 ## Roadmap
 
 - [x] attachment file by file system

@@ -5,8 +5,8 @@
  * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
  */
 
+import type { DriveService, SignedURLOptions } from '@adonisjs/drive/types'
 import type {
-  AttachmentOptions,
   AttachmentAttributes,
   Attachment as AttachmentInterface,
 } from '../types/attachment.js'
@@ -16,32 +16,24 @@ import path from 'node:path'
 import { AttachmentBase } from './attachment_base.js'
 import { Variant } from './variant_attachment.js'
 import { createAttachmentAttributes } from '../utils/helpers.js'
-import { defaultOptionsDecorator } from '../utils/default_values.js'
 
 export class Attachment extends AttachmentBase implements AttachmentInterface {
   originalName: string
-  options?: AttachmentOptions
   variants?: Variant[]
 
-  constructor(attributes: AttachmentAttributes, input?: Input) {
-    super(attributes, input)
+  constructor(drive: DriveService, attributes: AttachmentAttributes, input?: Input) {
+    super(drive, attributes, input)
 
     this.originalName = attributes.originalName
 
-    this.options = defaultOptionsDecorator
-
     if (attributes.variants) {
       this.variants = []
-      attributes.variants.forEach((v) => this.variants!.push(new Variant(v)))
-    }
-  }
 
-  setOptions(options: AttachmentOptions) {
-    this.options = {
-      ...this.options,
-      ...options,
+      attributes.variants.forEach((v) => {
+        const variant = new Variant(this.drive, v)
+        this.variants!.push(variant)
+      })
     }
-    return this
   }
 
   async createVariant(key: string, input: Input): Promise<Variant> {
@@ -51,7 +43,8 @@ export class Attachment extends AttachmentBase implements AttachmentInterface {
       folder: path.join(this.options!.folder!, 'variants', this.name),
     }
 
-    const variant = new Variant(attributes, input)
+    const variant = new Variant(this.drive, attributes, input)
+    variant.setOptions(this.options)
 
     if (this.variants === undefined) {
       this.variants = []
@@ -69,13 +62,33 @@ export class Attachment extends AttachmentBase implements AttachmentInterface {
     if (variantName) {
       const variant = this.getVariant(variantName)
       if (variant) {
+        variant.setOptions(this.options)
         return variant.getUrl()
       }
     }
 
-    if (this.path) {
-      return path.join(path.sep, this.path)
+    return super.getUrl()
+  }
+
+  getSignedUrl(variantNameOrOptions?: string | SignedURLOptions, signedUrlOptions?: SignedURLOptions) {
+    let variantName: string | undefined
+    let options: SignedURLOptions | undefined = signedUrlOptions
+
+    if (typeof variantNameOrOptions === 'string') {
+      variantName = variantNameOrOptions
+    } else if (variantNameOrOptions && !signedUrlOptions) {
+      options = variantNameOrOptions
     }
+
+    if (variantName) {
+      const variant = this.getVariant(variantName)
+      if (variant) {
+        variant.setOptions(this.options)
+        return variant.getSignedUrl(options)
+      }
+    }
+
+    return super.getSignedUrl(options)
   }
 
   async beforeSave() {
@@ -100,20 +113,28 @@ export class Attachment extends AttachmentBase implements AttachmentInterface {
     }
   }
 
-  toJSON(): Object {
+  async toJSON(): Promise<Object> {
     const data: any = {
-      // ...(this.url ? { url: this.url } : {}),
-      // ...this.toObject(),
       name: this.name,
       originalName: this.originalName,
       size: this.size,
       extname: this.extname,
       mimetype: this.mimeType,
       meta: this.meta,
-      url: this.getUrl()
+      url: await this.getUrl(),
+      signedUrl: await this.getSignedUrl(),
     }
 
-    this.variants?.forEach((v) => data[v.key] = this.getUrl(v.key))
+    if (this.variants) {
+      await Promise.allSettled(
+        this.variants!.map(async (v) => {
+          data[v.key] = {
+            url: await this.getUrl(v.key),
+            signedUrl: await this.getSignedUrl(v.key)
+          }
+        })
+      )
+    }
 
     return data
   }

@@ -18,7 +18,6 @@ type ConverterConfig = {
 }
 
 export type AttachmentConfig = {
-  basePath: string
   converters?: ConverterConfig[]
 }
 
@@ -28,6 +27,5 @@ export type ResolvedConverter = {
 }
 
 export type ResolvedAttachmentConfig = {
-  basePath: string
   converters?: ResolvedConverter[]
 }

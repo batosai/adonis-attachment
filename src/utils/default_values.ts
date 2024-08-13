@@ -6,7 +6,7 @@
  */
 
 export const defaultOptionsDecorator = {
-  disk: 'local',
+  disk: undefined,
   folder: 'uploads',
   variants: [],
 }

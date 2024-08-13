@@ -6,13 +6,13 @@
  */
 
 import type { LucidModel } from '@adonisjs/lucid/types/model'
-import type { AttachmentOptions } from '../types/attachment.js'
+import type { LucidOptions } from '../types/attachment.js'
 
 import attachmentManager from '../../services/main.js'
 import { optionsSym } from '../utils/symbols.js'
 import { defaultOptionsDecorator } from '../utils/default_values.js'
 
-export const attachment = (options?: AttachmentOptions) => {
+export const attachment = (options?: LucidOptions) => {
   return function (target: any, attributeName: string) {
     if (!target[optionsSym]) {
       target[optionsSym] = {}
@@ -38,7 +38,7 @@ export const attachment = (options?: AttachmentOptions) => {
         }
       },
       prepare: (value) => (value ? JSON.stringify(value.toObject()) : null),
-      serialize: (value) => (value ? value.toJSON() : null),
+      serialize: async (value) => (value ? await value.toJSON() : null),
       ...columnOptions,
     })
   }

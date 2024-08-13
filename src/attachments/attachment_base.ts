@@ -5,15 +5,20 @@
  * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
  */
 
+import type { DriveService, SignedURLOptions } from '@adonisjs/drive/types'
 import type {
+  LucidOptions,
   AttachmentBaseAttributes,
   AttachmentBase as AttachmentBaseInterface,
 } from '../types/attachment.js'
 import type { Exif, Input } from '../types/input.js'
 
 import { cuid } from '@adonisjs/core/helpers'
+import { defaultOptionsDecorator } from '../utils/default_values.js'
 
 export class AttachmentBase implements AttachmentBaseInterface {
+  drive: DriveService
+
   input?: Input
 
   name: string
@@ -24,7 +29,9 @@ export class AttachmentBase implements AttachmentBaseInterface {
   folder?: string
   path?: string
 
-  constructor(attributes: AttachmentBaseAttributes, input?: Input) {
+  options?: LucidOptions
+
+  constructor(drive: DriveService, attributes: AttachmentBaseAttributes, input?: Input) {
     this.input = input
 
     this.size = attributes.size
@@ -34,11 +41,35 @@ export class AttachmentBase implements AttachmentBaseInterface {
     this.folder = attributes.folder
     this.path = attributes.path
 
+    this.options = defaultOptionsDecorator
+
+    this.drive = drive
+
     if (attributes.name) {
       this.name = attributes.name
     } else {
       this.name = `${cuid()}.${this.extname}`
     }
+  }
+
+  getDisk() {
+    return this.drive.use(this.options?.disk)
+  }
+
+  getUrl() {
+    return this.getDisk().getUrl(this.path!)
+  }
+
+  getSignedUrl(signedUrlOptions?: SignedURLOptions) {
+    return this.getDisk().getSignedUrl(this.path!, signedUrlOptions)
+  }
+
+  setOptions(options?: LucidOptions) {
+    this.options = {
+      ...this.options,
+      ...options,
+    }
+    return this
   }
 
   async beforeSave() {}
@@ -54,10 +85,11 @@ export class AttachmentBase implements AttachmentBaseInterface {
     }
   }
 
-  toJSON(): Object {
+  async toJSON(): Promise<Object> {
     return {
-      // ...(this.url ? { url: this.url } : {}),
       ...this.toObject(),
+      url: await this.getUrl(),
+      signedUrl: await this.getSignedUrl(),
     }
   }
 }

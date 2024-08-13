@@ -13,10 +13,12 @@ Project sample : [adonis-starter-kit](https://github.com/batosai/adonis-starter-
   - [ ] documents thumbnail
   - [x] videos thumbnail
 - [ ] command regenerate
-- [ ] adonis-drive/flydrive
+- [x] adonis-drive/flydrive
 - [ ] jobs queue
 - [ ] edge component
 - [x] serialize
+
+⚠️ Breaking change [1.2.0 version](https://github.com/batosai/adonis-attachment/blob/1.2.0/CHANGELOG.md), include [@adonisjs/drive](https://docs.adonisjs.com/guides/digging-deeper/drive)
 
 ### File sytem
 
@@ -40,9 +42,9 @@ Configure differents images sizes and formats
 
 Regenerate variantes files
 
-### Drive (coming soon)
+### Drive
 
-Use drive for private file and cloud services
+Use [@adonisjs/drive](https://docs.adonisjs.com/guides/digging-deeper/drive) for private file and cloud services
 
 ### Jobs queue (coming soon)
 
@@ -53,13 +55,13 @@ Couple with a job queue (recommended, optional)
 Install and configure the package:
 
 ```sh
-node ace add @jrmc/adonis-attachment
+node ace add @jrmc/adonis-attachment@beta
 ```
 
 Or:
 
 ```sh
-npm i @jrmc/adonis-attachment
+npm i @jrmc/adonis-attachment@beta
 node ace configure @jrmc/adonis-attachment
 ```
 
@@ -161,23 +163,41 @@ class User extends BaseModel {
 ## URLs
 
 ```ts
-user.avatar.getUrl()
-user.avatar.getUrl('thumbnail')
+await user.avatar.getUrl()
+await user.avatar.getUrl('thumbnail')
 // or await user.avatar.getVariant('thumbnail').getUrl()
+
+await user.avatar.getSignedUrl()
+await user.avatar.getSignedUrl('thumbnail')
+// or await user.avatar.getVariant('thumbnail').getSignedUrl()
 ```
 
 ```edge
-<img src="{{ user.avatar.getUrl('thumbnail') }}" loading="lazy" alt="" />
+<img src="{{ await user.avatar.getUrl('thumbnail') }}" loading="lazy" alt="" />
+
+<img src="{{ await user.avatar.getSignedUrl() }}" loading="lazy" alt="" />
+<img src="{{ await user.avatar.getSignedUrl({
+  expiresIn: '30 mins',
+}) }}" loading="lazy" alt="" />
+
+<img src="{{ await user.avatar.getSignedUrl('thumbnail') }}" loading="lazy" alt="" />
+<img src="{{ await user.avatar.getSignedUrl('thumbnail', {
+  expiresIn: '30 mins',
+}) }}" loading="lazy" alt="" />
 ```
+
+getSignedUrl options params accepts `expiresIn`, `contentType` et `contentDisposition`. [More informations](https://flydrive.dev/docs/disk_api#getsignedurl)
+
 
 ### by serialize
 
 ```ts
-user.avatar.toJSON()
+await user.avatar.toJSON()
 ```
 
 ```html
-<img :src="user.avatar.thumbnail" loading="lazy" alt="" />
+<img :src="user.avatar.thumbnail.url" loading="lazy" alt="" />
+<img :src="user.avatar.thumbnail.signedUrl" loading="lazy" alt="" />
 ```
 
 ## Configuration
@@ -190,7 +210,6 @@ import app from '@adonisjs/core/services/app'
 import sharp from 'sharp'
 
 export default defineConfig({
-  basePath: app.publicPath(),
   converters: [
     {
       key: 'thumbnail',

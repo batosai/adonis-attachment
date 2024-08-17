@@ -16,10 +16,10 @@ hero:
 
 features:
   - title: Upload
-    details: Lorem ipsum dolor sit amet, consectetur adipiscing elit
+    details: Simplifying upload management.
   - title: Convert
-    details: Lorem ipsum dolor sit amet, consectetur adipiscing elit
+    details: Optimise, convert, crop image, thumbnail video etc.
   - title: Custom
-    details: Lorem ipsum dolor sit amet, consectetur adipiscing elit
+    details: Go further and create your own converter.
 ---
 

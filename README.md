@@ -206,7 +206,6 @@ Configuration for variants files (config/attachment.ts)
 
 ```ts
 import { defineConfig } from '@jrmc/adonis-attachment'
-import app from '@adonisjs/core/services/app'
 import sharp from 'sharp'
 
 export default defineConfig({

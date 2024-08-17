@@ -5,9 +5,14 @@
  * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
  */
 
+import type { DriveService } from '@adonisjs/drive/types'
 import type { Exif, Input } from './input.js'
+import type { Disk } from '@adonisjs/drive'
+import type { SignedURLOptions } from '@adonisjs/drive/types'
 
 export type AttachmentBase = {
+  drive: DriveService
+
   input?: Input
 
   name: string
@@ -18,21 +23,27 @@ export type AttachmentBase = {
   folder?: string
   path?: string
 
+  options?: LucidOptions
+
+  getDisk(): Disk
+  getUrl(): Promise<string>
+  getSignedUrl(signedUrlOptions?: SignedURLOptions): Promise<string>
+
+  setOptions(options?: LucidOptions): AttachmentBase
   beforeSave(): Promise<void>
 
   toObject(): AttachmentBaseAttributes
-  toJSON(): Object
+  toJSON(): Promise<Object>
 }
 
 export type Attachment = AttachmentBase & {
   originalName: string
-  options?: AttachmentOptions
   variants?: Variant[]
 
-  setOptions(options: AttachmentOptions): Attachment
   createVariant(key: string, input: Input): Promise<Variant>
   getVariant(variantName: string): Variant | undefined
-  getUrl(variantName?: string): string | undefined
+  getUrl(variantName?: string): Promise<string>
+  getSignedUrl(variantNameOrOptions?: string | SignedURLOptions, signedUrlOptions?: SignedURLOptions): Promise<string>
   toObject(): AttachmentAttributes
 }
 
@@ -40,11 +51,10 @@ export type Variant = AttachmentBase & {
   key: string
   folder: string
 
-  getUrl(): string | undefined
   toObject(): VariantAttributes
 }
 
-export type AttachmentOptions = {
+export type LucidOptions = {
   disk?: string
   folder?: string
   variants?: string[]

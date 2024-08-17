@@ -5,7 +5,7 @@
  * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
  */
 
-import type { AttachmentOptions } from '../types/attachment.js'
+import type { LucidOptions } from '../types/attachment.js'
 import type { Input } from '../types/input.js'
 import type { ModelWithAttachment } from '../types/mixin.js'
 
@@ -25,7 +25,7 @@ export function getAttachmentAttributeNames(modelInstance: ModelWithAttachment) 
 export function getOptions(
   modelInstance: ModelWithAttachment,
   attributeName: string
-): AttachmentOptions {
+): LucidOptions {
   return modelInstance.constructor.prototype[optionsSym]?.[attributeName]
 }
 

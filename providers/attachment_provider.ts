@@ -33,6 +33,7 @@ export default class AttachmentProvider {
         attachmentConfig
       )
       const logger = await this.app.container.make('logger')
+      const drive = await this.app.container.make('drive.manager')
 
       if (!config) {
         throw new RuntimeException(
@@ -40,8 +41,7 @@ export default class AttachmentProvider {
         )
       }
 
-      // this.#manager = new AttachmentManager(config, logger, this.app)
-      this.#manager = new AttachmentManager(config, logger)
+      this.#manager = new AttachmentManager(config, logger, drive)
 
       return this.#manager
     })

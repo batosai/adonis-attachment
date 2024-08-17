@@ -1,0 +1,71 @@
+name: NPM publish
+
+on:
+  push:
+    branches:
+      - 'main'
+
+env:
+  success: ✅
+  failure: 🔴
+  cancelled: ❌
+  skipped: ⭕
+  node_version: 20
+  true: ✅
+  false: 🔴
+
+jobs:
+
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - id: release
+        uses: halvardssm/github-action-tag-release@1.0.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          path: "./package.json" # optional, will use ./package.json by default
+
+      - run: |
+          echo 'Release created: ${{steps.release.outputs.release_created}}' # 'true' or 'false'
+          echo 'Release exists: ${{steps.release.outputs.release_exists}}' # 'true' or 'false'
+          echo 'Release tag: ${{steps.release.outputs.release_tag}}' # The tag from package.json
+
+      - name: Notification
+        if: ${{ always() }}
+        uses: appleboy/telegram-action@master
+        with:
+          token: ${{ secrets.BOT_TOKEN }}
+          to: ${{ secrets.CHAT_ID }}
+          message: |
+            Repository: ${{ github.repository }}
+            Release : ${{ env[steps.release.outputs.release_created] }}
+            Tag: ${{ steps.release.outputs.release_tag }}
+
+
+  publish-npm:
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 20
+          registry-url: https://registry.npmjs.org/
+
+      - run: npm ci
+      - run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
+
+      - name: Notification
+        if: ${{ always() }}
+        uses: appleboy/telegram-action@master
+        with:
+          token: ${{ secrets.BOT_TOKEN }}
+          to: ${{ secrets.CHAT_ID }}
+          message: |
+            Repository: ${{ github.repository }}
+            npm publish : ${{ env[job.status] }}

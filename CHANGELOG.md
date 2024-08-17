@@ -1,4 +1,4 @@
-# 1.2.0
+# 2.0.0
 
 ⚠️ BREAKING CHANGE
 
@@ -6,9 +6,9 @@
 
 ***Config basePath is deleted, replace by location option of fs service***
 
-***Refacto getUrl() view helper, [add await](https://github.com/batosai/adonis-attachment/tree/1.2.0?tab=readme-ov-file#urls)***
+***Refacto getUrl() view helper, [add await](https://github.com/batosai/adonis-attachment?tab=readme-ov-file#urls)***
 
-***Access [serialize](https://github.com/batosai/adonis-attachment/tree/1.2.0?tab=readme-ov-file#by-serialize) is update***
+***Access [serialize](https://github.com/batosai/adonis-attachment?tab=readme-ov-file#by-serialize) is update***
 
 * support @adonisjs/drive
 * dependencies update

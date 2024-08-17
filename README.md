@@ -18,7 +18,7 @@ Project sample : [adonis-starter-kit](https://github.com/batosai/adonis-starter-
 - [ ] edge component
 - [x] serialize
 
-⚠️ Breaking change [1.2.0 version](https://github.com/batosai/adonis-attachment/blob/1.2.0/CHANGELOG.md), include [@adonisjs/drive](https://docs.adonisjs.com/guides/digging-deeper/drive)
+⚠️ Breaking change [2.0.0 version](https://github.com/batosai/adonis-attachment/blob/main/CHANGELOG.md), include [@adonisjs/drive](https://docs.adonisjs.com/guides/digging-deeper/drive)
 
 ### File sytem
 

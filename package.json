@@ -79,5 +79,8 @@
   "publishConfig": {
     "access": "public",
     "tag": "beta"
+  },
+  "volta": {
+    "node": "20.16.0"
   }
 }

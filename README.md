@@ -4,6 +4,14 @@ This package is currently development and will replace [attachment-advanced](htt
 
 Project sample : [adonis-starter-kit](https://github.com/batosai/adonis-starter-kit)
 
+## Links
+
+[View documentation](https://adonis-attachment.jrmc.dev/)
+
+[ChangeLog](https://adonis-attachment.jrmc.dev/changelog.html)
+
+⚠️ [Breaking change](https://adonis-attachment.jrmc.dev/changelog.html) version 2, include [@adonisjs/drive](https://docs.adonisjs.com/guides/digging-deeper/drive)
+
 ## Roadmap
 
 - [x] attachment file by file system
@@ -16,8 +24,6 @@ Project sample : [adonis-starter-kit](https://github.com/batosai/adonis-starter-
 - [x] adonis-drive/flydrive
 - [ ] jobs queue
 - [x] serialize
-
-⚠️ [Breaking change](https://github.com/batosai/adonis-attachment/blob/main/CHANGELOG.md), include [@adonisjs/drive](https://docs.adonisjs.com/guides/digging-deeper/drive)
 
 ### Meta data list (if available)
 
@@ -52,6 +58,4 @@ Install and configure the package:
 ```sh
 node ace add @jrmc/adonis-attachment
 ```
-
-## Documentation
 

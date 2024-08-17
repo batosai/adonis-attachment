@@ -40,7 +40,10 @@
     "prepublishOnly": "npm run build",
     "clean": "del-cli build",
     "copyfiles": "copyfiles \"stubs/**/**/*.stub\" build",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "docs:dev": "vitepress dev docs",
+    "docs:build": "vitepress build docs",
+    "docs:preview": "vitepress preview docs"
   },
   "exports": {
     ".": "./build/index.js",
@@ -68,7 +71,8 @@
     "copyfiles": "^2.4.1",
     "del-cli": "^5.1.0",
     "prettier": "^3.3.3",
-    "typescript": "^5.5.4"
+    "typescript": "^5.5.4",
+    "vitepress": "^1.3.3"
   },
   "peerDependencies": {
     "@adonisjs/core": "^6.12.1",

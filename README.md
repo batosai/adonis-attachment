@@ -55,13 +55,13 @@ Couple with a job queue (recommended, optional)
 Install and configure the package:
 
 ```sh
-node ace add @jrmc/adonis-attachment@beta
+node ace add @jrmc/adonis-attachment
 ```
 
 Or:
 
 ```sh
-npm i @jrmc/adonis-attachment@beta
+npm i @jrmc/adonis-attachment
 node ace configure @jrmc/adonis-attachment
 ```
 

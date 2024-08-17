@@ -2,7 +2,6 @@
   exports({ to: app.configPath('attachment.ts') })
 }}}
 import { defineConfig } from '@jrmc/adonis-attachment'
-import app from '@adonisjs/core/services/app'
 
 export default defineConfig({
   converters: [
@@ -11,38 +10,7 @@ export default defineConfig({
       converter: () => import('@jrmc/adonis-attachment/converters/image_converter'),
       options: {
         resize: 300,
-        format: 'webp',
       }
-    },
-    {
-      key: 'medium',
-      converter: () => import('@jrmc/adonis-attachment/converters/image_converter'),
-      options: {
-        resize: 600,
-        format: 'jpeg',
-      }
-    },
-    {
-      key: 'large',
-      converter: () => import('@jrmc/adonis-attachment/converters/image_converter'),
-      options: {
-        resize: 1024,
-        format: {
-          format: 'jpeg',
-          options: {
-            quality: 80
-          }
-        }
-
-      }
-    },
-    // {
-    //   key: 'preview',
-    //   converter: () => import('@jrmc/adonis-attachment/converters/video_thumbnail_converter'),
-    //   options: {
-    //     format: 'jpeg',
-    //     resize: 720
-    //   }
-    // },
+    }
   ]
 })

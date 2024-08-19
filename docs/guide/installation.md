@@ -41,7 +41,9 @@ yarn add sharp
 :::
 
 
-Variants images for thumbnail video are generates by [fluent-ffmpeg](https://www.npmjs.com/package/fluent-ffmpeg) and require installation:
+Variants images for thumbnail video are generates by [fluent-ffmpeg](https://www.npmjs.com/package/fluent-ffmpeg). Make sure you have [ffmpeg](https://ffmpeg.org) installed on your system (including all necessary encoding libraries like libmp3lame or libx264).
+
+Installation required:
 
 ::: code-group
 ```sh [npm]

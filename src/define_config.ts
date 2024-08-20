@@ -22,18 +22,20 @@ export function defineConfig(config: AttachmentConfig): ConfigProvider<ResolvedA
     if (config.converters) {
       convertersMap = await Promise.all(
         config.converters.map(async (c) => {
+          const binConfig = config.bin
           const { default: value } = await c.converter()
           const Converter = value as typeof BaseConverter
 
           return {
             key: c.key,
-            converter: new Converter(c.options),
+            converter: new Converter(c.options, binConfig),
           }
         })
       )
     }
 
     return {
+      bin: config.bin,
       converters: convertersMap,
     }
   })

@@ -11,7 +11,8 @@ import fs from 'node:fs/promises'
 import ExifReader from 'exifreader'
 import logger from '@adonisjs/core/services/logger'
 import { fileTypeFromBuffer, fileTypeFromFile } from 'file-type'
-import { cleanObject } from '../utils/helpers.js'
+import { cleanObject, use } from '../utils/helpers.js'
+import { attachmentManager } from '../../index.js'
 
 export const exif = async (input: Input): Promise<Exif|undefined> => {
 
@@ -121,11 +122,18 @@ async function imageExif(buffer: Buffer) {
 
 async function videoExif(input: Input) {
   return new Promise<Exif|undefined>(async (resolve) => {
-    const module = 'fluent-ffmpeg'
-    const result = await import(module)
-    const ffmpeg = result.default
+    const ffmpeg = await use('fluent-ffmpeg')
+    const ff = ffmpeg(input)
 
-    ffmpeg(input).ffprobe(0, (err: unknown, data: any) => {
+    const config = attachmentManager.getConfig()
+
+    if (config.bin) {
+      if (config.bin.ffprobePath) {
+        ff.setFfprobePath(config.bin.ffprobePath)
+      }
+    }
+
+    ff.ffprobe(0, (err: unknown, data: any) => {
       if (err) {
         logger.error({ err })
       }

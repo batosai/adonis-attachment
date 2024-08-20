@@ -26,9 +26,9 @@ export default class AutodetectConverter extends Converter {
     }
 
     if (fileType?.mime.includes('image')) {
-      converter = new ImageConverter()
+      converter = new ImageConverter(options, this.binPaths)
     } else if (fileType?.mime.includes('video')) {
-      converter = new VideoThumnailConverter()
+      converter = new VideoThumnailConverter(options, this.binPaths)
     }
 
     if (converter) {

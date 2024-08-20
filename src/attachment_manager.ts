@@ -15,6 +15,7 @@ import { Exception } from '@poppinss/utils'
 import { Attachment } from './attachments/attachment.js'
 import Converter from './converters/converter.js'
 import { createAttachmentAttributes } from './utils/helpers.js'
+import { exif } from './adapters/exif.js'
 
 const REQUIRED_ATTRIBUTES = ['name', 'size', 'extname', 'mimeType']
 
@@ -27,6 +28,10 @@ export class AttachmentManager {
     this.#logger = logger
     this.#drive = drive
     this.#config = config
+  }
+
+  getConfig() {
+    return this.#config
   }
 
   createFromDbResponse(response: any) {
@@ -79,8 +84,8 @@ export class AttachmentManager {
   }
 
   async save(attachment: AttachmentBase) {
-    await attachment.beforeSave()
     const destinationPath = attachment.path!
+    attachment.meta = await exif(attachment.input!)
 
     try {
       if (Buffer.isBuffer(attachment.input)) {

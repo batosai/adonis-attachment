@@ -72,8 +72,6 @@ export class AttachmentBase implements AttachmentBaseInterface {
     return this
   }
 
-  async beforeSave() {}
-
   toObject(): AttachmentBaseAttributes {
     return {
       name: this.name,

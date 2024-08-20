@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.1.0
+
+* you may set the ffmpeg, ffprobe and flvtool2/flvmeta binary paths manually
+
+## 2.0.2
+
+* fix README
+* fix documentation
+
 ## 2.0.1
 
 ⚠️ BREAKING CHANGE

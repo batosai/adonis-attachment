@@ -30,7 +30,6 @@ export type AttachmentBase = {
   getSignedUrl(signedUrlOptions?: SignedURLOptions): Promise<string>
 
   setOptions(options?: LucidOptions): AttachmentBase
-  beforeSave(): Promise<void>
 
   toObject(): AttachmentBaseAttributes
   toJSON(): Promise<Object>

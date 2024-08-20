@@ -19,7 +19,6 @@ export class Variant extends AttachmentBase implements VariantInterface {
   constructor(drive: DriveService, attributes: VariantAttributes, input?: Input) {
     super(drive, attributes, input)
 
-    this.meta = attributes.meta
     this.key = attributes.key
     this.folder = attributes.folder!
     this.path = path.join(this.folder, this.name)

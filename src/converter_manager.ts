@@ -41,11 +41,12 @@ export class ConverterManager {
 
     const variant = await attachment.createVariant(this.#key, output)
 
+    await attachmentManager.save(variant)
+
     data[attribute] = JSON.stringify(attachment.toObject())
 
     const trx = await db.transaction()
 
-    trx.after('commit', () => attachmentManager.save(variant))
     trx.after('rollback', () => attachmentManager.delete(variant))
 
     try {

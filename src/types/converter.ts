@@ -5,11 +5,13 @@
  * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
  */
 
+import type { BinPaths } from './config.js'
 import type { Input } from './input.js'
 import type { ModelWithAttachment } from './mixin.js'
 
 export type Converter = {
   options?: ConverterOptions
+  binPaths?: BinPaths
   handle?: (attributes: ConverterAttributes) => Promise<Input | undefined>
 }
 

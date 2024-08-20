@@ -9,6 +9,7 @@ import type { DriveService, SignedURLOptions } from '@adonisjs/drive/types'
 import type {
   AttachmentAttributes,
   Attachment as AttachmentInterface,
+  LucidOptions,
 } from '../types/attachment.js'
 import type { Input } from '../types/input.js'
 
@@ -91,16 +92,16 @@ export class Attachment extends AttachmentBase implements AttachmentInterface {
     return super.getSignedUrl(options)
   }
 
-  async beforeSave() {
-    this.folder = this.options!.folder!
-    const outputPath = path.join(this.folder, this.name)
-
-    if (!this.meta) {
-      const data = await createAttachmentAttributes(this.input!)
-
-      this.meta = data.meta
+  setOptions(options?: LucidOptions) {
+    this.options = {
+      ...this.options,
+      ...options,
     }
-    this.path = outputPath
+
+    this.folder = this.options!.folder!
+    this.path = path.join(this.folder, this.name)
+
+    return this
   }
 
   toObject(): AttachmentAttributes {

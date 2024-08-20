@@ -7,19 +7,12 @@
 
 import type { ConverterAttributes } from '../types/converter.js'
 
-import logger from '@adonisjs/core/services/logger'
 import Converter from './converter.js'
+import { use } from '../utils/helpers.js'
 
 export default class ImageConverter extends Converter {
   async handle({ input, options }: ConverterAttributes) {
-    let sharp
-    try {
-      const module = 'sharp'
-      const result = await import(module)
-      sharp = result.default
-    } catch (error) {
-      logger.error({ err: error }, 'Dependence missing, please install sharp')
-    }
+    const sharp = await use('sharp')
 
     if (sharp) {
       const resize = options?.resize || {}

@@ -11,10 +11,10 @@ import type { ModelWithAttachment } from '../types/mixin.js'
 
 import { cuid } from '@adonisjs/core/helpers'
 import string from '@adonisjs/core/helpers/string'
+import logger from '@adonisjs/core/services/logger'
 import { fileTypeFromBuffer, fileTypeFromFile } from 'file-type'
 import { Attachment } from '../attachments/attachment.js'
 import { optionsSym } from './symbols.js'
-import { exif } from '../adapters/exif.js'
 
 export function getAttachmentAttributeNames(modelInstance: ModelWithAttachment) {
   return Object.keys(modelInstance.$attributes).filter(
@@ -37,8 +37,6 @@ export async function createAttachmentAttributes(input: Input, name?: string) {
     fileType = await fileTypeFromFile(input)
   }
 
-  const meta = await exif(input)
-
   if (name) {
     name = string.slug(name)
   } else {
@@ -50,7 +48,6 @@ export async function createAttachmentAttributes(input: Input, name?: string) {
     extname: fileType!.ext,
     mimeType: fileType!.mime,
     size: input.length,
-    meta: meta,
   }
 }
 
@@ -81,4 +78,13 @@ export function cleanObject(obj: any) {
 
 export function clone(object: Object) {
   return JSON.parse(JSON.stringify(object))
+}
+
+export async function use(module: string) {
+  try {
+    const result = await import(module)
+    return result.default
+  } catch (error) {
+    logger.error({ err: error }, `Dependence missing, please install ${module}`)
+  }
 }

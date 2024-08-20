@@ -17,7 +17,14 @@ type ConverterConfig = {
   options?: ConverterOptions
 }
 
+export type BinPaths = {
+  ffmpegPath?: string
+  ffprobePath?: string
+  flvtool2Path?: string
+}
+
 export type AttachmentConfig = {
+  bin?: BinPaths
   converters?: ConverterConfig[]
 }
 
@@ -27,5 +34,6 @@ export type ResolvedConverter = {
 }
 
 export type ResolvedAttachmentConfig = {
+  bin?: BinPaths
   converters?: ResolvedConverter[]
 }

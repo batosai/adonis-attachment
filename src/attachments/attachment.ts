@@ -45,7 +45,7 @@ export class Attachment extends AttachmentBase implements AttachmentInterface {
     }
 
     const variant = new Variant(this.drive, attributes, input)
-    variant.setOptions(this.options)
+    variant.setOptions(this.options!)
 
     if (this.variants === undefined) {
       this.variants = []
@@ -63,7 +63,7 @@ export class Attachment extends AttachmentBase implements AttachmentInterface {
     if (variantName) {
       const variant = this.getVariant(variantName)
       if (variant) {
-        variant.setOptions(this.options)
+        variant.setOptions(this.options!)
         return variant.getUrl()
       }
     }
@@ -84,7 +84,7 @@ export class Attachment extends AttachmentBase implements AttachmentInterface {
     if (variantName) {
       const variant = this.getVariant(variantName)
       if (variant) {
-        variant.setOptions(this.options)
+        variant.setOptions(this.options!)
         return variant.getSignedUrl(options)
       }
     }
@@ -92,14 +92,20 @@ export class Attachment extends AttachmentBase implements AttachmentInterface {
     return super.getSignedUrl(options)
   }
 
-  setOptions(options?: LucidOptions) {
+  setOptions(options: LucidOptions) {
     this.options = {
       ...this.options,
       ...options,
     }
 
-    this.folder = this.options!.folder!
-    this.path = path.join(this.folder, this.name)
+    if (!this.path) {
+      if (!this.options.rename) {
+        this.name = this.originalName
+      }
+
+      this.folder = this.options!.folder!
+      this.path = path.join(this.folder, this.name)
+    }
 
     return this
   }

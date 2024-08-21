@@ -3,6 +3,8 @@
 ## 2.1.0
 
 * you may set the ffmpeg, ffprobe and flvtool2/flvmeta binary paths manually
+* add the ability to disable meta
+* add the ability to disable rename
 
 ## 2.0.2
 

@@ -77,7 +77,7 @@
   "peerDependencies": {
     "@adonisjs/core": "^6.12.1",
     "@adonisjs/drive": "^3.2.0",
-    "@adonisjs/lucid": "^20.6.0"
+    "@adonisjs/lucid": "^20.6.0 || ^21.0.0"
   },
   "prettier": "@adonisjs/prettier-config",
   "publishConfig": {

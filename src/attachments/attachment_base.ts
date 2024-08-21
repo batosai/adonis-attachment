@@ -64,7 +64,7 @@ export class AttachmentBase implements AttachmentBaseInterface {
     return this.getDisk().getSignedUrl(this.path!, signedUrlOptions)
   }
 
-  setOptions(options?: LucidOptions) {
+  setOptions(options: LucidOptions) {
     this.options = {
       ...this.options,
       ...options,

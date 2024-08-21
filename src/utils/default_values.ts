@@ -9,6 +9,8 @@ export const defaultOptionsDecorator = {
   disk: undefined,
   folder: 'uploads',
   variants: [],
+  rename: true,
+  meta: true
 }
 
 export const defaultStateAttributeMixin = {

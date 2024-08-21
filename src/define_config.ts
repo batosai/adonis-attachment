@@ -35,7 +35,7 @@ export function defineConfig(config: AttachmentConfig): ConfigProvider<ResolvedA
     }
 
     return {
-      bin: config.bin,
+      ...config,
       converters: convertersMap,
     }
   })

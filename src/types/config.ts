@@ -25,6 +25,8 @@ export type BinPaths = {
 
 export type AttachmentConfig = {
   bin?: BinPaths
+  meta?: boolean
+  rename?: boolean
   converters?: ConverterConfig[]
 }
 
@@ -35,5 +37,7 @@ export type ResolvedConverter = {
 
 export type ResolvedAttachmentConfig = {
   bin?: BinPaths
+  meta?: boolean
+  rename?: boolean
   converters?: ResolvedConverter[]
 }

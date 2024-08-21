@@ -85,7 +85,12 @@ export class AttachmentManager {
 
   async save(attachment: AttachmentBase) {
     const destinationPath = attachment.path!
-    attachment.meta = await exif(attachment.input!)
+
+    if (attachment.options?.meta) {
+      attachment.meta = await exif(attachment.input!)
+    } else {
+      attachment.meta = undefined
+    }
 
     try {
       if (Buffer.isBuffer(attachment.input)) {

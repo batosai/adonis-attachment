@@ -28,6 +28,36 @@ export default defineConfig({
 
 ---
 
+### meta (optional, default true)
+
+you can set the default meta generation or not
+
+```typescript
+export default defineConfig({
+  meta: false, // [!code focus],
+  converters: [
+    // ...
+  ]
+})
+```
+
+---
+
+### rename (optional, default true)
+
+You can define by default if the files are renamed or not.
+
+```typescript
+export default defineConfig({
+  rename: false, // [!code focus],
+  converters: [
+    // ...
+  ]
+})
+```
+
+---
+
 ### bin (optional)
 
 You may set the ffmpeg, ffprobe and flvtool2/flvmeta binary paths manually:

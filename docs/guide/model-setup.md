@@ -51,4 +51,26 @@ class User extends BaseModel {
 }
 ```
 
+## Specifying meta
+
+You can disabled meta generation, default is true
+
+```ts
+class User extends BaseModel {
+  @attachment({ meta: false }) // [!code highlight]
+  declare avatar: Attachment
+}
+```
+
+## Specifying rename
+
+You can disabled rename file, default is true
+
+```ts
+class User extends BaseModel {
+  @attachment({ rename: false }) // [!code highlight]
+  declare avatar: Attachment
+}
+```
+
 

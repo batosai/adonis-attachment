@@ -17,12 +17,26 @@ export const attachment = (options?: LucidOptions) => {
     if (!target[optionsSym]) {
       target[optionsSym] = {}
     }
+
+    const defaultConfig = attachmentManager.getConfig()
+    const defaultOptions = {
+      meta: defaultConfig.meta !== undefined ? defaultConfig.meta : defaultOptionsDecorator.meta,
+      rename: defaultConfig.rename !== undefined ? defaultConfig.rename : defaultOptionsDecorator.rename,
+    }
+
+    if (!options || options?.meta === undefined) {
+      options!.meta = defaultOptions.meta
+    }
+    if (!options || options?.rename === undefined) {
+      options!.rename = defaultOptions.rename
+    }
+
     target[optionsSym][attributeName] = options
 
     const Model = target.constructor as LucidModel
     Model.boot()
 
-    const { disk, folder, variants, ...columnOptions } = {
+    const { disk, folder, variants, meta, rename, ...columnOptions } = {
       ...defaultOptionsDecorator,
       ...options,
     }
@@ -31,7 +45,7 @@ export const attachment = (options?: LucidOptions) => {
       consume: (value) => {
         if (value) {
           const attachment = attachmentManager.createFromDbResponse(value)
-          attachment?.setOptions({ disk, folder, variants })
+          attachment?.setOptions({ disk, folder, variants, meta, rename })
           return attachment
         } else {
           return null

@@ -29,7 +29,7 @@ export type AttachmentBase = {
   getUrl(): Promise<string>
   getSignedUrl(signedUrlOptions?: SignedURLOptions): Promise<string>
 
-  setOptions(options?: LucidOptions): AttachmentBase
+  setOptions(options: LucidOptions): AttachmentBase
 
   toObject(): AttachmentBaseAttributes
   toJSON(): Promise<Object>
@@ -57,6 +57,8 @@ export type LucidOptions = {
   disk?: string
   folder?: string
   variants?: string[]
+  rename?: boolean
+  meta?: boolean
 }
 
 export type AttachmentBaseAttributes = {

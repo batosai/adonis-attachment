@@ -60,14 +60,13 @@ export default defineConfig({
 
 ### bin (optional)
 
-You may set the ffmpeg, ffprobe and flvtool2/flvmeta binary paths manually:
+You may set the ffmpeg and ffprobe binary paths manually:
 
 ```typescript
 export default defineConfig({
   bin: { // [!code focus:5]
     ffmpegPath: 'ffmpeg_path',
     ffprobePath: 'ffprobe_path',
-    flvtool2Path: 'flvtool2_path',
   },
   converters: [
     // ...
@@ -80,4 +79,3 @@ export default defineConfig({
 | ----------- | ------------------------------------------------------------------------------- |
 |ffmpegPath   |Argument `path` is a string with the full path to the ffmpeg binary              |
 |ffprobePath  |Argument `path` is a string with the full path to the ffprobe binary             |
-|flvtool2Path |Argument `path` is a string with the full path to the flvtool2 or flvmeta binary |

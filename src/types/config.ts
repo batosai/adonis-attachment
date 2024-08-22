@@ -20,7 +20,6 @@ type ConverterConfig = {
 export type BinPaths = {
   ffmpegPath?: string
   ffprobePath?: string
-  flvtool2Path?: string
 }
 
 export type AttachmentConfig = {

@@ -64,7 +64,7 @@ You may set the ffmpeg and ffprobe binary paths manually:
 
 ```typescript
 export default defineConfig({
-  bin: { // [!code focus:5]
+  bin: { // [!code focus:4]
     ffmpegPath: 'ffmpeg_path',
     ffprobePath: 'ffprobe_path',
   },
@@ -79,3 +79,27 @@ export default defineConfig({
 | ----------- | ------------------------------------------------------------------------------- |
 |ffmpegPath   |Argument `path` is a string with the full path to the ffmpeg binary              |
 |ffprobePath  |Argument `path` is a string with the full path to the ffprobe binary             |
+
+
+sample, [download ffmpeg](https://ffbinaries.com/downloads) and ffprobe binary in /bin. Add execution right.
+
+```sh
+cd bin
+chmod +x ffmpeg
+chmod +x ffprobe
+```
+
+```typescript
+import app from '@adonisjs/core/services/app'
+import { defineConfig } from '@jrmc/adonis-attachment'
+
+export default defineConfig({
+  bin: { // [!code focus:4]
+    ffmpegPath: app.makePath('bin/ffmpeg'),
+    ffprobePath: app.makePath('bin/ffprobe'),
+  },
+  converters: [
+    // ...
+  ]
+})
+```

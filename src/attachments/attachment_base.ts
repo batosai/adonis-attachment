@@ -28,6 +28,7 @@ export class AttachmentBase implements AttachmentBaseInterface {
   meta?: Exif
   folder?: string
   path?: string
+  url?: string
 
   options?: LucidOptions
 
@@ -83,11 +84,14 @@ export class AttachmentBase implements AttachmentBaseInterface {
     }
   }
 
-  async toJSON(): Promise<Object> {
-    return {
-      ...this.toObject(),
-      url: await this.getUrl(),
-      signedUrl: await this.getSignedUrl(),
+  toJSON(): Object {
+    if (this.url) {
+      return {
+        ...this.toObject(),
+        url: this.url
+      }
     }
+
+    return this.toObject()
   }
 }

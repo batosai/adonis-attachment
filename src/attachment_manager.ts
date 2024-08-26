@@ -8,7 +8,7 @@
 import type { LoggerService } from '@adonisjs/core/types'
 import type { DriveService } from '@adonisjs/drive/types'
 import type { MultipartFile } from '@adonisjs/core/bodyparser'
-import type { AttachmentBase } from './types/attachment.js'
+import type { AttachmentBase, Attachment as AttachmentType } from './types/attachment.js'
 import type { ResolvedAttachmentConfig } from './types/config.js'
 
 import { Exception } from '@poppinss/utils'
@@ -78,6 +78,33 @@ export class AttachmentManager {
       for (const c of this.#config.converters) {
         if (c.key === key) {
           return c.converter as Converter
+        }
+      }
+    }
+  }
+
+  async computeUrl(attachment: AttachmentType) {
+    if (attachment.options?.preComputeUrl === false) {
+      return
+    }
+
+    const disk = attachment.getDisk()
+    const fileVisibility = await disk.getVisibility(attachment.path!)
+
+    if (fileVisibility === 'private') {
+      attachment.url = await attachment.getSignedUrl()
+    } else {
+      attachment.url = await attachment.getUrl()
+    }
+
+    if (attachment.variants) {
+      for (const key in attachment.variants) {
+        if (Object.prototype.hasOwnProperty.call(attachment.variants, key)) {
+          if (fileVisibility === 'private') {
+            attachment.variants[key].url = await attachment.getSignedUrl(attachment.variants[key].key)
+          } else {
+            attachment.variants[key].url = await attachment.getUrl(attachment.variants[key].key)
+          }
         }
       }
     }

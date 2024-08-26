@@ -120,7 +120,7 @@ export class Attachment extends AttachmentBase implements AttachmentInterface {
     }
   }
 
-  async toJSON(): Promise<Object> {
+  toJSON(): Object {
     const data: any = {
       name: this.name,
       originalName: this.originalName,
@@ -128,19 +128,18 @@ export class Attachment extends AttachmentBase implements AttachmentInterface {
       extname: this.extname,
       mimetype: this.mimeType,
       meta: this.meta,
-      url: await this.getUrl(),
-      signedUrl: await this.getSignedUrl(),
     }
 
-    if (this.variants) {
-      await Promise.allSettled(
+    if (this.url) {
+      data.url = this.url
+
+      if (this.variants) {
         this.variants!.map(async (v) => {
           data[v.key] = {
-            url: await this.getUrl(v.key),
-            signedUrl: await this.getSignedUrl(v.key)
+            url: v.url,
           }
         })
-      )
+      }
     }
 
     return data

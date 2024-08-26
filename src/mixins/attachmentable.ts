@@ -9,8 +9,8 @@ import type { BaseModel } from '@adonisjs/lucid/orm'
 import type { NormalizeConstructor } from '@adonisjs/core/types/helpers'
 import type { AttributeOfModelWithAttachment } from '../types/mixin.js'
 
-import { beforeSave, afterSave, beforeDelete } from '@adonisjs/lucid/orm'
-import { persistAttachment, commit, rollback, generateVariants } from '../utils/actions.js'
+import { beforeSave, afterSave, beforeDelete, afterFind, afterFetch, afterPaginate } from '@adonisjs/lucid/orm'
+import { persistAttachment, commit, rollback, generateVariants, computeUrl } from '../utils/actions.js'
 import { clone, getAttachmentAttributeNames } from '../utils/helpers.js'
 import { defaultStateAttributeMixin } from '../utils/default_values.js'
 
@@ -19,6 +19,23 @@ export const Attachmentable = <Model extends NormalizeConstructor<typeof BaseMod
 ) => {
   class ModelWithAttachment extends superclass {
     $attachments: AttributeOfModelWithAttachment = clone(defaultStateAttributeMixin)
+
+    @afterFind()
+    static async afterFindHook(modelInstance: ModelWithAttachment) {
+      const attachmentAttributeNames = getAttachmentAttributeNames(modelInstance)
+
+      await Promise.all(
+        attachmentAttributeNames.map((attributeName) => {
+          return computeUrl(modelInstance, attributeName)
+        })
+      )
+    }
+
+    @afterFetch()
+    @afterPaginate()
+    static async afterFetchHook(modelInstances: ModelWithAttachment[]) {
+      await Promise.all(modelInstances.map((row) => this.afterFindHook(row)))
+    }
 
     @beforeSave()
     static async beforeSaveHook(modelInstance: ModelWithAttachment) {

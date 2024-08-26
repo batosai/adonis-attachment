@@ -22,6 +22,7 @@ export type AttachmentBase = {
   meta?: Exif
   folder?: string
   path?: string
+  url?: string
 
   options?: LucidOptions
 
@@ -32,7 +33,7 @@ export type AttachmentBase = {
   setOptions(options: LucidOptions): AttachmentBase
 
   toObject(): AttachmentBaseAttributes
-  toJSON(): Promise<Object>
+  toJSON(): Object
 }
 
 export type Attachment = AttachmentBase & {
@@ -56,6 +57,7 @@ export type Variant = AttachmentBase & {
 export type LucidOptions = {
   disk?: string
   folder?: string
+  preComputeUrl?: boolean
   variants?: string[]
   rename?: boolean
   meta?: boolean

@@ -35,15 +35,15 @@ export async function rollback(modelInstance: ModelWithAttachment) {
 }
 
 /**
- * Persist attachment for a given attachment property
+ * Persist attachment for a given attachment attributeName
  */
-export async function persistAttachment(modelInstance: ModelWithAttachment, property: string) {
-  const existingFile = modelInstance.$original[property] as Attachment
-  const newFile = modelInstance.$attributes[property] as Attachment
-  const options = getOptions(modelInstance, property)
+export async function persistAttachment(modelInstance: ModelWithAttachment, attributeName: string) {
+  const existingFile = modelInstance.$original[attributeName] as Attachment
+  const newFile = modelInstance.$attributes[attributeName] as Attachment
+  const options = getOptions(modelInstance, attributeName)
 
   /**
-   * Skip when the attachment property hasn't been updated
+   * Skip when the attachment attributeName hasn't been updated
    */
   if (existingFile === newFile) {
     return
@@ -82,6 +82,15 @@ export async function persistAttachment(modelInstance: ModelWithAttachment, prop
      */
     await attachmentManager.save(newFile)
   }
+}
+
+export async function computeUrl(modelInstance: ModelWithAttachment, attributeName: string) {
+  const attachment = modelInstance.$attributes[attributeName] as Attachment
+  const options = getOptions(modelInstance, attributeName)
+
+  attachment.setOptions(options)
+
+  return attachmentManager.computeUrl(attachment)
 }
 
 /**

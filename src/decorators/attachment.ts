@@ -52,7 +52,7 @@ export const attachment = (options?: LucidOptions) => {
         }
       },
       prepare: (value) => (value ? JSON.stringify(value.toObject()) : null),
-      serialize: async (value) => (value ? await value.toJSON() : null),
+      serialize: (value) => (value ? value.toJSON() : null),
       ...columnOptions,
     })
   }

@@ -84,13 +84,13 @@ export async function persistAttachment(modelInstance: ModelWithAttachment, attr
   }
 }
 
-export async function computeUrl(modelInstance: ModelWithAttachment, attributeName: string) {
+export async function preComputeUrl(modelInstance: ModelWithAttachment, attributeName: string) {
   const attachment = modelInstance.$attributes[attributeName] as Attachment
   const options = getOptions(modelInstance, attributeName)
 
   attachment.setOptions(options)
 
-  return attachmentManager.computeUrl(attachment)
+  return attachmentManager.preComputeUrl(attachment)
 }
 
 /**

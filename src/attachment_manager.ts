@@ -6,7 +6,7 @@
  */
 
 import type { LoggerService } from '@adonisjs/core/types'
-import type { DriveService } from '@adonisjs/drive/types'
+import type { DriveService, SignedURLOptions } from '@adonisjs/drive/types'
 import type { MultipartFile } from '@adonisjs/core/bodyparser'
 import type { AttachmentBase, Attachment as AttachmentType } from './types/attachment.js'
 import type { ResolvedAttachmentConfig } from './types/config.js'
@@ -83,28 +83,28 @@ export class AttachmentManager {
     }
   }
 
-  async computeUrl(attachment: AttachmentType) {
-    if (attachment.options?.preComputeUrl === false) {
-      return
-    }
-
+  async computeUrl(attachment: AttachmentType | AttachmentBase, signedUrlOptions?: SignedURLOptions) {
     const disk = attachment.getDisk()
     const fileVisibility = await disk.getVisibility(attachment.path!)
 
     if (fileVisibility === 'private') {
-      attachment.url = await attachment.getSignedUrl()
+      attachment.url = await attachment.getSignedUrl(signedUrlOptions)
     } else {
       attachment.url = await attachment.getUrl()
     }
+  }
 
-    if (attachment.variants) {
+  async preComputeUrl(attachment: AttachmentType) {
+    if (attachment.options?.preComputeUrl === false) {
+      return
+    }
+
+    await this.computeUrl(attachment)
+
+    if (attachment instanceof Attachment && attachment.variants) {
       for (const key in attachment.variants) {
         if (Object.prototype.hasOwnProperty.call(attachment.variants, key)) {
-          if (fileVisibility === 'private') {
-            attachment.variants[key].url = await attachment.getSignedUrl(attachment.variants[key].key)
-          } else {
-            attachment.variants[key].url = await attachment.getUrl(attachment.variants[key].key)
-          }
+          await this.computeUrl(attachment.variants[key])
         }
       }
     }

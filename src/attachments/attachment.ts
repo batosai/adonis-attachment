@@ -107,6 +107,15 @@ export class Attachment extends AttachmentBase implements AttachmentInterface {
       this.path = path.join(this.folder, this.name)
     }
 
+    if (this.variants) {
+      this.variants.forEach((v) => {
+        v.setOptions({
+          ...this.options,
+          variants: []
+        })
+      })
+    }
+
     return this
   }
 
@@ -130,16 +139,28 @@ export class Attachment extends AttachmentBase implements AttachmentInterface {
       meta: this.meta,
     }
 
+    if (this.variants) {
+      this.variants!.map(async (v) => {
+        data[v.key] = {
+          name: v.name,
+          extname: v.extname,
+          mimetype: v.mimeType,
+          meta: v.meta,
+          size: v.size,
+        }
+      })
+    }
+
     if (this.url) {
       data.url = this.url
+    }
 
-      if (this.variants) {
-        this.variants!.map(async (v) => {
-          data[v.key] = {
-            url: v.url,
-          }
-        })
-      }
+    if (this.variants) {
+      this.variants!.map(async (v) => {
+        if (v.url) {
+          data[v.key].url = v.url
+        }
+      })
     }
 
     return data

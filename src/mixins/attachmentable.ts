@@ -10,7 +10,7 @@ import type { NormalizeConstructor } from '@adonisjs/core/types/helpers'
 import type { AttributeOfModelWithAttachment } from '../types/mixin.js'
 
 import { beforeSave, afterSave, beforeDelete, afterFind, afterFetch, afterPaginate } from '@adonisjs/lucid/orm'
-import { persistAttachment, commit, rollback, generateVariants, computeUrl } from '../utils/actions.js'
+import { persistAttachment, commit, rollback, generateVariants, preComputeUrl } from '../utils/actions.js'
 import { clone, getAttachmentAttributeNames } from '../utils/helpers.js'
 import { defaultStateAttributeMixin } from '../utils/default_values.js'
 
@@ -26,7 +26,7 @@ export const Attachmentable = <Model extends NormalizeConstructor<typeof BaseMod
 
       await Promise.all(
         attachmentAttributeNames.map((attributeName) => {
-          return computeUrl(modelInstance, attributeName)
+          return preComputeUrl(modelInstance, attributeName)
         })
       )
     }

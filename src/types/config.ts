@@ -26,6 +26,7 @@ export type AttachmentConfig = {
   bin?: BinPaths
   meta?: boolean
   rename?: boolean
+  preComputeUrl?: boolean
   converters?: ConverterConfig[]
 }
 
@@ -38,5 +39,6 @@ export type ResolvedAttachmentConfig = {
   bin?: BinPaths
   meta?: boolean
   rename?: boolean
+  preComputeUrl?: boolean
   converters?: ResolvedConverter[]
 }

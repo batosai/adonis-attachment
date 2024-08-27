@@ -10,8 +10,8 @@ export const defaultOptionsDecorator = {
   folder: 'uploads',
   preComputeUrl: false,
   variants: [],
-  rename: true,
-  meta: true
+  meta: true,
+  rename: true
 }
 
 export const defaultStateAttributeMixin = {

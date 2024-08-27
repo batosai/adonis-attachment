@@ -22,6 +22,7 @@ export const attachment = (options?: LucidOptions) => {
     const defaultOptions = {
       meta: defaultConfig.meta !== undefined ? defaultConfig.meta : defaultOptionsDecorator.meta,
       rename: defaultConfig.rename !== undefined ? defaultConfig.rename : defaultOptionsDecorator.rename,
+      preComputeUrl: defaultConfig.preComputeUrl !== undefined ? defaultConfig.preComputeUrl : defaultOptionsDecorator.preComputeUrl,
     }
 
     if (!options || options?.meta === undefined) {
@@ -29,6 +30,9 @@ export const attachment = (options?: LucidOptions) => {
     }
     if (!options || options?.rename === undefined) {
       options!.rename = defaultOptions.rename
+    }
+    if (!options || options?.preComputeUrl === undefined) {
+      options!.preComputeUrl = defaultOptions.preComputeUrl
     }
 
     target[optionsSym][attributeName] = options

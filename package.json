@@ -1,6 +1,6 @@
 {
   "name": "@jrmc/adonis-attachment",
-  "version": "2.1.1-1",
+  "version": "2.2.0",
   "type": "module",
   "description": "Turn any field on your Lucid model to an attachment data type",
   "engines": {
@@ -82,7 +82,7 @@
   "prettier": "@adonisjs/prettier-config",
   "publishConfig": {
     "access": "public",
-    "tag": "beta"
+    "tag": "latest"
   },
   "volta": {
     "node": "20.17.0"

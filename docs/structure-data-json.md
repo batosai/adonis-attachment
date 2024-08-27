@@ -12,6 +12,7 @@ Meta data list (if available):
 - orientation
 - mime type
 - gps
+- url
 
 Sample struture JSON in database
 
@@ -42,6 +43,7 @@ Sample struture JSON in database
   "mimeType":"image/jpeg",
   "path":"uploads/avatars/xjfpa4tuxh66p6s3hrgl0pzn.jpg",
   "originalName":"aco_bot.jpg",
+  "url": "/uploads/avatars/[...]", 
   "variants":[
     {
       "key":"thumbnail",
@@ -62,7 +64,8 @@ Sample struture JSON in database
         }
       },
       "mimeType":"image/webp",
-      "path":"uploads/avatars/variants/xjfpa4tuxh66p6s3hrgl0pzn.jpg/ajtugq7224qp9moqyi216vur.webp"
+      "path":"uploads/avatars/variants/xjfpa4tuxh66p6s3hrgl0pzn.jpg/ajtugq7224qp9moqyi216vur.webp",
+      "url": "/uploads/avatars/variants/[...]", 
     }
   ]
 }

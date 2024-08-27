@@ -51,6 +51,18 @@ class User extends BaseModel {
 }
 ```
 
+## Specifying preComputeUrl
+
+You can enabled pre compute the URLs after SELECT queries, default is false
+
+```ts
+class User extends BaseModel {
+  @attachment({ preComputeUrl: true }) // [!code highlight]
+  declare avatar: Attachment
+}
+```
+
+
 ## Specifying meta
 
 You can disabled meta generation, default is true

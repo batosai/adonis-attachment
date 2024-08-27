@@ -18,7 +18,7 @@ export default defineConfig({
 })
 ```
 
-### converters
+## converters
 
 |OPTIONS:  | DESCRIPTIONS:            |
 | -------- | ------------------------ |
@@ -28,13 +28,26 @@ export default defineConfig({
 
 ---
 
-### meta (optional, default true)
+## preComputeUrl (optional, default false)
+
+enable the preComputeUrl flag to pre compute the URLs after SELECT queries.
+
+```typescript
+export default defineConfig({
+  preComputeUrl: true, // [!code focus]
+  converters: [
+    // ...
+  ]
+})
+```
+
+## meta (optional, default true)
 
 you can set the default meta generation or not
 
 ```typescript
 export default defineConfig({
-  meta: false, // [!code focus],
+  meta: false, // [!code focus]
   converters: [
     // ...
   ]
@@ -43,13 +56,13 @@ export default defineConfig({
 
 ---
 
-### rename (optional, default true)
+## rename (optional, default true)
 
 You can define by default if the files are renamed or not.
 
 ```typescript
 export default defineConfig({
-  rename: false, // [!code focus],
+  rename: false, // [!code focus]
   converters: [
     // ...
   ]
@@ -58,7 +71,7 @@ export default defineConfig({
 
 ---
 
-### bin (optional)
+## bin (optional)
 
 You may set the ffmpeg and ffprobe binary paths manually:
 

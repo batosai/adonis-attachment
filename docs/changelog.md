@@ -1,10 +1,15 @@
 # Changelog
 
+## 2.2.0
+
+* add config preComputeUrl
+* fix data serialize
+
 ## 2.1.0
 
 * you may set the ffmpeg and ffprobe binary paths manually
-* add the ability to disable meta
-* add the ability to disable rename
+* add config to disable meta
+* add config to disable rename
 
 ## 2.0.2
 

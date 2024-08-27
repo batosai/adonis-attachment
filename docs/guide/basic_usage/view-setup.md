@@ -30,15 +30,28 @@ await user.avatar.getSignedUrl('thumbnail')
 
 getSignedUrl options params accepts `expiresIn`, `contentType` et `contentDisposition`. [More informations](https://flydrive.dev/docs/disk_api#getsignedurl)
 
+### If preComputeUrl is enabled
 
-## By serialize
+```edge
+<img src="{{ user.avatar.url }}" loading="lazy" alt="" />
+<img src="{{ user.avatar.getVariant('thumbnail').url }}" loading="lazy" alt="" />
+```
 
-```ts
-await user.avatar.toJSON()
+
+## URLs for Inertia template
+
+::: code-group
+```js
+<img src={user.avatar.thumbnail.url} loading="lazy" alt="" />
 ```
 
 ```vue
 <img :src="user.avatar.thumbnail.url" loading="lazy" alt="" />
-<img :src="user.avatar.thumbnail.signedUrl" loading="lazy" alt="" />
 ```
 
+```svelte
+<img src={user.avatar.thumbnail.url} loading="lazy" alt="" />
+```
+:::
+
+preComputeUrl is required.

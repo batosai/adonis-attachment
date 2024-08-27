@@ -4,6 +4,6 @@ The `adonis-attachment` package was designed to simplify file upload management.
 
 The creation of variants is handled through Converters.
 
-<!--@include: ./partials/table-converter.md-->
+<!--@include: ../partials/table-converter.md-->
 
 Project sample : [adonis-starter-kit](https://github.com/batosai/adonis-starter-kit) 

@@ -14,7 +14,7 @@ export default defineConfig({
     // https://vitepress.dev/reference/default-theme-config
     nav: [
       { text: 'Home', link: '/' },
-      { text: 'Guide', link: '/guide/introduction' },
+      { text: 'Guide', link: '/guide/essentials/introduction' },
       {
         text: 'Other docs',
         items: [
@@ -36,15 +36,15 @@ export default defineConfig({
             items: [
               {
                 text: 'Introduction',
-                link: '/guide/introduction'
+                link: '/guide/essentials/introduction'
               },
               {
                 text: 'Installation',
-                link: '/guide/installation'
+                link: '/guide/essentials/installation'
               },
               {
                 text: 'Configuration',
-                link: '/guide/configuration'
+                link: '/guide/essentials/configuration'
               }
             ]
           },
@@ -53,19 +53,19 @@ export default defineConfig({
             items: [
               {
                 text: 'Migration Setup',
-                link: '/guide/migration-setup'
+                link: '/guide/basic_usage/migration-setup'
               },
               {
                 text: 'Model Setup',
-                link: '/guide/model-setup'
+                link: '/guide/basic_usage/model-setup'
               },
               {
                 text: 'Controller Setup',
-                link: '/guide/controller-setup'
+                link: '/guide/basic_usage/controller-setup'
               },
               {
                 text: 'View Setup',
-                link: '/guide/view-setup'
+                link: '/guide/basic_usage/view-setup'
               }
             ]
           },
@@ -86,8 +86,12 @@ export default defineConfig({
             text: 'Advanced Usage',
             items: [
               {
+                text: 'PrecompileUrl',
+                link: '/guide/advanced_usage/pre-compile-on-demand'
+              },
+              {
                 text: 'Custom converter',
-                link: '/guide/custom-converter'
+                link: '/guide/advanced_usage/custom-converter'
               },
             ]
           }

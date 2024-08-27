@@ -9,7 +9,7 @@ hero:
   actions:
     - theme: brand
       text: Getting started
-      link: /guide/introduction
+      link: /guide/essentials/introduction
     - theme: alt
       text: View on GitHub
       link: https://github.com/batosai/adonis-attachment
@@ -19,7 +19,7 @@ features:
     details: Simplifying upload management.
   - title: Convert
     details: Optimise, convert, crop image, thumbnail video etc.
-  - title: Custom
-    details: Go further and create your own converter.
+  - title: Edge & inertia compliant
+    details: Go to attachment in your favorite frontend
 ---
 

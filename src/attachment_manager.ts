@@ -73,6 +73,13 @@ export class AttachmentManager {
     return new Attachment(this.#drive, attributes, buffer)
   }
 
+  async createFromBase64(data: string, name?: string) {
+    const base64Data = data.replace(/^data:([A-Za-z-+\/]+);base64,/, '')
+    const buffer = Buffer.from(base64Data, 'base64')
+
+    return await this.createFromBuffer(buffer, name)
+  }
+
   async getConverter(key: string): Promise<void | Converter> {
     if (this.#config.converters) {
       for (const c of this.#config.converters) {

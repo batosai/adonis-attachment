@@ -83,7 +83,12 @@ export function clone(object: Object) {
 export async function use(module: string) {
   try {
     const result = await import(module)
-    return result.default
+
+    if (result.default) {
+      return result.default
+    }
+
+    return result
   } catch (error) {
     logger.error({ err: error }, `Dependence missing, please install ${module}`)
   }

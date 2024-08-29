@@ -20,6 +20,8 @@ type ConverterConfig = {
 export type BinPaths = {
   ffmpegPath?: string
   ffprobePath?: string
+  pdftocairoBasePath?: string
+  libreofficePaths?: Array<string>
 }
 
 export type AttachmentConfig = {

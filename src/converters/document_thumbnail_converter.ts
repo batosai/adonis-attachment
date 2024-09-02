@@ -8,7 +8,6 @@
 import type { ConverterAttributes } from '../types/converter.js'
 import type { Input } from '../types/input.js'
 
-import { readFile } from 'fs/promises'
 import Converter from './converter.js'
 import ImageConverter from './image_converter.js'
 import { use } from '../utils/helpers.js'
@@ -47,15 +46,24 @@ export default class DocumentThumbnailConverter extends Converter {
       binaryPaths
     })
 
-    const inputBuffer = await readFile(input)
+    if (Buffer.isBuffer(input)) {
+      const output = await libreOfficeFileConverter.convert({
+        buffer: input,
+        input: 'buffer',
+        output: 'buffer',
+        format: 'jpeg',
+      })
 
-    const outputBuffer = await libreOfficeFileConverter.convert({
-      buffer: inputBuffer,
-      format: 'jpeg',
-      input: 'buffer',
-      output: 'buffer',
-    })
+      return output
+    } else {
+      const output = await libreOfficeFileConverter.convert({
+        inputPath: input,
+        input: 'file',
+        output: 'buffer',
+        format: 'jpeg',
+      })
 
-    return outputBuffer
+      return output
+    }
   }
 }

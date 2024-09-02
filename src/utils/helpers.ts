@@ -9,6 +9,9 @@ import type { LucidOptions } from '../types/attachment.js'
 import type { Input } from '../types/input.js'
 import type { ModelWithAttachment } from '../types/mixin.js'
 
+import os from 'node:os'
+import path from 'node:path'
+import fs from 'fs/promises'
 import { cuid } from '@adonisjs/core/helpers'
 import string from '@adonisjs/core/helpers/string'
 import logger from '@adonisjs/core/services/logger'
@@ -92,4 +95,11 @@ export async function use(module: string) {
   } catch (error) {
     logger.error({ err: error }, `Dependence missing, please install ${module}`)
   }
+}
+
+export async function bufferToTempFile(input: Buffer) {
+  const folder = os.tmpdir()
+  const tempFilePath = path.join(folder, `tempfile-${Date.now()}.tmp`)
+  await fs.writeFile(tempFilePath, input)
+  return tempFilePath
 }

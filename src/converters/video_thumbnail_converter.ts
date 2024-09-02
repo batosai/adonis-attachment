@@ -13,7 +13,7 @@ import path from 'node:path'
 import { cuid } from '@adonisjs/core/helpers'
 import Converter from './converter.js'
 import ImageConverter from './image_converter.js'
-import { use } from '../utils/helpers.js'
+import { bufferToTempFile, use } from '../utils/helpers.js'
 
 export default class VideoThumbnailConvert extends Converter {
 
@@ -36,11 +36,17 @@ export default class VideoThumbnailConvert extends Converter {
   }
 
   async videoToImage(ffmpeg: Function, input: Input) {
+    let file = input
+
+    if (Buffer.isBuffer(input)) {
+      file = await bufferToTempFile(input)
+    }
+
     return new Promise<string|false>((resolve) => {
       const folder = os.tmpdir()
       const filename = `${cuid()}.png`
 
-      const ff = ffmpeg(input)
+      const ff = ffmpeg(file)
 
       if (this.binPaths) {
         if (this.binPaths.ffmpegPath) {

@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.3.0
+
+* add [createFromBase64](/guide/basic_usage/controller-setup.html#from-base64)
+* add [pdfConverter](/guide/converters/pdf-thumbnail)
+* add [documentConverter](/guide/converters/document-thumbnail)
+
 ## 2.2.0
 
 * add config preComputeUrl

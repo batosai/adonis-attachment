@@ -9,7 +9,7 @@ hero:
   actions:
     - theme: brand
       text: Getting started
-      link: /guide/essentials/introduction
+      link: /guide/start-here
     - theme: alt
       text: View on GitHub
       link: https://github.com/batosai/adonis-attachment

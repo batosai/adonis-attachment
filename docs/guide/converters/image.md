@@ -1,6 +1,11 @@
 # Image converter
 
+<!--@include: ../partials/install-image.md-->
+
+## Configuration
+
 ```typescript
+// config/attachment.ts // [!code focus:1]
 export default defineConfig({
   converters: [
     { // [!code focus:7]

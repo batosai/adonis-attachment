@@ -32,6 +32,10 @@ export default defineConfig({
         text: 'Guide',
         items: [
           {
+            text: 'Start here',
+            link: '/guide/start-here'
+          },
+          {
             text: 'Essentials',
             items: [
               {
@@ -75,6 +79,14 @@ export default defineConfig({
               {
                 text: 'Image',
                 link: '/guide/converters/image'
+              },
+              {
+                text: 'PDF thumbnail',
+                link: '/guide/converters/pdf-thumbnail'
+              },
+              {
+                text: 'Document thumbnail',
+                link: '/guide/converters/document-thumbnail'
               },
               {
                 text: 'Video thumbnail',

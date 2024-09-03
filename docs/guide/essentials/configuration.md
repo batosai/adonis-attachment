@@ -77,9 +77,13 @@ You may set the ffmpeg and ffprobe binary paths manually:
 
 ```typescript
 export default defineConfig({
-  bin: { // [!code focus:4]
-    ffmpegPath: 'ffmpeg_path',
-    ffprobePath: 'ffprobe_path',
+  bin: { // [!code focus:8]
+    ffmpegPath: 'ffmpeg_path', // the full path of the binary
+    ffprobePath: 'ffprobe_path', // the full path of the binary
+    pdftocairoBasePath: 'base_dir_path' // the path of the directory containing the binary
+    libreofficePaths: [
+      'libreoffice_path', // the full path of the binary
+    ] // Array of paths to LibreOffice binary executables.
   },
   converters: [
     // ...
@@ -88,13 +92,17 @@ export default defineConfig({
 ```
 
 
-|OPSTIONS     |DESCRIPTIONS:                                                                    |
-| ----------- | ------------------------------------------------------------------------------- |
-|ffmpegPath   |Argument `path` is a string with the full path to the ffmpeg binary              |
-|ffprobePath  |Argument `path` is a string with the full path to the ffprobe binary             |
+|OPSTIONS           |DESCRIPTIONS:                                                                       |
+| ----------------- | ---------------------------------------------------------------------------------- |
+|ffmpegPath         |Argument `path` is a string with the full path to the ffmpeg binary                 |
+|ffprobePath        |Argument `path` is a string with the full path to the ffprobe binary                |
+|pdftocairoBasePath |Argument `path` is a string with the path of the directory to the pdftocairo binary |
+|libreofficePaths   |Array of `paths` to LibreOffice binary executables                                  |
 
 
-sample, [download ffmpeg](https://ffbinaries.com/downloads) and ffprobe binary in /bin. Add execution right.
+### sample
+
+[download ffmpeg](https://ffbinaries.com/downloads) and ffprobe binary in /bin. Add execution right.
 
 ```sh
 cd bin

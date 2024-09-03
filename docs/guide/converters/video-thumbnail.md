@@ -1,7 +1,13 @@
 
 # Video thumbnail converter
 
+<!--@include: ../partials/install-video.md-->
+
+
+## Configuration
+
 ```typescript
+// config/attachment.ts // [!code focus:1]
 export default defineConfig({
   converters: [
     { // [!code focus:4]
@@ -12,7 +18,7 @@ export default defineConfig({
 })
 ```
 
-By default, image format is `PNG` and size is video size. `options` attribute use ***image_converter***
+By default, image format is `PNG` and size is video size. `options` attribute use ***[image_converter](/guide/converters/image)***
 
 Sample:
 

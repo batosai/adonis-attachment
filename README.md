@@ -7,6 +7,7 @@ Project sample : [adonis-starter-kit](https://github.com/batosai/adonis-starter-
 ## Links
 
 [View documentation](https://adonis-attachment.jrmc.dev/)
+[Discord](https://discord.gg/89eMn2vB)
 
 [ChangeLog](https://adonis-attachment.jrmc.dev/changelog.html)
 
@@ -18,7 +19,7 @@ Project sample : [adonis-starter-kit](https://github.com/batosai/adonis-starter-
 - [x] save meta data
 - [x] variantes
   - [x] images
-  - [ ] documents thumbnail
+  - [x] documents thumbnail
   - [x] videos thumbnail
 - [ ] command regenerate
 - [x] adonis-drive/flydrive

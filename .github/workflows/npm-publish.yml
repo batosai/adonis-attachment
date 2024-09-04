@@ -30,7 +30,7 @@ jobs:
       - run: |
           echo 'Release created: ${{steps.release.outputs.release_created}}' # 'true' or 'false'
           echo 'Release exists: ${{steps.release.outputs.release_exists}}' # 'true' or 'false'
-          echo 'Release tag: ${{steps.release.outputs.release_tag}}' # The tag from package.json
+          echo 'Release tag: ${{steps.version.outputs.release_tag}}' # The tag from package.json
 
       - name: Notification
         if: ${{ always() }}
@@ -41,7 +41,7 @@ jobs:
           message: |
             Repository: ${{ github.repository }}
             Release : ${{ env[steps.release.outputs.release_created] }}
-            Tag: ${{ steps.release.outputs.release_tag }}
+            Tag: ${{ steps.version.outputs.release_tag }}
 
 
   publish-npm:

@@ -1,0 +1,29 @@
+name: Notify on Issue or Comment
+
+on:
+  issues:
+    types: [opened, edited]
+  issue_comment:
+    types: [created, edited]
+
+
+jobs:
+  notify-discord:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Notification
+        uses: appleboy/telegram-action@master
+        with:
+          token: ${{ secrets.BOT_TOKEN }}
+          to: ${{ secrets.CHAT_ID }}
+          message: |
+            Repository: ${{ github.repository }}
+            Event: ${{ github.event_name }}
+            Action: ${{ github.event.action }}
+
+            Issue Title: ${{ github.event.issue.title }}
+            Issue URL: ${{ github.event.issue.html_url }}
+
+            User: ${{ github.event.issue.user.login }}
+            Comment: ${{ github.event.comment.body || 'No comment' }}

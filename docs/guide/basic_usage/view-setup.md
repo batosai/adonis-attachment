@@ -41,7 +41,7 @@ getSignedUrl options params accepts `expiresIn`, `contentType` et `contentDispos
 ## URLs for Inertia template
 
 ::: code-group
-```js
+```js [react]
 <img src={user.avatar.thumbnail.url} loading="lazy" alt="" />
 ```
 

@@ -1,6 +1,9 @@
 # Installation
 
-The Adonis Attachment package is available on [npm](https://www.npmjs.com/package/@jrmc/adonis-attachment). 
+The Adonis Attachment package is available on [npm](https://www.npmjs.com/package/@jrmc/adonis-attachment).
+
+It's required [Adonis Drive](https://docs.adonisjs.com/guides/digging-deeper/drive), please look at the documentation if this is not installed.
+
 You can install it using the following ace command to automagically configure it:
 ```sh
 node ace add @jrmc/adonis-attachment

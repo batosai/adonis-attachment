@@ -106,6 +106,15 @@ export default defineConfig({
                 link: '/guide/advanced_usage/custom-converter'
               },
             ]
+          },
+          {
+            text: 'Use cases',
+            items: [
+              {
+                text: 'Picture',
+                link: '/guide/use-cases/picture'
+              },
+            ]
           }
         ]
       },
@@ -120,7 +129,9 @@ export default defineConfig({
     ],
 
     socialLinks: [
-      { icon: 'github', link: 'https://github.com/batosai/adonis-attachment' }
+      { icon: 'x', link: 'https://x.com/chaufourier' },
+      { icon: 'discord', link: 'https://discord.gg/89eMn2vB' },
+      { icon: 'github', link: 'https://github.com/batosai/adonis-attachment' },
     ],
 
     search: {

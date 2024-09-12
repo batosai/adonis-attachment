@@ -16,18 +16,18 @@ hero:
 
 features:
   - icon:
-      light: /assets/light-upload.svg
-      dark: /assets/dark-upload.svg
+      light: /light-upload.svg
+      dark: /dark-upload.svg
     title: Upload
     details: Simplifying upload management.
   - icon:
-      light: /assets/light-convert.svg
-      dark: /assets/dark-convert.svg
+      light: /light-convert.svg
+      dark: /dark-convert.svg
     title: Convert
     details: Optimise, convert, crop image, thumbnail video etc.
   - icon:
-      light: /assets/light-view.svg
-      dark: /assets/dark-view.svg
+      light: /light-view.svg
+      dark: /dark-view.svg
     title: Edge & inertia compliant
     details: Go to attachment in your favorite frontend
 ---

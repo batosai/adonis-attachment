@@ -32,7 +32,6 @@ export default class AttachmentProvider {
         this.app,
         attachmentConfig
       )
-      const logger = await this.app.container.make('logger')
       const drive = await this.app.container.make('drive.manager')
 
       if (!config) {
@@ -41,7 +40,7 @@ export default class AttachmentProvider {
         )
       }
 
-      this.#manager = new AttachmentManager(config, logger, drive)
+      this.#manager = new AttachmentManager(config, drive)
 
       return this.#manager
     })

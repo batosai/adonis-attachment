@@ -7,14 +7,14 @@
 
 import type { ConverterAttributes } from '../types/converter.js'
 
+import logger from '@adonisjs/core/services/logger'
 import Converter from './converter.js'
 import { use } from '../utils/helpers.js'
 
 export default class ImageConverter extends Converter {
   async handle({ input, options }: ConverterAttributes) {
-    const sharp = await use('sharp')
-
-    if (sharp) {
+    try {
+      const sharp = await use('sharp')
       const resize = options?.resize || {}
       let format = options?.format || 'webp'
       let formatoptions = {}
@@ -31,6 +31,8 @@ export default class ImageConverter extends Converter {
         .toBuffer()
 
       return buffer
+    } catch(err) {
+      logger.error({ err })
     }
   }
 }

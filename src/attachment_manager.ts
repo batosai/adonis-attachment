@@ -5,27 +5,24 @@
  * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
  */
 
-import type { LoggerService } from '@adonisjs/core/types'
+import { createError } from '@adonisjs/core/exceptions'
 import type { DriveService, SignedURLOptions } from '@adonisjs/drive/types'
 import type { MultipartFile } from '@adonisjs/core/bodyparser'
 import type { AttachmentBase, Attachment as AttachmentType } from './types/attachment.js'
 import type { ResolvedAttachmentConfig } from './types/config.js'
 
-import { Exception } from '@poppinss/utils'
 import { Attachment } from './attachments/attachment.js'
 import Converter from './converters/converter.js'
-import { createAttachmentAttributes } from './utils/helpers.js'
+import { createAttachmentAttributes, isBase64 } from './utils/helpers.js'
 import { exif } from './adapters/exif.js'
 
 const REQUIRED_ATTRIBUTES = ['name', 'size', 'extname', 'mimeType']
 
 export class AttachmentManager {
-  #logger: LoggerService
   #config: ResolvedAttachmentConfig
   #drive: DriveService
 
-  constructor(config: ResolvedAttachmentConfig, logger: LoggerService, drive: DriveService) {
-    this.#logger = logger
+  constructor(config: ResolvedAttachmentConfig, drive: DriveService) {
     this.#drive = drive
     this.#config = config
   }
@@ -43,8 +40,9 @@ export class AttachmentManager {
 
     REQUIRED_ATTRIBUTES.forEach((attribute) => {
       if (attributes[attribute] === undefined) {
-        throw new Exception(
-          `Cannot create attachment from database response. Missing attribute "${attribute}"`
+        throw createError(
+          `Cannot create attachment from database response. Missing attribute "${attribute}"`,
+          'E_CANNOT_CREATE_ATTACHMENT'
         )
       }
     })
@@ -61,13 +59,17 @@ export class AttachmentManager {
     }
 
     if (!file.tmpPath) {
-      throw new Error("It's not a valid file")
+      throw createError('File not found', 'ENOENT')
     }
 
     return new Attachment(this.#drive, attributes, file.tmpPath)
   }
 
   async createFromBuffer(buffer: Buffer, name?: string) {
+    if (!Buffer.isBuffer(buffer)) {
+      throw createError('Is not a Buffer', 'E_ISNOT_BUFFER')
+    }
+
     const attributes = await createAttachmentAttributes(buffer, name)
 
     return new Attachment(this.#drive, attributes, buffer)
@@ -75,6 +77,10 @@ export class AttachmentManager {
 
   async createFromBase64(data: string, name?: string) {
     const base64Data = data.replace(/^data:([A-Za-z-+\/]+);base64,/, '')
+    if (!isBase64(base64Data)) {
+      throw createError('Is not a Base64', 'E_ISNOT_BASE64')
+    }
+
     const buffer = Buffer.from(base64Data, 'base64')
 
     return await this.createFromBuffer(buffer, name)
@@ -126,44 +132,24 @@ export class AttachmentManager {
       attachment.meta = undefined
     }
 
-    try {
-      if (Buffer.isBuffer(attachment.input)) {
-        await attachment.getDisk().put(destinationPath, attachment.input)
-      } else if (attachment.input) {
-        await attachment.getDisk().copyFromFs(attachment.input, destinationPath)
-      }
-    } catch (err) {
-      this.#logger.error({ err }, 'Error send file')
+    if (Buffer.isBuffer(attachment.input)) {
+      await attachment.getDisk().put(destinationPath, attachment.input)
+    } else if (attachment.input) {
+      await attachment.getDisk().copyFromFs(attachment.input, destinationPath)
     }
   }
 
   async delete(attachment: AttachmentBase) {
     if (attachment.path) {
-      try {
-        const filePath = attachment.path
+      const filePath = attachment.path
 
-        try {
-          await attachment.getDisk().delete(filePath)
-        } catch (accessError) {
-          if (accessError.code === 'ENOENT') {
-            this.#logger.warn(`File not found: ${filePath}`)
-          } else {
-            throw accessError
-          }
-        }
+      await attachment.getDisk().delete(filePath)
 
-        if (attachment instanceof Attachment) {
-          if (attachment.variants) {
-            const variantPath = attachment.variants[0].folder
-            try {
-              await attachment.getDisk().deleteAll(variantPath)
-            } catch (rmError) {
-              this.#logger.error(`Failed to remove variants folder: ${rmError.message}`)
-            }
-          }
+      if (attachment instanceof Attachment) {
+        if (attachment.variants) {
+          const variantPath = attachment.variants[0].folder
+          await attachment.getDisk().deleteAll(variantPath)
         }
-      } catch (error) {
-        this.#logger.error(error);
       }
     }
   }

@@ -14,7 +14,7 @@ import path from 'node:path'
 import fs from 'fs/promises'
 import { cuid } from '@adonisjs/core/helpers'
 import string from '@adonisjs/core/helpers/string'
-import logger from '@adonisjs/core/services/logger'
+import { createError } from '@adonisjs/core/exceptions'
 import { fileTypeFromBuffer, fileTypeFromFile } from 'file-type'
 import { Attachment } from '../attachments/attachment.js'
 import { optionsSym } from './symbols.js'
@@ -93,7 +93,11 @@ export async function use(module: string) {
 
     return result
   } catch (error) {
-    logger.error({ err: error }, `Dependence missing, please install ${module}`)
+    throw createError(
+      `Missing dependency, please install ${module}`,
+      'E_MISSING_DEPENDENCY',
+      500
+    )
   }
 }
 
@@ -102,4 +106,19 @@ export async function bufferToTempFile(input: Buffer) {
   const tempFilePath = path.join(folder, `tempfile-${Date.now()}.tmp`)
   await fs.writeFile(tempFilePath, input)
   return tempFilePath
+}
+
+export function isBase64(str: string) {
+  const base64Regex = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/
+
+  if (!base64Regex.test(str)) {
+    return false
+  }
+
+  try {
+    Buffer.from(str, 'base64').toString()
+    return true
+  } catch (err) {
+    return false
+  }
 }

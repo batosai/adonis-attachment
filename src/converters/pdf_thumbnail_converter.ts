@@ -11,17 +11,16 @@ import type { Input } from '../types/input.js'
 import os from 'node:os'
 import path from 'node:path'
 import { cuid } from '@adonisjs/core/helpers'
+import logger from '@adonisjs/core/services/logger'
 import Converter from './converter.js'
 import ImageConverter from './image_converter.js'
 import { use } from '../utils/helpers.js'
 
 export default class PdfThumbnailConverter extends Converter {
   async handle({ input, options }: ConverterAttributes) {
-    const nodePoppler = await use('node-poppler')
-
-    if (nodePoppler) {
+    try {
+      const nodePoppler = await use('node-poppler')
       const Poppler = nodePoppler.Poppler
-
       const filePath = await this.pdfToImage(Poppler, input)
 
       if (options && filePath) {
@@ -33,6 +32,8 @@ export default class PdfThumbnailConverter extends Converter {
       }
 
       return filePath
+    } catch(err) {
+      logger.error({ err })
     }
   }
 

@@ -11,6 +11,7 @@ import type { Input } from '../types/input.js'
 import os from 'node:os'
 import path from 'node:path'
 import { cuid } from '@adonisjs/core/helpers'
+import logger from '@adonisjs/core/services/logger'
 import Converter from './converter.js'
 import ImageConverter from './image_converter.js'
 import { bufferToTempFile, use } from '../utils/helpers.js'
@@ -18,9 +19,8 @@ import { bufferToTempFile, use } from '../utils/helpers.js'
 export default class VideoThumbnailConvert extends Converter {
 
   async handle({ input, options }: ConverterAttributes) {
-    const ffmpeg = await use('fluent-ffmpeg')
-
-    if (ffmpeg) {
+    try {
+      const ffmpeg = await use('fluent-ffmpeg')
       const filePath = await this.videoToImage(ffmpeg, input)
 
       if (options && filePath) {
@@ -32,6 +32,8 @@ export default class VideoThumbnailConvert extends Converter {
       } else {
         return filePath
       }
+    } catch(err) {
+      logger.error({ err })
     }
   }
 

@@ -5,12 +5,12 @@
  * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
  */
 
-import { createError } from '@adonisjs/core/exceptions'
 import type { DriveService, SignedURLOptions } from '@adonisjs/drive/types'
 import type { MultipartFile } from '@adonisjs/core/bodyparser'
 import type { AttachmentBase, Attachment as AttachmentType } from './types/attachment.js'
 import type { ResolvedAttachmentConfig } from './types/config.js'
 
+import * as errors from './errors.js'
 import { Attachment } from './attachments/attachment.js'
 import Converter from './converters/converter.js'
 import { createAttachmentAttributes, isBase64 } from './utils/helpers.js'
@@ -40,10 +40,7 @@ export class AttachmentManager {
 
     REQUIRED_ATTRIBUTES.forEach((attribute) => {
       if (attributes[attribute] === undefined) {
-        throw createError(
-          `Cannot create attachment from database response. Missing attribute "${attribute}"`,
-          'E_CANNOT_CREATE_ATTACHMENT'
-        )
+        throw new errors.E_CANNOT_CREATE_ATTACHMENT([attribute])
       }
     })
 
@@ -59,7 +56,7 @@ export class AttachmentManager {
     }
 
     if (!file.tmpPath) {
-      throw createError('File not found', 'ENOENT')
+      throw new errors.ENOENT()
     }
 
     return new Attachment(this.#drive, attributes, file.tmpPath)
@@ -67,7 +64,7 @@ export class AttachmentManager {
 
   async createFromBuffer(buffer: Buffer, name?: string) {
     if (!Buffer.isBuffer(buffer)) {
-      throw createError('Is not a Buffer', 'E_ISNOT_BUFFER')
+      throw new errors.E_ISNOT_BUFFER()
     }
 
     const attributes = await createAttachmentAttributes(buffer, name)
@@ -78,7 +75,7 @@ export class AttachmentManager {
   async createFromBase64(data: string, name?: string) {
     const base64Data = data.replace(/^data:([A-Za-z-+\/]+);base64,/, '')
     if (!isBase64(base64Data)) {
-      throw createError('Is not a Base64', 'E_ISNOT_BASE64')
+      throw new errors.E_ISNOT_BASE64()
     }
 
     const buffer = Buffer.from(base64Data, 'base64')

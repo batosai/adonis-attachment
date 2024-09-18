@@ -14,9 +14,9 @@ import path from 'node:path'
 import fs from 'fs/promises'
 import { cuid } from '@adonisjs/core/helpers'
 import string from '@adonisjs/core/helpers/string'
-import { createError } from '@adonisjs/core/exceptions'
 import { fileTypeFromBuffer, fileTypeFromFile } from 'file-type'
 import { Attachment } from '../attachments/attachment.js'
+import * as errors from '../errors.js'
 import { optionsSym } from './symbols.js'
 
 export function getAttachmentAttributeNames(modelInstance: ModelWithAttachment) {
@@ -92,12 +92,8 @@ export async function use(module: string) {
     }
 
     return result
-  } catch (error) {
-    throw createError(
-      `Missing dependency, please install ${module}`,
-      'E_MISSING_DEPENDENCY',
-      500
-    )
+  } catch (err) {
+    throw new errors.E_MISSING_PACKAGE([module], { cause: err})
   }
 }
 

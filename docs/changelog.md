@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.3.1
+
+* fix: review exceptions
+* doc: add [exception](/guide/advanced_usage/exceptions)
+
+
 ## 2.3.0
 
 * add [createFromBase64](/guide/basic_usage/controller-setup.html#from-base64)

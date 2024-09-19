@@ -98,6 +98,10 @@ export default defineConfig({
             text: 'Advanced Usage',
             items: [
               {
+                text: 'Exceptions',
+                link: '/guide/advanced_usage/exceptions'
+              },
+              {
                 text: 'PrecompileUrl',
                 link: '/guide/advanced_usage/pre-compile-on-demand'
               },

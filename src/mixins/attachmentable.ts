@@ -9,8 +9,21 @@ import type { BaseModel } from '@adonisjs/lucid/orm'
 import type { NormalizeConstructor } from '@adonisjs/core/types/helpers'
 import type { AttributeOfModelWithAttachment } from '../types/mixin.js'
 
-import { beforeSave, afterSave, beforeDelete, afterFind, afterFetch, afterPaginate } from '@adonisjs/lucid/orm'
-import { persistAttachment, commit, rollback, generateVariants, preComputeUrl } from '../utils/actions.js'
+import {
+  beforeSave,
+  afterSave,
+  beforeDelete,
+  afterFind,
+  afterFetch,
+  afterPaginate,
+} from '@adonisjs/lucid/orm'
+import {
+  persistAttachment,
+  commit,
+  rollback,
+  generateVariants,
+  preComputeUrl,
+} from '../utils/actions.js'
 import { clone, getAttachmentAttributeNames } from '../utils/helpers.js'
 import { defaultStateAttributeMixin } from '../utils/default_values.js'
 

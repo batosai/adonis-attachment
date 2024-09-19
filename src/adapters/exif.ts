@@ -14,8 +14,7 @@ import { fileTypeFromBuffer, fileTypeFromFile } from 'file-type'
 import { bufferToTempFile, cleanObject, use } from '../utils/helpers.js'
 import { attachmentManager } from '../../index.js'
 
-export const exif = async (input: Input): Promise<Exif|undefined> => {
-
+export const exif = async (input: Input): Promise<Exif | undefined> => {
   let fileType
   let buffer
 
@@ -119,9 +118,8 @@ async function imageExif(buffer: Buffer) {
   return cleanObject(data)
 }
 
-
 async function videoExif(input: Input) {
-  return new Promise<Exif|undefined>(async (resolve) => {
+  return new Promise<Exif | undefined>(async (resolve) => {
     const ffmpeg = await use('fluent-ffmpeg')
 
     let file = input
@@ -148,7 +146,7 @@ async function videoExif(input: Input) {
         dimension: {
           width: data.streams[0].width,
           height: data.streams[0].height,
-        }
+        },
       })
     })
   })

@@ -88,7 +88,7 @@ export class AttachmentBase implements AttachmentBaseInterface {
     if (this.url) {
       return {
         ...this.toObject(),
-        url: this.url
+        url: this.url,
       }
     }
 

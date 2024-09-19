@@ -17,7 +17,6 @@ import ImageConverter from './image_converter.js'
 import { bufferToTempFile, use } from '../utils/helpers.js'
 
 export default class VideoThumbnailConvert extends Converter {
-
   async handle({ input, options }: ConverterAttributes) {
     try {
       const ffmpeg = await use('fluent-ffmpeg')
@@ -27,12 +26,12 @@ export default class VideoThumbnailConvert extends Converter {
         const converter = new ImageConverter()
         return await converter.handle({
           input: filePath,
-          options
+          options,
         })
       } else {
         return filePath
       }
-    } catch(err) {
+    } catch (err) {
       logger.error({ err })
     }
   }
@@ -44,7 +43,7 @@ export default class VideoThumbnailConvert extends Converter {
       file = await bufferToTempFile(input)
     }
 
-    return new Promise<string|false>((resolve) => {
+    return new Promise<string | false>((resolve) => {
       const folder = os.tmpdir()
       const filename = `${cuid()}.png`
 
@@ -57,13 +56,12 @@ export default class VideoThumbnailConvert extends Converter {
       }
 
       ff.screenshots({
-          count: 1,
-          filename,
-          folder,
-        })
-        .on('end', () => {
-          resolve(path.join(folder, filename))
-        })
+        count: 1,
+        filename,
+        folder,
+      }).on('end', () => {
+        resolve(path.join(folder, filename))
       })
+    })
   }
 }

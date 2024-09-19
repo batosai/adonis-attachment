@@ -93,7 +93,7 @@ export async function use(module: string) {
 
     return result
   } catch (err) {
-    throw new errors.E_MISSING_PACKAGE([module], { cause: err})
+    throw new errors.E_MISSING_PACKAGE([module], { cause: err })
   }
 }
 

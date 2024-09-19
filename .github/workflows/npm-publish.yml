@@ -15,7 +15,6 @@ env:
   false: 🔴
 
 jobs:
-
   release:
     runs-on: ubuntu-latest
     steps:
@@ -25,7 +24,7 @@ jobs:
         uses: halvardssm/github-action-tag-release@1.0.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          path: "./package.json" # optional, will use ./package.json by default
+          path: './package.json' # optional, will use ./package.json by default
 
       - run: |
           echo 'Release created: ${{steps.release.outputs.release_created}}' # 'true' or 'false'
@@ -42,7 +41,6 @@ jobs:
             Repository: ${{ github.repository }}
             Release : ${{ env[steps.release.outputs.release_created] }}
             Tag: ${{ steps.version.outputs.release_tag }}
-
 
   publish-npm:
     needs: release

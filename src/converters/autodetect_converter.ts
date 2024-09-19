@@ -13,9 +13,7 @@ import ImageConverter from './image_converter.js'
 import VideoThumnailConverter from './video_thumbnail_converter.js'
 
 export default class AutodetectConverter extends Converter {
-
   async handle({ input, options }: ConverterAttributes) {
-
     let converter
     let fileType
 
@@ -34,7 +32,7 @@ export default class AutodetectConverter extends Converter {
     if (converter) {
       return await converter.handle({
         input,
-        options
+        options,
       })
     }
   }

@@ -31,7 +31,7 @@ export default class ImageConverter extends Converter {
         .toBuffer()
 
       return buffer
-    } catch(err) {
+    } catch (err) {
       logger.error({ err })
     }
   }

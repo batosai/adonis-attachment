@@ -1,0 +1,19 @@
+{{#var entity = generators.createEntity(name)}}
+{{#var modelConverterName = string(entity.name).removeSuffix('converter').pascalCase().suffix(string.pascalCase('converter')).toString()}}
+{{#var modelConverterFileName = string(entity.name).snakeCase().suffix('_converter').ext('.ts').toString()}}
+{{{
+  exports({ to: app.makePath('app/converters', entity.path, modelConverterFileName) })
+}}}
+
+import type { ConverterAttributes } from '@jrmc/adonis-attachment/types/converter'
+
+import logger from '@adonisjs/core/services/logger'
+import Converter from '@jrmc/adonis-attachment/converters/converter'
+
+export default class {{ modelConverterName }} extends Converter {
+  async handle({ input }: ConverterAttributes) {
+    logger.info('Input path %s', input)
+
+    return input
+  }
+}

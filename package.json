@@ -36,10 +36,12 @@
   ],
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "build": "npm run clean && tsc && npm run copyfiles",
+    "build": "npm run clean && tsc",
+    "postbuild": "npm run copyfiles && npm run index:commands",
     "prepublishOnly": "npm run build",
     "clean": "del-cli build",
     "copyfiles": "copyfiles \"stubs/**/**/*.stub\" build",
+    "index:commands": "adonis-kit index build/commands",
     "format": "prettier --write .",
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",
@@ -52,6 +54,9 @@
     "./decorators": "./build/src/decorators/attachment.js",
     "./services/*": "./build/services/*.js",
     "./converters/*": "./build/src/converters/*.js",
+    "./providers/*": "./build/providers/*.js",
+    "./commands": "./build/commands/main.js",
+    "./commands/*": "./build/commands/*.js",
     "./attachment_service": "./build/services/attachment_service.js",
     "./attachment_provider": "./build/providers/attachment_provider.js"
   },

@@ -8,6 +8,7 @@
 import type { ConverterAttributes } from '../types/converter.js'
 import type { Input } from '../types/input.js'
 
+import logger from '@adonisjs/core/services/logger'
 import Converter from './converter.js'
 import ImageConverter from './image_converter.js'
 import { use } from '../utils/helpers.js'
@@ -29,7 +30,7 @@ export default class DocumentThumbnailConverter extends Converter {
 
       return outputBuffer
     } catch (err) {
-      this.logger.error({ err })
+      logger.error({ err })
     }
   }
 

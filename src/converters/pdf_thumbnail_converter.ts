@@ -11,6 +11,7 @@ import type { Input } from '../types/input.js'
 import os from 'node:os'
 import path from 'node:path'
 import { cuid } from '@adonisjs/core/helpers'
+import logger from '@adonisjs/core/services/logger'
 import Converter from './converter.js'
 import ImageConverter from './image_converter.js'
 import { use } from '../utils/helpers.js'
@@ -32,7 +33,7 @@ export default class PdfThumbnailConverter extends Converter {
 
       return filePath
     } catch (err) {
-      this.logger.error({ err })
+      logger.error({ err })
     }
   }
 

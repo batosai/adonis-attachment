@@ -7,6 +7,7 @@
 
 import type { ConverterAttributes } from '../types/converter.js'
 
+import logger from '@adonisjs/core/services/logger'
 import Converter from './converter.js'
 import { use } from '../utils/helpers.js'
 
@@ -31,7 +32,7 @@ export default class ImageConverter extends Converter {
 
       return buffer
     } catch (err) {
-      this.logger.error({ err })
+      logger.error({ err })
     }
   }
 }

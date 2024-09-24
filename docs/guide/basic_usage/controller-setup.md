@@ -38,6 +38,8 @@ class UsersController {
 
 ## From Base64
 
+⚠️ [avalable in v2.3.0](/changelog#_2-3-0)
+
 ```ts
 import { attachmentManager } from '@jrmc/adonis-attachment' // [!code focus]
 import app from '@adonisjs/core/services/app'

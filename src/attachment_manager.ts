@@ -10,6 +10,7 @@ import type { MultipartFile } from '@adonisjs/core/bodyparser'
 import type { AttachmentBase, Attachment as AttachmentType } from './types/attachment.js'
 import type { ResolvedAttachmentConfig } from './types/config.js'
 
+import { DeferQueue } from '@poppinss/defer'
 import * as errors from './errors.js'
 import { Attachment } from './attachments/attachment.js'
 import Converter from './converters/converter.js'
@@ -19,12 +20,14 @@ import { exif } from './adapters/exif.js'
 const REQUIRED_ATTRIBUTES = ['name', 'size', 'extname', 'mimeType']
 
 export class AttachmentManager {
+  queue
   #config: ResolvedAttachmentConfig
   #drive: DriveService
 
   constructor(config: ResolvedAttachmentConfig, drive: DriveService) {
     this.#drive = drive
     this.#config = config
+    this.queue = new DeferQueue()
   }
 
   getConfig() {

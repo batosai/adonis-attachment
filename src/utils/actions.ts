@@ -105,14 +105,20 @@ export async function generateVariants(modelInstance: ModelWithAttachment, attri
       const converter = await attachmentManager.getConverter(option)
 
       if (attachment && converter) {
-        const converterManager = new ConverterManager({
-          record: modelInstance,
-          attributeName,
-          key: option,
-          converter,
+        attachmentManager.queue.push({
+          name: `${modelInstance.constructor.name}-${option}`,
+          async run() {
+            const converterManager = new ConverterManager({
+              record: modelInstance,
+              attributeName,
+              key: option,
+              converter,
+            })
+            await converterManager.save()
+          }
         })
-        converterManager.save()
       }
+
     })
   }
 }

@@ -60,6 +60,19 @@ export const E_CANNOT_CREATE_ATTACHMENT = createError<[key: string]>(
 )
 
 /**
+ * Unable to create variant
+ */
+export const E_CANNOT_CREATE_VARIANT = createError<[key: string]>(
+  'Cannot create variant. "%s"',
+  'E_CANNOT_CREATE_VARIANT'
+)
+
+/**
+ * Missing path
+ */
+export const E_CANNOT_PATH_BY_CONVERTER = createError('Path not found', 'E_CANNOT_PATH_BY_CONVERTER')
+
+/**
  * Is not a Buffer
  */
 export const E_ISNOT_BUFFER = createError('Is not a Buffer', 'E_ISNOT_BUFFER')

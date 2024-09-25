@@ -7,9 +7,9 @@
 
 import type { ConverterAttributes } from '../types/converter.js'
 
-import logger from '@adonisjs/core/services/logger'
 import Converter from './converter.js'
 import { use } from '../utils/helpers.js'
+import { E_CANNOT_CREATE_VARIANT } from '../errors.js'
 
 export default class ImageConverter extends Converter {
   async handle({ input, options }: ConverterAttributes) {
@@ -32,7 +32,7 @@ export default class ImageConverter extends Converter {
 
       return buffer
     } catch (err) {
-      logger.error({ err })
+      throw new E_CANNOT_CREATE_VARIANT([err.message])
     }
   }
 }

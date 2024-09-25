@@ -11,10 +11,10 @@ import type { Input } from '../types/input.js'
 import os from 'node:os'
 import path from 'node:path'
 import { cuid } from '@adonisjs/core/helpers'
-import logger from '@adonisjs/core/services/logger'
 import Converter from './converter.js'
 import ImageConverter from './image_converter.js'
 import { bufferToTempFile, use } from '../utils/helpers.js'
+import { E_CANNOT_CREATE_VARIANT } from '../errors.js'
 
 export default class VideoThumbnailConvert extends Converter {
   async handle({ input, options }: ConverterAttributes) {
@@ -32,7 +32,7 @@ export default class VideoThumbnailConvert extends Converter {
         return filePath
       }
     } catch (err) {
-      logger.error({ err })
+      throw new E_CANNOT_CREATE_VARIANT([err.message])
     }
   }
 
@@ -43,7 +43,7 @@ export default class VideoThumbnailConvert extends Converter {
       file = await bufferToTempFile(input)
     }
 
-    return new Promise<string | false>((resolve) => {
+    return new Promise<string | false>((resolve, reject) => {
       const folder = os.tmpdir()
       const filename = `${cuid()}.png`
 
@@ -61,6 +61,8 @@ export default class VideoThumbnailConvert extends Converter {
         folder,
       }).on('end', () => {
         resolve(path.join(folder, filename))
+      }).on('error', (err: Error) => {
+        reject(err)
       })
     })
   }

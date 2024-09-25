@@ -22,28 +22,33 @@ import type { ConverterAttributes } from '@jrmc/adonis-attachment/types/converte
 import type { Input } from '@jrmc/adonis-attachment/types/input'
 
 import Converter from '@jrmc/adonis-attachment/converters/converter'
+import { errors } from '@jrmc/adonis-attachment'
 import sharp from 'sharp'
 
 export default class Gif2WebpConverter extends Converter {
   async handle({ input }: ConverterAttributes): Promise<Input> {
-    const sharpImage = sharp(input, { animated: true, pages: -1 })
+    try {
+      const sharpImage = sharp(input, { animated: true, pages: -1 })
 
-    const imageMeta = await sharpImage.metadata()
-    const { loop, delay } = imageMeta
+      const imageMeta = await sharpImage.metadata()
+      const { loop, delay } = imageMeta
 
-    const options = {
-      webp: {
-        loop,
-        delay,
+      const options = {
+        webp: {
+          loop,
+          delay,
+        }
       }
+
+      const buffer = await sharpImage
+        .withMetadata()
+        .webp(options.webp)
+        .toBuffer()
+
+      return buffer
+    } catch (err) {
+      throw new errors.E_CANNOT_CREATE_VARIANT([err.message])
     }
-
-    const buffer = await sharpImage
-      .withMetadata()
-      .webp(options.webp)
-      .toBuffer()
-
-    return buffer
   }
 }
 ```
@@ -59,15 +64,17 @@ import os from 'node:os'
 import path from 'node:path'
 import fs from 'fs/promises'
 import { cuid } from '@adonisjs/core/helpers'
-import logger from '@adonisjs/core/services/logger'
+import { errors } from '@jrmc/adonis-attachment'
 import Converter from '@jrmc/adonis-attachment/converters/converter'
 import ffmpeg from 'fluent-ffmpeg'
 
 export default class Video2GifConverter extends Converter {
   async handle({ input }: ConverterAttributes): Promise<Input> {
-    const filePath = await this.videoToGif(ffmpeg, input)
-
-    return filePath
+    try {
+      return await this.videoToGif(ffmpeg, input)
+    } catch (err) {
+      throw new errors.E_CANNOT_CREATE_VARIANT([err.message])
+    }
   }
 
   async videoToGif(ffmpeg: Function, input: Input) {
@@ -101,10 +108,8 @@ export default class Video2GifConverter extends Converter {
       .on('end', () => {
         resolve(destination)
       })
-      .on('error', (err: Error, stdout, stderr) => {
-        logger.info('stdout:', stdout)
-        logger.error(stderr, err.message)
-        reject()
+      .on('error', (err: Error) => {
+        reject(err)
       })
       .output(destination)
       .run()

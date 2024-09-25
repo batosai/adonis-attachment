@@ -5,6 +5,7 @@ import db from '@adonisjs/lucid/services/db'
 import { Input } from './types/input.js'
 import { ModelWithAttachment } from './types/mixin.js'
 import attachmentManager from '../services/main.js'
+import * as errors from './errors.js'
 
 export class ConverterManager {
   #key: string
@@ -33,6 +34,10 @@ export class ConverterManager {
       input: this.#input,
       options: this.#converter.options!,
     })
+
+    if (output === undefined) {
+      throw new errors.E_CANNOT_PATH_BY_CONVERTER()
+    }
 
     const Model = record.constructor as LucidModel
     const id = record.$attributes['id']

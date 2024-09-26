@@ -27,7 +27,16 @@ export class AttachmentManager {
   constructor(config: ResolvedAttachmentConfig, drive: DriveService) {
     this.#drive = drive
     this.#config = config
-    this.queue = new DeferQueue()
+
+    if (!this.#config.queue) {
+      this.queue = new DeferQueue()
+    } else {
+      this.queue = new DeferQueue()
+    }
+
+    const concurrency = this.#config.queue?.concurrency || 1
+
+    this.queue = new DeferQueue({ concurrency })
   }
 
   getConfig() {

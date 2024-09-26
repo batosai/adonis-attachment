@@ -14,25 +14,20 @@ import { cuid } from '@adonisjs/core/helpers'
 import Converter from './converter.js'
 import ImageConverter from './image_converter.js'
 import { bufferToTempFile, use } from '../utils/helpers.js'
-import { E_CANNOT_CREATE_VARIANT } from '../errors.js'
 
 export default class VideoThumbnailConvert extends Converter {
   async handle({ input, options }: ConverterAttributes) {
-    try {
-      const ffmpeg = await use('fluent-ffmpeg')
-      const filePath = await this.videoToImage(ffmpeg, input)
+    const ffmpeg = await use('fluent-ffmpeg')
+    const filePath = await this.videoToImage(ffmpeg, input)
 
-      if (options && filePath) {
-        const converter = new ImageConverter()
-        return await converter.handle({
-          input: filePath,
-          options,
-        })
-      } else {
-        return filePath
-      }
-    } catch (err) {
-      throw new E_CANNOT_CREATE_VARIANT([err.message])
+    if (options && filePath) {
+      const converter = new ImageConverter()
+      return await converter.handle({
+        input: filePath,
+        options,
+      })
+    } else {
+      return filePath
     }
   }
 

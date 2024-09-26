@@ -11,6 +11,7 @@ import type { ModelWithAttachment } from '../types/mixin.js'
 import attachmentManager from '../../services/main.js'
 import { getOptions } from './helpers.js'
 import { ConverterManager } from '../converter_manager.js'
+import { E_CANNOT_CREATE_VARIANT } from '../errors.js'
 
 /**
  * During commit, we should cleanup the old detached files
@@ -108,13 +109,17 @@ export async function generateVariants(modelInstance: ModelWithAttachment, attri
         attachmentManager.queue.push({
           name: `${modelInstance.constructor.name}-${option}`,
           async run() {
-            const converterManager = new ConverterManager({
-              record: modelInstance,
-              attributeName,
-              key: option,
-              converter,
-            })
-            await converterManager.save()
+            try {
+              const converterManager = new ConverterManager({
+                record: modelInstance,
+                attributeName,
+                key: option,
+                converter,
+              })
+              await converterManager.save()
+            } catch (err) {
+              throw new E_CANNOT_CREATE_VARIANT([err.message])
+            }
           }
         })
       }

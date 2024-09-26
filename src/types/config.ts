@@ -17,6 +17,10 @@ type ConverterConfig = {
   options?: ConverterOptions
 }
 
+type Queue = {
+  concurrency: number
+}
+
 export type BinPaths = {
   ffmpegPath?: string
   ffprobePath?: string
@@ -30,6 +34,7 @@ export type AttachmentConfig = {
   rename?: boolean
   preComputeUrl?: boolean
   converters?: ConverterConfig[]
+  queue?: Queue
 }
 
 export type ResolvedConverter = {
@@ -43,4 +48,5 @@ export type ResolvedAttachmentConfig = {
   rename?: boolean
   preComputeUrl?: boolean
   converters?: ResolvedConverter[]
+  queue?: Queue
 }

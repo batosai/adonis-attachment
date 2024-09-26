@@ -14,27 +14,22 @@ import { cuid } from '@adonisjs/core/helpers'
 import Converter from './converter.js'
 import ImageConverter from './image_converter.js'
 import { use } from '../utils/helpers.js'
-import { E_CANNOT_CREATE_VARIANT } from '../errors.js'
 
 export default class PdfThumbnailConverter extends Converter {
-  async handle({ input, options }: ConverterAttributes) {
-    try {
-      const nodePoppler = await use('node-poppler')
-      const Poppler = nodePoppler.Poppler
-      const filePath = await this.pdfToImage(Poppler, input)
+  async handle({ input, options }: ConverterAttributes): Promise<Input> {
+    const nodePoppler = await use('node-poppler')
+    const Poppler = nodePoppler.Poppler
+    const filePath = await this.pdfToImage(Poppler, input)
 
-      if (options && filePath) {
-        const converter = new ImageConverter()
-        return await converter.handle({
-          input: filePath,
-          options,
-        })
-      }
-
-      return filePath
-    } catch (err) {
-      throw new E_CANNOT_CREATE_VARIANT([err.message])
+    if (options && filePath) {
+      const converter = new ImageConverter()
+      return await converter.handle({
+        input: filePath,
+        options,
+      })
     }
+
+    return filePath
   }
 
   async pdfToImage(Poppler: any, input: Input) {

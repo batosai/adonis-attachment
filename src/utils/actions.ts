@@ -98,32 +98,18 @@ export async function preComputeUrl(modelInstance: ModelWithAttachment, attribut
  * Launch converter by variant option
  */
 export async function generateVariants(modelInstance: ModelWithAttachment, attributeName: string) {
-  const options = getOptions(modelInstance, attributeName)
-
-  if (options.variants) {
-    options.variants.forEach(async (option) => {
-      const attachment = modelInstance.$attributes[attributeName] as Attachment
-      const converter = await attachmentManager.getConverter(option)
-
-      if (attachment && converter) {
-        attachmentManager.queue.push({
-          name: `${modelInstance.constructor.name}-${option}`,
-          async run() {
-            try {
-              const converterManager = new ConverterManager({
-                record: modelInstance,
-                attributeName,
-                key: option,
-                converter,
-              })
-              await converterManager.save()
-            } catch (err) {
-              throw new E_CANNOT_CREATE_VARIANT([err.message])
-            }
-          }
+  attachmentManager.queue.push({
+    name: `${modelInstance.constructor.name}-${attributeName}`,
+    async run() {
+      try {
+        const converterManager = new ConverterManager({
+          record: modelInstance,
+          attributeName,
         })
+        await converterManager.save()
+      } catch (err) {
+        throw new E_CANNOT_CREATE_VARIANT([err.message])
       }
-
-    })
-  }
+    }
+  })
 }

@@ -28,12 +28,6 @@ export class AttachmentManager {
     this.#drive = drive
     this.#config = config
 
-    if (!this.#config.queue) {
-      this.queue = new DeferQueue()
-    } else {
-      this.queue = new DeferQueue()
-    }
-
     const concurrency = this.#config.queue?.concurrency || 1
 
     this.queue = new DeferQueue({ concurrency })

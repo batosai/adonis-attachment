@@ -109,6 +109,6 @@ export async function generateVariants(modelInstance: ModelWithAttachment, attri
       } catch (err) {
         throw new E_CANNOT_CREATE_VARIANT([err.message])
       }
-    }
+    },
   })
 }

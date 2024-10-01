@@ -27,7 +27,7 @@ export class ConverterManager {
 
     if (options.variants) {
       for (const option of options.variants) {
-        const converter = await attachmentManager.getConverter(option) as Converter
+        const converter = (await attachmentManager.getConverter(option)) as Converter
 
         if (attachment && converter) {
           const output = await converter.handle!({
@@ -42,7 +42,6 @@ export class ConverterManager {
           const variant = await attachment.createVariant(option, output)
           await attachmentManager.save(variant)
         }
-
       }
     }
 

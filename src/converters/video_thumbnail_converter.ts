@@ -54,11 +54,13 @@ export default class VideoThumbnailConvert extends Converter {
         count: 1,
         filename,
         folder,
-      }).on('end', () => {
-        resolve(path.join(folder, filename))
-      }).on('error', (err: Error) => {
-        reject(err)
       })
+        .on('end', () => {
+          resolve(path.join(folder, filename))
+        })
+        .on('error', (err: Error) => {
+          reject(err)
+        })
     })
   }
 }

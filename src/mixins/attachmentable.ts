@@ -24,7 +24,11 @@ import {
   generateVariants,
   preComputeUrl,
 } from '../utils/actions.js'
-import { clone, getAttachmentAttributeNames, getDirtyAttachmentAttributeNames } from '../utils/helpers.js'
+import {
+  clone,
+  getAttachmentAttributeNames,
+  getDirtyAttachmentAttributeNames,
+} from '../utils/helpers.js'
 import { defaultStateAttributeMixin } from '../utils/default_values.js'
 
 export const Attachmentable = <Model extends NormalizeConstructor<typeof BaseModel>>(

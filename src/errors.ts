@@ -70,7 +70,10 @@ export const E_CANNOT_CREATE_VARIANT = createError<[key: string]>(
 /**
  * Missing path
  */
-export const E_CANNOT_PATH_BY_CONVERTER = createError('Path not found', 'E_CANNOT_PATH_BY_CONVERTER')
+export const E_CANNOT_PATH_BY_CONVERTER = createError(
+  'Path not found',
+  'E_CANNOT_PATH_BY_CONVERTER'
+)
 
 /**
  * Is not a Buffer

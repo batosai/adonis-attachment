@@ -22,33 +22,28 @@ import type { ConverterAttributes } from '@jrmc/adonis-attachment/types/converte
 import type { Input } from '@jrmc/adonis-attachment/types/input'
 
 import Converter from '@jrmc/adonis-attachment/converters/converter'
-import { errors } from '@jrmc/adonis-attachment'
 import sharp from 'sharp'
 
 export default class Gif2WebpConverter extends Converter {
   async handle({ input }: ConverterAttributes): Promise<Input> {
-    try {
-      const sharpImage = sharp(input, { animated: true, pages: -1 })
+    const sharpImage = sharp(input, { animated: true, pages: -1 })
 
-      const imageMeta = await sharpImage.metadata()
-      const { loop, delay } = imageMeta
+    const imageMeta = await sharpImage.metadata()
+    const { loop, delay } = imageMeta
 
-      const options = {
-        webp: {
-          loop,
-          delay,
-        }
+    const options = {
+      webp: {
+        loop,
+        delay,
       }
-
-      const buffer = await sharpImage
-        .withMetadata()
-        .webp(options.webp)
-        .toBuffer()
-
-      return buffer
-    } catch (err) {
-      throw new errors.E_CANNOT_CREATE_VARIANT([err.message])
     }
+
+    const buffer = await sharpImage
+      .withMetadata()
+      .webp(options.webp)
+      .toBuffer()
+
+    return buffer
   }
 }
 ```
@@ -64,17 +59,12 @@ import os from 'node:os'
 import path from 'node:path'
 import fs from 'fs/promises'
 import { cuid } from '@adonisjs/core/helpers'
-import { errors } from '@jrmc/adonis-attachment'
 import Converter from '@jrmc/adonis-attachment/converters/converter'
 import ffmpeg from 'fluent-ffmpeg'
 
 export default class Video2GifConverter extends Converter {
   async handle({ input }: ConverterAttributes): Promise<Input> {
-    try {
-      return await this.videoToGif(ffmpeg, input)
-    } catch (err) {
-      throw new errors.E_CANNOT_CREATE_VARIANT([err.message])
-    }
+    return await this.videoToGif(ffmpeg, input)
   }
 
   async videoToGif(ffmpeg: Function, input: Input) {

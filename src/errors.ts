@@ -62,23 +62,14 @@ export const E_CANNOT_CREATE_ATTACHMENT = createError<[key: string]>(
 /**
  * Is not a Buffer
  */
-export const E_ISNOT_BUFFER = createError(
-  'Is not a Buffer',
-  'E_ISNOT_BUFFER'
-)
+export const E_ISNOT_BUFFER = createError('Is not a Buffer', 'E_ISNOT_BUFFER')
 
 /**
  * Is not a Base64
  */
-export const E_ISNOT_BASE64 = createError(
-  'Is not a Base64',
-  'E_ISNOT_BASE64'
-)
+export const E_ISNOT_BASE64 = createError('Is not a Base64', 'E_ISNOT_BASE64')
 
 /**
  * Unable to read file
  */
-export const ENOENT = createError(
-  'File not found',
-  'ENOENT'
-)
+export const ENOENT = createError('File not found', 'ENOENT')

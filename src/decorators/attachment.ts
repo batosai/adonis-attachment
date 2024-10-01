@@ -21,8 +21,12 @@ export const attachment = (options?: LucidOptions) => {
     const defaultConfig = attachmentManager.getConfig()
     const defaultOptions = {
       meta: defaultConfig.meta !== undefined ? defaultConfig.meta : defaultOptionsDecorator.meta,
-      rename: defaultConfig.rename !== undefined ? defaultConfig.rename : defaultOptionsDecorator.rename,
-      preComputeUrl: defaultConfig.preComputeUrl !== undefined ? defaultConfig.preComputeUrl : defaultOptionsDecorator.preComputeUrl,
+      rename:
+        defaultConfig.rename !== undefined ? defaultConfig.rename : defaultOptionsDecorator.rename,
+      preComputeUrl:
+        defaultConfig.preComputeUrl !== undefined
+          ? defaultConfig.preComputeUrl
+          : defaultOptionsDecorator.preComputeUrl,
     }
 
     if (!options || options?.meta === undefined) {

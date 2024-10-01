@@ -6,7 +6,6 @@ on:
   issue_comment:
     types: [created, edited]
 
-
 jobs:
   notify-discord:
     runs-on: ubuntu-latest

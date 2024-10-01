@@ -93,7 +93,10 @@ export class AttachmentManager {
     }
   }
 
-  async computeUrl(attachment: AttachmentType | AttachmentBase, signedUrlOptions?: SignedURLOptions) {
+  async computeUrl(
+    attachment: AttachmentType | AttachmentBase,
+    signedUrlOptions?: SignedURLOptions
+  ) {
     const disk = attachment.getDisk()
     const fileVisibility = await disk.getVisibility(attachment.path!)
 

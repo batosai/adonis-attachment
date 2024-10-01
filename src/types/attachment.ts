@@ -43,7 +43,10 @@ export type Attachment = AttachmentBase & {
   createVariant(key: string, input: Input): Promise<Variant>
   getVariant(variantName: string): Variant | undefined
   getUrl(variantName?: string): Promise<string>
-  getSignedUrl(variantNameOrOptions?: string | SignedURLOptions, signedUrlOptions?: SignedURLOptions): Promise<string>
+  getSignedUrl(
+    variantNameOrOptions?: string | SignedURLOptions,
+    signedUrlOptions?: SignedURLOptions
+  ): Promise<string>
   toObject(): AttachmentAttributes
 }
 

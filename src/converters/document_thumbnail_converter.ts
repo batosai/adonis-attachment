@@ -24,12 +24,12 @@ export default class DocumentThumbnailConverter extends Converter {
         const converter = new ImageConverter()
         return await converter.handle({
           input: outputBuffer,
-          options
+          options,
         })
       }
 
       return outputBuffer
-    } catch(err) {
+    } catch (err) {
       logger.error({ err })
     }
   }
@@ -44,7 +44,7 @@ export default class DocumentThumbnailConverter extends Converter {
       childProcessOptions: {
         timeout: 60 * 1000,
       },
-      binaryPaths
+      binaryPaths,
     })
 
     if (Buffer.isBuffer(input)) {

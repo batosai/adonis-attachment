@@ -27,12 +27,12 @@ export default class PdfThumbnailConverter extends Converter {
         const converter = new ImageConverter()
         return await converter.handle({
           input: filePath,
-          options
+          options,
         })
       }
 
       return filePath
-    } catch(err) {
+    } catch (err) {
       logger.error({ err })
     }
   }

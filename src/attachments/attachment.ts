@@ -71,7 +71,10 @@ export class Attachment extends AttachmentBase implements AttachmentInterface {
     return super.getUrl()
   }
 
-  getSignedUrl(variantNameOrOptions?: string | SignedURLOptions, signedUrlOptions?: SignedURLOptions) {
+  getSignedUrl(
+    variantNameOrOptions?: string | SignedURLOptions,
+    signedUrlOptions?: SignedURLOptions
+  ) {
     let variantName: string | undefined
     let options: SignedURLOptions | undefined = signedUrlOptions
 
@@ -111,7 +114,7 @@ export class Attachment extends AttachmentBase implements AttachmentInterface {
       this.variants.forEach((v) => {
         v.setOptions({
           ...this.options,
-          variants: []
+          variants: [],
         })
       })
     }

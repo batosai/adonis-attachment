@@ -11,7 +11,7 @@ export const defaultOptionsDecorator = {
   preComputeUrl: false,
   variants: [],
   meta: true,
-  rename: true
+  rename: true,
 }
 
 export const defaultStateAttributeMixin = {

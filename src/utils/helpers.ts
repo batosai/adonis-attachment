@@ -27,7 +27,9 @@ export function getAttachmentAttributeNames(modelInstance: ModelWithAttachment) 
 
 export function getDirtyAttachmentAttributeNames(modelInstance: ModelWithAttachment) {
   return Object.keys(modelInstance.$dirty).filter(
-    (attr) => modelInstance.$dirty[attr] instanceof Attachment || modelInstance.$original[attr] instanceof Attachment
+    (attr) =>
+      modelInstance.$dirty[attr] instanceof Attachment ||
+      modelInstance.$original[attr] instanceof Attachment
   )
 }
 
@@ -99,7 +101,7 @@ export async function use(module: string) {
 
     return result
   } catch (err) {
-    throw new errors.E_MISSING_PACKAGE([module], { cause: err})
+    throw new errors.E_MISSING_PACKAGE([module], { cause: err })
   }
 }
 

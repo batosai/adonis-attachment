@@ -64,7 +64,6 @@ export async function persistAttachment(modelInstance: ModelWithAttachment, attr
    * If there is a new file and its local then we must save this
    * file.
    */
-  // if (newFile && newFile.isLocal) {
   if (newFile) {
     newFile.setOptions(options)
 

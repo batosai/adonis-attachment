@@ -25,6 +25,12 @@ export function getAttachmentAttributeNames(modelInstance: ModelWithAttachment) 
   )
 }
 
+export function getDirtyAttachmentAttributeNames(modelInstance: ModelWithAttachment) {
+  return Object.keys(modelInstance.$dirty).filter(
+    (attr) => modelInstance.$dirty[attr] instanceof Attachment || modelInstance.$original[attr] instanceof Attachment
+  )
+}
+
 export function getOptions(
   modelInstance: ModelWithAttachment,
   attributeName: string

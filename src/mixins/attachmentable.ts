@@ -9,9 +9,22 @@ import type { BaseModel } from '@adonisjs/lucid/orm'
 import type { NormalizeConstructor } from '@adonisjs/core/types/helpers'
 import type { AttributeOfModelWithAttachment } from '../types/mixin.js'
 
-import { beforeSave, afterSave, beforeDelete, afterFind, afterFetch, afterPaginate } from '@adonisjs/lucid/orm'
-import { persistAttachment, commit, rollback, generateVariants, preComputeUrl } from '../utils/actions.js'
-import { clone, getAttachmentAttributeNames } from '../utils/helpers.js'
+import {
+  beforeSave,
+  afterSave,
+  beforeDelete,
+  afterFind,
+  afterFetch,
+  afterPaginate,
+} from '@adonisjs/lucid/orm'
+import {
+  persistAttachment,
+  commit,
+  rollback,
+  generateVariants,
+  preComputeUrl,
+} from '../utils/actions.js'
+import { clone, getAttachmentAttributeNames, getDirtyAttachmentAttributeNames } from '../utils/helpers.js'
 import { defaultStateAttributeMixin } from '../utils/default_values.js'
 
 export const Attachmentable = <Model extends NormalizeConstructor<typeof BaseModel>>(
@@ -39,7 +52,7 @@ export const Attachmentable = <Model extends NormalizeConstructor<typeof BaseMod
 
     @beforeSave()
     static async beforeSaveHook(modelInstance: ModelWithAttachment) {
-      const attachmentAttributeNames = getAttachmentAttributeNames(modelInstance)
+      const attachmentAttributeNames = getDirtyAttachmentAttributeNames(modelInstance)
 
       /**
        * Empty previous $attachments
@@ -49,11 +62,9 @@ export const Attachmentable = <Model extends NormalizeConstructor<typeof BaseMod
       /**
        * Set attributes Attachment type modified
        */
-      attachmentAttributeNames.forEach((attributeName) => {
-        if (modelInstance.$dirty[attributeName]) {
-          modelInstance.$attachments.attributesModified.push(attributeName)
-        }
-      })
+      attachmentAttributeNames.forEach((attributeName) =>
+        modelInstance.$attachments.attributesModified.push(attributeName)
+      )
 
       /**
        * Persist attachments before saving the model to the database. This

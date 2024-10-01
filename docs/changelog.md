@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.3.2
+
+* fix: remove file after set attributes Attachment at null
+
 ## 2.3.1
 
 * fix: review exceptions

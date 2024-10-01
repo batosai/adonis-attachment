@@ -1,6 +1,6 @@
 {
   "name": "@jrmc/adonis-attachment",
-  "version": "2.3.1",
+  "version": "2.4.0",
   "type": "module",
   "description": "Turn any field on your Lucid model to an attachment data type",
   "engines": {
@@ -61,6 +61,7 @@
     "./attachment_provider": "./build/providers/attachment_provider.js"
   },
   "dependencies": {
+    "@poppinss/defer": "^1.1.0",
     "exifreader": "^4.23.3",
     "file-type": "^19.4.0"
   },

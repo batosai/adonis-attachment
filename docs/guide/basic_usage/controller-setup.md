@@ -55,3 +55,21 @@ class UsersController {
   }
 }
 ```
+
+## Delete Attachment
+
+
+::: code-group
+```ts [model]
+class User extends compose(BaseModel, Attachmentable) { 
+  @attachment()
+  declare avatar: Attachment | null
+}
+```
+
+```ts [controller]
+user.avatar = null
+await user.save()
+```
+
+:::

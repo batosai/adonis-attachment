@@ -2,6 +2,7 @@
 
 ## 2.4.0
 
+* feat: use queue by Model attributes Attachment
 * feat: ace command for generate converter
 
 ```sh

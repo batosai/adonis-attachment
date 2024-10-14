@@ -114,6 +114,10 @@ export default defineConfig({
                 text: 'Custom converter',
                 link: '/guide/advanced_usage/custom-converter',
               },
+              {
+                text: 'Queue',
+                link: '/guide/advanced_usage/queue',
+              },
             ],
           },
           {

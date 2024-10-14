@@ -1,8 +1,17 @@
 # Changelog
 
-## 2.3.2
+## 2.4.0
 
-* fix: remove file after set attributes Attachment at null
+* feat: use queue by Model attributes Attachment
+* feat: ace command for generate converter
+
+```sh
+node ace configure @jrmc/adonis-attachment
+```
+
+or add `() => import('@jrmc/adonis-attachment/commands')` in array commands on `adonisrc.ts`
+
+* doc: add [custom converter](/guide/advanced_usage/custom-converter)
 
 ## 2.3.1
 
@@ -18,14 +27,14 @@
 
 ## 2.2.0
 
-* add config preComputeUrl
+* add config [preComputeUrl](/guide/basic_usage/model-setup.html#specifying-precomputeurl)
 * fix data serialize
 
 ## 2.1.0
 
 * you may set the ffmpeg and ffprobe binary paths manually
-* add config to disable meta
-* add config to disable rename
+* add config to disable [meta](/guide/basic_usage/model-setup.html#specifying-meta)
+* add config to disable [rename](/guide/basic_usage/model-setup.html#specifying-rename)
 
 ## 2.0.2
 

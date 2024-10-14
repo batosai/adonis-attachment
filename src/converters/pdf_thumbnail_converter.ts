@@ -11,30 +11,25 @@ import type { Input } from '../types/input.js'
 import os from 'node:os'
 import path from 'node:path'
 import { cuid } from '@adonisjs/core/helpers'
-import logger from '@adonisjs/core/services/logger'
 import Converter from './converter.js'
 import ImageConverter from './image_converter.js'
 import { use } from '../utils/helpers.js'
 
 export default class PdfThumbnailConverter extends Converter {
-  async handle({ input, options }: ConverterAttributes) {
-    try {
-      const nodePoppler = await use('node-poppler')
-      const Poppler = nodePoppler.Poppler
-      const filePath = await this.pdfToImage(Poppler, input)
+  async handle({ input, options }: ConverterAttributes): Promise<Input> {
+    const nodePoppler = await use('node-poppler')
+    const Poppler = nodePoppler.Poppler
+    const filePath = await this.pdfToImage(Poppler, input)
 
-      if (options && filePath) {
-        const converter = new ImageConverter()
-        return await converter.handle({
-          input: filePath,
-          options,
-        })
-      }
-
-      return filePath
-    } catch (err) {
-      logger.error({ err })
+    if (options && filePath) {
+      const converter = new ImageConverter()
+      return await converter.handle({
+        input: filePath,
+        options,
+      })
     }
+
+    return filePath
   }
 
   async pdfToImage(Poppler: any, input: Input) {

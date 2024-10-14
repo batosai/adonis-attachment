@@ -38,6 +38,8 @@ class UsersController {
 
 ## From Base64
 
+⚠️ [avalable in v2.3.0](/changelog#_2-3-0)
+
 ```ts
 import { attachmentManager } from '@jrmc/adonis-attachment' // [!code focus]
 import app from '@adonisjs/core/services/app'
@@ -53,3 +55,21 @@ class UsersController {
   }
 }
 ```
+
+## Delete Attachment
+
+
+::: code-group
+```ts [model]
+class User extends compose(BaseModel, Attachmentable) { 
+  @attachment()
+  declare avatar: Attachment | null
+}
+```
+
+```ts [controller]
+user.avatar = null
+await user.save()
+```
+
+:::

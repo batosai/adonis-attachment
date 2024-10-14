@@ -1,6 +1,8 @@
 
 # PDF thumbnail converter
 
+⚠️ [avalable in v2.3.0](/changelog#_2-3-0)
+
 <!--@include: ../partials/install-pdf.md-->
 
 ## Configuration

@@ -124,3 +124,23 @@ export default defineConfig({
   ]
 })
 ```
+
+## queue concurrency (optional)
+
+The convert processing is carried out async in a queue
+
+By default, 1 task is processed concurrently. 1 task corresponds to a model attribute. For example, if a model has a logo attribute and an avatar attribute, this represents 2 tasks whatever the number of concert per attribute.
+
+```typescript
+import app from '@adonisjs/core/services/app'
+import { defineConfig } from '@jrmc/adonis-attachment'
+
+export default defineConfig({
+  queue: { // [!code focus:3]
+    concurrency: 2
+  },
+  converters: [
+    // ...
+  ]
+})
+```

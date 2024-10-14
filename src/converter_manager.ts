@@ -1,53 +1,59 @@
 import type { LucidModel } from '@adonisjs/lucid/types/model'
 import type { Converter, ConverterInitializeAttributes } from './types/converter.js'
+import type { Attachment } from './types/attachment.js'
 
 import db from '@adonisjs/lucid/services/db'
-import { Input } from './types/input.js'
 import { ModelWithAttachment } from './types/mixin.js'
 import attachmentManager from '../services/main.js'
+import * as errors from './errors.js'
+import { getOptions } from './utils/helpers.js'
 
 export class ConverterManager {
-  #key: string
-  #input: Input
   #record: ModelWithAttachment
   #attributeName: string
-  #converter: Converter
 
-  constructor({ record, attributeName, key, converter }: ConverterInitializeAttributes) {
-    this.#key = key
+  constructor({ record, attributeName }: ConverterInitializeAttributes) {
     this.#record = record
     this.#attributeName = attributeName
-
-    this.#input = record.$attributes[attributeName].input
-
-    this.#converter = converter
   }
 
   async save() {
-    const record = this.#record!
-    const attribute = this.#attributeName!
-
-    await record.refresh()
-
-    const output = await this.#converter.handle!({
-      input: this.#input,
-      options: this.#converter.options!,
-    })
-
-    const Model = record.constructor as LucidModel
-    const id = record.$attributes['id']
-    const attachment = record.$attributes[attribute]
+    const options = getOptions(this.#record, this.#attributeName)
+    const attachment = this.#record.$attributes[this.#attributeName] as Attachment
+    const input = attachment.input!
+    const Model = this.#record.constructor as LucidModel
+    const id = this.#record.$attributes['id']
     const data: any = {}
 
-    const variant = await attachment.createVariant(this.#key, output)
+    if (options.variants) {
+      for (const option of options.variants) {
+        const converter = (await attachmentManager.getConverter(option)) as Converter
 
-    await attachmentManager.save(variant)
+        if (attachment && converter) {
+          const output = await converter.handle!({
+            input,
+            options: converter.options!,
+          })
 
-    data[attribute] = JSON.stringify(attachment.toObject())
+          if (output === undefined) {
+            throw new errors.E_CANNOT_PATH_BY_CONVERTER()
+          }
+
+          const variant = await attachment.createVariant(option, output)
+          await attachmentManager.save(variant)
+        }
+      }
+    }
+
+    data[this.#attributeName] = JSON.stringify(attachment.toObject())
 
     const trx = await db.transaction()
 
-    trx.after('rollback', () => attachmentManager.delete(variant))
+    trx.after('rollback', () => {
+      for (const variant of attachment.variants!) {
+        attachmentManager.delete(variant)
+      }
+    })
 
     try {
       await trx.query().from(Model.table).where('id', id).update(data)

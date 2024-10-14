@@ -53,6 +53,8 @@ class User extends BaseModel {
 
 ## Specifying preComputeUrl
 
+⚠️ [avalable in v2.2.0](/changelog#_2-2-0)
+
 You can enabled pre compute the URLs after SELECT queries, default is false
 
 ```ts
@@ -65,6 +67,8 @@ class User extends BaseModel {
 
 ## Specifying meta
 
+⚠️ [avalable in v2.1.0](/changelog#_2-1-0)
+
 You can disabled meta generation, default is true
 
 ```ts
@@ -75,6 +79,8 @@ class User extends BaseModel {
 ```
 
 ## Specifying rename
+
+⚠️ [avalable in v2.1.0](/changelog#_2-1-0)
 
 You can disabled rename file, default is true
 

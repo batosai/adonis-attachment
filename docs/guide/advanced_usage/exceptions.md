@@ -5,6 +5,8 @@
 | -------------------------- | ----------------------------------------------- | ------- |
 | E_MISSING_PACKAGE          | Missing package                                 |         |
 | E_CANNOT_CREATE_ATTACHMENT | Unable to create Attachment Object              |         |
+| E_CANNOT_CREATE_VARIANT    | Unable to create variant                        |         |
+| E_CANNOT_PATH_BY_CONVERTER | Missing path by converter                       |         |
 | E_ISNOT_BUFFER             | Is not a Buffer                                 |         |
 | E_ISNOT_BASE64             | Is not a Base64                                 |         |
 | ENOENT                     | Unable to read file                             |         |

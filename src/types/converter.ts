@@ -18,8 +18,6 @@ export type Converter = {
 export type ConverterInitializeAttributes = {
   record: ModelWithAttachment
   attributeName: string
-  key: string
-  converter: Converter
 }
 
 export type ConverterAttributes = {

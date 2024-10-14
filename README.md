@@ -8,9 +8,9 @@ Project sample : [adonis-starter-kit](https://github.com/batosai/adonis-starter-
 
 [View documentation](https://adonis-attachment.jrmc.dev/)
 
-[Discord](https://discord.gg/89eMn2vB)
-
 [ChangeLog](https://adonis-attachment.jrmc.dev/changelog.html)
+
+[Discord](https://discord.gg/89eMn2vB)
 
 ⚠️ [Breaking change](https://adonis-attachment.jrmc.dev/changelog.html) version 2, include [@adonisjs/drive](https://docs.adonisjs.com/guides/digging-deeper/drive)
 
@@ -23,9 +23,9 @@ Project sample : [adonis-starter-kit](https://github.com/batosai/adonis-starter-
   - [x] documents thumbnail
   - [x] videos thumbnail
 - [ ] command regenerate
-- [ ] command make:convert
+- [x] command make:convert
 - [x] adonis-drive/flydrive
-- [ ] jobs queue
+- [x] jobs queue
 - [x] serialize
 
 
@@ -46,11 +46,11 @@ Simple upload file
 import { BaseModel } from '@adonisjs/lucid/orm'
 import { compose } from '@adonisjs/core/helpers'
 import { attachment, Attachmentable } from '@jrmc/adonis-attachment'
-import type { Attachment } from '@jrmc/adonis-attachment/types/attachment' // [!code highlight]
+import type { Attachment } from '@jrmc/adonis-attachment/types/attachment'
 
-class User extends compose(BaseModel, Attachmentable) { // [!code highlight]
-  @attachment() // [!code highlight]
-  declare avatar: Attachment // [!code highlight]
+class User extends compose(BaseModel, Attachmentable) {
+  @attachment()
+  declare avatar: Attachment
 }
 ```
 
@@ -58,14 +58,14 @@ class User extends compose(BaseModel, Attachmentable) { // [!code highlight]
 
 ```ts
 // app/controllers/users_controller.ts
-import { attachmentManager } from '@jrmc/adonis-attachment' // [!code focus]
+import { attachmentManager } from '@jrmc/adonis-attachment'
 
 class UsersController {
   public store({ request }: HttpContext) {
-    const avatar = request.file('avatar')! // [!code focus]
+    const avatar = request.file('avatar')!
     const user = new User()
 
-    user.avatar = await attachmentManager.createFromFile(avatar) // [!code focus]
+    user.avatar = await attachmentManager.createFromFile(avatar)
     await user.save()
   }
 }

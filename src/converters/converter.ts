@@ -7,6 +7,7 @@
 
 import type { BinPaths } from '../types/config.js'
 import type { Converter as ConverterInterface, ConverterOptions } from '../types/converter.js'
+
 export default class Converter implements ConverterInterface {
   options?: ConverterOptions
   binPaths?: BinPaths

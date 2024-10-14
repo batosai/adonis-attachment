@@ -11,6 +11,7 @@ import type { ModelWithAttachment } from '../types/mixin.js'
 import attachmentManager from '../../services/main.js'
 import { getOptions } from './helpers.js'
 import { ConverterManager } from '../converter_manager.js'
+import { E_CANNOT_CREATE_VARIANT } from '../errors.js'
 
 /**
  * During commit, we should cleanup the old detached files
@@ -63,7 +64,6 @@ export async function persistAttachment(modelInstance: ModelWithAttachment, attr
    * If there is a new file and its local then we must save this
    * file.
    */
-  // if (newFile && newFile.isLocal) {
   if (newFile) {
     newFile.setOptions(options)
 
@@ -97,22 +97,18 @@ export async function preComputeUrl(modelInstance: ModelWithAttachment, attribut
  * Launch converter by variant option
  */
 export async function generateVariants(modelInstance: ModelWithAttachment, attributeName: string) {
-  const options = getOptions(modelInstance, attributeName)
-
-  if (options.variants) {
-    options.variants.forEach(async (option) => {
-      const attachment = modelInstance.$attributes[attributeName] as Attachment
-      const converter = await attachmentManager.getConverter(option)
-
-      if (attachment && converter) {
+  attachmentManager.queue.push({
+    name: `${modelInstance.constructor.name}-${attributeName}`,
+    async run() {
+      try {
         const converterManager = new ConverterManager({
           record: modelInstance,
           attributeName,
-          key: option,
-          converter,
         })
-        converterManager.save()
+        await converterManager.save()
+      } catch (err) {
+        throw new E_CANNOT_CREATE_VARIANT([err.message])
       }
-    })
-  }
+    },
+  })
 }

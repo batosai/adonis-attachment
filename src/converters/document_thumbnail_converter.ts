@@ -8,30 +8,25 @@
 import type { ConverterAttributes } from '../types/converter.js'
 import type { Input } from '../types/input.js'
 
-import logger from '@adonisjs/core/services/logger'
 import Converter from './converter.js'
 import ImageConverter from './image_converter.js'
 import { use } from '../utils/helpers.js'
 
 export default class DocumentThumbnailConverter extends Converter {
-  async handle({ input, options }: ConverterAttributes) {
-    try {
-      const lib = await use('libreoffice-file-converter')
-      const LibreOfficeFileConverter = lib.LibreOfficeFileConverter
-      const outputBuffer = await this.documentToImage(LibreOfficeFileConverter, input)
+  async handle({ input, options }: ConverterAttributes): Promise<Input> {
+    const lib = await use('libreoffice-file-converter')
+    const LibreOfficeFileConverter = lib.LibreOfficeFileConverter
+    const outputBuffer = await this.documentToImage(LibreOfficeFileConverter, input)
 
-      if (options && outputBuffer) {
-        const converter = new ImageConverter()
-        return await converter.handle({
-          input: outputBuffer,
-          options,
-        })
-      }
-
-      return outputBuffer
-    } catch (err) {
-      logger.error({ err })
+    if (options && outputBuffer) {
+      const converter = new ImageConverter()
+      return await converter.handle({
+        input: outputBuffer,
+        options,
+      })
     }
+
+    return outputBuffer
   }
 
   async documentToImage(LibreOfficeFileConverter: any, input: Input) {

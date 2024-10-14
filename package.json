@@ -11,6 +11,7 @@
     "type": "git",
     "url": "https://github.com/batosai/adonis-attachment.git"
   },
+  "homepage": "https://adonis-attachment.jrmc.dev",
   "author": "Jeremy Chaufourier jeremy@chaufourier.fr",
   "license": "MIT",
   "keywords": [
@@ -21,7 +22,7 @@
     "image-attachment",
     "image-manipulation",
     "responsive-images",
-    "responsive-image",
+    "upload",
     "resize-images",
     "optimize-images",
     "image",

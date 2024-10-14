@@ -13,6 +13,10 @@ or add `() => import('@jrmc/adonis-attachment/commands')` in array commands on `
 
 * doc: add [custom converter](/guide/advanced_usage/custom-converter)
 
+## 2.3.2
+
+* fix: remove file after set attributes Attachment at null
+
 ## 2.3.1
 
 * fix: review exceptions

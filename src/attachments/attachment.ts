@@ -138,7 +138,7 @@ export class Attachment extends AttachmentBase implements AttachmentInterface {
       originalName: this.originalName,
       size: this.size,
       extname: this.extname,
-      mimetype: this.mimeType,
+      mimeType: this.mimeType,
       meta: this.meta,
     }
 
@@ -147,7 +147,7 @@ export class Attachment extends AttachmentBase implements AttachmentInterface {
         data[v.key] = {
           name: v.name,
           extname: v.extname,
-          mimetype: v.mimeType,
+          mimeType: v.mimeType,
           meta: v.meta,
           size: v.size,
         }

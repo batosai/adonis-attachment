@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.4.1
+
+* fix: typo error mimetype -> mimeType
+
 ## 2.4.0
 
 * feat: use queue by Model attributes Attachment

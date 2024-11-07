@@ -50,7 +50,8 @@ export class AttachmentManager {
       }
     })
 
-    return new Attachment(this.#drive, attributes)
+    const attachment = new Attachment(this.#drive, attributes)
+    return this.#configureAttachment(attachment)
   }
 
   async createFromFile(file: MultipartFile) {
@@ -65,7 +66,8 @@ export class AttachmentManager {
       throw new errors.ENOENT()
     }
 
-    return new Attachment(this.#drive, attributes, file.tmpPath)
+    const attachment = new Attachment(this.#drive, attributes, file.tmpPath)
+    return this.#configureAttachment(attachment)
   }
 
   async createFromBuffer(buffer: Buffer, name?: string) {
@@ -75,7 +77,8 @@ export class AttachmentManager {
 
     const attributes = await createAttachmentAttributes(buffer, name)
 
-    return new Attachment(this.#drive, attributes, buffer)
+    const attachment = new Attachment(this.#drive, attributes, buffer)
+    return this.#configureAttachment(attachment)
   }
 
   async createFromBase64(data: string, name?: string) {
@@ -158,5 +161,23 @@ export class AttachmentManager {
         }
       }
     }
+  }
+
+  // private methods
+
+  #configureAttachment(attachment: AttachmentType) {
+    if (this.#config.meta !== undefined) {
+      attachment.setOptions({ meta: this.#config.meta })
+    }
+
+    if (this.#config.preComputeUrl !== undefined) {
+      attachment.setOptions({ preComputeUrl: this.#config.preComputeUrl })
+    }
+
+    if (this.#config.meta !== undefined) {
+      attachment.setOptions({ meta: this.#config.meta })
+    }
+
+    return attachment
   }
 }

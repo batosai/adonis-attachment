@@ -18,27 +18,6 @@ export const attachment = (options?: LucidOptions) => {
       target[optionsSym] = {}
     }
 
-    const defaultConfig = attachmentManager.getConfig()
-    const defaultOptions = {
-      meta: defaultConfig.meta !== undefined ? defaultConfig.meta : defaultOptionsDecorator.meta,
-      rename:
-        defaultConfig.rename !== undefined ? defaultConfig.rename : defaultOptionsDecorator.rename,
-      preComputeUrl:
-        defaultConfig.preComputeUrl !== undefined
-          ? defaultConfig.preComputeUrl
-          : defaultOptionsDecorator.preComputeUrl,
-    }
-
-    if (!options || options?.meta === undefined) {
-      options!.meta = defaultOptions.meta
-    }
-    if (!options || options?.rename === undefined) {
-      options!.rename = defaultOptions.rename
-    }
-    if (!options || options?.preComputeUrl === undefined) {
-      options!.preComputeUrl = defaultOptions.preComputeUrl
-    }
-
     target[optionsSym][attributeName] = options
 
     const Model = target.constructor as LucidModel
@@ -53,7 +32,17 @@ export const attachment = (options?: LucidOptions) => {
       consume: (value) => {
         if (value) {
           const attachment = attachmentManager.createFromDbResponse(value)
-          attachment?.setOptions({ disk, folder, variants, meta, rename })
+          attachment?.setOptions({ disk, folder, variants })
+
+          if (options && options?.meta !== undefined) {
+            attachment?.setOptions({ meta: options!.meta })
+          }
+          if (options && options?.rename !== undefined) {
+            attachment?.setOptions({ rename: options!.rename })
+          }
+          if (options && options?.preComputeUrl !== undefined) {
+            attachment?.setOptions({ preComputeUrl: options!.preComputeUrl })
+          }
           return attachment
         } else {
           return null

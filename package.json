@@ -1,6 +1,6 @@
 {
   "name": "@jrmc/adonis-attachment",
-  "version": "2.4.1",
+  "version": "2.4.2",
   "type": "module",
   "description": "Turn any field on your Lucid model to an attachment data type",
   "engines": {

@@ -37,6 +37,22 @@ export class Attachment extends AttachmentBase implements AttachmentInterface {
     }
   }
 
+  /**
+   * Getters
+   */
+
+  get name() {
+    if (this.options && this.options.rename === false) {
+      return this.originalName
+    }
+
+    return super.name
+  }
+
+  /**
+   * Methods
+   */
+
   async createVariant(key: string, input: Input): Promise<Variant> {
     const attributes = {
       ...(await createAttachmentAttributes(input)),
@@ -101,15 +117,6 @@ export class Attachment extends AttachmentBase implements AttachmentInterface {
       ...options,
     }
 
-    if (!this.path) {
-      if (!this.options.rename) {
-        this.name = this.originalName
-      }
-
-      this.folder = this.options!.folder!
-      this.path = path.join(this.folder, this.name)
-    }
-
     if (this.variants) {
       this.variants.forEach((v) => {
         v.setOptions({
@@ -121,6 +128,10 @@ export class Attachment extends AttachmentBase implements AttachmentInterface {
 
     return this
   }
+
+  /**
+   *
+   */
 
   toObject(): AttachmentAttributes {
     const variants = this.variants?.map((v) => v.toObject())

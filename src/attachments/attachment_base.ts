@@ -13,6 +13,7 @@ import type {
 } from '../types/attachment.js'
 import type { Exif, Input } from '../types/input.js'
 
+import path from 'node:path'
 import { cuid } from '@adonisjs/core/helpers'
 import { defaultOptionsDecorator } from '../utils/default_values.js'
 
@@ -21,13 +22,14 @@ export class AttachmentBase implements AttachmentBaseInterface {
 
   input?: Input
 
-  name: string
+  #name: string
+  #folder?: string
+
   size: number
   extname: string
   mimeType: string
   meta?: Exif
-  folder?: string
-  path?: string
+  originalPath?: string
   url?: string
 
   options?: LucidOptions
@@ -39,19 +41,41 @@ export class AttachmentBase implements AttachmentBaseInterface {
     this.meta = attributes.meta
     this.extname = attributes.extname
     this.mimeType = attributes.mimeType
-    this.folder = attributes.folder
-    this.path = attributes.path
+    this.originalPath = attributes.path
+
+    this.#folder = attributes.folder
+    if (attributes.name) {
+      this.#name = attributes.name
+    } else {
+      this.#name = `${cuid()}.${this.extname}`
+    }
 
     this.options = defaultOptionsDecorator
-
     this.drive = drive
-
-    if (attributes.name) {
-      this.name = attributes.name
-    } else {
-      this.name = `${cuid()}.${this.extname}`
-    }
   }
+
+  /**
+   * Getters
+   */
+
+  get name(): string {
+    return this.#name
+  }
+
+  get folder(): string | undefined {
+    if (this.options) {
+      return this.options?.folder
+    }
+    return this.#folder
+  }
+
+  get path(): string {
+    return path.join(this.folder!, this.name)
+  }
+
+  /**
+   * Methods
+   */
 
   getDisk() {
     return this.drive.use(this.options?.disk)
@@ -72,6 +96,10 @@ export class AttachmentBase implements AttachmentBaseInterface {
     }
     return this
   }
+
+  /**
+   *
+   */
 
   toObject(): AttachmentBaseAttributes {
     return {

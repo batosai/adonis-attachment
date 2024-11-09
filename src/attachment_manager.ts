@@ -150,9 +150,7 @@ export class AttachmentManager {
 
   async delete(attachment: AttachmentBase) {
     if (attachment.path) {
-      const filePath = attachment.path
-
-      await attachment.getDisk().delete(filePath)
+      await attachment.getDisk().delete(attachment.path)
 
       if (attachment instanceof Attachment) {
         if (attachment.variants) {
@@ -160,6 +158,10 @@ export class AttachmentManager {
           await attachment.getDisk().deleteAll(variantPath)
         }
       }
+    }
+
+    if (attachment.originalPath) {
+      await attachment.getDisk().delete(attachment.originalPath)
     }
   }
 
@@ -170,12 +172,12 @@ export class AttachmentManager {
       attachment.setOptions({ meta: this.#config.meta })
     }
 
-    if (this.#config.preComputeUrl !== undefined) {
-      attachment.setOptions({ preComputeUrl: this.#config.preComputeUrl })
+    if (this.#config.rename !== undefined) {
+      attachment.setOptions({ rename: this.#config.rename })
     }
 
-    if (this.#config.meta !== undefined) {
-      attachment.setOptions({ meta: this.#config.meta })
+    if (this.#config.preComputeUrl !== undefined) {
+      attachment.setOptions({ preComputeUrl: this.#config.preComputeUrl })
     }
 
     return attachment

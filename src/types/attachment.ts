@@ -16,12 +16,14 @@ export type AttachmentBase = {
   input?: Input
 
   name: string
+  folder?: string
+  path?: string
+
   size: number
   extname: string
   mimeType: string
   meta?: Exif
-  folder?: string
-  path?: string
+  originalPath?: string
   url?: string
 
   options?: LucidOptions

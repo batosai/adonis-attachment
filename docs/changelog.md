@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.4.2
+
+* fix: issue [#2](https://github.com/batosai/adonis-attachment/issues/2), cannot read properties of undefined (reading 'getConfig') 
+* fix: delete old file after option rename changed
+
 ## 2.4.1
 
 * fix: typo error mimetype -> mimeType

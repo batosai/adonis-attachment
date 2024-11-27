@@ -5,19 +5,20 @@
  * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
  */
 
+import { ConfigProvider } from '@adonisjs/core/types'
 import type { Converter, ConverterOptions } from './converter.js'
+import { AttachmentManager } from '../attachment_manager.js'
 
 type ImportConverter = {
   default: unknown
 }
 
-type ConverterConfig = {
-  key: string
+export interface ConverterConfig {
   converter: () => Promise<ImportConverter>
   options?: ConverterOptions
 }
 
-type Queue = {
+export interface Queue {
   concurrency: number
 }
 
@@ -28,25 +29,31 @@ export type BinPaths = {
   libreofficePaths?: Array<string>
 }
 
-export type AttachmentConfig = {
+export type AttachmentConfig<KnownConverter extends Record<string, ConverterConfig>> = {
   bin?: BinPaths
   meta?: boolean
   rename?: boolean
   preComputeUrl?: boolean
-  converters?: ConverterConfig[]
+  converters?: {
+    [K in keyof KnownConverter]: KnownConverter[K]
+  }
   queue?: Queue
 }
 
-export type ResolvedConverter = {
-  key: string
-  converter: Converter
-}
+export interface AttachmentVariants {}
 
-export type ResolvedAttachmentConfig = {
-  bin?: BinPaths
-  meta?: boolean
-  rename?: boolean
-  preComputeUrl?: boolean
-  converters?: ResolvedConverter[]
-  queue?: Queue
-}
+export type InferConverters<
+  Config extends ConfigProvider<{
+    bin?: unknown
+    meta?: unknown
+    rename?: unknown
+    preComputeUrl?: unknown
+    converters?: unknown
+    queue?: unknown
+  }>,
+> = Exclude<Awaited<ReturnType<Config['resolver']>>['converters'], undefined>
+
+export interface AttachmentService
+  extends AttachmentManager<
+    AttachmentVariants extends Record<string, Converter> ? AttachmentVariants : never
+  > {}

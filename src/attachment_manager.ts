@@ -8,7 +8,6 @@
 import type { DriveService, SignedURLOptions } from '@adonisjs/drive/types'
 import type { MultipartFile } from '@adonisjs/core/bodyparser'
 import type { AttachmentBase, Attachment as AttachmentType } from './types/attachment.js'
-import type { ResolvedAttachmentConfig } from './types/config.js'
 
 import { DeferQueue } from '@poppinss/defer'
 import * as errors from './errors.js'
@@ -16,15 +15,16 @@ import { Attachment } from './attachments/attachment.js'
 import Converter from './converters/converter.js'
 import { createAttachmentAttributes, isBase64 } from './utils/helpers.js'
 import { exif } from './adapters/exif.js'
+import { ResolvedAttachmentConfig } from './define_config.js'
 
 const REQUIRED_ATTRIBUTES = ['name', 'size', 'extname', 'mimeType']
 
-export class AttachmentManager {
+export class AttachmentManager<KnownConverters extends Record<string, Converter>> {
   queue
-  #config: ResolvedAttachmentConfig
+  #config: ResolvedAttachmentConfig<KnownConverters>
   #drive: DriveService
 
-  constructor(config: ResolvedAttachmentConfig, drive: DriveService) {
+  constructor(config: ResolvedAttachmentConfig<KnownConverters>, drive: DriveService) {
     this.#drive = drive
     this.#config = config
 
@@ -94,11 +94,7 @@ export class AttachmentManager {
 
   async getConverter(key: string): Promise<void | Converter> {
     if (this.#config.converters) {
-      for (const c of this.#config.converters) {
-        if (c.key === key) {
-          return c.converter as Converter
-        }
-      }
+      return this.#config.converters[key]
     }
   }
 

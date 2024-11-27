@@ -6,20 +6,19 @@
  */
 
 import type { ApplicationService } from '@adonisjs/core/types'
-import type { AttachmentManager } from '../src/attachment_manager.js'
-import type { ResolvedAttachmentConfig } from '../src/types/config.js'
 
 import { configProvider } from '@adonisjs/core'
 import { RuntimeException } from '@poppinss/utils'
+import { AttachmentService } from '../src/types/config.js'
 
 declare module '@adonisjs/core/types' {
   export interface ContainerBindings {
-    'jrmc.attachment': AttachmentManager
+    'jrmc.attachment': AttachmentService
   }
 }
 
 export default class AttachmentProvider {
-  #manager: AttachmentManager | null = null
+  #manager: AttachmentService | null = null
 
   constructor(protected app: ApplicationService) {}
 
@@ -27,11 +26,8 @@ export default class AttachmentProvider {
     this.app.container.singleton('jrmc.attachment', async () => {
       const { AttachmentManager } = await import('../src/attachment_manager.js')
 
-      const attachmentConfig = this.app.config.get<ResolvedAttachmentConfig>('attachment')
-      const config = await configProvider.resolve<ResolvedAttachmentConfig>(
-        this.app,
-        attachmentConfig
-      )
+      const attachmentConfig = this.app.config.get<any>('attachment')
+      const config = await configProvider.resolve<any>(this.app, attachmentConfig)
       const drive = await this.app.container.make('drive.manager')
 
       if (!config) {

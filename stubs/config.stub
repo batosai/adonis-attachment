@@ -2,6 +2,7 @@
   exports({ to: app.configPath('attachment.ts') })
 }}}
 import { defineConfig } from '@jrmc/adonis-attachment'
+import { InferConverters } from '@jrmc/adonis-attachment/types/config'
 
 const attachmentConfig = defineConfig({
   converters: {

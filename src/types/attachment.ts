@@ -9,6 +9,7 @@ import type { DriveService } from '@adonisjs/drive/types'
 import type { Exif, Input } from './input.js'
 import type { Disk } from '@adonisjs/drive'
 import type { SignedURLOptions } from '@adonisjs/drive/types'
+import type { AttachmentVariants } from '@jrmc/adonis-attachment'
 
 export type AttachmentBase = {
   drive: DriveService
@@ -63,7 +64,7 @@ export type LucidOptions = {
   disk?: string
   folder?: string
   preComputeUrl?: boolean
-  variants?: string[]
+  variants?: (keyof AttachmentVariants)[]
   rename?: boolean
   meta?: boolean
 }

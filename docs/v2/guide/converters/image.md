@@ -6,15 +6,16 @@
 
 ```typescript
 // config/attachment.ts // [!code focus:1]
-const attachmentConfig = defineConfig({
-  converters: {
-    large: { // [!code focus:6]
+export default defineConfig({
+  converters: [
+    { // [!code focus:7]
+      key: 'large',
       converter: () => import('@jrmc/adonis-attachment/converters/image_converter'), 
       options: {
         resize: 1280,
       }
     }
-  }
+  ]
 })
 ```
 
@@ -23,16 +24,17 @@ const attachmentConfig = defineConfig({
 The default format is `webp`, for change, use options format: 
 
 ```typescript
-const attachmentConfig = defineConfig({
-  converters: {
-    thumbnail: { // [!code focus:7]
+export default defineConfig({
+  converters: [
+    { // [!code focus:8]
+      key: 'thumbnail',
       converter: () => import('@jrmc/adonis-attachment/converters/image_converter'),
       options: {
         resize: 300,
         format: 'jpeg', // [!code highlight]
       }
     }
-  }
+  ]
 })
 ```
 
@@ -42,9 +44,10 @@ Options format is `string` or `object` [ format,  options ] details in documenta
 Sample for personalize image quality: 
 
 ```typescript{8-13}
-const attachmentConfig = defineConfig({
-  converters: {
-    thumbnail: { // [!code focus:12]
+export default defineConfig({
+  converters: [
+    { // [!code focus:13]
+      key: 'thumbnail',
       converter: () => import('@jrmc/adonis-attachment/converters/image_converter'),
       options: {
         resize: 300,
@@ -56,7 +59,7 @@ const attachmentConfig = defineConfig({
         }
       }
     }
-  }
+  ]
 })
 ```
 
@@ -68,12 +71,12 @@ Sample:
 
 ```typescript{11-16}
 import { defineConfig } from '@jrmc/adonis-attachment'
-import { InferConverters } from '@jrmc/adonis-attachment/types/config'
 import sharp from 'sharp'
 
-const attachmentConfig = defineConfig({
-  converters: {
-    thumbnail: {
+export default defineConfig({
+  converters: [
+    {
+      key: 'thumbnail',
       converter: () => import('@jrmc/adonis-attachment/converters/image_converter'),
       options: {
         format: 'jpeg',
@@ -85,14 +88,8 @@ const attachmentConfig = defineConfig({
         },
       }
     }
-  }
+  ]
 })
-
-export default attachmentConfig
-
-declare module '@jrmc/adonis-attachment' {
-  interface AttachmentVariants extends InferConverters<typeof attachmentConfig> {}
-}
 ```
 
 

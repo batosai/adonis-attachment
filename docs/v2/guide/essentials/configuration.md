@@ -1,33 +1,30 @@
+
+
 # General configuration 
 
 Attachment configuration is located in the `config/auditing.ts` file. By default, the file looks like this:
 
 ```typescript
 import { defineConfig } from '@jrmc/adonis-attachment'
-import { InferConverters } from '@jrmc/adonis-attachment/types/config'
 
-const attachmentConfig = defineConfig({
-  converters: {
-    thumbnail: {
+export default defineConfig({
+  converters: [
+    {
+      key: 'thumbnail',
       converter: () => import('@jrmc/adonis-attachment/converters/image_converter'),
       options: {
         resize: 300,
       }
     }
-  }
+  ]
 })
-
-export default attachmentConfig
-
-declare module '@jrmc/adonis-attachment' {
-  interface AttachmentVariants extends InferConverters<typeof attachmentConfig> {}
-}
 ```
 
 ## converters
 
 |OPTIONS:  | DESCRIPTIONS:            |
 | -------- | ------------------------ |
+|key       |Variant name              |
 |converter |Class for generate variant|
 |options   |Options converter         |
 
@@ -38,11 +35,11 @@ declare module '@jrmc/adonis-attachment' {
 enable the preComputeUrl flag to pre compute the URLs after SELECT queries.
 
 ```typescript
-const attachmentConfig = defineConfig({
+export default defineConfig({
   preComputeUrl: true, // [!code focus]
-  converters: {
+  converters: [
     // ...
-  }
+  ]
 })
 ```
 
@@ -51,11 +48,11 @@ const attachmentConfig = defineConfig({
 you can set the default meta generation or not
 
 ```typescript
-const attachmentConfig = defineConfig({
+export default defineConfig({
   meta: false, // [!code focus]
-  converters: {
+  converters: [
     // ...
-  }
+  ]
 })
 ```
 
@@ -66,11 +63,11 @@ const attachmentConfig = defineConfig({
 You can define by default if the files are renamed or not.
 
 ```typescript
-const attachmentConfig = defineConfig({
+export default defineConfig({
   rename: false, // [!code focus]
-  converters: {
+  converters: [
     // ...
-  }
+  ]
 })
 ```
 
@@ -81,7 +78,7 @@ const attachmentConfig = defineConfig({
 You may set the ffmpeg and ffprobe binary paths manually:
 
 ```typescript
-const attachmentConfig = defineConfig({
+export default defineConfig({
   bin: { // [!code focus:8]
     ffmpegPath: 'ffmpeg_path', // the full path of the binary
     ffprobePath: 'ffprobe_path', // the full path of the binary
@@ -90,9 +87,9 @@ const attachmentConfig = defineConfig({
       'libreoffice_path', // the full path of the binary
     ] // Array of paths to LibreOffice binary executables.
   },
-  converters: {
+  converters: [
     // ...
-  }
+  ]
 })
 ```
 
@@ -118,9 +115,8 @@ chmod +x ffprobe
 ```typescript
 import app from '@adonisjs/core/services/app'
 import { defineConfig } from '@jrmc/adonis-attachment'
-import { InferConverters } from '@jrmc/adonis-attachment/types/config'
 
-const attachmentConfig = defineConfig({
+export default defineConfig({
   bin: { // [!code focus:4]
     ffmpegPath: app.makePath('bin/ffmpeg'),
     ffprobePath: app.makePath('bin/ffprobe'),
@@ -129,12 +125,6 @@ const attachmentConfig = defineConfig({
     // ...
   ]
 })
-
-export default attachmentConfig
-
-declare module '@jrmc/adonis-attachment' {
-  interface AttachmentVariants extends InferConverters<typeof attachmentConfig> {}
-}
 ```
 
 ## queue concurrency (optional)
@@ -146,20 +136,13 @@ By default, 1 task is processed concurrently. 1 task corresponds to a model attr
 ```typescript
 import app from '@adonisjs/core/services/app'
 import { defineConfig } from '@jrmc/adonis-attachment'
-import { InferConverters } from '@jrmc/adonis-attachment/types/config'
 
-const attachmentConfig = defineConfig({
+export default defineConfig({
   queue: { // [!code focus:3]
     concurrency: 2
   },
-  converters: {
+  converters: [
     // ...
-  }
+  ]
 })
-
-export default attachmentConfig
-
-declare module '@jrmc/adonis-attachment' {
-  interface AttachmentVariants extends InferConverters<typeof attachmentConfig> {}
-}
 ```

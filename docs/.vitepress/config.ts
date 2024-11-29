@@ -19,7 +19,14 @@ export default defineConfig({
     // https://vitepress.dev/reference/default-theme-config
     nav: [
       { text: 'Home', link: '/' },
-      { text: 'Guide', link: '/guide/essentials/introduction' },
+      {
+        text: 'Guide',
+        items: [
+          { text: '3.0.0', link: '/guide/essentials/introduction' },
+          { text: '2.4.2', link: '/v2/guide/essentials/introduction' },
+        ]
+
+      },
       {
         text: 'Other docs',
         items: [
@@ -32,8 +39,8 @@ export default defineConfig({
       },
     ],
 
-    sidebar: [
-      {
+    sidebar: {
+      '/guide/': [{
         text: 'Guide',
         items: [
           {
@@ -140,6 +147,114 @@ export default defineConfig({
         link: '/changelog',
       },
     ],
+    '/v2/': [{
+      text: 'Guide',
+      items: [
+        {
+          text: 'Start here',
+          link: '/v2/guide/start-here',
+        },
+        {
+          text: 'Essentials',
+          items: [
+            {
+              text: 'Introduction',
+              link: '/v2/guide/essentials/introduction',
+            },
+            {
+              text: 'Installation',
+              link: '/v2/guide/essentials/installation',
+            },
+            {
+              text: 'Configuration',
+              link: '/v2/guide/essentials/configuration',
+            },
+          ],
+        },
+        {
+          text: 'Basic Usage',
+          items: [
+            {
+              text: 'Migration Setup',
+              link: '/v2/guide/basic_usage/migration-setup',
+            },
+            {
+              text: 'Model Setup',
+              link: '/v2/guide/basic_usage/model-setup',
+            },
+            {
+              text: 'Controller Setup',
+              link: '/v2/guide/basic_usage/controller-setup',
+            },
+            {
+              text: 'View Setup',
+              link: '/v2/guide/basic_usage/view-setup',
+            },
+          ],
+        },
+        {
+          text: 'Converter',
+          items: [
+            {
+              text: 'Image',
+              link: '/v2/guide/converters/image',
+            },
+            {
+              text: 'PDF thumbnail',
+              link: '/v2/guide/converters/pdf-thumbnail',
+            },
+            {
+              text: 'Document thumbnail',
+              link: '/v2/guide/converters/document-thumbnail',
+            },
+            {
+              text: 'Video thumbnail',
+              link: '/v2/guide/converters/video-thumbnail',
+            },
+          ],
+        },
+        {
+          text: 'Advanced Usage',
+          items: [
+            {
+              text: 'Exceptions',
+              link: '/v2/guide/advanced_usage/exceptions',
+            },
+            {
+              text: 'PrecompileUrl',
+              link: '/v2/guide/advanced_usage/pre-compile-on-demand',
+            },
+            {
+              text: 'Custom converter',
+              link: '/v2/guide/advanced_usage/custom-converter',
+            },
+            {
+              text: 'Queue',
+              link: '/v2/guide/advanced_usage/queue',
+            },
+          ],
+        },
+        {
+          text: 'Use cases',
+          items: [
+            {
+              text: 'Picture',
+              link: '/v2/guide/use-cases/picture',
+            },
+          ],
+        },
+      ],
+    },
+    {
+      text: 'Structure data JSON',
+      link: '/structure-data-json',
+    },
+    {
+      text: 'ChangeLog',
+      link: '/changelog',
+    },
+  ],
+  },
 
     socialLinks: [
       { icon: 'x', link: 'https://x.com/chaufourier' },

@@ -2,7 +2,7 @@
 
 # General configuration 
 
-Attachment configuration is located in the `config/auditing.ts` file. By default, the file looks like this:
+Attachment configuration is located in the `config/attachment.ts` file. By default, the file looks like this:
 
 ```typescript
 import { defineConfig } from '@jrmc/adonis-attachment'

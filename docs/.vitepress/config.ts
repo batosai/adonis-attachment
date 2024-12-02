@@ -15,12 +15,13 @@ export default defineConfig({
       },
     ],
   ],
+
   themeConfig: {
     // https://vitepress.dev/reference/default-theme-config
     nav: [
       { text: 'Home', link: '/' },
       {
-        text: 'Guide',
+        text: 'Versions',
         items: [
           { text: '3.0.0', link: '/guide/essentials/introduction' },
           { text: '2.4.2', link: '/v2/guide/essentials/introduction' },
@@ -264,6 +265,18 @@ export default defineConfig({
 
     search: {
       provider: 'local',
+      options: {
+        _render(src, env, md) {
+          const html = md.render(src, env)
+          if (env.frontmatter?.search === false) return ''
+          if (env.relativePath.startsWith('v2/')) return ''
+          return html
+        }
+      }
     },
   },
+
+  sitemap: {
+    hostname: 'https://adonis-attachment.jrmc.dev/'
+  }
 })

@@ -12,7 +12,7 @@ const attachmentConfig = defineConfig({
         resize: 300,
       }
     }
-  ]
+  }
 })
 
 export default attachmentConfig

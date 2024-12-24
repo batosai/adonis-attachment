@@ -132,7 +132,7 @@ export class AttachmentManager<KnownConverters extends Record<string, Converter>
     const destinationPath = attachment.path!
 
     if (attachment.options?.meta) {
-      attachment.meta = await exif(attachment.input!)
+      attachment.meta = await exif(attachment.input!, this.#config)
     } else {
       attachment.meta = undefined
     }

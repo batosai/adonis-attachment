@@ -12,9 +12,12 @@ import ExifReader from 'exifreader'
 import logger from '@adonisjs/core/services/logger'
 import { fileTypeFromBuffer, fileTypeFromFile } from 'file-type'
 import { bufferToTempFile, cleanObject, use } from '../utils/helpers.js'
-import { attachmentManager } from '../../index.js'
+import { ResolvedAttachmentConfig } from '../define_config.js'
+import { Converter } from '../types/converter.js'
 
-export const exif = async (input: Input): Promise<Exif | undefined> => {
+type KnownConverters  = Record<string, Converter>
+
+export const exif = async (input: Input, config: ResolvedAttachmentConfig<KnownConverters>): Promise<Exif | undefined> => {
   let fileType
   let buffer
 
@@ -33,7 +36,7 @@ export const exif = async (input: Input): Promise<Exif | undefined> => {
   }
 
   if (fileType?.mime.includes('video')) {
-    return videoExif(input)
+    return videoExif(input, config)
   }
 
   if (buffer && fileType?.mime.includes('image')) {
@@ -118,7 +121,7 @@ async function imageExif(buffer: Buffer) {
   return cleanObject(data)
 }
 
-async function videoExif(input: Input) {
+async function videoExif(input: Input, config: ResolvedAttachmentConfig<KnownConverters>) {
   return new Promise<Exif | undefined>(async (resolve) => {
     const ffmpeg = await use('fluent-ffmpeg')
 
@@ -128,8 +131,6 @@ async function videoExif(input: Input) {
     }
 
     const ff = ffmpeg(file)
-
-    const config = attachmentManager.getConfig()
 
     if (config.bin) {
       if (config.bin.ffprobePath) {

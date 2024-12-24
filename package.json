@@ -46,7 +46,9 @@
     "format": "prettier --write .",
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",
-    "docs:preview": "vitepress preview docs"
+    "docs:preview": "vitepress preview docs",
+    "test": "c8 npm run quick:test",
+    "quick:test": "node --import=./tsnode.esm.js --enable-source-maps bin/test.ts"
   },
   "exports": {
     ".": "./build/index.js",
@@ -63,22 +65,35 @@
   },
   "dependencies": {
     "@poppinss/defer": "^1.1.0",
-    "exifreader": "^4.23.3",
-    "file-type": "^19.4.0"
+    "exifreader": "^4.25.0",
+    "file-type": "^19.6.0"
   },
   "devDependencies": {
-    "@adonisjs/assembler": "^7.7.0",
-    "@adonisjs/core": "^6.12.1",
+    "@adonisjs/assembler": "^7.8.2",
+    "@adonisjs/core": "^6.17.0",
     "@adonisjs/drive": "^3.2.0",
-    "@adonisjs/lucid": "^20.6.0",
-    "@adonisjs/prettier-config": "^1.3.0",
-    "@adonisjs/tsconfig": "^1.3.0",
-    "@types/node": "^22.2.0",
+    "@adonisjs/lucid": "^21.5.1",
+    "@adonisjs/prettier-config": "^1.4.0",
+    "@adonisjs/tsconfig": "^1.4.0",
+    "@japa/assert": "^3.0.0",
+    "@japa/expect-type": "^2.0.2",
+    "@japa/file-system": "^2.3.0",
+    "@japa/plugin-adonisjs": "^3.0.1",
+    "@japa/runner": "^3.1.4",
+    "@poppinss/utils": "^6.8.3",
+    "@swc/core": "^1.10.1",
+    "@types/luxon": "^3.4.2",
+    "@types/node": "^22.10.2",
+    "better-sqlite3": "^11.7.0",
+    "c8": "^10.1.3",
     "copyfiles": "^2.4.1",
-    "del-cli": "^5.1.0",
-    "prettier": "^3.3.3",
-    "typescript": "^5.5.4",
-    "vitepress": "^1.3.3"
+    "del-cli": "^6.0.0",
+    "flydrive": "^1.1.0",
+    "luxon": "^3.5.0",
+    "prettier": "^3.4.2",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.2",
+    "vitepress": "^1.5.0"
   },
   "peerDependencies": {
     "@adonisjs/core": "^6.12.1",
@@ -86,6 +101,15 @@
     "@adonisjs/lucid": "^20.6.0 || ^21.0.0"
   },
   "prettier": "@adonisjs/prettier-config",
+  "c8": {
+    "reporter": [
+      "text",
+      "html"
+    ],
+    "exclude": [
+      "tests/**"
+    ]
+  },
   "publishConfig": {
     "access": "public",
     "tag": "latest"

@@ -9,7 +9,7 @@ import type { ApplicationService } from '@adonisjs/core/types'
 
 import { configProvider } from '@adonisjs/core'
 import { RuntimeException } from '@poppinss/utils'
-import { AttachmentService } from '../src/types/config.js'
+import type { AttachmentService } from '../src/types/config.js'
 
 declare module '@adonisjs/core/types' {
   export interface ContainerBindings {

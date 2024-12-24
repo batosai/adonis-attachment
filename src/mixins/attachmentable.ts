@@ -31,9 +31,9 @@ import {
 } from '../utils/helpers.js'
 import { defaultStateAttributeMixin } from '../utils/default_values.js'
 
-export const Attachmentable = <Model extends NormalizeConstructor<typeof BaseModel>>(
-  superclass: Model
-) => {
+type Constructor = NormalizeConstructor<typeof BaseModel>
+
+export function Attachmentable<T extends Constructor>(superclass: T) {
   class ModelWithAttachment extends superclass {
     $attachments: AttributeOfModelWithAttachment = clone(defaultStateAttributeMixin)
 

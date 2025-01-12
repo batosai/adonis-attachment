@@ -14,7 +14,7 @@ import * as errors from './errors.js'
 import { Attachment } from './attachments/attachment.js'
 import Converter from './converters/converter.js'
 import { createAttachmentAttributes, isBase64 } from './utils/helpers.js'
-import { exif } from './adapters/exif.js'
+import ExifAdapter from './adapters/exif.js'
 import { ResolvedAttachmentConfig } from './define_config.js'
 
 const REQUIRED_ATTRIBUTES = ['name', 'size', 'extname', 'mimeType']
@@ -132,7 +132,7 @@ export class AttachmentManager<KnownConverters extends Record<string, Converter>
     const destinationPath = attachment.path!
 
     if (attachment.options?.meta) {
-      attachment.meta = await exif(attachment.input!, this.#config)
+      attachment.meta = await ExifAdapter.exif(attachment.input!, this.#config)
     } else {
       attachment.meta = undefined
     }

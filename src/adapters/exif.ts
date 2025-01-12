@@ -17,7 +17,13 @@ import { Converter } from '../types/converter.js'
 
 type KnownConverters  = Record<string, Converter>
 
-export const exif = async (input: Input, config: ResolvedAttachmentConfig<KnownConverters>): Promise<Exif | undefined> => {
+export default {
+  async exif(input: Input, config: ResolvedAttachmentConfig<KnownConverters>): Promise<Exif | undefined> {
+    return exif(input, config)
+  }
+}
+
+const exif = async (input: Input, config: ResolvedAttachmentConfig<KnownConverters>): Promise<Exif | undefined> => {
   let fileType
   let buffer
 

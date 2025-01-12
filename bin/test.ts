@@ -5,12 +5,15 @@ import { createApp } from '../tests/helpers/app.js'
 import { fileSystem } from '@japa/file-system'
 import app from '@adonisjs/core/services/app'
 import { ApplicationService } from '@adonisjs/core/types'
+import { BASE_URL } from '../tests/helpers/index.js'
+
+import { AppFactory } from '@adonisjs/core/factories/app'
 
 let testApp: ApplicationService
 processCLIArgs(process.argv.slice(2))
 configure({
   files: ['tests/**/*.spec.ts'],
-  plugins: [assert(), expectTypeOf(), fileSystem()],
+  plugins: [assert(), fileSystem({ basePath: BASE_URL }), expectTypeOf()],
   setup: [
     async () => {
       testApp = await createApp()

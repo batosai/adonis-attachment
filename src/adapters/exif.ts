@@ -15,15 +15,21 @@ import { bufferToTempFile, cleanObject, use } from '../utils/helpers.js'
 import { ResolvedAttachmentConfig } from '../define_config.js'
 import { Converter } from '../types/converter.js'
 
-type KnownConverters  = Record<string, Converter>
+type KnownConverters = Record<string, Converter>
 
 export default {
-  async exif(input: Input, config: ResolvedAttachmentConfig<KnownConverters>): Promise<Exif | undefined> {
+  async exif(
+    input: Input,
+    config: ResolvedAttachmentConfig<KnownConverters>
+  ): Promise<Exif | undefined> {
     return exif(input, config)
-  }
+  },
 }
 
-const exif = async (input: Input, config: ResolvedAttachmentConfig<KnownConverters>): Promise<Exif | undefined> => {
+const exif = async (
+  input: Input,
+  config: ResolvedAttachmentConfig<KnownConverters>
+): Promise<Exif | undefined> => {
   let fileType
   let buffer
 

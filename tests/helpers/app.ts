@@ -26,15 +26,15 @@ const attachmentConfig = defineConfig({
       converter: () => import('../fixtures/converters/image_converter.js'),
       options: {
         resize: 300,
-      }
+      },
     },
     medium: {
       converter: () => import('../fixtures/converters/image_converter.js'),
       options: {
         resize: 600,
-      }
-    }
-  }
+      },
+    },
+  },
 })
 
 declare module '@jrmc/adonis-attachment' {
@@ -53,17 +53,19 @@ export async function createApp(options = {}) {
         ],
       },
       config: {
-        attachment: options ? defineConfig({
-          ...options,
-          converters: {
-            thumbnail: {
-              converter: () => import('../fixtures/converters/image_converter.js'),
-              options: {
-                resize: 300,
-              }
-            }
-          }
-        }) : attachmentConfig,
+        attachment: options
+          ? defineConfig({
+              ...options,
+              converters: {
+                thumbnail: {
+                  converter: () => import('../fixtures/converters/image_converter.js'),
+                  options: {
+                    resize: 300,
+                  },
+                },
+              },
+            })
+          : attachmentConfig,
         drive: defineDriveConfig({
           default: 'fs',
           services: {

@@ -11,7 +11,6 @@ import { createApp } from './helpers/app.js'
 import { UserFactory } from './fixtures/factories/user_with_variants.js'
 
 test.group('variants', () => {
-
   test('generation', async ({ assert, cleanup }) => {
     const app = await createApp()
 
@@ -26,4 +25,3 @@ test.group('variants', () => {
     assert.isNotNull(data.avatar.medium)
   }).timeout(10_000)
 })
-

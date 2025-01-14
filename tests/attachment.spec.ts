@@ -9,7 +9,6 @@ import { test } from '@japa/runner'
 import { UserFactory } from './fixtures/factories/user.js'
 
 test.group('attachment', () => {
-
   test('delete', async ({ assert }) => {
     const user = await UserFactory.create()
     user.avatar = null
@@ -18,4 +17,3 @@ test.group('attachment', () => {
     assert.isNull(user.avatar)
   })
 })
-

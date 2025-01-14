@@ -12,7 +12,6 @@ import Converter from '../../../src/converters/converter.js'
 
 export default class ImageConverter extends Converter {
   async handle({ input }: ConverterAttributes): Promise<Input> {
-
     return input
   }
 }

@@ -14,7 +14,6 @@ import { IgnitorFactory } from '@adonisjs/core/factories'
 import MakeConverter from '../commands/make/converter.js'
 import { BASE_URL } from './helpers/index.js'
 
-
 async function setupFakeAdonisProject(fs: FileSystem) {
   await Promise.all([
     fs.create('.env', ''),
@@ -76,4 +75,3 @@ test.group('configure', (group) => {
     await assert.fileExists('app/converters/thumb_converter.ts')
   })
 })
-

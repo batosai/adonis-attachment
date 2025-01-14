@@ -26,7 +26,7 @@ test.group('options', () => {
       preComputeUrl: false,
       variants: [],
       meta: true,
-      rename: true
+      rename: true,
     })
   })
 
@@ -34,7 +34,7 @@ test.group('options', () => {
     const app = await createApp({
       preComputeUrl: true,
       meta: false,
-      rename: false
+      rename: false,
     })
 
     cleanup(() => {
@@ -49,7 +49,7 @@ test.group('options', () => {
       preComputeUrl: true,
       variants: [],
       meta: false,
-      rename: false
+      rename: false,
     })
   })
 
@@ -79,7 +79,7 @@ test.group('options', () => {
       preComputeUrl: true,
       variants: [],
       meta: false,
-      rename: false
+      rename: false,
     })
   })
 
@@ -87,7 +87,7 @@ test.group('options', () => {
     const app = await createApp({
       preComputeUrl: false,
       meta: true,
-      rename: true
+      rename: true,
     })
     const attachmentManager = await app.container.make('jrmc.attachment')
 
@@ -113,13 +113,13 @@ test.group('options', () => {
       preComputeUrl: true,
       variants: [],
       meta: false,
-      rename: false
+      rename: false,
     })
   })
 
   test('with rename options', async ({ assert, cleanup }) => {
     const app = await createApp({
-      rename: true
+      rename: true,
     })
     const attachmentManager = await app.container.make('jrmc.attachment')
 
@@ -146,7 +146,7 @@ test.group('options', () => {
 
   test('with meta options', async ({ assert, cleanup }) => {
     const app = await createApp({
-      meta: true
+      meta: true,
     })
 
     cleanup(() => {
@@ -156,6 +156,6 @@ test.group('options', () => {
     const user = await UserFactory.create()
     const data = user.serialize()
 
-    assert.deepEqual(data.avatar.meta, { dimension: { width:1920, height:1313 }})
+    assert.deepEqual(data.avatar.meta, { dimension: { width: 1920, height: 1313 } })
   })
 })

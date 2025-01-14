@@ -6,7 +6,7 @@
  */
 
 import { readFile } from 'node:fs/promises'
-import User from '../models/user.js'
+import User from '../models/user_with_variants.js'
 import Factory from '@adonisjs/lucid/factories'
 import app from '@adonisjs/core/services/app'
 

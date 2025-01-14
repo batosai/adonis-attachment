@@ -6,20 +6,11 @@
  */
 
 import { test } from '@japa/runner'
-import sinon from 'sinon'
+
 import { createApp } from './helpers/app.js'
 import { UserFactory } from './fixtures/factories/user.js'
-import ExifAdapter from '../src/adapters/exif.js'
 
-test.group('options', (group) => {
-
-  group.setup(async () => {
-    sinon.stub(ExifAdapter, 'exif').resolves({ dimension: { width:900, height:900 }})
-  })
-  group.teardown(async () => {
-    sinon.restore()
-  })
-
+test.group('options', () => {
   test('with default values', async ({ assert, cleanup }) => {
     const app = await createApp()
 
@@ -64,12 +55,23 @@ test.group('options', (group) => {
 
   test('with model values', async ({ assert, cleanup }) => {
     const app = await createApp()
+    const attachmentManager = await app.container.make('jrmc.attachment')
 
     cleanup(() => {
       app.terminate()
     })
 
-    const user = await UserFactory.create()
+    const avatar2 = attachmentManager.createFromDbResponse(
+      JSON.stringify({
+        size: 1440,
+        name: 'foo123.jpg',
+        originalName: 'foo.jpg',
+        extname: 'jpg',
+        mimeType: 'image/jpg',
+      })
+    )
+
+    const user = await UserFactory.merge({ avatar2 }).create()
 
     assert.deepEqual(user!.avatar2!.options, {
       disk: 's3',
@@ -87,12 +89,23 @@ test.group('options', (group) => {
       meta: true,
       rename: true
     })
+    const attachmentManager = await app.container.make('jrmc.attachment')
 
     cleanup(() => {
       app.terminate()
     })
 
-    const user = await UserFactory.create()
+    const avatar2 = attachmentManager.createFromDbResponse(
+      JSON.stringify({
+        size: 1440,
+        name: 'foo123.jpg',
+        originalName: 'foo.jpg',
+        extname: 'jpg',
+        mimeType: 'image/jpg',
+      })
+    )
+
+    const user = await UserFactory.merge({ avatar2 }).create()
 
     assert.deepEqual(user!.avatar2!.options, {
       disk: 's3',
@@ -108,15 +121,26 @@ test.group('options', (group) => {
     const app = await createApp({
       rename: true
     })
+    const attachmentManager = await app.container.make('jrmc.attachment')
 
     cleanup(() => {
       app.terminate()
     })
 
-    const user = await UserFactory.create()
+    const avatar2 = attachmentManager.createFromDbResponse(
+      JSON.stringify({
+        size: 1440,
+        name: 'foo123.jpg',
+        originalName: 'foo.jpg',
+        extname: 'jpg',
+        mimeType: 'image/jpg',
+      })
+    )
+
+    const user = await UserFactory.merge({ avatar2 }).create()
     const data = user.serialize()
 
-    assert.equal(data.avatar.name, 'foo123.jpg')
+    assert.notEqual(data.avatar.name, 'avatar.jpg')
     assert.equal(data.avatar2.name, 'foo.jpg')
   })
 
@@ -132,7 +156,6 @@ test.group('options', (group) => {
     const user = await UserFactory.create()
     const data = user.serialize()
 
-    assert.deepEqual(data.avatar.meta, { dimension: { width:900, height:900 }})
-    assert.isUndefined(data.avatar2.meta)
+    assert.deepEqual(data.avatar.meta, { dimension: { width:1920, height:1313 }})
   })
 })

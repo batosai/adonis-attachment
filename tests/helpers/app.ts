@@ -7,11 +7,11 @@
 
 import { IgnitorFactory } from '@adonisjs/core/factories'
 import { defineConfig as defineLucidConfig } from '@adonisjs/lucid'
-import { defineConfig as defileLoggerConfig } from '@adonisjs/core/logger'
 import { defineConfig } from '../../src/define_config.js'
 import { defineConfig as defineDriveConfig, services } from '@adonisjs/drive'
 
 import { BASE_URL } from './index.js'
+import type { InferConverters } from '../../src/types/config.js'
 
 const IMPORTER = (filePath: string) => {
   if (filePath.startsWith('./') || filePath.startsWith('../')) {
@@ -20,8 +20,28 @@ const IMPORTER = (filePath: string) => {
   return import(filePath)
 }
 
-export async function createApp(options = {}) {
+const attachmentConfig = defineConfig({
+  converters: {
+    thumbnail: {
+      converter: () => import('../fixtures/converters/image_converter.js'),
+      options: {
+        resize: 300,
+      }
+    },
+    medium: {
+      converter: () => import('../fixtures/converters/image_converter.js'),
+      options: {
+        resize: 600,
+      }
+    }
+  }
+})
 
+declare module '@jrmc/adonis-attachment' {
+  interface AttachmentVariants extends InferConverters<typeof attachmentConfig> {}
+}
+
+export async function createApp(options = {}) {
   const app = new IgnitorFactory()
     .merge({
       rcFileContents: {
@@ -33,17 +53,17 @@ export async function createApp(options = {}) {
         ],
       },
       config: {
-        attachment: defineConfig({
+        attachment: options ? defineConfig({
           ...options,
           converters: {
             thumbnail: {
-              converter: () => import('../../src/converters/image_converter.js'),
+              converter: () => import('../fixtures/converters/image_converter.js'),
               options: {
                 resize: 300,
               }
             }
           }
-        }),
+        }) : attachmentConfig,
         drive: defineDriveConfig({
           default: 'fs',
           services: {

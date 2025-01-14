@@ -7,8 +7,6 @@ import app from '@adonisjs/core/services/app'
 import { ApplicationService } from '@adonisjs/core/types'
 import { BASE_URL } from '../tests/helpers/index.js'
 
-import { AppFactory } from '@adonisjs/core/factories/app'
-
 let testApp: ApplicationService
 processCLIArgs(process.argv.slice(2))
 configure({

@@ -245,7 +245,7 @@ test.group('attachment-manager', () => {
   })
 
   test('with url', async ({ assert }) => {
-    const url = new URL('https://raw.githubusercontent.com/batosai/adonis-attachment/refs/heads/feature/test/tests/fixtures/images/img.jpg')
+    const url = new URL('https://raw.githubusercontent.com/batosai/adonis-attachment/refs/heads/develop/tests/fixtures/images/img.jpg')
 
     const avatar = await attachmentManager.createFromUrl(url, 'file.jpg')
 
@@ -278,7 +278,7 @@ test.group('attachment-manager', () => {
       })
     }
 
-    const url = new URL('https://raw.githubusercontent.com/batosai/adonis-attachment/refs/heads/feature/test/tests/fixtures/images/img.jpg')
+    const url = new URL('https://raw.githubusercontent.com/batosai/adonis-attachment/refs/heads/develop/tests/fixtures/images/img.jpg')
     const stream = await downloadImageStream(url)
 
     const avatar = await attachmentManager.createFromStream(stream, 'file.jpg')

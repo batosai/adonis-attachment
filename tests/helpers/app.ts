@@ -112,8 +112,6 @@ export async function createApp(options = {}) {
     app.migrationsPath('create_users_table.ts')
   )
 
-  await initializeDatabase(app)
-
   return app
 }
 

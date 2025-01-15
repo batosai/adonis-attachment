@@ -15,7 +15,49 @@ env:
   false: 🔴
 
 jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Update packages
+        run: sudo apt-get update
+
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup node
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ env.node_version }}
+          registry-url: https://registry.npmjs.org/
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Run tests
+        run: npm test
+
+      - name: Notification
+        if: ${{ always() }}
+        uses: appleboy/telegram-action@master
+        with:
+          token: ${{ secrets.BOT_TOKEN }}
+          to: ${{ secrets.CHAT_ID }}
+          disable_web_page_preview: true
+          message: |
+            Test ${{ env[job.status] }} by ${{ github.actor }} for commit in ${{ github.ref_name }} branch.
+            Comment: ${{ github.event.commits[0].message }}
+
+            Repository: ${{ github.repository }}
+            See changes: https://github.com/${{ github.repository }}/commit/${{ github.sha }}
+            Github action: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
   release:
+    needs: test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3

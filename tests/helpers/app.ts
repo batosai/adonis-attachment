@@ -5,7 +5,6 @@
  * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
  */
 
-import path from 'node:path'
 import fs from 'node:fs'
 import { copyFile, mkdir } from 'node:fs/promises'
 import { IgnitorFactory } from '@adonisjs/core/factories'
@@ -90,7 +89,7 @@ export async function createApp(options = {}) {
             sqlite: {
               client: 'better-sqlite3',
               connection: {
-                filename: path.resolve(__dirname, './tests/tmp/db.sqlite'),//new URL('./db.sqlite', BASE_URL).pathname
+                filename: new URL('./db.sqlite', BASE_URL).pathname,
                 debug: true,
                 flags: ['OPEN_CREATE', 'OPEN_READWRITE'],
               },

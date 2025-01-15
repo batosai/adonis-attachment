@@ -5,6 +5,8 @@
  * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
  */
 
+import https from 'node:https'
+import { IncomingMessage } from 'node:http'
 import { readFile } from 'node:fs/promises'
 import { test } from '@japa/runner'
 import app from '@adonisjs/core/services/app'
@@ -216,6 +218,86 @@ test.group('attachment-manager', () => {
       name: data.avatar.name,
       originalName: 'file.jpg',
       size: 4000000,
+    })
+  })
+
+  test('with path', async ({ assert }) => {
+    const path = app.makePath('../fixtures/images/img.jpg')
+
+    const avatar = await attachmentManager.createFromPath(path, 'file.jpg')
+
+    const user = await UserFactory.merge({ avatar }).create()
+    const data = await user.serialize()
+
+    assert.deepEqual(data.avatar, {
+      extname: 'jpg',
+      meta: {
+        dimension: {
+          height: 1313,
+          width: 1920,
+        },
+      },
+      mimeType: 'image/jpeg',
+      name: data.avatar.name,
+      originalName: 'file.jpg',
+      size: 83,
+    })
+  })
+
+  test('with url', async ({ assert }) => {
+    const url = new URL('https://raw.githubusercontent.com/batosai/adonis-attachment/refs/heads/feature/test/tests/fixtures/images/img.jpg')
+
+    const avatar = await attachmentManager.createFromUrl(url, 'file.jpg')
+
+    const user = await UserFactory.merge({ avatar }).create()
+    const data = await user.serialize()
+
+    assert.deepEqual(data.avatar, {
+      extname: 'jpg',
+      meta: {
+        dimension: {
+          height: 1313,
+          width: 1920,
+        },
+      },
+      mimeType: 'image/jpeg',
+      name: data.avatar.name,
+      originalName: 'file.jpg',
+      size: 31,
+    })
+  })
+
+  test('with stream', async ({ assert }) => {
+    async function downloadImageStream(input: URL): Promise<IncomingMessage> {
+      return await new Promise((resolve) => {
+        https.get(input, (response) => {
+          if (response.statusCode === 200) {
+            resolve(response)
+          }
+        })
+      })
+    }
+
+    const url = new URL('https://raw.githubusercontent.com/batosai/adonis-attachment/refs/heads/feature/test/tests/fixtures/images/img.jpg')
+    const stream = await downloadImageStream(url)
+
+    const avatar = await attachmentManager.createFromStream(stream, 'file.jpg')
+
+    const user = await UserFactory.merge({ avatar }).create()
+    const data = await user.serialize()
+
+    assert.deepEqual(data.avatar, {
+      extname: 'jpg',
+      meta: {
+        dimension: {
+          height: 1313,
+          width: 1920,
+        },
+      },
+      mimeType: 'image/jpeg',
+      name: data.avatar.name,
+      originalName: 'file.jpg',
+      size: 31,
     })
   })
 })

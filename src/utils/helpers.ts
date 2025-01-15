@@ -11,13 +11,19 @@ import type { ModelWithAttachment } from '../types/mixin.js'
 
 import os from 'node:os'
 import path from 'node:path'
-import fs from 'fs/promises'
+import https from 'node:https'
+import fs from 'node:fs/promises'
+import { pipeline } from 'node:stream'
+import { promisify } from 'node:util'
+import { createWriteStream, WriteStream } from 'node:fs'
 import { cuid } from '@adonisjs/core/helpers'
 import string from '@adonisjs/core/helpers/string'
 import { fileTypeFromBuffer, fileTypeFromFile } from 'file-type'
 import { Attachment } from '../attachments/attachment.js'
 import * as errors from '../errors.js'
 import { optionsSym } from './symbols.js'
+
+const streamPipeline = promisify(pipeline)
 
 export function getAttachmentAttributeNames(modelInstance: ModelWithAttachment) {
   return Object.keys(modelInstance.$attributes).filter(
@@ -110,6 +116,38 @@ export async function bufferToTempFile(input: Buffer) {
   const tempFilePath = path.join(folder, `tempfile-${Date.now()}.tmp`)
   await fs.writeFile(tempFilePath, input)
   return tempFilePath
+}
+
+// TODO
+// gestion des erreurs
+
+export async function streamToTempFile(input: NodeJS.ReadableStream): Promise<string> {
+  const folder = os.tmpdir()
+  const tempFilePath = path.join(folder, `tempfile-${Date.now()}.tmp`)
+
+  const writeStream: WriteStream = createWriteStream(tempFilePath)
+
+  try {
+    await streamPipeline(input, writeStream)
+    return tempFilePath
+  } catch (err) {
+    throw new errors.E_CANNOT_GENERATE_TEMP_FILE([err.message])
+  }
+}
+
+export async function downloadToTempFile(input: URL): Promise<string> {
+  return await new Promise((resolve) => {
+    https.get(input, (response) => {
+      if (response.statusCode === 200) {
+        resolve(streamToTempFile(response))
+      } else {
+        // reject(`${response.statusCode}`)
+        throw new errors.E_CANNOT_GENERATE_TEMP_FILE([''])
+      }
+    }).on('error', (err) => {
+      throw new errors.E_CANNOT_GENERATE_TEMP_FILE([err.message])
+    })
+  })
 }
 
 export function isBase64(str: string) {

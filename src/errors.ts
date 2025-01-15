@@ -34,6 +34,14 @@ export const E_CANNOT_SET_VISIBILITY = errors.E_CANNOT_SET_VISIBILITY
 export const E_CANNOT_GENERATE_URL = errors.E_CANNOT_GENERATE_URL
 
 /**
+ * Unable to generate temp file
+ */
+export const E_CANNOT_GENERATE_TEMP_FILE = createError<[key: string]>(
+  'Cannot generate temp file "%s"',
+  'E_CANNOT_GENERATE_TEMP_FILE'
+)
+
+/**
  * The file key has unallowed set of characters
  */
 export const E_UNALLOWED_CHARACTERS = errors.E_UNALLOWED_CHARACTERS

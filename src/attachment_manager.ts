@@ -13,7 +13,7 @@ import { DeferQueue } from '@poppinss/defer'
 import * as errors from './errors.js'
 import { Attachment } from './attachments/attachment.js'
 import Converter from './converters/converter.js'
-import { createAttachmentAttributes, isBase64 } from './utils/helpers.js'
+import { createAttachmentAttributes, downloadToTempFile, isBase64, streamToTempFile } from './utils/helpers.js'
 import ExifAdapter from './adapters/exif.js'
 import { ResolvedAttachmentConfig } from './define_config.js'
 
@@ -70,6 +70,13 @@ export class AttachmentManager<KnownConverters extends Record<string, Converter>
     return this.#configureAttachment(attachment)
   }
 
+  async createFromPath(path: string, name?: string) {
+    const attributes = await createAttachmentAttributes(path, name)
+
+    const attachment = new Attachment(this.#drive, attributes, path)
+    return this.#configureAttachment(attachment)
+  }
+
   async createFromBuffer(buffer: Buffer, name?: string) {
     if (!Buffer.isBuffer(buffer)) {
       throw new errors.E_ISNOT_BUFFER()
@@ -90,6 +97,22 @@ export class AttachmentManager<KnownConverters extends Record<string, Converter>
     const buffer = Buffer.from(base64Data, 'base64')
 
     return await this.createFromBuffer(buffer, name)
+  }
+
+  async createFromUrl(url: URL, name?: string) {
+    const path = await downloadToTempFile(url)
+    const attributes = await createAttachmentAttributes(path, name)
+
+    const attachment = new Attachment(this.#drive, attributes, path)
+    return this.#configureAttachment(attachment)
+  }
+
+  async createFromStream(stream: NodeJS.ReadableStream, name?: string) {
+    const path = await streamToTempFile(stream)
+    const attributes = await createAttachmentAttributes(path, name)
+
+    const attachment = new Attachment(this.#drive, attributes, path)
+    return this.#configureAttachment(attachment)
   }
 
   async getConverter(key: string): Promise<void | Converter> {

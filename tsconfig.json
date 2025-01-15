@@ -3,5 +3,9 @@
   "compilerOptions": {
     "rootDir": "./",
     "outDir": "./build"
-  }
+  },
+  "exclude": [
+    "tests",
+    "bin"
+  ]
 }

@@ -90,6 +90,7 @@ export async function createApp(options = {}) {
               connection: {
                 filename: new URL('./db.sqlite', BASE_URL).pathname,
                 debug: true,
+                flags: ['OPEN_CREATE', 'OPEN_READWRITE'],
               },
               useNullAsDefault: true
             },

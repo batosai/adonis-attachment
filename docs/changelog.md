@@ -1,5 +1,13 @@
 # Changelog
 
+## 3.1.0
+
+* add [createFromPath](/guide/basic_usage/controller-setup.html#from-path)
+* add [createFromUrl](/guide/basic_usage/controller-setup.html#from-url)
+* add [createFromStream](/guide/basic_usage/controller-setup.html#from-stream)
+* add tests
+
+
 ## 3.0.0
 
 ⚠️ BREAKING CHANGE

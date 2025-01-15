@@ -38,8 +38,5 @@ jobs:
       - name: Create tmp dir
         run: mkdir -p tests/tmp
 
-      - name: Create tmp dir
-        run: mkdir tmp
-
       - name: Run tests
         run: npm test

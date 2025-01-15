@@ -5,7 +5,7 @@
  * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
  */
 
-import { mkdir } from 'node:fs/promises'
+import { copyFile, mkdir } from 'node:fs/promises'
 import { IgnitorFactory } from '@adonisjs/core/factories'
 import { defineConfig as defineLucidConfig } from '@adonisjs/lucid'
 import { defineConfig } from '../../src/define_config.js'
@@ -13,6 +13,8 @@ import { defineConfig as defineDriveConfig, services } from '@adonisjs/drive'
 
 import { BASE_URL } from './index.js'
 import type { InferConverters } from '../../src/types/config.js'
+
+import { ApplicationService } from '@adonisjs/core/types'
 
 const IMPORTER = (filePath: string) => {
   if (filePath.startsWith('./') || filePath.startsWith('../')) {
@@ -100,20 +102,26 @@ export async function createApp(options = {}) {
     })
     .createApp('web')
 
-    console.log('------------------')
-    console.log(new URL('./db.sqlite', BASE_URL).pathname)
-
   await app.init()
   await app.boot()
+
+  await mkdir(app.migrationsPath(), { recursive: true })
+
+  await copyFile(
+    new URL('../fixtures/migrations/create_users_table.ts', import.meta.url),
+    app.migrationsPath('create_users_table.ts')
+  )
+
+  await initializeDatabase(app)
 
   return app
 }
 
-// export async function initializeDatabase(app: ApplicationService) {
-//   const ace = await app.container.make('ace')
-//   await ace.exec('migration:fresh', [])
-//   await seedDatabase()
-// }
+export async function initializeDatabase(app: ApplicationService) {
+  const ace = await app.container.make('ace')
+  await ace.exec('migration:fresh', [])
+  // await seedDatabase()
+}
 
 // async function seedDatabase() {
 //   const { default: User } = await import('./fixtures/models/user.js')

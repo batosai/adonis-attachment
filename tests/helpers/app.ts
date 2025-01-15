@@ -5,6 +5,7 @@
  * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
  */
 
+import { mkdir } from 'node:fs/promises'
 import { IgnitorFactory } from '@adonisjs/core/factories'
 import { defineConfig as defineLucidConfig } from '@adonisjs/lucid'
 import { defineConfig } from '../../src/define_config.js'
@@ -42,6 +43,8 @@ declare module '@jrmc/adonis-attachment' {
 }
 
 export async function createApp(options = {}) {
+  await mkdir(BASE_URL.pathname, { recursive: true })
+
   const app = new IgnitorFactory()
     .merge({
       rcFileContents: {

@@ -35,8 +35,8 @@ jobs:
       - name: Install Dependencies
         run: npm ci
 
-      - name: Build
-        run: npm run build
+      - name: Create tmp dir
+        run: mkdir tests/tmp
 
       - name: Run tests
         run: npm test

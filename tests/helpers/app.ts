@@ -97,6 +97,9 @@ export async function createApp(options = {}) {
     })
     .createApp('web')
 
+    console.log('------------------')
+    console.log(new URL('./db.sqlite', BASE_URL).pathname)
+
   await app.init()
   await app.boot()
 

@@ -17,6 +17,10 @@ Project sample : [adonis-starter-kit](https://github.com/batosai/adonis-starter-
 ## Roadmap
 
 - [x] attachment file by file system
+- [x] attachment file by buffer
+- [x] attachment file by path
+- [x] attachment file by url
+- [x] attachment file by stream
 - [x] save meta data
 - [x] variantes
   - [x] images

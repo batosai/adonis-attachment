@@ -106,12 +106,12 @@ export async function createApp(options = {}) {
   await app.init()
   await app.boot()
 
-  // await mkdir(app.migrationsPath(), { recursive: true })
+  await mkdir(app.migrationsPath(), { recursive: true })
 
-  // await copyFile(
-  //   new URL('../fixtures/migrations/create_users_table.ts', import.meta.url),
-  //   app.migrationsPath('create_users_table.ts')
-  // )
+  await copyFile(
+    new URL('../fixtures/migrations/create_users_table.ts', import.meta.url),
+    app.migrationsPath('create_users_table.ts')
+  )
 
   return app
 }

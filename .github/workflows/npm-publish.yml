@@ -17,7 +17,7 @@ env:
 jobs:
   test:
     name: Test
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - name: Update packages
         run: sudo apt-get update
@@ -34,9 +34,6 @@ jobs:
 
       - name: Install Dependencies
         run: npm ci
-
-      - name: Build
-        run: npm run build
 
       - name: Run tests
         run: npm test

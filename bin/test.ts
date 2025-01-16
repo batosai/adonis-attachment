@@ -15,7 +15,7 @@ configure({
   setup: [
     async () => {
       testApp = await createApp()
-      // await initializeDatabase(testApp)
+      await initializeDatabase(testApp)
     },
   ],
   teardown: [

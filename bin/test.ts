@@ -1,7 +1,7 @@
 import { assert } from '@japa/assert'
 import { expectTypeOf } from '@japa/expect-type'
 import { processCLIArgs, configure, run } from '@japa/runner'
-import { createApp } from '../tests/helpers/app.js'
+import { createApp, initializeDatabase } from '../tests/helpers/app.js'
 import { fileSystem } from '@japa/file-system'
 import app from '@adonisjs/core/services/app'
 import { ApplicationService } from '@adonisjs/core/types'
@@ -15,6 +15,7 @@ configure({
   setup: [
     async () => {
       testApp = await createApp()
+      await initializeDatabase(testApp)
     },
   ],
   teardown: [

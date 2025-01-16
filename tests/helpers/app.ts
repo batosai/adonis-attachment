@@ -89,7 +89,7 @@ export async function createApp(options = {}) {
             sqlite: {
               client: 'better-sqlite3',
               connection: {
-                filename: new URL('./db.sqlite', BASE_URL).pathname,
+                filename: new URL('../db.sqlite', BASE_URL).pathname,
                 // debug: true,
                 // flags: ['OPEN_CREATE', 'OPEN_READWRITE'],
                 mode: 'rw'

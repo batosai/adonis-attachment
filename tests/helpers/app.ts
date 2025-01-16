@@ -124,7 +124,7 @@ export async function initializeDatabase(app: ApplicationService) {
   const ace = await app.container.make('ace')
   await ace.exec('migration:fresh', [])
 
-  fs.chmodSync(new URL('./db.sqlite', BASE_URL).pathname, 0o600)
+  fs.chmodSync(new URL('../db.sqlite', BASE_URL).pathname, 0o600)
   // await seedDatabase()
 }
 

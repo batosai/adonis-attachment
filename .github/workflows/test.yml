@@ -35,14 +35,5 @@ jobs:
       - name: Install Dependencies
         run: npm ci
 
-      - name: Remove old tmp
-        run: rm -rf tests/tmp
-
-      - name: Create tmp dir
-        run: mkdir tests/tmp
-
-      - name: Fix database directory permissions
-        run: chmod -R u+rw tests/tmp
-
       - name: Run tests
         run: npm test

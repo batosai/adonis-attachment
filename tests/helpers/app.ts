@@ -46,7 +46,7 @@ declare module '@jrmc/adonis-attachment' {
 }
 
 export async function createApp(options = {}) {
-  await mkdir(BASE_URL.pathname, { recursive: true })
+  // await mkdir(BASE_URL.pathname, { recursive: true })
 
   const app = new IgnitorFactory()
     .merge({
@@ -90,11 +90,7 @@ export async function createApp(options = {}) {
               client: 'better-sqlite3',
               connection: {
                 filename: new URL('../db.sqlite', BASE_URL).pathname,
-                // debug: true,
-                // flags: ['OPEN_CREATE', 'OPEN_READWRITE'],
-                mode: 'rw'
               },
-              useNullAsDefault: true
             },
           },
         }),
@@ -110,12 +106,12 @@ export async function createApp(options = {}) {
   await app.init()
   await app.boot()
 
-  await mkdir(app.migrationsPath(), { recursive: true })
+  // await mkdir(app.migrationsPath(), { recursive: true })
 
-  await copyFile(
-    new URL('../fixtures/migrations/create_users_table.ts', import.meta.url),
-    app.migrationsPath('create_users_table.ts')
-  )
+  // await copyFile(
+  //   new URL('../fixtures/migrations/create_users_table.ts', import.meta.url),
+  //   app.migrationsPath('create_users_table.ts')
+  // )
 
   return app
 }

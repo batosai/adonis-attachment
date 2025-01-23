@@ -1,5 +1,11 @@
 # Changelog
 
+## 3.2.0
+
+* remove Attachmentable mixin
+
+> Released at *2025-01-23*
+
 ## 3.1.0
 
 * add [createFromPath](/guide/basic_usage/controller-setup.html#from-path)

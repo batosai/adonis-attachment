@@ -2,6 +2,8 @@
 
 Next, in the model, import the `attachment` decorator, `Attachmentable` mixin and the `Attachment` type from the package.
 
+⚠️ [The "Attachmentable" mixin is deprecated in 3.2.0](/changelog#_3-2-0) 
+
 > Make sure NOT to use the `@column` decorator when using the `@attachment` decorator.
 
 ```ts

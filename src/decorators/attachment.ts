@@ -11,7 +11,7 @@ import type { LucidOptions } from '../types/attachment.js'
 import attachmentManager from '../../services/main.js'
 import { optionsSym } from '../utils/symbols.js'
 import { defaultOptionsDecorator } from '../utils/default_values.js'
-import type { ModelWithAttachment, AttributeOfModelWithAttachment } from '../types/mixin.js'
+import type { AttributeOfModelWithAttachment } from '../types/mixin.js'
 
 import { afterFindHook, afterFetchHook, beforeSaveHook, afterSaveHook, beforeDeleteHook } from '../utils/hooks.js'
 
@@ -36,33 +36,16 @@ export const attachment = (options?: LucidOptions) => {
 
     Model.$attachments = clone(defaultStateAttributeMixin)
 
-    Model.after('find', (instance: unknown) => {
-      return afterFindHook(instance as ModelWithAttachment)
-    })
+    /**
+     * Registering all hooks only once
+     */
 
-    Model.after('fetch', (instance: unknown) => {
-      return afterFetchHook(instance as ModelWithAttachment[])
-    })
-
-    Model.after('paginate', (instance: unknown) => {
-      return afterFetchHook(instance as ModelWithAttachment[])
-    })
-
-    Model.before('save', (instance: unknown) => {
-      return beforeSaveHook(instance as ModelWithAttachment)
-    })
-
-    Model.after('save', (instance: unknown) => {
-      return afterSaveHook(instance as ModelWithAttachment)
-    })
-
-    Model.before('delete', (instance: unknown) => {
-      return beforeDeleteHook(instance as ModelWithAttachment)
-    })
-
-    Model.before('delete', (instance: unknown) => {
-      return beforeDeleteHook(instance as ModelWithAttachment)
-    })
+    Model.after('find', afterFindHook)
+    Model.after('fetch', afterFetchHook)
+    Model.after('paginate', afterFetchHook)
+    Model.before('save', beforeSaveHook)
+    Model.after('save', afterSaveHook)
+    Model.before('delete', beforeDeleteHook)
 
     const { disk, folder, variants, meta, rename, ...columnOptions } = {
       ...defaultOptionsDecorator,

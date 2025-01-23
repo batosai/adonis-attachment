@@ -22,7 +22,8 @@ import {
 import { defaultStateAttributeMixin } from '../utils/default_values.js'
 
 // @afterFind()
-export const afterFindHook = async (modelInstance: ModelWithAttachment) => {
+export const afterFindHook = async (instance: unknown) => {
+  const modelInstance = instance as ModelWithAttachment
   const attachmentAttributeNames = getAttachmentAttributeNames(modelInstance)
 
   await Promise.all(
@@ -34,12 +35,14 @@ export const afterFindHook = async (modelInstance: ModelWithAttachment) => {
 
 // @afterFetch()
 // @afterPaginate()
-export const afterFetchHook = async (modelInstances: ModelWithAttachment[]) => {
+export const afterFetchHook = async (instance: unknown) => {
+  const modelInstances = instance as ModelWithAttachment[]
   await Promise.all(modelInstances.map((row) => afterFindHook(row)))
 }
 
 // @beforeSave()
-export const  beforeSaveHook = async (modelInstance: ModelWithAttachment) => {
+export const  beforeSaveHook = async (instance: unknown) => {
+  const modelInstance = instance as ModelWithAttachment
   const attachmentAttributeNames = getDirtyAttachmentAttributeNames(modelInstance)
 
   /**
@@ -79,7 +82,8 @@ export const  beforeSaveHook = async (modelInstance: ModelWithAttachment) => {
 }
 
 // @afterSave()
-export const afterSaveHook = async (modelInstance: ModelWithAttachment) => {
+export const afterSaveHook = async (instance: unknown) => {
+  const modelInstance = instance as ModelWithAttachment
   const attachmentAttributeNames = getAttachmentAttributeNames(modelInstance)
 
   /**
@@ -96,7 +100,8 @@ export const afterSaveHook = async (modelInstance: ModelWithAttachment) => {
 }
 
 // @beforeDelete()
-export const beforeDeleteHook = async (modelInstance: ModelWithAttachment) => {
+export const beforeDeleteHook = async (instance: unknown) => {
+  const modelInstance = instance as ModelWithAttachment
   const attachmentAttributeNames = getAttachmentAttributeNames(modelInstance)
 
   /**

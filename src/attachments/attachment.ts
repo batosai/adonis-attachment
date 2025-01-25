@@ -16,7 +16,7 @@ import type { Input } from '../types/input.js'
 import path from 'node:path'
 import { AttachmentBase } from './attachment_base.js'
 import { Variant } from './variant_attachment.js'
-import { createAttachmentAttributes } from '../utils/helpers.js'
+import { metaFormBuffer, metaFormFile } from '../adapters/meta.js'
 
 export class Attachment extends AttachmentBase implements AttachmentInterface {
   originalName: string
@@ -54,8 +54,15 @@ export class Attachment extends AttachmentBase implements AttachmentInterface {
    */
 
   async createVariant(key: string, input: Input): Promise<Variant> {
+    let meta
+    if (Buffer.isBuffer(input)) {
+      meta = await metaFormBuffer(input)
+    } else {
+      meta = await metaFormFile(input, this.name)
+    }
+
     const attributes = {
-      ...(await createAttachmentAttributes(input)),
+      ...meta,
       key,
       folder: path.join(this.options!.folder!, 'variants', this.name),
     }

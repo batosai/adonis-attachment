@@ -40,12 +40,24 @@ export const attachment = (options?: LucidOptions) => {
      * Registering all hooks only once
      */
 
-    Model.after('find', afterFindHook)
-    Model.after('fetch', afterFetchHook)
-    Model.after('paginate', afterFetchHook)
-    Model.before('save', beforeSaveHook)
-    Model.after('save', afterSaveHook)
-    Model.before('delete', beforeDeleteHook)
+    if (!Model.$hooks.has('find', afterFindHook)) {
+      Model.after('find', afterFindHook)
+    }
+    if (!Model.$hooks.has('fetch', afterFetchHook)) {
+      Model.after('fetch', afterFetchHook)
+    }
+    if (!Model.$hooks.has('paginate', afterFetchHook)) {
+      Model.after('paginate', afterFetchHook)
+    }
+    if (!Model.$hooks.has('save', beforeSaveHook)) {
+      Model.before('save', beforeSaveHook)
+    }
+    if (!Model.$hooks.has('save', afterSaveHook)) {
+      Model.after('save', afterSaveHook)
+    }
+    if (!Model.$hooks.has('delete', beforeDeleteHook)) {
+      Model.before('delete', beforeDeleteHook)
+    }
 
     const { disk, folder, variants, meta, rename, ...columnOptions } = {
       ...defaultOptionsDecorator,

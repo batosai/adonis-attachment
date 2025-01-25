@@ -259,7 +259,9 @@ test.group('attachment-manager', () => {
   })
 
   test('with url and name params', async ({ assert }) => {
-    const url = new URL('https://raw.githubusercontent.com/batosai/adonis-attachment/refs/heads/develop/tests/fixtures/images/img.jpg')
+    const url = new URL(
+      'https://raw.githubusercontent.com/batosai/adonis-attachment/refs/heads/develop/tests/fixtures/images/img.jpg'
+    )
 
     const avatar = await attachmentManager.createFromUrl(url, 'file.jpg')
 
@@ -282,7 +284,9 @@ test.group('attachment-manager', () => {
   })
 
   test('with url and no name params', async ({ assert }) => {
-    const url = new URL('https://raw.githubusercontent.com/batosai/adonis-attachment/refs/heads/develop/tests/fixtures/images/img.jpg')
+    const url = new URL(
+      'https://raw.githubusercontent.com/batosai/adonis-attachment/refs/heads/develop/tests/fixtures/images/img.jpg'
+    )
 
     const avatar = await attachmentManager.createFromUrl(url)
 
@@ -306,7 +310,9 @@ test.group('attachment-manager', () => {
       })
     }
 
-    const url = new URL('https://raw.githubusercontent.com/batosai/adonis-attachment/refs/heads/develop/tests/fixtures/images/img.jpg')
+    const url = new URL(
+      'https://raw.githubusercontent.com/batosai/adonis-attachment/refs/heads/develop/tests/fixtures/images/img.jpg'
+    )
     const stream = await downloadImageStream(url)
 
     const avatar = await attachmentManager.createFromStream(stream, 'file.jpg')
@@ -341,14 +347,15 @@ test.group('attachment-manager', () => {
       })
     }
 
-    const url = new URL('https://raw.githubusercontent.com/batosai/adonis-attachment/refs/heads/develop/tests/fixtures/images/img.jpg')
+    const url = new URL(
+      'https://raw.githubusercontent.com/batosai/adonis-attachment/refs/heads/develop/tests/fixtures/images/img.jpg'
+    )
     const stream = await downloadImageStream(url)
 
     const avatar = await attachmentManager.createFromStream(stream)
 
     const user = await UserFactory.merge({ avatar }).create()
     const data = await user.serialize()
-
 
     assert.match(data.avatar.originalName, /(.*).jpg$/)
     assert.match(data.avatar.name, /(.*).jpg$/)

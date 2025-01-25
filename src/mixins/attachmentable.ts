@@ -33,7 +33,9 @@ export function Attachmentable<T extends Constructor>(superclass: T) {
     @beforePaginate()
     @beforeSave()
     static async warn() {
-      logger.warn(`The "Attachmentable" mixin is deprecated and may be removed in a future version.`)
+      logger.warn(
+        `The "Attachmentable" mixin is deprecated and may be removed in a future version.`
+      )
     }
   }
 

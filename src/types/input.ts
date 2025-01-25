@@ -24,9 +24,9 @@ export type Exif = {
 }
 
 export type Meta = {
-  extname: string,
-  mimeType: string,
-  size: number,
+  extname: string
+  mimeType: string
+  size: number
 }
 
 export type Input = Buffer | string

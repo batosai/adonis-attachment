@@ -44,7 +44,9 @@ test.group('SVG file syntaxe ok', () => {
   })
 
   test('with url and name params', async ({ assert }) => {
-    const url = new URL('https://raw.githubusercontent.com/batosai/adonis-attachment/refs/heads/develop/tests/fixtures/images/adonis.svg')
+    const url = new URL(
+      'https://raw.githubusercontent.com/batosai/adonis-attachment/refs/heads/develop/tests/fixtures/images/adonis.svg'
+    )
 
     const avatar = await attachmentManager.createFromUrl(url, 'file.svg')
 
@@ -58,7 +60,9 @@ test.group('SVG file syntaxe ok', () => {
   })
 
   test('with url and no name params', async ({ assert }) => {
-    const url = new URL('https://raw.githubusercontent.com/batosai/adonis-attachment/refs/heads/develop/tests/fixtures/images/adonis.svg')
+    const url = new URL(
+      'https://raw.githubusercontent.com/batosai/adonis-attachment/refs/heads/develop/tests/fixtures/images/adonis.svg'
+    )
 
     const avatar = await attachmentManager.createFromUrl(url)
 
@@ -82,7 +86,9 @@ test.group('SVG file syntaxe ok', () => {
       })
     }
 
-    const url = new URL('https://raw.githubusercontent.com/batosai/adonis-attachment/refs/heads/develop/tests/fixtures/images/adonis.svg')
+    const url = new URL(
+      'https://raw.githubusercontent.com/batosai/adonis-attachment/refs/heads/develop/tests/fixtures/images/adonis.svg'
+    )
     const stream = await downloadImageStream(url)
 
     const avatar = await attachmentManager.createFromStream(stream, 'file.svg')
@@ -107,7 +113,9 @@ test.group('SVG file syntaxe ok', () => {
       })
     }
 
-    const url = new URL('https://raw.githubusercontent.com/batosai/adonis-attachment/refs/heads/develop/tests/fixtures/images/adonis.svg')
+    const url = new URL(
+      'https://raw.githubusercontent.com/batosai/adonis-attachment/refs/heads/develop/tests/fixtures/images/adonis.svg'
+    )
     const stream = await downloadImageStream(url)
 
     const avatar = await attachmentManager.createFromStream(stream)
@@ -152,7 +160,9 @@ test.group('SVG file syntaxe nok', () => {
   })
 
   test('with url and name params', async ({ assert }) => {
-    const url = new URL('https://raw.githubusercontent.com/batosai/adonis-attachment/refs/heads/develop/tests/fixtures/images/adonisjs.svg')
+    const url = new URL(
+      'https://raw.githubusercontent.com/batosai/adonis-attachment/refs/heads/develop/tests/fixtures/images/adonisjs.svg'
+    )
 
     const avatar = await attachmentManager.createFromUrl(url, 'file.svg')
 
@@ -166,7 +176,9 @@ test.group('SVG file syntaxe nok', () => {
   })
 
   test('with url and no name params', async ({ assert }) => {
-    const url = new URL('https://raw.githubusercontent.com/batosai/adonis-attachment/refs/heads/develop/tests/fixtures/images/adonisjs.svg')
+    const url = new URL(
+      'https://raw.githubusercontent.com/batosai/adonis-attachment/refs/heads/develop/tests/fixtures/images/adonisjs.svg'
+    )
 
     const avatar = await attachmentManager.createFromUrl(url)
 
@@ -190,7 +202,9 @@ test.group('SVG file syntaxe nok', () => {
       })
     }
 
-    const url = new URL('https://raw.githubusercontent.com/batosai/adonis-attachment/refs/heads/develop/tests/fixtures/images/adonisjs.svg')
+    const url = new URL(
+      'https://raw.githubusercontent.com/batosai/adonis-attachment/refs/heads/develop/tests/fixtures/images/adonisjs.svg'
+    )
     const stream = await downloadImageStream(url)
 
     const avatar = await attachmentManager.createFromStream(stream, 'file.svg')
@@ -215,7 +229,9 @@ test.group('SVG file syntaxe nok', () => {
       })
     }
 
-    const url = new URL('https://raw.githubusercontent.com/batosai/adonis-attachment/refs/heads/develop/tests/fixtures/images/adonisjs.svg')
+    const url = new URL(
+      'https://raw.githubusercontent.com/batosai/adonis-attachment/refs/heads/develop/tests/fixtures/images/adonisjs.svg'
+    )
     const stream = await downloadImageStream(url)
 
     const avatar = await attachmentManager.createFromStream(stream)

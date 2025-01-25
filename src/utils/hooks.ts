@@ -41,7 +41,7 @@ export const afterFetchHook = async (instance: unknown) => {
 }
 
 // @beforeSave()
-export const  beforeSaveHook = async (instance: unknown) => {
+export const beforeSaveHook = async (instance: unknown) => {
   const modelInstance = instance as ModelWithAttachment
   const attachmentAttributeNames = getDirtyAttachmentAttributeNames(modelInstance)
 
@@ -63,9 +63,7 @@ export const  beforeSaveHook = async (instance: unknown) => {
    * database
    */
   await Promise.all(
-    attachmentAttributeNames.map((attributeName) =>
-      persistAttachment(modelInstance, attributeName)
-    )
+    attachmentAttributeNames.map((attributeName) => persistAttachment(modelInstance, attributeName))
   )
 
   try {

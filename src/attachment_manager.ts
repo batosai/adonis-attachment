@@ -7,7 +7,11 @@
 
 import type { DriveService, SignedURLOptions } from '@adonisjs/drive/types'
 import type { MultipartFile } from '@adonisjs/core/bodyparser'
-import type { AttachmentAttributes, AttachmentBase, Attachment as AttachmentType } from './types/attachment.js'
+import type {
+  AttachmentAttributes,
+  AttachmentBase,
+  Attachment as AttachmentType,
+} from './types/attachment.js'
 
 import path from 'node:path'
 import { DeferQueue } from '@poppinss/defer'
@@ -75,9 +79,9 @@ export class AttachmentManager<KnownConverters extends Record<string, Converter>
 
   async createFromPath(input: string, name?: string) {
     const meta = await metaFormFile(input, name || input)
-    const attributes:AttachmentAttributes = {
+    const attributes: AttachmentAttributes = {
       ...meta,
-      originalName: name?.replace('tmp', meta.extname) || path.basename(input)
+      originalName: name?.replace('tmp', meta.extname) || path.basename(input),
     }
 
     const attachment = new Attachment(this.#drive, attributes, input)
@@ -90,9 +94,9 @@ export class AttachmentManager<KnownConverters extends Record<string, Converter>
     }
 
     const meta = await metaFormBuffer(input)
-    const attributes:AttachmentAttributes = {
+    const attributes: AttachmentAttributes = {
       ...meta,
-      originalName: name || `${cuid()}.${meta.extname}`
+      originalName: name || `${cuid()}.${meta.extname}`,
     }
 
     const attachment = new Attachment(this.#drive, attributes, input)

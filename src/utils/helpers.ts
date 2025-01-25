@@ -111,16 +111,18 @@ export async function streamToTempFile(input: NodeJS.ReadableStream): Promise<st
 
 export async function downloadToTempFile(input: URL): Promise<string> {
   return await new Promise((resolve) => {
-    https.get(input, (response) => {
-      if (response.statusCode === 200) {
-        resolve(streamToTempFile(response))
-      } else {
-        // reject(`${response.statusCode}`)
-        throw new errors.E_CANNOT_GENERATE_TEMP_FILE([''])
-      }
-    }).on('error', (err) => {
-      throw new errors.E_CANNOT_GENERATE_TEMP_FILE([err.message])
-    })
+    https
+      .get(input, (response) => {
+        if (response.statusCode === 200) {
+          resolve(streamToTempFile(response))
+        } else {
+          // reject(`${response.statusCode}`)
+          throw new errors.E_CANNOT_GENERATE_TEMP_FILE([''])
+        }
+      })
+      .on('error', (err) => {
+        throw new errors.E_CANNOT_GENERATE_TEMP_FILE([err.message])
+      })
   })
 }
 

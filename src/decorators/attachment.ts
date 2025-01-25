@@ -13,12 +13,15 @@ import { optionsSym } from '../utils/symbols.js'
 import { defaultOptionsDecorator } from '../utils/default_values.js'
 import type { AttributeOfModelWithAttachment } from '../types/mixin.js'
 
-import { afterFindHook, afterFetchHook, beforeSaveHook, afterSaveHook, beforeDeleteHook } from '../utils/hooks.js'
-
-
 import {
-  clone,
-} from '../utils/helpers.js'
+  afterFindHook,
+  afterFetchHook,
+  beforeSaveHook,
+  afterSaveHook,
+  beforeDeleteHook,
+} from '../utils/hooks.js'
+
+import { clone } from '../utils/helpers.js'
 import { defaultStateAttributeMixin } from '../utils/default_values.js'
 
 export const attachment = (options?: LucidOptions) => {

@@ -6,7 +6,7 @@ import { fileTypeFromBuffer, fileTypeFromFile } from 'file-type'
 import mime from 'mime-types'
 
 function getFileExtension(filename: string) {
-  if (!filename){
+  if (!filename) {
     return ''
   }
 
@@ -17,7 +17,7 @@ function getFileExtension(filename: string) {
 function metaByFileName(filename: string) {
   return {
     ext: getFileExtension(filename),
-    mime: mime.lookup(filename) || ''
+    mime: mime.lookup(filename) || '',
   }
 }
 

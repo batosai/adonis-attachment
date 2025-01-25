@@ -5,7 +5,7 @@
  * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
  */
 
-import type { LucidOptions } from '../types/attachment.js'
+import type { AttachmentAttributes, LucidOptions } from '../types/attachment.js'
 import type { Input } from '../types/input.js'
 import type { ModelWithAttachment } from '../types/mixin.js'
 
@@ -17,11 +17,10 @@ import { pipeline } from 'node:stream'
 import { promisify } from 'node:util'
 import { createWriteStream, WriteStream } from 'node:fs'
 import { cuid } from '@adonisjs/core/helpers'
-import string from '@adonisjs/core/helpers/string'
-import { fileTypeFromBuffer, fileTypeFromFile } from 'file-type'
 import { Attachment } from '../attachments/attachment.js'
 import * as errors from '../errors.js'
 import { optionsSym } from './symbols.js'
+import { meta, metaByFileName } from '../adapters/meta.js'
 
 const streamPipeline = promisify(pipeline)
 
@@ -46,25 +45,31 @@ export function getOptions(
   return modelInstance.constructor.prototype[optionsSym]?.[attributeName]
 }
 
-export async function createAttachmentAttributes(input: Input, name?: string) {
-  let fileType
-  if (Buffer.isBuffer(input)) {
-    fileType = await fileTypeFromBuffer(input)
-  } else {
-    fileType = await fileTypeFromFile(input)
-  }
+export async function createAttachmentAttributes(input: Input, name?: string): Promise<AttachmentAttributes> {
+  const fileType = await meta(input)
+  let originalName = name
 
-  if (name) {
-    name = string.slug(name)
-  } else {
-    name = `${cuid()}.${fileType!.ext}`
+  if (!name && !Buffer.isBuffer(input)) {
+    originalName = path.basename(input)
+  }
+  else if (!name && Buffer.isBuffer(input)) {
+    originalName = `${cuid()}.${fileType!.extname}`
   }
 
   return {
+    originalName: originalName!,
+    ...fileType
+  }
+}
+
+export async function createAttachmentAttributesForUrl(input: Input, name: string): Promise<AttachmentAttributes> {
+  const fileType = await metaByFileName(name)
+  const stats = await fs.stat(input)
+
+  return {
     originalName: name,
-    extname: fileType!.ext,
-    mimeType: fileType!.mime,
-    size: input.length,
+    size: stats.size,
+    ...fileType
   }
 }
 

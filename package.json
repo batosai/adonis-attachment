@@ -65,8 +65,10 @@
   },
   "dependencies": {
     "@poppinss/defer": "^1.1.1",
+    "@types/mime-types": "^2.1.4",
     "exifreader": "^4.26.0",
-    "file-type": "^19.6.0"
+    "file-type": "^19.6.0",
+    "mime-types": "^2.1.35"
   },
   "devDependencies": {
     "@adonisjs/assembler": "^7.8.2",

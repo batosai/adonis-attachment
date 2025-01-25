@@ -9,11 +9,12 @@ import type { DriveService, SignedURLOptions } from '@adonisjs/drive/types'
 import type { MultipartFile } from '@adonisjs/core/bodyparser'
 import type { AttachmentBase, Attachment as AttachmentType } from './types/attachment.js'
 
+import path from 'node:path'
 import { DeferQueue } from '@poppinss/defer'
 import * as errors from './errors.js'
 import { Attachment } from './attachments/attachment.js'
 import Converter from './converters/converter.js'
-import { createAttachmentAttributes, downloadToTempFile, isBase64, streamToTempFile } from './utils/helpers.js'
+import { createAttachmentAttributes, createAttachmentAttributesForUrl, downloadToTempFile, isBase64, streamToTempFile } from './utils/helpers.js'
 import ExifAdapter from './adapters/exif.js'
 import { ResolvedAttachmentConfig } from './define_config.js'
 
@@ -100,18 +101,18 @@ export class AttachmentManager<KnownConverters extends Record<string, Converter>
   }
 
   async createFromUrl(url: URL, name?: string) {
-    const path = await downloadToTempFile(url)
-    const attributes = await createAttachmentAttributes(path, name)
+    const tmpPath = await downloadToTempFile(url)
+    const attributes = await createAttachmentAttributesForUrl(tmpPath, name || path.basename(url.pathname))
 
-    const attachment = new Attachment(this.#drive, attributes, path)
+    const attachment = new Attachment(this.#drive, attributes, tmpPath)
     return this.#configureAttachment(attachment)
   }
 
   async createFromStream(stream: NodeJS.ReadableStream, name?: string) {
-    const path = await streamToTempFile(stream)
-    const attributes = await createAttachmentAttributes(path, name)
+    const tmpPath = await streamToTempFile(stream)
+    const attributes = await createAttachmentAttributes(tmpPath, name)
 
-    const attachment = new Attachment(this.#drive, attributes, path)
+    const attachment = new Attachment(this.#drive, attributes, tmpPath)
     return this.#configureAttachment(attachment)
   }
 

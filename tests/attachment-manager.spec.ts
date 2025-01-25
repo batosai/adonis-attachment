@@ -240,7 +240,7 @@ test.group('attachment-manager', () => {
       mimeType: 'image/jpeg',
       name: data.avatar.name,
       originalName: 'file.jpg',
-      size: 83,
+      size: 122851,
     })
   })
 
@@ -263,7 +263,7 @@ test.group('attachment-manager', () => {
       mimeType: 'image/jpeg',
       name: data.avatar.name,
       originalName: 'file.jpg',
-      size: 31,
+      size: 122851,
     })
   })
 
@@ -297,7 +297,7 @@ test.group('attachment-manager', () => {
       mimeType: 'image/jpeg',
       name: data.avatar.name,
       originalName: 'file.jpg',
-      size: 31,
+      size: 122851,
     })
   })
 })

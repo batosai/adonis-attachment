@@ -7,16 +7,18 @@
 
 import type { DriveService, SignedURLOptions } from '@adonisjs/drive/types'
 import type { MultipartFile } from '@adonisjs/core/bodyparser'
-import type { AttachmentBase, Attachment as AttachmentType } from './types/attachment.js'
+import type { AttachmentAttributes, AttachmentBase, Attachment as AttachmentType } from './types/attachment.js'
 
 import path from 'node:path'
 import { DeferQueue } from '@poppinss/defer'
 import * as errors from './errors.js'
 import { Attachment } from './attachments/attachment.js'
 import Converter from './converters/converter.js'
-import { createAttachmentAttributes, createAttachmentAttributesForUrl, downloadToTempFile, isBase64, streamToTempFile } from './utils/helpers.js'
+import { downloadToTempFile, isBase64, streamToTempFile } from './utils/helpers.js'
 import ExifAdapter from './adapters/exif.js'
 import { ResolvedAttachmentConfig } from './define_config.js'
+import { metaFormBuffer, metaFormFile } from './adapters/meta.js'
+import { cuid } from '@adonisjs/core/helpers'
 
 const REQUIRED_ATTRIBUTES = ['name', 'size', 'extname', 'mimeType']
 
@@ -55,65 +57,69 @@ export class AttachmentManager<KnownConverters extends Record<string, Converter>
     return this.#configureAttachment(attachment)
   }
 
-  async createFromFile(file: MultipartFile) {
+  async createFromFile(input: MultipartFile) {
     const attributes = {
-      originalName: file.clientName,
-      extname: file.extname!,
-      mimeType: `${file.type}/${file.subtype}`,
-      size: file.size!,
+      originalName: input.clientName,
+      extname: input.extname!,
+      mimeType: `${input.type}/${input.subtype}`,
+      size: input.size!,
     }
 
-    if (!file.tmpPath) {
+    if (!input.tmpPath) {
       throw new errors.ENOENT()
     }
 
-    const attachment = new Attachment(this.#drive, attributes, file.tmpPath)
+    const attachment = new Attachment(this.#drive, attributes, input.tmpPath)
     return this.#configureAttachment(attachment)
   }
 
-  async createFromPath(path: string, name?: string) {
-    const attributes = await createAttachmentAttributes(path, name)
+  async createFromPath(input: string, name?: string) {
+    const meta = await metaFormFile(input, name || input)
+    const attributes:AttachmentAttributes = {
+      ...meta,
+      originalName: name?.replace('tmp', meta.extname) || path.basename(input)
+    }
 
-    const attachment = new Attachment(this.#drive, attributes, path)
+    const attachment = new Attachment(this.#drive, attributes, input)
     return this.#configureAttachment(attachment)
   }
 
-  async createFromBuffer(buffer: Buffer, name?: string) {
-    if (!Buffer.isBuffer(buffer)) {
+  async createFromBuffer(input: Buffer, name?: string) {
+    if (!Buffer.isBuffer(input)) {
       throw new errors.E_ISNOT_BUFFER()
     }
 
-    const attributes = await createAttachmentAttributes(buffer, name)
+    const meta = await metaFormBuffer(input)
+    const attributes:AttachmentAttributes = {
+      ...meta,
+      originalName: name || `${cuid()}.${meta.extname}`
+    }
 
-    const attachment = new Attachment(this.#drive, attributes, buffer)
+    const attachment = new Attachment(this.#drive, attributes, input)
     return this.#configureAttachment(attachment)
   }
 
-  async createFromBase64(data: string, name?: string) {
-    const base64Data = data.replace(/^data:([A-Za-z-+\/]+);base64,/, '')
+  async createFromBase64(input: string, name?: string) {
+    const base64Data = input.replace(/^data:([A-Za-z-+\/]+);base64,/, '')
     if (!isBase64(base64Data)) {
       throw new errors.E_ISNOT_BASE64()
     }
 
     const buffer = Buffer.from(base64Data, 'base64')
 
-    return await this.createFromBuffer(buffer, name)
+    return this.createFromBuffer(buffer, name)
   }
 
-  async createFromUrl(url: URL, name?: string) {
-    const tmpPath = await downloadToTempFile(url)
-    const attributes = await createAttachmentAttributesForUrl(tmpPath, name || path.basename(url.pathname))
+  async createFromUrl(input: URL, name?: string) {
+    const tmpPath = await downloadToTempFile(input)
 
-    const attachment = new Attachment(this.#drive, attributes, tmpPath)
-    return this.#configureAttachment(attachment)
+    return this.createFromPath(tmpPath, name || path.basename(input.pathname))
   }
 
   async createFromStream(stream: NodeJS.ReadableStream, name?: string) {
     const tmpPath = await streamToTempFile(stream)
-    const attributes = await createAttachmentAttributes(tmpPath, name)
 
-    const attachment = new Attachment(this.#drive, attributes, tmpPath)
-    return this.#configureAttachment(attachment)
+    return this.createFromPath(tmpPath, name || path.basename(tmpPath))
   }
 
   async getConverter(key: string): Promise<void | Converter> {

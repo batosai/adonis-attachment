@@ -221,7 +221,7 @@ test.group('attachment-manager', () => {
     })
   })
 
-  test('with path', async ({ assert }) => {
+  test('with path and name params', async ({ assert }) => {
     const path = app.makePath('../fixtures/images/img.jpg')
 
     const avatar = await attachmentManager.createFromPath(path, 'file.jpg')
@@ -244,7 +244,21 @@ test.group('attachment-manager', () => {
     })
   })
 
-  test('with url', async ({ assert }) => {
+  test('with path and no name params', async ({ assert }) => {
+    const path = app.makePath('../fixtures/images/img.jpg')
+
+    const avatar = await attachmentManager.createFromPath(path)
+
+    const user = await UserFactory.merge({ avatar }).create()
+    const data = await user.serialize()
+
+    assert.equal(data.avatar.originalName, 'img.jpg')
+    assert.match(data.avatar.name, /(.*).jpg$/)
+    assert.equal(data.avatar.mimeType, 'image/jpeg')
+    assert.equal(data.avatar.extname, 'jpg')
+  })
+
+  test('with url and name params', async ({ assert }) => {
     const url = new URL('https://raw.githubusercontent.com/batosai/adonis-attachment/refs/heads/develop/tests/fixtures/images/img.jpg')
 
     const avatar = await attachmentManager.createFromUrl(url, 'file.jpg')
@@ -267,7 +281,21 @@ test.group('attachment-manager', () => {
     })
   })
 
-  test('with stream', async ({ assert }) => {
+  test('with url and no name params', async ({ assert }) => {
+    const url = new URL('https://raw.githubusercontent.com/batosai/adonis-attachment/refs/heads/develop/tests/fixtures/images/img.jpg')
+
+    const avatar = await attachmentManager.createFromUrl(url)
+
+    const user = await UserFactory.merge({ avatar }).create()
+    const data = await user.serialize()
+
+    assert.equal(data.avatar.originalName, 'img.jpg')
+    assert.match(data.avatar.name, /(.*).jpg$/)
+    assert.equal(data.avatar.mimeType, 'image/jpeg')
+    assert.equal(data.avatar.extname, 'jpg')
+  })
+
+  test('with stream and name params', async ({ assert }) => {
     async function downloadImageStream(input: URL): Promise<IncomingMessage> {
       return await new Promise((resolve) => {
         https.get(input, (response) => {
@@ -299,5 +327,32 @@ test.group('attachment-manager', () => {
       originalName: 'file.jpg',
       size: 122851,
     })
+    assert.match(data.avatar.name, /(.*).jpg$/)
+  })
+
+  test('with stream and no name params', async ({ assert }) => {
+    async function downloadImageStream(input: URL): Promise<IncomingMessage> {
+      return await new Promise((resolve) => {
+        https.get(input, (response) => {
+          if (response.statusCode === 200) {
+            resolve(response)
+          }
+        })
+      })
+    }
+
+    const url = new URL('https://raw.githubusercontent.com/batosai/adonis-attachment/refs/heads/develop/tests/fixtures/images/img.jpg')
+    const stream = await downloadImageStream(url)
+
+    const avatar = await attachmentManager.createFromStream(stream)
+
+    const user = await UserFactory.merge({ avatar }).create()
+    const data = await user.serialize()
+
+
+    assert.match(data.avatar.originalName, /(.*).jpg$/)
+    assert.match(data.avatar.name, /(.*).jpg$/)
+    assert.equal(data.avatar.mimeType, 'image/jpeg')
+    assert.equal(data.avatar.extname, 'jpg')
   })
 })

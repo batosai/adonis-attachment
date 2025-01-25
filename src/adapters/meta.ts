@@ -1,4 +1,4 @@
-import { Meta, Input } from '../types/input.js'
+import { Meta } from '../types/input.js'
 
 import path from 'node:path'
 import fs from 'node:fs/promises'
@@ -14,37 +14,38 @@ function getFileExtension(filename: string) {
   return ext && /^[a-zA-Z0-9]+$/.test(ext) ? ext : ''
 }
 
-export async function meta(input: Input): Promise<Meta> {
-  let fileType
-  let size = 0
-
-  if (Buffer.isBuffer(input)) {
-    fileType = await fileTypeFromBuffer(input)
-    size = input.length
-  } else {
-    fileType = {
-      ext: getFileExtension(input),
-      mime: mime.lookup(input) || ''
-    }
-
-    if (fileType.ext === '' || fileType.mime === '') {
-      fileType = await fileTypeFromFile(input)
-    }
-
-    const stats = await fs.stat(input)
-    size = stats.size
-  }
-
+function metaByFileName(filename: string) {
   return {
-    extname: fileType!.ext,
-    mimeType: fileType!.mime,
-    size: size,
+    ext: getFileExtension(filename),
+    mime: mime.lookup(filename) || ''
   }
 }
 
-export async function metaByFileName(filename: string) {
+export async function metaFormBuffer(input: Buffer): Promise<Meta> {
+  const fileType = await fileTypeFromBuffer(input)
+
   return {
-    extname: getFileExtension(filename),
-    mimeType: mime.lookup(filename) || ''
+    extname: fileType?.ext || '',
+    mimeType: fileType?.mime || '',
+    size: input.length,
+  }
+}
+
+export async function metaFormFile(input: string, filename: string): Promise<Meta> {
+  let fileType
+  let size = 0
+
+  fileType = metaByFileName(filename)
+  if (fileType.ext === '' || fileType.mime === '') {
+    fileType = await fileTypeFromFile(input)
+  }
+
+  const stats = await fs.stat(input)
+  size = stats.size
+
+  return {
+    extname: fileType?.ext || '',
+    mimeType: fileType?.mime || '',
+    size,
   }
 }

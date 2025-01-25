@@ -5,8 +5,7 @@
  * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
  */
 
-import type { AttachmentAttributes, LucidOptions } from '../types/attachment.js'
-import type { Input } from '../types/input.js'
+import type { LucidOptions } from '../types/attachment.js'
 import type { ModelWithAttachment } from '../types/mixin.js'
 
 import os from 'node:os'
@@ -16,11 +15,9 @@ import fs from 'node:fs/promises'
 import { pipeline } from 'node:stream'
 import { promisify } from 'node:util'
 import { createWriteStream, WriteStream } from 'node:fs'
-import { cuid } from '@adonisjs/core/helpers'
 import { Attachment } from '../attachments/attachment.js'
 import * as errors from '../errors.js'
 import { optionsSym } from './symbols.js'
-import { meta, metaByFileName } from '../adapters/meta.js'
 
 const streamPipeline = promisify(pipeline)
 
@@ -43,34 +40,6 @@ export function getOptions(
   attributeName: string
 ): LucidOptions {
   return modelInstance.constructor.prototype[optionsSym]?.[attributeName]
-}
-
-export async function createAttachmentAttributes(input: Input, name?: string): Promise<AttachmentAttributes> {
-  const fileType = await meta(input)
-  let originalName = name
-
-  if (!name && !Buffer.isBuffer(input)) {
-    originalName = path.basename(input)
-  }
-  else if (!name && Buffer.isBuffer(input)) {
-    originalName = `${cuid()}.${fileType!.extname}`
-  }
-
-  return {
-    originalName: originalName!,
-    ...fileType
-  }
-}
-
-export async function createAttachmentAttributesForUrl(input: Input, name: string): Promise<AttachmentAttributes> {
-  const fileType = await metaByFileName(name)
-  const stats = await fs.stat(input)
-
-  return {
-    originalName: name,
-    size: stats.size,
-    ...fileType
-  }
 }
 
 export function cleanObject(obj: any) {

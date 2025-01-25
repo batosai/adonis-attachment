@@ -3,6 +3,9 @@
 ## 3.2.0
 
 * remove Attachmentable mixin
+* add avif/heif type
+* fix size attribute for createFromPath/createFromUrl
+* fix extname and mimetype attributes for createFromPath/createFromUrl/createFromStream
 
 > Released at *2025-01-23*
 

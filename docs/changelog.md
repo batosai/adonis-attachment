@@ -4,6 +4,7 @@
 
 * remove Attachmentable mixin
 * add avif/heif type
+* config: strict type format
 * fix size attribute for createFromPath/createFromUrl
 * fix extname and mimetype attributes for createFromPath/createFromUrl/createFromStream
 

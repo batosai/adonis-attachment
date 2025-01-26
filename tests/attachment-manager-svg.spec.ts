@@ -7,7 +7,6 @@
 
 import https from 'node:https'
 import { IncomingMessage } from 'node:http'
-import { readFile } from 'node:fs/promises'
 import { test } from '@japa/runner'
 import app from '@adonisjs/core/services/app'
 

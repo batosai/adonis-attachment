@@ -189,7 +189,10 @@ test.group('attachment-manager', () => {
     })
   })
 
-  test('with file', async ({ assert }) => {
+  test('with file', async ({ assert, cleanup }) => {
+    const fakeDisk = drive.fake('fs')
+    cleanup(() => drive.restore('fs'))
+
     const file = new MultipartFileFactory()
       .merge({
         size: 4000000,
@@ -219,9 +222,13 @@ test.group('attachment-manager', () => {
       originalName: 'file.jpg',
       size: 4000000,
     })
+    fakeDisk.assertExists(user.avatar?.path!)
   })
 
-  test('with path and name params', async ({ assert }) => {
+  test('with path and name params', async ({ assert, cleanup }) => {
+    const fakeDisk = drive.fake('fs')
+    cleanup(() => drive.restore('fs'))
+
     const path = app.makePath('../fixtures/images/img.jpg')
 
     const avatar = await attachmentManager.createFromPath(path, 'file.jpg')
@@ -242,6 +249,7 @@ test.group('attachment-manager', () => {
       originalName: 'file.jpg',
       size: 122851,
     })
+    fakeDisk.assertExists(user.avatar?.path!)
   })
 
   test('with path and no name params', async ({ assert }) => {
@@ -258,7 +266,10 @@ test.group('attachment-manager', () => {
     assert.equal(data.avatar.extname, 'jpg')
   })
 
-  test('with url and name params', async ({ assert }) => {
+  test('with url and name params', async ({ assert, cleanup }) => {
+    const fakeDisk = drive.fake('fs')
+    cleanup(() => drive.restore('fs'))
+
     const url = new URL(
       'https://raw.githubusercontent.com/batosai/adonis-attachment/refs/heads/develop/tests/fixtures/images/img.jpg'
     )
@@ -281,6 +292,7 @@ test.group('attachment-manager', () => {
       originalName: 'file.jpg',
       size: 122851,
     })
+    fakeDisk.assertExists(user.avatar?.path!)
   })
 
   test('with url and no name params', async ({ assert }) => {
@@ -299,7 +311,10 @@ test.group('attachment-manager', () => {
     assert.equal(data.avatar.extname, 'jpg')
   })
 
-  test('with stream and name params', async ({ assert }) => {
+  test('with stream and name params', async ({ assert, cleanup }) => {
+    const fakeDisk = drive.fake('fs')
+    cleanup(() => drive.restore('fs'))
+
     async function downloadImageStream(input: URL): Promise<IncomingMessage> {
       return await new Promise((resolve) => {
         https.get(input, (response) => {
@@ -334,6 +349,7 @@ test.group('attachment-manager', () => {
       size: 122851,
     })
     assert.match(data.avatar.name, /(.*).jpg$/)
+    fakeDisk.assertExists(user.avatar?.path!)
   })
 
   test('with stream and no name params', async ({ assert }) => {

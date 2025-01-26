@@ -6,6 +6,7 @@
  */
 
 import { test } from '@japa/runner'
+import drive from '@adonisjs/drive/services/main'
 
 import { createApp } from './helpers/app.js'
 import { UserFactory } from './fixtures/factories/user_with_variants.js'
@@ -24,4 +25,39 @@ test.group('variants', () => {
     assert.isNotNull(data.avatar.thumbnail)
     assert.isNotNull(data.avatar.medium)
   }).timeout(10_000)
+
+  test('delete file after remove avatars', async ({ assert, cleanup }) => {
+    const fakeDisk = drive.fake('fs')
+    const app = await createApp()
+    cleanup(() => {
+      drive.restore('fs')
+      app.terminate()
+    })
+
+    const user = await UserFactory.create()
+    const variants = user.avatar?.variants
+    user.avatar = null
+    await user.save()
+
+    variants?.forEach((variant) => {
+      fakeDisk.assertMissing(variant.path!)
+    })
+  })
+
+  test('delete file after remove entity', async ({ assert, cleanup }) => {
+    const fakeDisk = drive.fake('fs')
+    const app = await createApp()
+    cleanup(() => {
+      drive.restore('fs')
+      app.terminate()
+    })
+
+    const user = await UserFactory.create()
+    const variants = user.avatar?.variants
+    await user.delete()
+
+    variants?.forEach((variant) => {
+      fakeDisk.assertMissing(variant.path!)
+    })
+  })
 })

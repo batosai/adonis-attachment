@@ -95,6 +95,29 @@ type webp = {
   }
 }
 
+type avif = {
+  format: 'avif',
+  options: {
+    quality?: number
+    lossless?: Boolean
+    effort?: number
+    chromaSubsampling?: string
+    bitdepth?: number
+  }
+}
+
+type heif = {
+  format: 'heif',
+  options: {
+    compression?: string
+    quality?: number
+    lossless?: Boolean
+    effort?: number
+    chromaSubsampling?: string
+    bitdepth?: number
+  }
+}
+
 export type ConverterOptions = {
   resize?:
     | number
@@ -116,5 +139,5 @@ export type ConverterOptions = {
         withoutReduction?: Boolean
         fastShrinkOnLoad?: Boolean
       }
-  format?: string | jpeg | png | gif | webp
+  format?: 'jpeg' | 'jpg' | 'png' | 'gif' | 'webp' | 'avif' | 'heif' | 'tiff' | 'raw' | jpeg | png | gif | webp | avif | heif
 }

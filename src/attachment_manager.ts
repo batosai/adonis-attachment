@@ -79,6 +79,12 @@ export class AttachmentManager<KnownConverters extends Record<string, Converter>
 
   async createFromPath(input: string, name?: string) {
     const meta = await metaFormFile(input, name || input)
+
+    if (meta.extname === '') {
+      meta.extname = 'tmp'
+      meta.mimeType = 'application/x-temp'
+    }
+
     const attributes: AttachmentAttributes = {
       ...meta,
       originalName: name?.replace('tmp', meta.extname) || path.basename(input),
@@ -94,9 +100,10 @@ export class AttachmentManager<KnownConverters extends Record<string, Converter>
     }
 
     const meta = await metaFormBuffer(input)
+    const ext = meta.extname || 'tmp'
     const attributes: AttachmentAttributes = {
       ...meta,
-      originalName: name || `${cuid()}.${meta.extname}`,
+      originalName: name || `${cuid()}.${ext}`,
     }
 
     const attachment = new Attachment(this.#drive, attributes, input)

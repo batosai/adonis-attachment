@@ -239,9 +239,9 @@ test.group('SVG file syntaxe nok', () => {
     const user = await UserFactory.merge({ avatar }).create()
     const data = await user.serialize()
 
-    assert.match(data.avatar.originalName, /(.*).$/)
-    assert.match(data.avatar.name, /(.*).$/)
-    assert.equal(data.avatar.mimeType, '')
-    assert.equal(data.avatar.extname, '')
+    assert.match(data.avatar.originalName, /(.*).tmp$/)
+    assert.match(data.avatar.name, /(.*).tmp$/)
+    assert.equal(data.avatar.mimeType, 'application/x-temp')
+    assert.equal(data.avatar.extname, 'tmp')
   })
 })

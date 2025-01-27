@@ -23,7 +23,7 @@ export default defineConfig({
       {
         text: 'Versions',
         items: [
-          { text: '3.1.0', link: '/guide/essentials/introduction' },
+          { text: '3.x.x', link: '/guide/essentials/introduction' },
           { text: '2.4.2', link: '/v2/guide/essentials/introduction' },
         ]
 

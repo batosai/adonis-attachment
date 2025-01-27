@@ -96,7 +96,7 @@ type webp = {
 }
 
 type avif = {
-  format: 'avif',
+  format: 'avif'
   options: {
     quality?: number
     lossless?: Boolean
@@ -107,7 +107,7 @@ type avif = {
 }
 
 type heif = {
-  format: 'heif',
+  format: 'heif'
   options: {
     compression?: string
     quality?: number
@@ -139,5 +139,20 @@ export type ConverterOptions = {
         withoutReduction?: Boolean
         fastShrinkOnLoad?: Boolean
       }
-  format?: 'jpeg' | 'jpg' | 'png' | 'gif' | 'webp' | 'avif' | 'heif' | 'tiff' | 'raw' | jpeg | png | gif | webp | avif | heif
+  format?:
+    | 'jpeg'
+    | 'jpg'
+    | 'png'
+    | 'gif'
+    | 'webp'
+    | 'avif'
+    | 'heif'
+    | 'tiff'
+    | 'raw'
+    | jpeg
+    | png
+    | gif
+    | webp
+    | avif
+    | heif
 }

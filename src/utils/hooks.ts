@@ -103,6 +103,11 @@ export const beforeDeleteHook = async (instance: unknown) => {
   const attachmentAttributeNames = getAttachmentAttributeNames(modelInstance)
 
   /**
+   * create $attachments
+   */
+  modelInstance.$attachments = clone(defaultStateAttributeMixin)
+
+  /**
    * Mark all attachments for deletion
    */
   attachmentAttributeNames.map((attributeName) => {

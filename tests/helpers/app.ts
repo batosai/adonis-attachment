@@ -8,7 +8,7 @@
 import type { ApplicationService } from '@adonisjs/core/types'
 import type { InferConverters } from '../../src/types/config.js'
 
-import { copyFile, mkdir } from 'node:fs/promises'
+import { copyFile, mkdir, rm } from 'node:fs/promises'
 import { IgnitorFactory } from '@adonisjs/core/factories'
 import { defineConfig as defineLucidConfig } from '@adonisjs/lucid'
 import { defineConfig } from '../../src/define_config.js'
@@ -86,7 +86,7 @@ export async function createApp(options = {}) {
             sqlite: {
               client: 'better-sqlite3',
               connection: {
-                filename: new URL('../db.sqlite', BASE_URL).pathname,
+                filename: decodeURIComponent(new URL('../db.sqlite', BASE_URL).pathname),
               },
             },
           },
@@ -117,6 +117,10 @@ export async function initializeDatabase(app: ApplicationService) {
   const ace = await app.container.make('ace')
   await ace.exec('migration:fresh', [])
   // await seedDatabase()
+}
+
+export async function removeDatabase() {
+  await rm(decodeURIComponent(new URL('../db.sqlite', BASE_URL).pathname))
 }
 
 // async function seedDatabase() {

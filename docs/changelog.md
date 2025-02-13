@@ -2,6 +2,13 @@
 
 ## 3.2.0
 
+* fix delete
+* fix delete for minio client
+
+> Released at *2025-02-13*
+
+## 3.2.0
+
 * remove Attachmentable mixin
 * add avif/heif type
 * config: strict type format

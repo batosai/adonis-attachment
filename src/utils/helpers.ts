@@ -92,9 +92,6 @@ export async function bufferToTempFile(input: Buffer) {
   return tempFilePath
 }
 
-// TODO
-// gestion des erreurs
-
 export async function streamToTempFile(input: NodeJS.ReadableStream): Promise<string> {
   const folder = os.tmpdir()
   const tempFilePath = path.join(folder, `tempfile-${Date.now()}.tmp`)

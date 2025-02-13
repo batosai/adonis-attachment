@@ -191,8 +191,16 @@ export class AttachmentManager<KnownConverters extends Record<string, Converter>
 
       if (attachment instanceof Attachment) {
         if (attachment.variants) {
-          const variantPath = attachment.variants[0].folder
-          await attachment.getDisk().deleteAll(variantPath)
+          if (attachment.options?.disk == 'fs') {
+            const variantPath = attachment.variants[0].folder
+            await attachment.getDisk().deleteAll(variantPath)
+          } else {
+            for (const key in attachment.variants) {
+              if (Object.prototype.hasOwnProperty.call(attachment.variants, key)) {
+                await attachment.getDisk().delete(attachment.variants[key].path)
+              }
+            }
+          }
         }
       }
     }

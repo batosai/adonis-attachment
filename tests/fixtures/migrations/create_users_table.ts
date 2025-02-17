@@ -13,6 +13,7 @@ export default class extends BaseSchema {
       table.string('name')
       table.json('avatar')
       table.json('avatar_2')
+      table.json('weekend_pics')
       table.timestamp('created_at')
       table.timestamp('updated_at')
     })

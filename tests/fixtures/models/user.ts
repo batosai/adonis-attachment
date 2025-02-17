@@ -7,7 +7,7 @@
 
 import { compose } from '@adonisjs/core/helpers'
 import { BaseModel, column } from '@adonisjs/lucid/orm'
-import { attachment } from '../../../index.js'
+import { attachment, attachments } from '../../../index.js'
 import type { Attachment } from '../../../src/types/attachment.js'
 import { DateTime } from 'luxon'
 
@@ -23,6 +23,9 @@ export default class User extends BaseModel {
 
   @attachment({ disk: 's3', folder: 'avatar', preComputeUrl: true, meta: false, rename: false })
   declare avatar2: Attachment | null
+
+  @attachments({ preComputeUrl: true })
+  declare weekendPics: Attachment[] | null
 
   @column.dateTime({ autoCreate: true, serialize: (value: DateTime) => value.toUnixInteger() })
   declare createdAt: DateTime

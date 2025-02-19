@@ -26,7 +26,7 @@ import { defaultStateAttributeMixin } from '../utils/default_values.js'
 
 export const bootModel = (model: LucidModel & {
   $attachments: AttributeOfModelWithAttachment
-}, options?: LucidOptions) => {
+}) => {
     model.boot()
 
     model.$attachments = clone(defaultStateAttributeMixin)
@@ -61,23 +61,23 @@ const makeColumnOptions = (options?: LucidOptions) => {
       }
     return ({
       consume: (value: any) => {
-          if (value) {
-              const attachment = attachmentManager.createFromDbResponse(value)
-              attachment?.setOptions({ disk, folder, variants })
+        if (value) {
+          const attachment = attachmentManager.createFromDbResponse(value)
+          attachment?.setOptions({ disk, folder, variants })
 
-              if (options && options?.meta !== undefined) {
-                  attachment?.setOptions({ meta: options!.meta })
-              }
-              if (options && options?.rename !== undefined) {
-                  attachment?.setOptions({ rename: options!.rename })
-              }
-              if (options && options?.preComputeUrl !== undefined) {
-                  attachment?.setOptions({ preComputeUrl: options!.preComputeUrl })
-              }
-              return attachment
-          } else {
-              return null
+          if (options && options?.meta !== undefined) {
+            attachment?.setOptions({ meta: options!.meta })
           }
+          if (options && options?.rename !== undefined) {
+            attachment?.setOptions({ rename: options!.rename })
+          }
+          if (options && options?.preComputeUrl !== undefined) {
+            attachment?.setOptions({ preComputeUrl: options!.preComputeUrl })
+          }
+          return attachment
+        } else {
+          return null
+        }
       },
       prepare: (value: any) => (value ? JSON.stringify(value.toObject()) : null),
       serialize: (value: any) => (value ? value.toJSON() : null),
@@ -86,7 +86,7 @@ const makeColumnOptions = (options?: LucidOptions) => {
 }
 
 
-const makeAttachmentDecorator = (columnOptionsTransformer?: (columnOptions: any) => any) => 
+const makeAttachmentDecorator = (columnOptionsTransformer?: (columnOptions: any) => any) =>
   (options?: LucidOptions) => {
     return function (target: any, attributeName: string) {
       if (!target[optionsSym]) {
@@ -99,7 +99,7 @@ const makeAttachmentDecorator = (columnOptionsTransformer?: (columnOptions: any)
         $attachments: AttributeOfModelWithAttachment
       }
 
-      bootModel(Model, options)
+      bootModel(Model)
 
       const columnOptions = makeColumnOptions(options)
       const transformedColumnOptions = columnOptionsTransformer ? columnOptionsTransformer(columnOptions): columnOptions
@@ -110,6 +110,6 @@ const makeAttachmentDecorator = (columnOptionsTransformer?: (columnOptions: any)
 
 export const attachment = makeAttachmentDecorator()
 export const attachments = makeAttachmentDecorator((columnOptions) => ({
-  consume: (value: any[]) => value.map(columnOptions.consume),
+  consume: (value: any[]) => (value ? JSON.parse(value.toString()).map(columnOptions.consume) : null),
   prepare: (value: any[]) => (value ? JSON.stringify(value.map(v => v.toObject())) : null),
 }))

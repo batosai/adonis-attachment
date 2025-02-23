@@ -27,61 +27,62 @@ import { defaultStateAttributeMixin } from '../utils/default_values.js'
 export const bootModel = (model: LucidModel & {
   $attachments: AttributeOfModelWithAttachment
 }) => {
-    model.boot()
+  model.boot()
 
-    model.$attachments = clone(defaultStateAttributeMixin)
+  model.$attachments = clone(defaultStateAttributeMixin)
 
-    /**
-     * Registering all hooks only once
-     */
-    if (!model.$hooks.has('find', afterFindHook)) {
-      model.after('find', afterFindHook)
-    }
-    if (!model.$hooks.has('fetch', afterFetchHook)) {
-      model.after('fetch', afterFetchHook)
-    }
-    if (!model.$hooks.has('paginate', afterFetchHook)) {
-      model.after('paginate', afterFetchHook)
-    }
-    if (!model.$hooks.has('save', beforeSaveHook)) {
-      model.before('save', beforeSaveHook)
-    }
-    if (!model.$hooks.has('save', afterSaveHook)) {
-      model.after('save', afterSaveHook)
-    }
-    if (!model.$hooks.has('delete', beforeDeleteHook)) {
-      model.before('delete', beforeDeleteHook)
-    }
+  /**
+   * Registering all hooks only once
+   */
+  if (!model.$hooks.has('find', afterFindHook)) {
+    model.after('find', afterFindHook)
+  }
+  if (!model.$hooks.has('fetch', afterFetchHook)) {
+    model.after('fetch', afterFetchHook)
+  }
+  if (!model.$hooks.has('paginate', afterFetchHook)) {
+    model.after('paginate', afterFetchHook)
+  }
+  if (!model.$hooks.has('save', beforeSaveHook)) {
+    model.before('save', beforeSaveHook)
+  }
+  if (!model.$hooks.has('save', afterSaveHook)) {
+    model.after('save', afterSaveHook)
+  }
+  if (!model.$hooks.has('delete', beforeDeleteHook)) {
+    model.before('delete', beforeDeleteHook)
+  }
 }
 
 const makeColumnOptions = (options?: LucidOptions) => {
-    const { disk, folder, variants, meta, rename, ...columnOptions } = {
-        ...defaultOptionsDecorator,
-        ...options,
-      }
-    return ({
-      consume: (value: any) => {
-        if (value) {
-          const attachment = attachmentManager.createFromDbResponse(value)
-          attachment?.setOptions({ disk, folder, variants })
+  const { disk, folder, variants, meta, rename, ...columnOptions } = {
+    ...defaultOptionsDecorator,
+    ...options,
+  }
 
-          if (options && options?.meta !== undefined) {
-            attachment?.setOptions({ meta: options!.meta })
-          }
-          if (options && options?.rename !== undefined) {
-            attachment?.setOptions({ rename: options!.rename })
-          }
-          if (options && options?.preComputeUrl !== undefined) {
-            attachment?.setOptions({ preComputeUrl: options!.preComputeUrl })
-          }
-          return attachment
-        } else {
-          return null
+  return ({
+    consume: (value: any) => {
+      if (value) {
+        const attachment = attachmentManager.createFromDbResponse(value)
+        attachment?.setOptions({ disk, folder, variants })
+
+        if (options && options?.meta !== undefined) {
+          attachment?.setOptions({ meta: options!.meta })
         }
-      },
-      prepare: (value: any) => (value ? JSON.stringify(value.toObject()) : null),
-      serialize: (value: any) => (value ? value.toJSON() : null),
-      ...columnOptions,
+        if (options && options?.rename !== undefined) {
+          attachment?.setOptions({ rename: options!.rename })
+        }
+        if (options && options?.preComputeUrl !== undefined) {
+          attachment?.setOptions({ preComputeUrl: options!.preComputeUrl })
+        }
+        return attachment
+      } else {
+        return null
+      }
+    },
+    prepare: (value: any) => (value ? JSON.stringify(value.toObject()) : null),
+    serialize: (value: any) => (value ? value.toJSON() : null),
+    ...columnOptions,
   })
 }
 

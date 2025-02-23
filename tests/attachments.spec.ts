@@ -4,9 +4,7 @@
  * @license MIT
  * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
  */
-import { readFile } from 'node:fs/promises'
 
-import app from '@adonisjs/core/services/app'
 import '@japa/assert'
 import { test } from '@japa/runner'
 import drive from '@adonisjs/drive/services/main'
@@ -16,7 +14,7 @@ import { UserFactory } from './fixtures/factories/user.js'
 test.group('attachments', () => {
   test('create', async ({ assert }) => {
     const user = await UserFactory.create()
-    
+
     assert.isNotNull(user.weekendPics)
     assert.equal(user.weekendPics?.length, 2)
     for (const pic of user.weekendPics ?? []) {
@@ -48,7 +46,8 @@ test.group('attachments', () => {
     const paths = user.weekendPics?.map(p => p.path)
     await user.delete()
 
-    for (const path of paths ?? [])
+    for (const path of paths ?? []) {
       fakeDisk.assertMissing(path!)
+    }
   })
 })

@@ -5,9 +5,10 @@
  * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
  */
 
+import type { Record } from './service.js'
 import type { BinPaths } from './config.js'
 import type { Input } from './input.js'
-import type { ModelWithAttachment } from './mixin.js'
+import type { LucidOptions } from './attachment.js'
 
 export type Converter = {
   options?: ConverterOptions
@@ -16,8 +17,9 @@ export type Converter = {
 }
 
 export type ConverterInitializeAttributes = {
-  record: ModelWithAttachment
+  record: Record
   attributeName: string
+  options: LucidOptions
 }
 
 export type ConverterAttributes = {

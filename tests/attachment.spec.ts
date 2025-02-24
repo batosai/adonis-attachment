@@ -19,7 +19,7 @@ test.group('attachment', () => {
     assert.isNull(user.avatar)
   })
 
-  test('delete file after remove avatar', async ({ assert, cleanup }) => {
+  test('delete file after removing', async ({ assert, cleanup }) => {
     const fakeDisk = drive.fake('fs')
     cleanup(() => drive.restore('fs'))
 

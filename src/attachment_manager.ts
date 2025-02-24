@@ -44,7 +44,7 @@ export class AttachmentManager<KnownConverters extends Record<string, Converter>
     return this.#config
   }
 
-  createFromDbResponse(response: any) {
+  createFromDbResponse(response?: string | JSON) {
     if (response === null) {
       return null
     }

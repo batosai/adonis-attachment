@@ -24,6 +24,9 @@ test.group('variants', () => {
 
     assert.isNotNull(data.avatar.thumbnail)
     assert.isNotNull(data.avatar.medium)
+
+    assert.isNotNull(data.weekendPics[0].thumbnail)
+    assert.isNotNull(data.weekendPics[1].thumbnail)
   }).timeout(10_000)
 
   test('delete file after remove avatars', async ({ assert, cleanup }) => {

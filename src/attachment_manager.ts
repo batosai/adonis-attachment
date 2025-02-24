@@ -77,6 +77,12 @@ export class AttachmentManager<KnownConverters extends Record<string, Converter>
     return this.#configureAttachment(attachment)
   }
 
+  async createFromFiles(inputs: MultipartFile[]) {
+    return Promise.all(
+      inputs.map((input) => this.createFromFile(input))
+    )
+  }
+
   async createFromPath(input: string, name?: string) {
     const meta = await metaFormFile(input, name || input)
 

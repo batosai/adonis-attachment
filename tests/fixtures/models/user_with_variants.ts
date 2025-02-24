@@ -7,7 +7,7 @@
 
 import { compose } from '@adonisjs/core/helpers'
 import { BaseModel, column } from '@adonisjs/lucid/orm'
-import { attachment } from '../../../index.js'
+import { attachment, attachments } from '../../../index.js'
 import { Attachmentable } from '../../../src/mixins/attachmentable.js'
 import type { Attachment } from '../../../src/types/attachment.js'
 import { DateTime } from 'luxon'
@@ -21,6 +21,9 @@ export default class User extends compose(BaseModel, Attachmentable) {
 
   @attachment({ variants: ['thumbnail', 'medium'] })
   declare avatar: Attachment | null
+
+  @attachments({ variants: ['thumbnail'] })
+  declare weekendPics: Attachment[] | null
 
   @column.dateTime({ autoCreate: true, serialize: (value: DateTime) => value.toUnixInteger() })
   declare createdAt: DateTime

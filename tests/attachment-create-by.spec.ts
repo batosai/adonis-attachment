@@ -86,7 +86,7 @@ test.group('attachment create', () => {
       mimeType: 'image/jpeg',
       name: data.avatar.name,
       originalName: 'avatar.jpg',
-      size: 122851,
+      size: 122_851,
     })
   })
 
@@ -121,7 +121,7 @@ test.group('attachment create', () => {
       mimeType: 'image/jpeg',
       name: data.avatar.name,
       originalName: 'file.jpg',
-      size: 4000000,
+      size: 4_000_000,
     })
     fakeDisk.assertExists(user.avatar?.path!)
   })
@@ -148,7 +148,7 @@ test.group('attachment create', () => {
       mimeType: 'image/jpeg',
       name: data.avatar.name,
       originalName: 'file.jpg',
-      size: 122851,
+      size: 122_851,
     })
     fakeDisk.assertExists(user.avatar?.path!)
   })
@@ -191,7 +191,7 @@ test.group('attachment create', () => {
       mimeType: 'image/jpeg',
       name: data.avatar.name,
       originalName: 'file.jpg',
-      size: 122851,
+      size: 122_851,
     })
     fakeDisk.assertExists(user.avatar?.path!)
   })
@@ -247,7 +247,7 @@ test.group('attachment create', () => {
       mimeType: 'image/jpeg',
       name: data.avatar.name,
       originalName: 'file.jpg',
-      size: 122851,
+      size: 122_851,
     })
     assert.match(data.avatar.name, /(.*).jpg$/)
     fakeDisk.assertExists(user.avatar?.path!)
@@ -318,5 +318,92 @@ test.group('attachments create', () => {
       originalName: 'avatar2.jpg',
       size: 122851,
     }])
+  })
+
+  test('with files', async ({ assert, cleanup }) => {
+    const fakeDisk = drive.fake('fs')
+    cleanup(() => drive.restore('fs'))
+
+    const file = new MultipartFileFactory()
+      .merge({
+        size: 4_000_000,
+        extname: 'jpg',
+        type: 'image',
+        subtype: 'jpeg',
+      })
+      .create()
+
+    const file2 = new MultipartFileFactory()
+      .merge({
+        size: 3_000_000,
+        extname: 'png',
+        type: 'image',
+        subtype: 'png',
+      })
+      .create()
+
+    file.tmpPath = app.makePath('../fixtures/images/img.jpg')
+    file2.tmpPath = app.makePath('../fixtures/images/img.jpg')
+
+    const weekendPics = await attachmentManager.createFromFiles([file, file2])
+
+    const user = await UserFactory.merge({ weekendPics }).create()
+    const data = await user.serialize()
+
+    assert.containsSubset(data.weekendPics[0], {
+      name: data.weekendPics[0].name,
+      mimeType: 'image/jpeg',
+      originalName: 'file.jpg',
+    })
+    assert.containsSubset(data.weekendPics[1], {
+      name: data.weekendPics[1].name,
+      mimeType: 'image/png',
+      originalName: 'file.png',
+    })
+    fakeDisk.assertExists(user.weekendPics![0]?.path!)
+    fakeDisk.assertExists(user.weekendPics![1]?.path!)
+  })
+})
+
+test.group('multiple Attachment(s) attributes', () => {
+  test('with buffers', async ({ assert, cleanup }) => {
+    drive.fake('fs')
+    drive.fake('s3')
+    cleanup(() => {
+      drive.restore('fs')
+      drive.restore('s3')
+    })
+
+    const buffer = await readFile(app.makePath('../fixtures/images/img.jpg'))
+    const avatar = await attachmentManager.createFromBuffer(buffer, 'avatar.jpg')
+    const avatar2 = await attachmentManager.createFromBuffer(buffer, 'avatar2.jpg')
+    const file = await attachmentManager.createFromBuffer(buffer, 'avatar-file.jpg')
+    const file2 = await attachmentManager.createFromBuffer(buffer, 'avatar-file2.jpg')
+
+    const user = await UserFactory.merge({ avatar, avatar2, weekendPics: [
+      file,
+      file2
+    ]}).create()
+    const data = await user.serialize()
+
+    assert.containsSubset(data.avatar, {
+      name: data.avatar.name,
+      originalName: 'avatar.jpg',
+    })
+
+    assert.containsSubset(data.avatar2, {
+      name: data.avatar2.name,
+      originalName: 'avatar2.jpg',
+    })
+
+    assert.containsSubset(data.weekendPics[0], {
+      name: data.weekendPics[0].name,
+      originalName: 'avatar-file.jpg',
+    })
+
+    assert.containsSubset(data.weekendPics[1], {
+      name: data.weekendPics[1].name,
+      originalName: 'avatar-file2.jpg',
+    })
   })
 })

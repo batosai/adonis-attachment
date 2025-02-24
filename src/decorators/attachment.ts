@@ -6,7 +6,7 @@
  */
 
 import type { LucidModel } from '@adonisjs/lucid/types/model'
-import type { LucidOptions } from '../types/attachment.js'
+import type { Attachment, LucidOptions } from '../types/attachment.js'
 
 import attachmentManager from '../../services/main.js'
 import { optionsSym } from '../utils/symbols.js'
@@ -60,8 +60,8 @@ const makeColumnOptions = (options?: LucidOptions) => {
     ...options,
   }
 
-  return ({
-    consume: (value: any) => {
+  return {
+    consume: (value?: string | JSON) => {
       if (value) {
         const attachment = attachmentManager.createFromDbResponse(value)
         attachment?.setOptions({ disk, folder, variants })
@@ -80,10 +80,10 @@ const makeColumnOptions = (options?: LucidOptions) => {
         return null
       }
     },
-    prepare: (value: any) => (value ? JSON.stringify(value.toObject()) : null),
-    serialize: (value: any) => (value ? value.toJSON() : null),
+    prepare: (value?: Attachment) => (value ? JSON.stringify(value.toObject()) : null),
+    serialize: (value?: Attachment) => (value ? value.toJSON() : null),
     ...columnOptions,
-  })
+  }
 }
 
 
@@ -111,6 +111,7 @@ const makeAttachmentDecorator = (columnOptionsTransformer?: (columnOptions: any)
 
 export const attachment = makeAttachmentDecorator()
 export const attachments = makeAttachmentDecorator((columnOptions) => ({
-  consume: (value: any[]) => (value ? JSON.parse(value.toString()).map(columnOptions.consume) : null),
-  prepare: (value: any[]) => (value ? JSON.stringify(value.map(v => v.toObject())) : null),
+  consume: (value?: string[] | JSON[]) => (value ? value.map(columnOptions.consume) : null),
+  prepare: (value?: Attachment[]) => (value ? JSON.stringify(value.map(columnOptions.prepare)) : null),
+  serialize: (value?: Attachment[]) => (value ? value.map(columnOptions.serialize) : null),
 }))

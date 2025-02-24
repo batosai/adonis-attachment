@@ -3,9 +3,6 @@ import type { Attachment as AttachmentType, LucidOptions } from '../types/attach
 import type { Record as RecordImplementation } from '../types/service.js'
 
 import attachmentManager from '../../services/main.js'
-import {
-  clone
-} from '../utils/helpers.js'
 import { defaultStateAttributeMixin } from '../utils/default_values.js'
 import { Attachment } from '../attachments/attachment.js'
 import { optionsSym } from '../utils/symbols.js'
@@ -22,7 +19,7 @@ export default class Record implements RecordImplementation {
       /**
        * Empty previous $attachments
        */
-      this.#model.$attachments = clone(defaultStateAttributeMixin)
+      this.#model.$attachments = structuredClone(defaultStateAttributeMixin)
     }
   }
 
@@ -136,18 +133,12 @@ export default class Record implements RecordImplementation {
       attachmentAttributeNames.map(async (name) => {
         const options = this.#getOptionsByAttributeName(name)
 
-        if (Array.isArray(this.#model.$attributes[name])) {
-          const attachments = this.#model.$attributes[name] as Attachment[]
+        if (this.#model.$attributes[name]) {
+          const attachments = this.#getAttachmentsByAttributeName(name)
           for (let i = 0; i < attachments.length; i++) {
             attachments[i].setOptions(options)
             await attachmentManager.preComputeUrl(attachments[i])
           }
-        } else {
-          const attachment = this.#model.$attributes[name] as Attachment
-
-          attachment.setOptions(options)
-
-          return attachmentManager.preComputeUrl(attachment)
         }
       })
     )
@@ -160,7 +151,7 @@ export default class Record implements RecordImplementation {
      * For all properties Attachment
      * Launch async generation variants
      */
-    await Promise.all(
+    await Promise.allSettled(
       attachmentAttributeNames.map((name) => {
         if (this.#model.$attachments.attributesModified.includes(name)) {
           const record = this

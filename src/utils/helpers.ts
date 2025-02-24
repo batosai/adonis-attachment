@@ -41,10 +41,6 @@ export function cleanObject(obj: any) {
   return cleanedObj
 }
 
-export function clone(object: Object) {
-  return JSON.parse(JSON.stringify(object))
-}
-
 export async function use(module: string) {
   try {
     const result = await import(module)

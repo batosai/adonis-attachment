@@ -21,7 +21,6 @@ import {
   beforeDeleteHook,
 } from '../utils/hooks.js'
 
-import { clone } from '../utils/helpers.js'
 import { defaultStateAttributeMixin } from '../utils/default_values.js'
 
 export const bootModel = (model: LucidModel & {
@@ -29,7 +28,7 @@ export const bootModel = (model: LucidModel & {
 }) => {
   model.boot()
 
-  model.$attachments = clone(defaultStateAttributeMixin)
+  model.$attachments = structuredClone(defaultStateAttributeMixin)
 
   /**
    * Registering all hooks only once

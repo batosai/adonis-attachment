@@ -20,9 +20,6 @@ export const UserFactory = Factory.define(User, async ({ faker }) => {
   return {
     name: faker.person.lastName(),
     avatar: await makeAttachment(),
-    weekendPics: [
-      await makeAttachment(),
-      await makeAttachment()
-    ]
+    weekendPics: [await makeAttachment(), await makeAttachment()],
   }
 }).build()

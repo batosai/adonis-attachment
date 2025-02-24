@@ -287,37 +287,37 @@ test.group('attachments create', () => {
     const file = await attachmentManager.createFromBuffer(buffer, 'avatar.jpg')
     const file2 = await attachmentManager.createFromBuffer(buffer, 'avatar2.jpg')
 
-    const user = await UserFactory.merge({ weekendPics: [
-      file,
-      file2
-    ]}).create()
+    const user = await UserFactory.merge({ weekendPics: [file, file2] }).create()
     const data = await user.serialize()
 
-    assert.deepEqual(data.weekendPics, [{
-      extname: 'jpg',
-      meta: {
-        dimension: {
-          height: 1313,
-          width: 1920,
+    assert.deepEqual(data.weekendPics, [
+      {
+        extname: 'jpg',
+        meta: {
+          dimension: {
+            height: 1313,
+            width: 1920,
+          },
         },
+        mimeType: 'image/jpeg',
+        name: data.weekendPics[0].name,
+        originalName: 'avatar.jpg',
+        size: 122851,
       },
-      mimeType: 'image/jpeg',
-      name: data.weekendPics[0].name,
-      originalName: 'avatar.jpg',
-      size: 122851,
-    }, {
-      extname: 'jpg',
-      meta: {
-        dimension: {
-          height: 1313,
-          width: 1920,
+      {
+        extname: 'jpg',
+        meta: {
+          dimension: {
+            height: 1313,
+            width: 1920,
+          },
         },
+        mimeType: 'image/jpeg',
+        name: data.weekendPics[1].name,
+        originalName: 'avatar2.jpg',
+        size: 122851,
       },
-      mimeType: 'image/jpeg',
-      name: data.weekendPics[1].name,
-      originalName: 'avatar2.jpg',
-      size: 122851,
-    }])
+    ])
   })
 
   test('with files', async ({ assert, cleanup }) => {
@@ -380,10 +380,7 @@ test.group('multiple Attachment(s) attributes', () => {
     const file = await attachmentManager.createFromBuffer(buffer, 'avatar-file.jpg')
     const file2 = await attachmentManager.createFromBuffer(buffer, 'avatar-file2.jpg')
 
-    const user = await UserFactory.merge({ avatar, avatar2, weekendPics: [
-      file,
-      file2
-    ]}).create()
+    const user = await UserFactory.merge({ avatar, avatar2, weekendPics: [file, file2] }).create()
     const data = await user.serialize()
 
     assert.containsSubset(data.avatar, {

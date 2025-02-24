@@ -23,9 +23,11 @@ import {
 
 import { defaultStateAttributeMixin } from '../utils/default_values.js'
 
-export const bootModel = (model: LucidModel & {
-  $attachments: AttributeOfModelWithAttachment
-}) => {
+export const bootModel = (
+  model: LucidModel & {
+    $attachments: AttributeOfModelWithAttachment
+  }
+) => {
   model.boot()
 
   model.$attachments = structuredClone(defaultStateAttributeMixin)
@@ -85,9 +87,8 @@ const makeColumnOptions = (options?: LucidOptions) => {
   }
 }
 
-
-const makeAttachmentDecorator = (columnOptionsTransformer?: (columnOptions: any) => any) =>
-  (options?: LucidOptions) => {
+const makeAttachmentDecorator =
+  (columnOptionsTransformer?: (columnOptions: any) => any) => (options?: LucidOptions) => {
     return function (target: any, attributeName: string) {
       if (!target[optionsSym]) {
         target[optionsSym] = {}
@@ -102,15 +103,17 @@ const makeAttachmentDecorator = (columnOptionsTransformer?: (columnOptions: any)
       bootModel(Model)
 
       const columnOptions = makeColumnOptions(options)
-      const transformedColumnOptions = columnOptionsTransformer ? columnOptionsTransformer(columnOptions): columnOptions
+      const transformedColumnOptions = columnOptionsTransformer
+        ? columnOptionsTransformer(columnOptions)
+        : columnOptions
       Model.$addColumn(attributeName, transformedColumnOptions)
     }
   }
 
-
 export const attachment = makeAttachmentDecorator()
 export const attachments = makeAttachmentDecorator((columnOptions) => ({
   consume: (value?: string[] | JSON[]) => (value ? value.map(columnOptions.consume) : null),
-  prepare: (value?: Attachment[]) => (value ? JSON.stringify(value.map(columnOptions.prepare)) : null),
+  prepare: (value?: Attachment[]) =>
+    value ? JSON.stringify(value.map(columnOptions.prepare)) : null,
   serialize: (value?: Attachment[]) => (value ? value.map(columnOptions.serialize) : null),
 }))

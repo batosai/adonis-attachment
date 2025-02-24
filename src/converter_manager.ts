@@ -20,7 +20,7 @@ export class ConverterManager {
 
   async save() {
     let attachments: Attachment[] = this.#record.getAttachments({
-      attributeName: this.#attributeName
+      attributeName: this.#attributeName,
     })
 
     const Model = this.#record.constructor as LucidModel

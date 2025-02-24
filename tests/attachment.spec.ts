@@ -62,12 +62,11 @@ test.group('attachments', () => {
     cleanup(() => drive.restore('fs'))
 
     const user = await UserFactory.create()
-    const paths = user.weekendPics?.map(p => p.path)
+    const paths = user.weekendPics?.map((p) => p.path)
     user.weekendPics = []
     await user.save()
 
-    for (const path of paths ?? [])
-      fakeDisk.assertMissing(path!)
+    for (const path of paths ?? []) fakeDisk.assertMissing(path!)
   })
 
   test('delete files after remove entity', async ({ assert, cleanup }) => {
@@ -75,7 +74,7 @@ test.group('attachments', () => {
     cleanup(() => drive.restore('fs'))
 
     const user = await UserFactory.create()
-    const paths = user.weekendPics?.map(p => p.path)
+    const paths = user.weekendPics?.map((p) => p.path)
     await user.delete()
 
     for (const path of paths ?? []) {

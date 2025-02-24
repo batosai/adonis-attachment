@@ -1,4 +1,4 @@
-import type { ModelWithAttachment } from "../types/mixin.js";
+import type { ModelWithAttachment } from '../types/mixin.js'
 import type { Attachment as AttachmentType, LucidOptions } from '../types/attachment.js'
 import type { Record as RecordImplementation } from '../types/service.js'
 
@@ -162,7 +162,7 @@ export default class Record implements RecordImplementation {
                 const converterManager = new ConverterManager({
                   record,
                   attributeName: name,
-                  options: record.#getOptionsByAttributeName(name)
+                  options: record.#getOptionsByAttributeName(name),
                 })
                 await converterManager.save()
               } catch (err) {
@@ -197,7 +197,7 @@ export default class Record implements RecordImplementation {
     return this.#model
   }
 
-  getAttachments(options: { attributeName: string, requiredOriginal?: boolean }) {
+  getAttachments(options: { attributeName: string; requiredOriginal?: boolean }) {
     if (options.requiredOriginal) {
       return this.#getOriginalAttachmentsByAttributeName(options.attributeName)
     } else {
@@ -209,18 +209,14 @@ export default class Record implements RecordImplementation {
     if (Array.isArray(this.#model.$attributes[name])) {
       return this.#model.$attributes[name] as AttachmentType[]
     }
-    return [
-      this.#model.$attributes[name] as AttachmentType
-    ]
+    return [this.#model.$attributes[name] as AttachmentType]
   }
 
   #getOriginalAttachmentsByAttributeName(name: string): AttachmentType[] {
     if (Array.isArray(this.#model.$original[name])) {
       return this.#model.$original[name] as AttachmentType[]
     }
-    return [
-      this.#model.$original[name] as AttachmentType
-    ]
+    return [this.#model.$original[name] as AttachmentType]
   }
 
   #getOptionsByAttributeName(name: string): LucidOptions {
@@ -230,7 +226,10 @@ export default class Record implements RecordImplementation {
   #getAttributeNamesAttachment() {
     return Object.keys(this.#model.$attributes).filter((attr) => {
       const value = this.#model.$attributes[attr]
-      return value instanceof Attachment || (Array.isArray(value) && value.every(item => item instanceof Attachment))
+      return (
+        value instanceof Attachment ||
+        (Array.isArray(value) && value.every((item) => item instanceof Attachment))
+      )
     })
   }
 
@@ -239,8 +238,12 @@ export default class Record implements RecordImplementation {
       const dirtyValue = this.#model.$dirty[attr]
       const originalValue = this.#model.$original[attr]
 
-      const isDirtyAttachment = dirtyValue instanceof Attachment || (Array.isArray(dirtyValue) && dirtyValue.every(item => item instanceof Attachment))
-      const isOriginalAttachment = originalValue instanceof Attachment || (Array.isArray(originalValue) && originalValue.every(item => item instanceof Attachment))
+      const isDirtyAttachment =
+        dirtyValue instanceof Attachment ||
+        (Array.isArray(dirtyValue) && dirtyValue.every((item) => item instanceof Attachment))
+      const isOriginalAttachment =
+        originalValue instanceof Attachment ||
+        (Array.isArray(originalValue) && originalValue.every((item) => item instanceof Attachment))
 
       return isDirtyAttachment || isOriginalAttachment
     })

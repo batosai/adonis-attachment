@@ -78,9 +78,7 @@ export class AttachmentManager<KnownConverters extends Record<string, Converter>
   }
 
   async createFromFiles(inputs: MultipartFile[]) {
-    return Promise.all(
-      inputs.map((input) => this.createFromFile(input))
-    )
+    return Promise.all(inputs.map((input) => this.createFromFile(input)))
   }
 
   async createFromPath(input: string, name?: string) {

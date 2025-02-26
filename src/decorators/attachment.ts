@@ -112,8 +112,14 @@ const makeAttachmentDecorator =
 
 export const attachment = makeAttachmentDecorator()
 export const attachments = makeAttachmentDecorator((columnOptions) => ({
-  consume: (value?: string[] | JSON[]) => (value ? value.map(columnOptions.consume) : null),
+  consume: (value?: string | JSON) => {
+    if (value) {
+      const data = typeof value === 'string' ? JSON.parse(value) : value
+      return data.map(columnOptions.consume)
+    }
+    return null
+  },
   prepare: (value?: Attachment[]) =>
-    value ? JSON.stringify(value.map(columnOptions.prepare)) : null,
+    value ? JSON.stringify(value.map((v) => v.toObject())) : null,
   serialize: (value?: Attachment[]) => (value ? value.map(columnOptions.serialize) : null),
 }))

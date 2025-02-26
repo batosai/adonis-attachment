@@ -11,7 +11,7 @@ import type { Attachment } from './attachment.js'
 export type AttributeOfModelWithAttachment = {
   attached: Attachment[]
   detached: Attachment[]
-  attributesModified: string[]
+  dirtied: string[]
 }
 
 export type ModelWithAttachment = LucidRow & {

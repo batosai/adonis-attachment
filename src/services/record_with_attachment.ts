@@ -46,7 +46,7 @@ export default class Record implements RecordImplementation {
   }
 
   async persist(): Promise<void> {
-    const attachmentAttributeNames = this.#getDirtyAttributeNamesAttachment()
+    const attachmentAttributeNames = this.#getDirtyAttributeNamesOfAttachment()
 
     /**
      * Persist attachments before saving the model to the database. This
@@ -69,7 +69,7 @@ export default class Record implements RecordImplementation {
         /**
          * memorise attribute name for generate variants
          */
-        this.#model.$attachments.attributesModified.push(name)
+        this.#model.$attachments.dirtied.push(name)
 
         for (let i = 0; i < existingAttachments.length; i++) {
           if (newAttachments.includes(existingAttachments[i])) {
@@ -127,7 +127,7 @@ export default class Record implements RecordImplementation {
   }
 
   async preComputeUrl(): Promise<void> {
-    const attachmentAttributeNames = this.#getAttributeNamesAttachment()
+    const attachmentAttributeNames = this.#getAttributeNamesOfAttachment()
 
     await Promise.all(
       attachmentAttributeNames.map(async (name) => {
@@ -145,7 +145,8 @@ export default class Record implements RecordImplementation {
   }
 
   async generateVariants(): Promise<void> {
-    const attachmentAttributeNames = this.#getAttributeNamesAttachment()
+    /* this.#model.$dirty is not avalable in afterSave hooks */
+    const attachmentAttributeNames = this.#model.$attachments.dirtied
 
     /**
      * For all properties Attachment
@@ -153,30 +154,28 @@ export default class Record implements RecordImplementation {
      */
     await Promise.allSettled(
       attachmentAttributeNames.map((name) => {
-        if (this.#model.$attachments.attributesModified.includes(name)) {
-          const record = this
-          attachmentManager.queue.push({
-            name: `${this.#model.constructor.name}-${name}`,
-            async run() {
-              try {
-                const converterManager = new ConverterManager({
-                  record,
-                  attributeName: name,
-                  options: record.#getOptionsByAttributeName(name),
-                })
-                await converterManager.save()
-              } catch (err) {
-                throw new E_CANNOT_CREATE_VARIANT([err.message])
-              }
-            },
-          })
-        }
+        const record = this
+        attachmentManager.queue.push({
+          name: `${this.#model.constructor.name}-${name}`,
+          async run() {
+            try {
+              const converterManager = new ConverterManager({
+                record,
+                attributeName: name,
+                options: record.#getOptionsByAttributeName(name),
+              })
+              await converterManager.save()
+            } catch (err) {
+              throw new E_CANNOT_CREATE_VARIANT([err.message])
+            }
+          },
+        })
       })
     )
   }
 
   async detach() {
-    const attachmentAttributeNames = this.#getAttributeNamesAttachment()
+    const attachmentAttributeNames = this.#getAttributeNamesOfAttachment()
 
     /**
      * Mark all attachments for deletion
@@ -223,7 +222,7 @@ export default class Record implements RecordImplementation {
     return this.#model.constructor.prototype[optionsSym]?.[name]
   }
 
-  #getAttributeNamesAttachment() {
+  #getAttributeNamesOfAttachment() {
     return Object.keys(this.#model.$attributes).filter((attr) => {
       const value = this.#model.$attributes[attr]
       return (
@@ -233,19 +232,15 @@ export default class Record implements RecordImplementation {
     })
   }
 
-  #getDirtyAttributeNamesAttachment() {
+  #getDirtyAttributeNamesOfAttachment() {
     return Object.keys(this.#model.$dirty).filter((attr) => {
       const dirtyValue = this.#model.$dirty[attr]
-      const originalValue = this.#model.$original[attr]
 
       const isDirtyAttachment =
         dirtyValue instanceof Attachment ||
         (Array.isArray(dirtyValue) && dirtyValue.every((item) => item instanceof Attachment))
-      const isOriginalAttachment =
-        originalValue instanceof Attachment ||
-        (Array.isArray(originalValue) && originalValue.every((item) => item instanceof Attachment))
 
-      return isDirtyAttachment || isOriginalAttachment
+      return isDirtyAttachment
     })
   }
 }

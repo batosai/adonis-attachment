@@ -17,5 +17,5 @@ export const defaultOptionsDecorator = {
 export const defaultStateAttributeMixin = {
   attached: [],
   detached: [],
-  attributesModified: [],
+  dirtied: [],
 }

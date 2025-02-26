@@ -19,7 +19,7 @@ test.group('attachment', () => {
     assert.isNull(user.avatar)
   })
 
-  test('delete file after removing', async ({ assert, cleanup }) => {
+  test('delete file after removing', async ({ cleanup }) => {
     const fakeDisk = drive.fake('fs')
     cleanup(() => drive.restore('fs'))
 
@@ -31,7 +31,7 @@ test.group('attachment', () => {
     fakeDisk.assertMissing(path!)
   })
 
-  test('delete file after remove entity', async ({ assert, cleanup }) => {
+  test('delete file after remove entity', async ({ cleanup }) => {
     const fakeDisk = drive.fake('fs')
     cleanup(() => drive.restore('fs'))
 
@@ -57,19 +57,19 @@ test.group('attachments', () => {
     }
   })
 
-  test('delete files after removing', async ({ assert, cleanup }) => {
+  test('delete files after removing', async ({ cleanup }) => {
     const fakeDisk = drive.fake('fs')
     cleanup(() => drive.restore('fs'))
 
     const user = await UserFactory.create()
     const paths = user.weekendPics?.map((p) => p.path)
-    user.weekendPics = []
+    user.weekendPics = null
     await user.save()
 
     for (const path of paths ?? []) fakeDisk.assertMissing(path!)
   })
 
-  test('delete files after remove entity', async ({ assert, cleanup }) => {
+  test('delete files after remove entity', async ({ cleanup }) => {
     const fakeDisk = drive.fake('fs')
     cleanup(() => drive.restore('fs'))
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## 3.2.2
+
+* fix name of database column for update variant
+* fix remove empty directory for fs driver
+
+> Released at *2025-02-27*
+
 ## 3.2.1
 
 * fix delete

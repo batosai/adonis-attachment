@@ -191,14 +191,12 @@ export class AttachmentManager<KnownConverters extends Record<string, Converter>
 
       if (attachment instanceof Attachment) {
         if (attachment.variants) {
-          if (attachment.options?.disk == 'fs') {
-            const variantPath = attachment.variants[0].folder
-            await attachment.getDisk().deleteAll(variantPath)
-          } else {
-            for (const key in attachment.variants) {
-              if (Object.prototype.hasOwnProperty.call(attachment.variants, key)) {
-                await attachment.getDisk().delete(attachment.variants[key].path)
-              }
+          const variantPath = attachment.variants[0].folder
+          await attachment.getDisk().deleteAll(variantPath) // not compatible Minio, necessary for fs as not to leave an empty directory
+
+          for (const key in attachment.variants) {
+            if (Object.prototype.hasOwnProperty.call(attachment.variants, key)) {
+              await attachment.getDisk().delete(attachment.variants[key].path)
             }
           }
         }

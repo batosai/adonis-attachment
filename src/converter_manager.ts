@@ -2,6 +2,7 @@ import type { LucidModel } from '@adonisjs/lucid/types/model'
 import type { Converter, ConverterInitializeAttributes } from './types/converter.js'
 import type { Attachment } from './types/attachment.js'
 
+import string from '@adonisjs/core/helpers/string'
 import db from '@adonisjs/lucid/services/db'
 import { ModelWithAttachment } from './types/mixin.js'
 import attachmentManager from '../services/main.js'
@@ -45,7 +46,7 @@ export class ConverterManager {
       }
     }
 
-    data[this.#attributeName] = JSON.stringify(attachment.toObject())
+    data[string.snakeCase(this.#attributeName)] = JSON.stringify(attachment.toObject())
 
     const trx = await db.transaction()
 

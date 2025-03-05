@@ -26,6 +26,7 @@ export const afterFetchHook = async (instance: unknown) => {
 export const beforeSaveHook = async (instance: unknown) => {
   const modelInstance = instance as ModelWithAttachment
   const model = new Record(modelInstance)
+  await model.detach()
   await model.persist()
   await model.transaction()
 }
@@ -41,6 +42,6 @@ export const afterSaveHook = async (instance: unknown) => {
 export const beforeDeleteHook = async (instance: unknown) => {
   const modelInstance = instance as ModelWithAttachment
   const model = new Record(modelInstance)
-  await model.detach()
+  await model.detachAll()
   await model.transaction({ enabledRollback: false })
 }

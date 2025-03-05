@@ -55,14 +55,14 @@ export default class Record implements RecordImplementation {
      */
     await Promise.all(
       attachmentAttributeNames.map(async (name) => {
-        const existingAttachments = this.#getOriginalAttachmentsByAttributeName(name)
+        const originalAttachments = this.#getOriginalAttachmentsByAttributeName(name)
         const newAttachments = this.#getAttachmentsByAttributeName(name)
         const options = this.#getOptionsByAttributeName(name)
 
         /**
          * Skip when the attachment attributeName hasn't been updated
          */
-        if (!existingAttachments && !newAttachments) {
+        if (!originalAttachments && !newAttachments) {
           return
         }
 
@@ -71,22 +71,8 @@ export default class Record implements RecordImplementation {
          */
         this.#model.$attachments.dirtied.push(name)
 
-        for (let i = 0; i < existingAttachments.length; i++) {
-          if (newAttachments.includes(existingAttachments[i])) {
-            continue
-          }
-
-          /**
-           * If there was an existing file, then we must get rid of it
-           */
-          if (existingAttachments[i]) {
-            existingAttachments[i].setOptions(options)
-            this.#model.$attachments.detached.push(existingAttachments[i])
-          }
-        }
-
         for (let i = 0; i < newAttachments.length; i++) {
-          if (existingAttachments.includes(newAttachments[i])) {
+          if (originalAttachments.includes(newAttachments[i])) {
             continue
           }
 
@@ -175,6 +161,49 @@ export default class Record implements RecordImplementation {
   }
 
   async detach() {
+    const attachmentAttributeNames = this.#getDirtyAttributeNamesOfAttachment()
+
+    /**
+     * Mark all original attachments for deletion
+     */
+    return Promise.allSettled(
+      attachmentAttributeNames.map((name) => {
+        let attachments: AttachmentType[] = []
+        const options = this.#getOptionsByAttributeName(name)
+
+        if (this.#model.$dirty[name] === null) {
+          attachments = this.#getOriginalAttachmentsByAttributeName(name)
+        } else {
+          const originalAttachments = this.#getOriginalAttachmentsByAttributeName(name)
+          const newAttachments = this.#getAttachmentsByAttributeName(name)
+
+          /**
+           * Clean Attachments changed
+           */
+          for (let i = 0; i < originalAttachments.length; i++) {
+            if (newAttachments.includes(originalAttachments[i])) {
+              continue
+            }
+
+            /**
+             * If there was an existing file, then we must get rid of it
+             */
+            if (originalAttachments[i]) {
+              originalAttachments[i].setOptions(options)
+              attachments.push(originalAttachments[i])
+            }
+          }
+        }
+
+        for (let i = 0; i < attachments.length; i++) {
+          attachments[i].setOptions(options)
+          this.#model.$attachments.detached.push(attachments[i])
+        }
+      })
+    )
+  }
+
+  async detachAll() {
     const attachmentAttributeNames = this.#getAttributeNamesOfAttachment()
 
     /**
@@ -182,11 +211,11 @@ export default class Record implements RecordImplementation {
      */
     return Promise.allSettled(
       attachmentAttributeNames.map((name) => {
-        if (this.#model.$attributes[name]) {
-          const attachments = this.#getAttachmentsByAttributeName(name)
-          for (let i = 0; i < attachments.length; i++) {
-            this.#model.$attachments.detached.push(attachments[i])
-          }
+        const options = this.#getOptionsByAttributeName(name)
+        const attachments = this.#getAttachmentsByAttributeName(name)
+        for (let i = 0; i < attachments.length; i++) {
+          attachments[i].setOptions(options)
+          this.#model.$attachments.detached.push(attachments[i])
         }
       })
     )
@@ -223,8 +252,8 @@ export default class Record implements RecordImplementation {
   }
 
   #getAttributeNamesOfAttachment() {
-    return Object.keys(this.#model.$attributes).filter((attr) => {
-      const value = this.#model.$attributes[attr]
+    return Object.keys(this.#model.$attributes).filter((name) => {
+      const value = this.#model.$attributes[name]
       return (
         value instanceof Attachment ||
         (Array.isArray(value) && value.every((item) => item instanceof Attachment))
@@ -233,14 +262,19 @@ export default class Record implements RecordImplementation {
   }
 
   #getDirtyAttributeNamesOfAttachment() {
-    return Object.keys(this.#model.$dirty).filter((attr) => {
-      const dirtyValue = this.#model.$dirty[attr]
+    return Object.keys(this.#model.$dirty).filter((name) => {
+      const dirtyValue = this.#model.$dirty[name]
+      const originalValue = this.#model.$original[name] // if dirtyValue is null, check original type
 
       const isDirtyAttachment =
         dirtyValue instanceof Attachment ||
         (Array.isArray(dirtyValue) && dirtyValue.every((item) => item instanceof Attachment))
 
-      return isDirtyAttachment
+      const isOriginalAttachment =
+      originalValue instanceof Attachment ||
+        (Array.isArray(originalValue) && originalValue.every((item) => item instanceof Attachment))
+
+      return isDirtyAttachment || isOriginalAttachment
     })
   }
 }

@@ -403,4 +403,28 @@ test.group('multiple Attachment(s) attributes', () => {
       originalName: 'avatar-file2.jpg',
     })
   })
+
+  test('update one Attachment in Attachments', async ({ assert, cleanup }) => {
+    drive.fake('fs')
+    cleanup(() => drive.restore('fs'))
+
+    const buffer = await readFile(app.makePath('../fixtures/images/img.jpg'))
+
+    const user = await UserFactory.create()
+
+    const originalName0 = user.weekendPics![0].originalName
+
+    user.weekendPics![1] = await attachmentManager.createFromBuffer(buffer, 'new-avatar.jpg')
+    await user.save()
+
+    const data = await user.serialize()
+
+    assert.containsSubset(data.weekendPics[0], {
+      originalName: originalName0,
+    })
+
+    assert.containsSubset(data.weekendPics[1], {
+      originalName: 'new-avatar.jpg',
+    })
+  })
 })

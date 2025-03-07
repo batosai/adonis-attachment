@@ -9,7 +9,7 @@ Next, in the model, import the `attachment` decorator, `Attachmentable` mixin an
 ```ts
 import { BaseModel } from '@adonisjs/lucid/orm'
 import { compose } from '@adonisjs/core/helpers'
-import { attachment, Attachmentable } from '@jrmc/adonis-attachment'
+import { attachment, Attachmentable } from '@jrmc/adonis-attachment' // [!code highlight]
 import type { Attachment } from '@jrmc/adonis-attachment/types/attachment' // [!code highlight]
 
 class User extends compose(BaseModel, Attachmentable) { // [!code highlight]
@@ -93,4 +93,23 @@ class User extends BaseModel {
 }
 ```
 
+## `attachments` decorator
 
+⚠️ [avalable in v3.3.0](/changelog#_3-3-0)
+
+`attachments` decorator is a array of Attachment object, it'a accept all options of `attachment`
+
+```ts
+import { BaseModel } from '@adonisjs/lucid/orm'
+import { compose } from '@adonisjs/core/helpers'
+import { attachments } from '@jrmc/adonis-attachment'  // [!code highlight]
+import type { Attachment } from '@jrmc/adonis-attachment/types/attachment'
+
+class User extends BaseModel {
+  @attachments() // [!code highlight]
+  declare files: Attachment[] | null
+}
+```
+
+
+⚠️ Depending on the number of objects and processing, the `attachments` decorator can be very resource-intensive. I recommend using a HasMany relationship in Lucid to manage `attachment` decorator.

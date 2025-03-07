@@ -1,5 +1,11 @@
 # Changelog
 
+## 3.3.0
+
+* add [attachments](/guide/basic_usage/model-setup#attachments-decorator) decorator
+
+> Released at *2025-03-07*
+
 ## 3.2.2
 
 * fix name of database column for update variant

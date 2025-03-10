@@ -29,12 +29,18 @@ const attachmentConfig = defineConfig({
       converter: () => import('../fixtures/converters/image_converter.js'),
       options: {
         resize: 300,
+        blurhash: true
       },
     },
     medium: {
       converter: () => import('../fixtures/converters/image_converter.js'),
       options: {
         resize: 600,
+        blurhash: {
+          enabled: true,
+          componentX: 4,
+          componentY: 4
+        }
       },
     },
   },
@@ -44,7 +50,7 @@ declare module '@jrmc/adonis-attachment' {
   interface AttachmentVariants extends InferConverters<typeof attachmentConfig> {}
 }
 
-export async function createApp(options = {}) {
+export async function createApp(options?: Object) {
   const app = new IgnitorFactory()
     .merge({
       rcFileContents: {

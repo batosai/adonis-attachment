@@ -7,6 +7,7 @@ import string from '@adonisjs/core/helpers/string'
 import db from '@adonisjs/lucid/services/db'
 import attachmentManager from '../services/main.js'
 import * as errors from './errors.js'
+import { encodeImageToBlurhash } from './utils/helpers.js'
 
 export class ConverterManager {
   #record: Record
@@ -45,6 +46,12 @@ export class ConverterManager {
             }
 
             const variant = await attachments[i].createVariant(option, output)
+
+            if (converter.options!.blurhash) {
+              const options = typeof converter.options!.blurhash !== 'boolean' ? converter.options!.blurhash : undefined
+              variant.blurhash = await encodeImageToBlurhash(variant.input!, options)
+            }
+
             await attachmentManager.save(variant)
           }
         }

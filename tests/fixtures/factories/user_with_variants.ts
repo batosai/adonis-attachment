@@ -14,7 +14,7 @@ export const UserFactory = Factory.define(User, async ({ faker }) => {
   const makeAttachment = async () => {
     const attachmentManager = await app.container.make('jrmc.attachment')
     const buffer = await readFile(app.makePath('../fixtures/images/img.jpg'))
-    return await attachmentManager.createFromBuffer(buffer, 'avatar.jpg')
+    return attachmentManager.createFromBuffer(buffer, 'avatar.jpg')
   }
 
   return {

@@ -14,12 +14,14 @@ import { AttachmentBase } from './attachment_base.js'
 export class Variant extends AttachmentBase implements VariantInterface {
   key: string
   #folder: string
+  blurhash?: string
 
   constructor(drive: DriveService, attributes: VariantAttributes, input?: Input) {
     super(drive, attributes, input)
 
     this.key = attributes.key
     this.#folder = attributes.folder!
+    this.blurhash = attributes.blurhash
   }
 
   /**
@@ -39,6 +41,7 @@ export class Variant extends AttachmentBase implements VariantInterface {
       key: this.key,
       folder: this.folder!,
       name: this.name,
+      blurhash: this.blurhash,
       ...super.toObject(),
     }
   }

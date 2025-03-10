@@ -56,6 +56,7 @@ export type Attachment = AttachmentBase & {
 export type Variant = AttachmentBase & {
   key: string
   folder: string
+  blurhash?: string
 
   toObject(): VariantAttributes
 }
@@ -87,4 +88,5 @@ export type AttachmentAttributes = AttachmentBaseAttributes & {
 export type VariantAttributes = AttachmentBaseAttributes & {
   key: string
   folder: string
+  blurhash?: string
 }

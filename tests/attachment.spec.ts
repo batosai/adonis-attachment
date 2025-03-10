@@ -47,7 +47,7 @@ test.group('attachments', () => {
   test('create', async ({ assert }) => {
     const user = await UserFactory.create()
 
-    assert.isNotNull(user.weekendPics)
+    assert.exists(user.weekendPics)
     assert.equal(user.weekendPics?.length, 2)
     for (const pic of user.weekendPics ?? []) {
       assert.equal(pic.originalName, 'avatar.jpg')

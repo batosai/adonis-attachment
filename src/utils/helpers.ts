@@ -5,6 +5,9 @@
  * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
  */
 
+import type { Input } from '../types/input.js'
+import type { BlurhashOptions } from '../types/converter.js'
+
 import os from 'node:os'
 import path from 'node:path'
 import https from 'node:https'
@@ -12,6 +15,7 @@ import fs from 'node:fs/promises'
 import { pipeline } from 'node:stream'
 import { promisify } from 'node:util'
 import { createWriteStream, WriteStream } from 'node:fs'
+import { encode } from 'blurhash'
 import * as errors from '../errors.js'
 
 const streamPipeline = promisify(pipeline)
@@ -106,4 +110,36 @@ export function isBase64(str: string) {
   } catch (err) {
     return false
   }
+}
+
+export function encodeImageToBlurhash(
+  input: Input,
+  options?: BlurhashOptions
+): Promise<string> {
+  const { componentX, componentY } = options || { componentX: 4, componentY: 4 }
+
+  return new Promise(async (resolve, reject) => {
+    try {
+      const sharp = await use('sharp')
+      // Convert input to pixels
+      const { data: pixels, info: metadata } = await sharp(input)
+        .raw()
+        .ensureAlpha()
+        .toBuffer({ resolveWithObject: true })
+
+      return resolve(
+        encode(
+          new Uint8ClampedArray(pixels),
+          metadata.width,
+          metadata.height,
+          componentX,
+          componentY
+        )
+      )
+    } catch (error) {
+      console.log('--------------')
+      console.log(error)
+      return reject(error)
+    }
+  })
 }

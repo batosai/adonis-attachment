@@ -27,6 +27,12 @@ export type ConverterAttributes = {
   options: ConverterOptions
 }
 
+export type BlurhashOptions = {
+  enabled: boolean
+  componentX: number
+  componentY: number
+}
+
 type jpeg = {
   format: 'jpeg'
   options: {
@@ -156,5 +162,6 @@ export type ConverterOptions = {
     | gif
     | webp
     | avif
-    | heif
+    | heif,
+  blurhash?: boolean | BlurhashOptions
 }

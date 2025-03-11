@@ -3,6 +3,7 @@ import type { Converter, ConverterInitializeAttributes } from './types/converter
 import type { Attachment, LucidOptions } from './types/attachment.js'
 import type { Record } from './types/service.js'
 
+import logger from '@adonisjs/core/services/logger'
 import string from '@adonisjs/core/helpers/string'
 import db from '@adonisjs/lucid/services/db'
 import attachmentManager from '../services/main.js'
@@ -48,8 +49,12 @@ export class ConverterManager {
             const variant = await attachments[i].createVariant(option, output)
 
             if (converter.options!.blurhash) {
-              const options = typeof converter.options!.blurhash !== 'boolean' ? converter.options!.blurhash : undefined
-              variant.blurhash = await encodeImageToBlurhash(variant.input!, options)
+              try {
+                const options = typeof converter.options!.blurhash !== 'boolean' ? converter.options!.blurhash : undefined
+                variant.blurhash = await encodeImageToBlurhash(variant.input!, options)
+              } catch (error) {
+                logger.error(error.message)
+              }
             }
 
             await attachmentManager.save(variant)

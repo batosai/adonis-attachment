@@ -29,8 +29,8 @@ export type ConverterAttributes = {
 
 export type BlurhashOptions = {
   enabled: boolean
-  componentX: number
-  componentY: number
+  componentX: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
+  componentY: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
 }
 
 type jpeg = {

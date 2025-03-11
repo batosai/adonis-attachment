@@ -137,8 +137,6 @@ export function encodeImageToBlurhash(
         )
       )
     } catch (error) {
-      console.log('--------------')
-      console.log(error)
       return reject(error)
     }
   })

@@ -162,6 +162,6 @@ export type ConverterOptions = {
     | gif
     | webp
     | avif
-    | heif,
+    | heif
   blurhash?: boolean | BlurhashOptions
 }

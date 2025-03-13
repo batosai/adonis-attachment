@@ -112,10 +112,7 @@ export function isBase64(str: string) {
   }
 }
 
-export function imageToBlurhash(
-  input: Input,
-  options?: BlurhashOptions
-): Promise<string> {
+export function imageToBlurhash(input: Input, options?: BlurhashOptions): Promise<string> {
   const { componentX, componentY } = options || { componentX: 4, componentY: 4 }
 
   return new Promise(async (resolve, reject) => {

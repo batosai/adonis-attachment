@@ -29,7 +29,7 @@ const attachmentConfig = defineConfig({
       converter: () => import('../fixtures/converters/image_converter.js'),
       options: {
         resize: 300,
-        blurhash: true
+        blurhash: true,
       },
     },
     medium: {
@@ -39,8 +39,8 @@ const attachmentConfig = defineConfig({
         blurhash: {
           enabled: true,
           componentX: 4,
-          componentY: 4
-        }
+          componentY: 4,
+        },
       },
     },
   },

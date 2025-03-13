@@ -49,9 +49,16 @@ export class ConverterManager {
             const variant = await attachment.createVariant(option, output)
 
             if (converter.options!.blurhash) {
-              if (typeof converter.options!.blurhash !== 'boolean' && converter.options!.blurhash.enabled === true || converter.options!.blurhash === true ) {
+              if (
+                (typeof converter.options!.blurhash !== 'boolean' &&
+                  converter.options!.blurhash.enabled === true) ||
+                converter.options!.blurhash === true
+              ) {
                 try {
-                  const options = typeof converter.options!.blurhash !== 'boolean' ? converter.options!.blurhash : undefined
+                  const options =
+                    typeof converter.options!.blurhash !== 'boolean'
+                      ? converter.options!.blurhash
+                      : undefined
                   variant.blurhash = await imageToBlurhash(variant.input!, options)
                 } catch (error) {
                   logger.error(error.message)
@@ -66,7 +73,9 @@ export class ConverterManager {
     }
 
     if (Array.isArray(this.#record.model.$original[this.#attributeName])) {
-      data[string.snakeCase(this.#attributeName)] = JSON.stringify(attachments.map((att) => att.toObject()))
+      data[string.snakeCase(this.#attributeName)] = JSON.stringify(
+        attachments.map((att) => att.toObject())
+      )
     } else {
       data[string.snakeCase(this.#attributeName)] = JSON.stringify(attachments[0].toObject())
     }

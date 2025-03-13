@@ -8,12 +8,6 @@ export default {
     componentX: number,
     componentY: number
   ): string {
-    return encode(
-      pixels,
-      width,
-      height,
-      componentX,
-      componentY
-    )
+    return encode(pixels, width, height, componentX, componentY)
   },
 }

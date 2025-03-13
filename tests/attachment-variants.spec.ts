@@ -29,7 +29,7 @@ test.group('variants', () => {
     const notifier = new Promise((resolve) => {
       attachmentManager.queue.drained = resolve
     })
-      const user = await UserFactory.create()
+    const user = await UserFactory.create()
     await notifier
 
     const data = await user.serialize()
@@ -39,7 +39,7 @@ test.group('variants', () => {
 
     assert.exists(data.weekendPics[0].thumbnail)
     assert.exists(data.weekendPics[1].thumbnail)
-  })//.timeout(25_000)
+  }) //.timeout(25_000)
 
   test('delete files after remove avatars', async ({ cleanup }) => {
     const fakeDisk = drive.fake('fs')
@@ -54,10 +54,10 @@ test.group('variants', () => {
     const notifier = new Promise((resolve) => {
       attachmentManager.queue.drained = resolve
     })
-      const user = await UserFactory.create()
-      const variants = user.avatar?.variants
-      user.avatar = null
-      await user.save()
+    const user = await UserFactory.create()
+    const variants = user.avatar?.variants
+    user.avatar = null
+    await user.save()
     await notifier
 
     variants?.forEach((variant) => {
@@ -78,11 +78,11 @@ test.group('variants', () => {
     const notifier = new Promise((resolve) => {
       attachmentManager.queue.drained = resolve
     })
-      const user = await UserFactory.create()
-      const weekendPicsVariants0 = user.weekendPics![0]?.variants
-      const weekendPicsVariants1 = user.weekendPics![1]?.variants
-      user.weekendPics = null
-      await user.save()
+    const user = await UserFactory.create()
+    const weekendPicsVariants0 = user.weekendPics![0]?.variants
+    const weekendPicsVariants1 = user.weekendPics![1]?.variants
+    user.weekendPics = null
+    await user.save()
     await notifier
 
     weekendPicsVariants0?.forEach((variant) => {
@@ -107,11 +107,11 @@ test.group('variants', () => {
     const notifier = new Promise((resolve) => {
       attachmentManager.queue.drained = resolve
     })
-      const user = await UserFactory.create()
-      const weekendPicsVariants0 = user.weekendPics![0]?.variants
-      const weekendPicsVariants1 = user.weekendPics![1]?.variants
-      user.weekendPics = [ user.weekendPics![0] ]
-      await user.save()
+    const user = await UserFactory.create()
+    const weekendPicsVariants0 = user.weekendPics![0]?.variants
+    const weekendPicsVariants1 = user.weekendPics![1]?.variants
+    user.weekendPics = [user.weekendPics![0]]
+    await user.save()
     await notifier
 
     const data = await user.serialize()
@@ -142,11 +142,11 @@ test.group('variants', () => {
     const notifier = new Promise((resolve) => {
       attachmentManager.queue.drained = resolve
     })
-      const user = await UserFactory.create()
-      const variants = user.avatar?.variants
-      const weekendPicsVariants0 = user.weekendPics![0]?.variants
-      const weekendPicsVariants1 = user.weekendPics![1]?.variants
-      await user.delete()
+    const user = await UserFactory.create()
+    const variants = user.avatar?.variants
+    const weekendPicsVariants0 = user.weekendPics![0]?.variants
+    const weekendPicsVariants1 = user.weekendPics![1]?.variants
+    await user.delete()
     await notifier
 
     variants?.forEach((variant) => {
@@ -174,12 +174,10 @@ test.group('variants', () => {
     const notifier = new Promise((resolve) => {
       attachmentManager.queue.drained = resolve
     })
-      const user = await UserFactory.merge({
-        avatar: null,
-        weekendPics: [
-          file
-        ]
-      }).create()
+    const user = await UserFactory.merge({
+      avatar: null,
+      weekendPics: [file],
+    }).create()
     await notifier
 
     const data = await user.serialize()

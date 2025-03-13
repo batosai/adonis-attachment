@@ -5,7 +5,6 @@
  * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
  */
 
-import { compose } from '@adonisjs/core/helpers'
 import { BaseModel, column } from '@adonisjs/lucid/orm'
 import { attachment, attachments } from '../../../index.js'
 import type { Attachment } from '../../../src/types/attachment.js'

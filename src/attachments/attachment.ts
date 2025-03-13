@@ -168,6 +168,7 @@ export class Attachment extends AttachmentBase implements AttachmentInterface {
           mimeType: v.mimeType,
           meta: v.meta,
           size: v.size,
+          blurhash: v.blurhash,
         }
       })
     }

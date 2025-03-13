@@ -9,9 +9,13 @@ import { test } from '@japa/runner'
 import drive from '@adonisjs/drive/services/main'
 
 import { UserFactory } from './fixtures/factories/user.js'
+import { createApp } from './helpers/app.js'
 
 test.group('attachment', () => {
-  test('delete', async ({ assert }) => {
+  test('delete', async ({ assert, cleanup }) => {
+    const app = await createApp()
+    cleanup(() => app.terminate())
+
     const user = await UserFactory.create()
     user.avatar = null
     await user.save()
@@ -20,8 +24,12 @@ test.group('attachment', () => {
   })
 
   test('delete file after removing', async ({ cleanup }) => {
+    const app = await createApp()
     const fakeDisk = drive.fake('fs')
-    cleanup(() => drive.restore('fs'))
+    cleanup(() => {
+      drive.restore('fs')
+      app.terminate()
+    })
 
     const user = await UserFactory.create()
     const path = user.avatar?.path
@@ -32,8 +40,12 @@ test.group('attachment', () => {
   })
 
   test('delete file after remove entity', async ({ cleanup }) => {
+    const app = await createApp()
     const fakeDisk = drive.fake('fs')
-    cleanup(() => drive.restore('fs'))
+    cleanup(() => {
+      drive.restore('fs')
+      app.terminate()
+    })
 
     const user = await UserFactory.create()
     const path = user.avatar?.path
@@ -44,7 +56,10 @@ test.group('attachment', () => {
 })
 
 test.group('attachments', () => {
-  test('create', async ({ assert }) => {
+  test('create', async ({ assert, cleanup }) => {
+    const app = await createApp()
+    cleanup(() => app.terminate())
+
     const user = await UserFactory.create()
 
     assert.exists(user.weekendPics)
@@ -58,8 +73,12 @@ test.group('attachments', () => {
   })
 
   test('delete files after removing', async ({ cleanup }) => {
+    const app = await createApp()
     const fakeDisk = drive.fake('fs')
-    cleanup(() => drive.restore('fs'))
+    cleanup(() => {
+      drive.restore('fs')
+      app.terminate()
+    })
 
     const user = await UserFactory.create()
     const paths = user.weekendPics?.map((p) => p.path)
@@ -70,8 +89,12 @@ test.group('attachments', () => {
   })
 
   test('delete files after remove entity', async ({ cleanup }) => {
+    const app = await createApp()
     const fakeDisk = drive.fake('fs')
-    cleanup(() => drive.restore('fs'))
+    cleanup(() => {
+      drive.restore('fs')
+      app.terminate()
+    })
 
     const user = await UserFactory.create()
     const paths = user.weekendPics?.map((p) => p.path)

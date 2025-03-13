@@ -8,7 +8,7 @@ import string from '@adonisjs/core/helpers/string'
 import db from '@adonisjs/lucid/services/db'
 import attachmentManager from '../services/main.js'
 import * as errors from './errors.js'
-import { encodeImageToBlurhash } from './utils/helpers.js'
+import { imageToBlurhash } from './utils/helpers.js'
 
 export class ConverterManager {
   #record: Record
@@ -31,12 +31,12 @@ export class ConverterManager {
     const data: any = {}
 
     if (this.#options.variants) {
-      for (const option of this.#options.variants) {
+      for await (const option of this.#options.variants) {
         const converter = (await attachmentManager.getConverter(option)) as Converter
 
         if (attachments && converter) {
-          for (let i = 0; i < attachments.length; i++) {
-            const input = attachments[i].input!
+          for await (const attachment of attachments) {
+            const input = attachment.input!
             const output = await converter.handle!({
               input,
               options: converter.options!,
@@ -46,14 +46,16 @@ export class ConverterManager {
               throw new errors.E_CANNOT_PATH_BY_CONVERTER()
             }
 
-            const variant = await attachments[i].createVariant(option, output)
+            const variant = await attachment.createVariant(option, output)
 
             if (converter.options!.blurhash) {
-              try {
-                const options = typeof converter.options!.blurhash !== 'boolean' ? converter.options!.blurhash : undefined
-                variant.blurhash = await encodeImageToBlurhash(variant.input!, options)
-              } catch (error) {
-                logger.error(error.message)
+              if (typeof converter.options!.blurhash !== 'boolean' && converter.options!.blurhash.enabled === true || converter.options!.blurhash === true ) {
+                try {
+                  const options = typeof converter.options!.blurhash !== 'boolean' ? converter.options!.blurhash : undefined
+                  variant.blurhash = await imageToBlurhash(variant.input!, options)
+                } catch (error) {
+                  logger.error(error.message)
+                }
               }
             }
 
@@ -82,9 +84,9 @@ export class ConverterManager {
     try {
       await trx.query().from(Model.table).where('id', id).update(data)
 
-      return await trx.commit()
+      return trx.commit()
     } catch (error) {
-      return await trx.rollback()
+      return trx.rollback()
     }
   }
 }

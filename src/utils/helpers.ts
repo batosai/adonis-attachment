@@ -15,7 +15,7 @@ import fs from 'node:fs/promises'
 import { pipeline } from 'node:stream'
 import { promisify } from 'node:util'
 import { createWriteStream, WriteStream } from 'node:fs'
-import { encode } from 'blurhash'
+import BlurhashAdapter from '../adapters/blurhash.js'
 import * as errors from '../errors.js'
 
 const streamPipeline = promisify(pipeline)
@@ -112,7 +112,7 @@ export function isBase64(str: string) {
   }
 }
 
-export function encodeImageToBlurhash(
+export function imageToBlurhash(
   input: Input,
   options?: BlurhashOptions
 ): Promise<string> {
@@ -127,15 +127,15 @@ export function encodeImageToBlurhash(
         .ensureAlpha()
         .toBuffer({ resolveWithObject: true })
 
-      return resolve(
-        encode(
-          new Uint8ClampedArray(pixels),
-          metadata.width,
-          metadata.height,
-          componentX,
-          componentY
-        )
+      const blurhash = BlurhashAdapter.encode(
+        new Uint8ClampedArray(pixels),
+        metadata.width,
+        metadata.height,
+        componentX,
+        componentY
       )
+
+      return resolve(blurhash)
     } catch (error) {
       return reject(error)
     }

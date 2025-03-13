@@ -138,26 +138,25 @@ export default class Record implements RecordImplementation {
      * For all properties Attachment
      * Launch async generation variants
      */
-    await Promise.allSettled(
-      attachmentAttributeNames.map((name) => {
-        const record = this
-        attachmentManager.queue.push({
-          name: `${this.#model.constructor.name}-${name}`,
-          async run() {
-            try {
-              const converterManager = new ConverterManager({
-                record,
-                attributeName: name,
-                options: record.#getOptionsByAttributeName(name),
-              })
-              await converterManager.save()
-            } catch (err) {
-              throw new E_CANNOT_CREATE_VARIANT([err.message])
-            }
-          },
-        })
+
+    for await (const name of attachmentAttributeNames) {
+      const record = this
+      attachmentManager.queue.push({
+        name: `${this.#model.constructor.name}-${name}`,
+        async run() {
+          try {
+            const converterManager = new ConverterManager({
+              record,
+              attributeName: name,
+              options: record.#getOptionsByAttributeName(name),
+            })
+            await converterManager.save()
+          } catch (err) {
+            throw new E_CANNOT_CREATE_VARIANT([err.message])
+          }
+        },
       })
-    )
+    }
   }
 
   async detach() {

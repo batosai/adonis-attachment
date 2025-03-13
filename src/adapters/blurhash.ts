@@ -7,7 +7,7 @@ export default {
     height: number,
     componentX: number,
     componentY: number
-  ): string {
+  ): Promise<string> {
     return encode(pixels, width, height, componentX, componentY)
   },
 }

@@ -3,6 +3,8 @@
 ## 3.3.0
 
 * add [attachments](/guide/basic_usage/model-setup#attachments-decorator) decorator
+* add [blurhash](/guide/converters/image.html#blurhash)
+* fix tests variants
 
 > Released at *2025-03-07*
 

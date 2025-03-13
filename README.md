@@ -2,8 +2,6 @@
 
 This package is currently development and will replace [attachment-advanced](https://github.com/batosai/attachment-advanced) for AdonisJS 6.
 
-Project sample : [adonis-starter-kit](https://github.com/batosai/adonis-starter-kit)
-
 ## Links
 
 [View documentation](https://adonis-attachment.jrmc.dev/)
@@ -12,7 +10,7 @@ Project sample : [adonis-starter-kit](https://github.com/batosai/adonis-starter-
 
 [Discord](https://discord.gg/89eMn2vB)
 
-⚠️ [Breaking change](https://adonis-attachment.jrmc.dev/changelog.html) version 2, include [@adonisjs/drive](https://docs.adonisjs.com/guides/digging-deeper/drive)
+Project sample : [adonis-starter-kit](https://github.com/batosai/adonis-starter-kit)
 
 ## Roadmap
 
@@ -21,9 +19,11 @@ Project sample : [adonis-starter-kit](https://github.com/batosai/adonis-starter-
 - [x] attachment file by path
 - [x] attachment file by url
 - [x] attachment file by stream
+- [x] attachment files
 - [x] save meta data
 - [x] variantes
   - [x] images
+    - [x] [blurhash](https://blurha.sh/)
   - [x] documents thumbnail
   - [x] videos thumbnail
 - [ ] command regenerate

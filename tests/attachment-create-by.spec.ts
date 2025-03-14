@@ -11,7 +11,6 @@ import { readFile } from 'node:fs/promises'
 import { test } from '@japa/runner'
 import drive from '@adonisjs/drive/services/main'
 import app from '@adonisjs/core/services/app'
-
 import { MultipartFileFactory } from '@adonisjs/core/factories/bodyparser'
 
 import { UserFactory } from './fixtures/factories/user.js'

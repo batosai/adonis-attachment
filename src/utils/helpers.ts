@@ -138,3 +138,15 @@ export function imageToBlurhash(input: Input, options?: BlurhashOptions): Promis
     }
   })
 }
+
+export function extractPathParameters(path: string): string[] {
+  const paramRegex = /:(\w+)/g
+  const parameters: string[] = []
+  let match
+
+  while ((match = paramRegex.exec(path)) !== null) {
+    parameters.push(match[1])
+  }
+
+  return parameters
+}

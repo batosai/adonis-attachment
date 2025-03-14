@@ -7,8 +7,16 @@
 
 import { test } from '@japa/runner'
 
+import type { Attachment } from '../src/types/attachment.js'
+
+import { BaseModel, column } from '@adonisjs/lucid/orm'
+import Factory from '@adonisjs/lucid/factories'
+import { DateTime } from 'luxon'
+
 import { createApp } from './helpers/app.js'
 import { UserFactory } from './fixtures/factories/user.js'
+import { makeAttachment, getCurrentDateFormatted } from './helpers/index.js'
+import { attachment } from '../index.js'
 
 test.group('options', () => {
   test('with default values', async ({ assert, cleanup }) => {
@@ -157,5 +165,96 @@ test.group('options', () => {
     const data = user.serialize()
 
     assert.deepEqual(data.avatar.meta, { dimension: { width: 1920, height: 1313 } })
+  })
+
+  test('with dynamic folder with date', async ({ assert, cleanup }) => {
+    class User extends BaseModel {
+      @column()
+      declare name: string
+
+      @attachment({ folder: () => DateTime.now().toFormat('yyyy/MM') })
+      declare avatar: Attachment | null
+    }
+
+    const UserFactory = Factory.define(User, async ({ faker }) => {
+      return {
+        name: faker.person.lastName(),
+        avatar: await makeAttachment(),
+      }
+    }).build()
+
+    const app = await createApp({
+      rename: false,
+    })
+
+    cleanup(() => {
+      app.terminate()
+    })
+
+    const user = await UserFactory.create()
+
+    assert.equal(user.avatar?.path, `${getCurrentDateFormatted()}/avatar.jpg`)
+  })
+
+  test('with dynamic folder with attribute', async ({ assert, cleanup }) => {
+    class User extends BaseModel {
+      @column()
+      declare name: string
+
+      @attachment({ folder: (u: User) => u.name })
+      declare avatar: Attachment | null
+    }
+
+    const UserFactory = Factory.define(User, async ({ faker }) => {
+      return {
+        name: faker.person.lastName(),
+        avatar: await makeAttachment(),
+      }
+    }).build()
+
+    const app = await createApp({
+      rename: false,
+    })
+
+    cleanup(() => {
+      app.terminate()
+    })
+
+    const user = (await UserFactory.merge({
+      name: 'jeremy',
+    }).create()) as User
+
+    assert.equal(user.avatar?.path, 'jeremy/avatar.jpg')
+  })
+
+  test('with dynamic folder with path parameter', async ({ assert, cleanup }) => {
+    class User extends BaseModel {
+      @column()
+      declare name: string
+
+      @attachment({ folder: 'user/:name' })
+      declare avatar: Attachment | null
+    }
+
+    const UserFactory = Factory.define(User, async ({ faker }) => {
+      return {
+        name: faker.person.lastName(),
+        avatar: await makeAttachment(),
+      }
+    }).build()
+
+    const app = await createApp({
+      rename: false,
+    })
+
+    cleanup(() => {
+      app.terminate()
+    })
+
+    const user = (await UserFactory.merge({
+      name: 'jeremy',
+    }).create()) as User
+
+    assert.equal(user.avatar?.path, 'user/jeremy/avatar.jpg')
   })
 })

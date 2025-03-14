@@ -18,7 +18,7 @@ class User extends compose(BaseModel, Attachmentable) { // [!code highlight]
 }
 ```
 
-## Specifying subfolder
+## Specifying folder
 
 You can also store files inside the subfolder by defining the `folder` property as follows.
 
@@ -28,6 +28,36 @@ class User extends BaseModel {
   declare avatar: Attachment
 }
 ```
+
+by path parameters (⚠️ [avalable in v3.3.0](/changelog#_3-3-0))
+
+```ts
+class User extends BaseModel {
+  @column()
+  declare name: string
+
+  @attachment({ folder: 'uploads/:name/avatars' }) // [!code highlight]
+  declare avatar: Attachment
+}
+```
+
+custom  (⚠️ [avalable in v3.3.0](/changelog#_3-3-0))
+
+```ts
+class User extends BaseModel {
+  @column()
+  declare name: string
+
+  @attachment({ folder: () => DateTime.now().toFormat('yyyy/MM') }) // [!code highlight]
+  declare avatar: Attachment
+
+  @attachment({ folder: (user: User) => user.name }) // [!code highlight]
+  declare file: Attachment
+}
+```
+
+⚠️ :id parameter is not defined on first save
+
 
 ## Specifying variants
 

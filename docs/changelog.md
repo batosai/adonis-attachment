@@ -4,6 +4,7 @@
 
 * add [attachments](/guide/basic_usage/model-setup#attachments-decorator) decorator
 * add [blurhash](/guide/converters/image.html#blurhash)
+* add path parameter and function in [folder options](/guide/basic_usage/model-setup#specifying-folder)
 * fix tests variants
 
 > Released at *2025-03-07*

@@ -81,7 +81,7 @@ export default class Record implements RecordImplementation {
            * file.
            */
           if (newAttachments[i]) {
-            newAttachments[i].setOptions(options)
+            newAttachments[i].setOptions(options).makeFolder(this.#model)
             this.#model.$attachments.attached.push(newAttachments[i])
 
             /**

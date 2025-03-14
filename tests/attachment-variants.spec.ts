@@ -5,14 +5,47 @@
  * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
  */
 
+import type { Attachment } from '../src/types/attachment.js'
+
 import { test } from '@japa/runner'
 import drive from '@adonisjs/drive/services/main'
 import sinon from 'sinon'
+import { BaseModel, column } from '@adonisjs/lucid/orm'
+import Factory from '@adonisjs/lucid/factories'
+import { DateTime } from 'luxon'
 
 import BlurhashAdapter from '../src/adapters/blurhash.js'
-import { attachmentManager } from '../index.js'
+import { attachmentManager, attachment, attachments } from '../index.js'
+import { makeAttachment } from './helpers/index.js'
 import { createApp } from './helpers/app.js'
-import { UserFactory } from './fixtures/factories/user_with_variants.js'
+
+class User extends BaseModel {
+  @column({ isPrimary: true })
+  declare id: string
+
+  @column()
+  declare name: string
+
+  @attachment({ variants: ['thumbnail', 'medium'] })
+  declare avatar: Attachment | null
+
+  @attachments({ variants: ['thumbnail'] })
+  declare weekendPics: Attachment[] | null
+
+  @column.dateTime({ autoCreate: true, serialize: (value: DateTime) => value.toUnixInteger() })
+  declare createdAt: DateTime
+
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime | null
+}
+
+const UserFactory = Factory.define(User, async ({ faker }) => {
+  return {
+    name: faker.person.lastName(),
+    avatar: await makeAttachment(),
+    weekendPics: [await makeAttachment(), await makeAttachment()],
+  }
+}).build()
 
 test.group('variants', () => {
   test('generation', async ({ assert, cleanup }) => {

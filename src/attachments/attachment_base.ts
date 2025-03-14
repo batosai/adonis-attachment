@@ -5,6 +5,7 @@
  * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
  */
 
+import type { LucidRow } from '@adonisjs/lucid/types/model'
 import type { DriveService, SignedURLOptions } from '@adonisjs/drive/types'
 import type {
   LucidOptions,
@@ -16,6 +17,7 @@ import type { Exif, Input } from '../types/input.js'
 import path from 'node:path'
 import { cuid } from '@adonisjs/core/helpers'
 import { defaultOptionsDecorator } from '../utils/default_values.js'
+import { extractPathParameters } from '../utils/helpers.js'
 
 export class AttachmentBase implements AttachmentBaseInterface {
   drive: DriveService
@@ -32,7 +34,7 @@ export class AttachmentBase implements AttachmentBaseInterface {
   originalPath?: string
   url?: string
 
-  options?: LucidOptions
+  options: LucidOptions
 
   constructor(drive: DriveService, attributes: AttachmentBaseAttributes, input?: Input) {
     this.input = input
@@ -44,6 +46,8 @@ export class AttachmentBase implements AttachmentBaseInterface {
     this.originalPath = attributes.path
 
     this.#folder = attributes.folder
+    this.setOptions({ folder: attributes.folder })
+
     if (attributes.name) {
       this.#name = attributes.name
     } else {
@@ -63,10 +67,13 @@ export class AttachmentBase implements AttachmentBaseInterface {
   }
 
   get folder(): string | undefined {
-    if (this.options) {
-      return this.options?.folder
+    if (this.#folder) {
+      return this.#folder
     }
-    return this.#folder
+
+    if (typeof this.options.folder === 'string') {
+      return this.options.folder
+    }
   }
 
   get path(): string {
@@ -94,6 +101,29 @@ export class AttachmentBase implements AttachmentBaseInterface {
       ...this.options,
       ...options,
     }
+    return this
+  }
+
+  makeFolder(record?: LucidRow) {
+    if (typeof this.options.folder === 'function' && record) {
+      this.#folder = this.options.folder(record)
+    } else if (this.options.folder) {
+      this.#folder = this.options.folder as string
+    }
+
+    if (this.#folder && record) {
+      const parameters = extractPathParameters(this.#folder)
+
+      if (parameters) {
+        parameters.forEach((parameter) => {
+          const attribute = record.$attributes[parameter]
+          if (typeof attribute === 'string') {
+            this.#folder = this.#folder?.replace(`:${parameter}`, attribute)
+          }
+        })
+      }
+    }
+
     return this
   }
 

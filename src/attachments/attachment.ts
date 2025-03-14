@@ -64,7 +64,7 @@ export class Attachment extends AttachmentBase implements AttachmentInterface {
     const attributes = {
       ...meta,
       key,
-      folder: path.join(this.options!.folder!, 'variants', this.name),
+      folder: path.join(this.folder!, 'variants', this.name),
     }
 
     const variant = new Variant(this.drive, attributes, input)

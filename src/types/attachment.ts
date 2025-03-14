@@ -5,6 +5,7 @@
  * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
  */
 
+import type { LucidRow } from '@adonisjs/lucid/types/model'
 import type { DriveService } from '@adonisjs/drive/types'
 import type { Exif, Input } from './input.js'
 import type { Disk } from '@adonisjs/drive'
@@ -27,8 +28,9 @@ export type AttachmentBase = {
   originalPath?: string
   url?: string
 
-  options?: LucidOptions
+  options: LucidOptions
 
+  makeFolder(record?: LucidRow): void
   getDisk(): Disk
   getUrl(): Promise<string>
   getSignedUrl(signedUrlOptions?: SignedURLOptions): Promise<string>
@@ -63,7 +65,7 @@ export type Variant = AttachmentBase & {
 
 export type LucidOptions = {
   disk?: string
-  folder?: string
+  folder?: string | ((record?: LucidRow) => string)
   preComputeUrl?: boolean
   variants?: (keyof AttachmentVariants)[]
   rename?: boolean

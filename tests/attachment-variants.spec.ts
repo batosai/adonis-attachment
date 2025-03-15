@@ -8,7 +8,6 @@
 import type { Attachment } from '../src/types/attachment.js'
 
 import { test } from '@japa/runner'
-import drive from '@adonisjs/drive/services/main'
 import sinon from 'sinon'
 import { BaseModel, column } from '@adonisjs/lucid/orm'
 import Factory from '@adonisjs/lucid/factories'
@@ -74,12 +73,10 @@ test.group('variants', () => {
     assert.exists(data.weekendPics[1].thumbnail)
   }) //.timeout(25_000)
 
-  test('delete files after remove avatars', async ({ cleanup }) => {
-    const fakeDisk = drive.fake('fs')
+  test('delete files after remove avatars', async ({ assert, cleanup }) => {
     const app = await createApp()
     const encodeStub = sinon.stub(BlurhashAdapter, 'encode').returns('mockBlurhash')
     cleanup(() => {
-      drive.restore('fs')
       encodeStub.restore()
       app.terminate()
     })
@@ -88,22 +85,26 @@ test.group('variants', () => {
       attachmentManager.queue.drained = resolve
     })
     const user = await UserFactory.create()
-    const variants = user.avatar?.variants
-    user.avatar = null
-    await user.save()
     await notifier
 
-    variants?.forEach((variant) => {
-      fakeDisk.assertMissing(variant.path!)
+    const variants = user.avatar?.variants
+
+    variants?.forEach(async (variant) => {
+      await assert.fileExists(variant.path!)
+    })
+
+    user.avatar = null
+    await user.save()
+
+    variants?.forEach(async (variant) => {
+      await assert.fileNotExists(variant.path!)
     })
   })
 
-  test('delete files after remove weekendPics', async ({ cleanup }) => {
-    const fakeDisk = drive.fake('fs')
+  test('delete files after remove weekendPics', async ({ assert, cleanup }) => {
     const app = await createApp()
     const encodeStub = sinon.stub(BlurhashAdapter, 'encode').returns('mockBlurhash')
     cleanup(() => {
-      drive.restore('fs')
       encodeStub.restore()
       app.terminate()
     })
@@ -112,27 +113,35 @@ test.group('variants', () => {
       attachmentManager.queue.drained = resolve
     })
     const user = await UserFactory.create()
-    const weekendPicsVariants0 = user.weekendPics![0]?.variants
-    const weekendPicsVariants1 = user.weekendPics![1]?.variants
-    user.weekendPics = null
-    await user.save()
     await notifier
 
-    weekendPicsVariants0?.forEach((variant) => {
-      fakeDisk.assertMissing(variant.path!)
+    const weekendPicsVariants0 = user.weekendPics![0]?.variants
+    const weekendPicsVariants1 = user.weekendPics![1]?.variants
+
+    weekendPicsVariants0?.forEach(async (variant) => {
+      await assert.fileExists(variant.path!)
     })
 
-    weekendPicsVariants1?.forEach((variant) => {
-      fakeDisk.assertMissing(variant.path!)
+    weekendPicsVariants1?.forEach(async (variant) => {
+      await assert.fileExists(variant.path!)
+    })
+
+    user.weekendPics = null
+    await user.save()
+
+    weekendPicsVariants0?.forEach(async (variant) => {
+      await assert.fileNotExists(variant.path!)
+    })
+
+    weekendPicsVariants1?.forEach(async (variant) => {
+      await assert.fileNotExists(variant.path!)
     })
   })
 
   test('delete files after remove partial weekendPics', async ({ assert, cleanup }) => {
-    const fakeDisk = drive.fake('fs')
     const app = await createApp()
     const encodeStub = sinon.stub(BlurhashAdapter, 'encode').returns('mockBlurhash')
     cleanup(() => {
-      drive.restore('fs')
       encodeStub.restore()
       app.terminate()
     })
@@ -141,33 +150,43 @@ test.group('variants', () => {
       attachmentManager.queue.drained = resolve
     })
     const user = await UserFactory.create()
+    await notifier
+
     const weekendPicsVariants0 = user.weekendPics![0]?.variants
     const weekendPicsVariants1 = user.weekendPics![1]?.variants
+
+    // 0 is regenerate
+    weekendPicsVariants0?.forEach(async (variant) => {
+      await assert.fileExists(variant.path!)
+    })
+
+    // 1 is delete
+    weekendPicsVariants1?.forEach(async (variant) => {
+      await assert.fileExists(variant.path!)
+    })
+
     user.weekendPics = [user.weekendPics![0]]
     await user.save()
-    await notifier
 
     const data = await user.serialize()
 
     // 0 is regenerate
-    weekendPicsVariants0?.forEach((variant) => {
-      fakeDisk.assertMissing(variant.path!)
+    weekendPicsVariants0?.forEach(async (variant) => {
+      await assert.fileExists(variant.path!)
     })
     assert.exists(data.weekendPics[0].thumbnail)
 
     // 1 is delete
-    weekendPicsVariants1?.forEach((variant) => {
-      fakeDisk.assertMissing(variant.path!)
+    weekendPicsVariants1?.forEach(async (variant) => {
+      await assert.fileNotExists(variant.path!)
     })
     assert.lengthOf(data.weekendPics, 1)
   })
 
-  test('delete files after delete entity', async ({ cleanup }) => {
-    const fakeDisk = drive.fake('fs')
+  test('delete files after delete entity', async ({ assert, cleanup }) => {
     const app = await createApp()
     const encodeStub = sinon.stub(BlurhashAdapter, 'encode').returns('mockBlurhash')
     cleanup(() => {
-      drive.restore('fs')
       encodeStub.restore()
       app.terminate()
     })
@@ -176,22 +195,36 @@ test.group('variants', () => {
       attachmentManager.queue.drained = resolve
     })
     const user = await UserFactory.create()
+    await notifier
+
     const variants = user.avatar?.variants
     const weekendPicsVariants0 = user.weekendPics![0]?.variants
     const weekendPicsVariants1 = user.weekendPics![1]?.variants
+
+    variants?.forEach(async (variant) => {
+      await assert.fileExists(variant.path!)
+    })
+
+    weekendPicsVariants0?.forEach(async (variant) => {
+      await assert.fileExists(variant.path!)
+    })
+
+    weekendPicsVariants1?.forEach(async (variant) => {
+      await assert.fileExists(variant.path!)
+    })
+
     await user.delete()
-    await notifier
 
-    variants?.forEach((variant) => {
-      fakeDisk.assertMissing(variant.path!)
+    variants?.forEach(async (variant) => {
+      await assert.fileNotExists(variant.path!)
     })
 
-    weekendPicsVariants0?.forEach((variant) => {
-      fakeDisk.assertMissing(variant.path!)
+    weekendPicsVariants0?.forEach(async (variant) => {
+      await assert.fileNotExists(variant.path!)
     })
 
-    weekendPicsVariants1?.forEach((variant) => {
-      fakeDisk.assertMissing(variant.path!)
+    weekendPicsVariants1?.forEach(async (variant) => {
+      await assert.fileNotExists(variant.path!)
     })
   })
 

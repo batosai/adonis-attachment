@@ -6,12 +6,20 @@
  */
 
 import { test } from '@japa/runner'
-import drive from '@adonisjs/drive/services/main'
 
 import { UserFactory } from './fixtures/factories/user.js'
 import { createApp } from './helpers/app.js'
 
 test.group('attachment', () => {
+  test('create', async ({ assert, cleanup }) => {
+    const app = await createApp()
+    cleanup(() => app.terminate())
+
+    const user = await UserFactory.create()
+
+    assert.exists(user.avatar)
+    await assert.fileExists(user.avatar?.path!)
+  })
   test('delete', async ({ assert, cleanup }) => {
     const app = await createApp()
     cleanup(() => app.terminate())
@@ -23,35 +31,29 @@ test.group('attachment', () => {
     assert.isNull(user.avatar)
   })
 
-  test('delete file after removing', async ({ cleanup }) => {
+  test('delete file after removing', async ({ assert, cleanup }) => {
     const app = await createApp()
-    const fakeDisk = drive.fake('fs')
-    cleanup(() => {
-      drive.restore('fs')
-      app.terminate()
-    })
+    cleanup(() => app.terminate())
 
     const user = await UserFactory.create()
     const path = user.avatar?.path
+    await assert.fileExists(path!)
     user.avatar = null
     await user.save()
 
-    fakeDisk.assertMissing(path!)
+    await assert.fileNotExists(path!)
   })
 
-  test('delete file after remove entity', async ({ cleanup }) => {
+  test('delete file after remove entity', async ({ assert, cleanup }) => {
     const app = await createApp()
-    const fakeDisk = drive.fake('fs')
-    cleanup(() => {
-      drive.restore('fs')
-      app.terminate()
-    })
+    cleanup(() => app.terminate())
 
     const user = await UserFactory.create()
     const path = user.avatar?.path
+    await assert.fileExists(path!)
     await user.delete()
 
-    fakeDisk.assertMissing(path!)
+    await assert.fileNotExists(path!)
   })
 })
 
@@ -72,36 +74,40 @@ test.group('attachments', () => {
     }
   })
 
-  test('delete files after removing', async ({ cleanup }) => {
+  test('delete files after removing', async ({ assert, cleanup }) => {
     const app = await createApp()
-    const fakeDisk = drive.fake('fs')
-    cleanup(() => {
-      drive.restore('fs')
-      app.terminate()
-    })
+    cleanup(() => app.terminate())
 
     const user = await UserFactory.create()
     const paths = user.weekendPics?.map((p) => p.path)
+
+    for (const path of paths ?? []) {
+      await assert.fileExists(path!)
+    }
+
     user.weekendPics = null
     await user.save()
 
-    for (const path of paths ?? []) fakeDisk.assertMissing(path!)
+    for (const path of paths ?? []) {
+      await assert.fileNotExists(path!)
+    }
   })
 
-  test('delete files after remove entity', async ({ cleanup }) => {
+  test('delete files after remove entity', async ({ assert, cleanup }) => {
     const app = await createApp()
-    const fakeDisk = drive.fake('fs')
-    cleanup(() => {
-      drive.restore('fs')
-      app.terminate()
-    })
+    cleanup(() => app.terminate())
 
     const user = await UserFactory.create()
     const paths = user.weekendPics?.map((p) => p.path)
+
+    for (const path of paths ?? []) {
+      await assert.fileExists(path!)
+    }
+
     await user.delete()
 
     for (const path of paths ?? []) {
-      fakeDisk.assertMissing(path!)
+      await assert.fileNotExists(path!)
     }
   })
 })

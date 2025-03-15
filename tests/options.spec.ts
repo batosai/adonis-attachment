@@ -9,13 +9,14 @@ import { test } from '@japa/runner'
 
 import type { Attachment } from '../src/types/attachment.js'
 
+import { setTimeout } from 'node:timers/promises'
 import { BaseModel, column } from '@adonisjs/lucid/orm'
 import Factory from '@adonisjs/lucid/factories'
 import { DateTime } from 'luxon'
 
 import { createApp } from './helpers/app.js'
 import { UserFactory } from './fixtures/factories/user.js'
-import { makeAttachment, getCurrentDateFormatted } from './helpers/index.js'
+import { makeAttachment } from './helpers/index.js'
 import { attachment } from '../index.js'
 
 test.group('options', () => {
@@ -193,7 +194,7 @@ test.group('options', () => {
 
     const user = await UserFactory.create()
 
-    assert.equal(user.avatar?.path, `${getCurrentDateFormatted()}/avatar.jpg`)
+    assert.equal(user.avatar?.path, `${DateTime.now().toFormat('yyyy/MM')}/avatar.jpg`)
   })
 
   test('with dynamic folder with attribute', async ({ assert, cleanup }) => {
@@ -256,5 +257,41 @@ test.group('options', () => {
     }).create()) as User
 
     assert.equal(user.avatar?.path, 'user/jeremy/avatar.jpg')
+  })
+
+  test('with dynamic folder - delete', async ({ assert, cleanup }) => {
+    const app = await createApp({
+      rename: false,
+    })
+    cleanup(() => app.terminate())
+
+    class User extends BaseModel {
+      @column({ isPrimary: true })
+      declare id: string
+
+      @column()
+      declare name: string
+
+      @attachment({ folder: () => `avatar/:name/${DateTime.now().toFormat('yyyy/MM')}` })
+      declare avatar: Attachment | null
+    }
+
+    const UserFactory = Factory.define(User, async ({ faker }) => {
+      return {
+        name: 'jeremy',
+        avatar: await makeAttachment(),
+      }
+    }).build()
+
+    const user = await UserFactory.create()
+    const path = user.avatar?.path
+
+    assert.equal(path, `avatar/jeremy/${DateTime.now().toFormat('yyyy/MM')}/avatar.jpg`)
+    await assert.fileExists(path!)
+
+    user.avatar = null
+    await user.save()
+
+    await assert.fileNotExists(path!)
   })
 })

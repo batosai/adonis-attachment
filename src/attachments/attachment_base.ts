@@ -77,6 +77,10 @@ export class AttachmentBase implements AttachmentBaseInterface {
   }
 
   get path(): string {
+    if (!this.folder && this.originalPath) {
+      return this.originalPath
+    }
+
     return path.join(this.folder!, this.name)
   }
 
@@ -89,11 +93,11 @@ export class AttachmentBase implements AttachmentBaseInterface {
   }
 
   getUrl() {
-    return this.getDisk().getUrl(this.path!)
+    return this.getDisk().getUrl(this.path)
   }
 
   getSignedUrl(signedUrlOptions?: SignedURLOptions) {
-    return this.getDisk().getSignedUrl(this.path!, signedUrlOptions)
+    return this.getDisk().getSignedUrl(this.path, signedUrlOptions)
   }
 
   setOptions(options: LucidOptions) {

@@ -6,6 +6,7 @@
  */
 
 import type { LucidRow } from '@adonisjs/lucid/types/model'
+import string from '@adonisjs/core/helpers/string'
 import type { DriveService, SignedURLOptions } from '@adonisjs/drive/types'
 import type {
   LucidOptions,
@@ -72,7 +73,10 @@ export class AttachmentBase implements AttachmentBaseInterface {
     }
 
     if (typeof this.options.folder === 'string') {
-      return this.options.folder
+      const parameters = extractPathParameters(this.options.folder)
+      if (!parameters.length) {
+        return this.options.folder
+      }
     }
   }
 
@@ -122,7 +126,8 @@ export class AttachmentBase implements AttachmentBaseInterface {
         parameters.forEach((parameter) => {
           const attribute = record.$attributes[parameter]
           if (typeof attribute === 'string') {
-            this.#folder = this.#folder?.replace(`:${parameter}`, attribute)
+            const name = string.slug(string.noCase(string.escapeHTML(attribute.toLowerCase())))
+            this.#folder = this.#folder?.replace(`:${parameter}`, name)
           }
         })
       }

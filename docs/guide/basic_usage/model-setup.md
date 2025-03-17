@@ -41,6 +41,12 @@ class User extends BaseModel {
 }
 ```
 
+Only parameters of the string type are allowed. Additionally, the following processes are performed:
+- lowercase
+- escape html
+- no case
+- slugify
+
 custom  (⚠️ [avalable in v3.3.0](/changelog#_3-3-0))
 
 ```ts

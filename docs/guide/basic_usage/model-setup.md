@@ -62,7 +62,7 @@ class User extends BaseModel {
 }
 ```
 
-⚠️ :id parameter is not defined on first save
+⚠️ :id autoincrement parameter is not defined on first save
 
 
 ## Specifying variants

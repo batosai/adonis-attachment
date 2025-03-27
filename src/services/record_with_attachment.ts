@@ -1,6 +1,7 @@
-import type { ModelWithAttachment } from '../types/mixin.js'
+import type { RowWithAttachment } from '../types/mixin.js'
 import type { Attachment as AttachmentType, LucidOptions } from '../types/attachment.js'
 import type { Record as RecordImplementation } from '../types/service.js'
+import type { RegenerateOptions } from '../types/regenerate.js'
 
 import attachmentManager from '../../services/main.js'
 import { defaultStateAttributeMixin } from '../utils/default_values.js'
@@ -10,16 +11,16 @@ import { ConverterManager } from '../converter_manager.js'
 import { E_CANNOT_CREATE_VARIANT } from '../errors.js'
 
 export default class Record implements RecordImplementation {
-  #model: ModelWithAttachment
+  #row: RowWithAttachment
 
-  constructor(model: ModelWithAttachment) {
-    this.#model = model
+  constructor(row: RowWithAttachment) {
+    this.#row = row
 
-    if (!this.#model.$attachments) {
+    if (!this.#row.$attachments) {
       /**
        * Empty previous $attachments
        */
-      this.#model.$attachments = structuredClone(defaultStateAttributeMixin)
+      this.#row.$attachments = structuredClone(defaultStateAttributeMixin)
     }
   }
 
@@ -28,8 +29,8 @@ export default class Record implements RecordImplementation {
    */
   async commit(): Promise<void> {
     await Promise.allSettled(
-      this.#model.$attachments.detached.map((attachment: AttachmentType) =>
-        attachmentManager.delete(attachment)
+      this.#row.$attachments.detached.map((attachment: AttachmentType) =>
+        attachmentManager.remove(attachment)
       )
     )
   }
@@ -39,8 +40,8 @@ export default class Record implements RecordImplementation {
    */
   async rollback(): Promise<void> {
     await Promise.allSettled(
-      this.#model.$attachments.attached.map((attachment: AttachmentType) =>
-        attachmentManager.delete(attachment)
+      this.#row.$attachments.attached.map((attachment: AttachmentType) =>
+        attachmentManager.remove(attachment)
       )
     )
   }
@@ -49,7 +50,7 @@ export default class Record implements RecordImplementation {
     const attachmentAttributeNames = this.#getDirtyAttributeNamesOfAttachment()
 
     /**
-     * Persist attachments before saving the model to the database. This
+     * Persist attachments before saving the row to the database. This
      * way if file saving fails we will not write anything to the
      * database
      */
@@ -69,7 +70,7 @@ export default class Record implements RecordImplementation {
         /**
          * memorise attribute name for generate variants
          */
-        this.#model.$attachments.dirtied.push(name)
+        this.#row.$attachments.dirtied.push(name)
 
         for (let i = 0; i < newAttachments.length; i++) {
           if (originalAttachments.includes(newAttachments[i])) {
@@ -81,13 +82,13 @@ export default class Record implements RecordImplementation {
            * file.
            */
           if (newAttachments[i]) {
-            newAttachments[i].setOptions(options).makeFolder(this.#model)
-            this.#model.$attachments.attached.push(newAttachments[i])
+            newAttachments[i].setOptions(options).makeFolder(this.#row)
+            this.#row.$attachments.attached.push(newAttachments[i])
 
             /**
              * Also write the file to the disk right away
              */
-            await attachmentManager.save(newAttachments[i])
+            await attachmentManager.write(newAttachments[i])
           }
         }
       })
@@ -96,10 +97,10 @@ export default class Record implements RecordImplementation {
 
   async transaction(options = { enabledRollback: true }): Promise<void> {
     try {
-      if (this.#model.$trx) {
-        this.#model.$trx.after('commit', () => this.commit())
+      if (this.#row.$trx) {
+        this.#row.$trx.after('commit', () => this.commit())
         if (options.enabledRollback) {
-          this.#model.$trx.after('rollback', () => this.rollback())
+          this.#row.$trx.after('rollback', () => this.rollback())
         }
       } else {
         await this.commit()
@@ -119,7 +120,7 @@ export default class Record implements RecordImplementation {
       attachmentAttributeNames.map(async (name) => {
         const options = this.#getOptionsByAttributeName(name)
 
-        if (this.#model.$attributes[name]) {
+        if (this.#row.$attributes[name]) {
           const attachments = this.#getAttachmentsByAttributeName(name)
           for (let i = 0; i < attachments.length; i++) {
             attachments[i].setOptions(options)
@@ -131,8 +132,8 @@ export default class Record implements RecordImplementation {
   }
 
   async generateVariants(): Promise<void> {
-    /* this.#model.$dirty is not avalable in afterSave hooks */
-    const attachmentAttributeNames = this.#model.$attachments.dirtied
+    /* this.#row.$dirty is not avalable in afterSave hooks */
+    const attachmentAttributeNames = this.#row.$attachments.dirtied
 
     /**
      * For all properties Attachment
@@ -142,7 +143,7 @@ export default class Record implements RecordImplementation {
     for await (const name of attachmentAttributeNames) {
       const record = this
       attachmentManager.queue.push({
-        name: `${this.#model.constructor.name}-${name}`,
+        name: `${this.#row.constructor.name}-${name}`,
         async run() {
           try {
             const converterManager = new ConverterManager({
@@ -150,7 +151,39 @@ export default class Record implements RecordImplementation {
               attributeName: name,
               options: record.#getOptionsByAttributeName(name),
             })
-            await converterManager.save()
+            await converterManager.run()
+          } catch (err) {
+            throw new E_CANNOT_CREATE_VARIANT([err.message])
+          }
+        },
+      })
+    }
+  }
+
+  async regenerateVariants(options: RegenerateOptions = {}) {
+    let attachmentAttributeNames
+
+    if (options.attributes?.length) {
+      attachmentAttributeNames = options.attributes
+    } else {
+      attachmentAttributeNames = this.#getAttributeNamesOfAttachment()
+    }
+
+    for await (const name of attachmentAttributeNames) {
+      const record = this
+      attachmentManager.queue.push({
+        name: `${this.#row.constructor.name}-${name}`,
+        async run() {
+          try {
+            const converterManager = new ConverterManager({
+              record,
+              attributeName: name,
+              options: record.#getOptionsByAttributeName(name),
+              filters: {
+                variants: options.variants
+              }
+            })
+            await converterManager.run()
           } catch (err) {
             throw new E_CANNOT_CREATE_VARIANT([err.message])
           }
@@ -170,7 +203,7 @@ export default class Record implements RecordImplementation {
         let attachments: AttachmentType[] = []
         const options = this.#getOptionsByAttributeName(name)
 
-        if (this.#model.$dirty[name] === null) {
+        if (this.#row.$dirty[name] === null) {
           attachments = this.#getOriginalAttachmentsByAttributeName(name)
         } else {
           const originalAttachments = this.#getOriginalAttachmentsByAttributeName(name)
@@ -196,7 +229,7 @@ export default class Record implements RecordImplementation {
 
         for (let i = 0; i < attachments.length; i++) {
           attachments[i].setOptions(options)
-          this.#model.$attachments.detached.push(attachments[i])
+          this.#row.$attachments.detached.push(attachments[i])
         }
       })
     )
@@ -214,45 +247,54 @@ export default class Record implements RecordImplementation {
         const attachments = this.#getAttachmentsByAttributeName(name)
         for (let i = 0; i < attachments.length; i++) {
           attachments[i].setOptions(options)
-          this.#model.$attachments.detached.push(attachments[i])
+          this.#row.$attachments.detached.push(attachments[i])
         }
       })
     )
   }
 
-  get model() {
-    return this.#model
+  get row() {
+    return this.#row
   }
 
-  getAttachments(options: { attributeName: string; requiredOriginal?: boolean }) {
+  getAttachments(options: { attributeName: string, requiredOriginal?: boolean, requiredDirty?: boolean }) {
     if (options.requiredOriginal) {
       return this.#getOriginalAttachmentsByAttributeName(options.attributeName)
+    } else if (options.requiredDirty) {
+      return this.#getDirtyAttachmentsByAttributeName(options.attributeName)
     } else {
       return this.#getAttachmentsByAttributeName(options.attributeName)
     }
   }
 
   #getAttachmentsByAttributeName(name: string): AttachmentType[] {
-    if (Array.isArray(this.#model.$attributes[name])) {
-      return this.#model.$attributes[name] as AttachmentType[]
+    if (Array.isArray(this.#row.$attributes[name])) {
+      return this.#row.$attributes[name] as AttachmentType[]
     }
-    return [this.#model.$attributes[name] as AttachmentType]
+    return [this.#row.$attributes[name] as AttachmentType]
   }
 
   #getOriginalAttachmentsByAttributeName(name: string): AttachmentType[] {
-    if (Array.isArray(this.#model.$original[name])) {
-      return this.#model.$original[name] as AttachmentType[]
+    if (Array.isArray(this.#row.$original[name])) {
+      return this.#row.$original[name] as AttachmentType[]
     }
-    return [this.#model.$original[name] as AttachmentType]
+    return [this.#row.$original[name] as AttachmentType]
+  }
+
+  #getDirtyAttachmentsByAttributeName(name: string): AttachmentType[] {
+    if (Array.isArray(this.#row.$dirty[name])) {
+      return this.#row.$dirty[name] as AttachmentType[]
+    }
+    return [this.#row.$dirty[name] as AttachmentType]
   }
 
   #getOptionsByAttributeName(name: string): LucidOptions {
-    return this.#model.constructor.prototype[optionsSym]?.[name]
+    return this.#row.constructor.prototype[optionsSym]?.[name]
   }
 
   #getAttributeNamesOfAttachment() {
-    return Object.keys(this.#model.$attributes).filter((name) => {
-      const value = this.#model.$attributes[name]
+    return Object.keys(this.#row.$attributes).filter((name) => {
+      const value = this.#row.$attributes[name]
       return (
         value instanceof Attachment ||
         (Array.isArray(value) && value.every((item) => item instanceof Attachment))
@@ -261,9 +303,9 @@ export default class Record implements RecordImplementation {
   }
 
   #getDirtyAttributeNamesOfAttachment() {
-    return Object.keys(this.#model.$dirty).filter((name) => {
-      const dirtyValue = this.#model.$dirty[name]
-      const originalValue = this.#model.$original[name] // if dirtyValue is null, check original type
+    return Object.keys(this.#row.$dirty).filter((name) => {
+      const dirtyValue = this.#row.$dirty[name]
+      const originalValue = this.#row.$original[name] // if dirtyValue is null, check original type
 
       const isDirtyAttachment =
         dirtyValue instanceof Attachment ||

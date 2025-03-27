@@ -13,13 +13,16 @@ import type { LucidOptions } from './attachment.js'
 export type Converter = {
   options?: ConverterOptions
   binPaths?: BinPaths
-  handle?: (attributes: ConverterAttributes) => Promise<Input | undefined>
+  handle: (attributes: ConverterAttributes) => Promise<Input | undefined>
 }
 
 export type ConverterInitializeAttributes = {
   record: Record
   attributeName: string
   options: LucidOptions
+  filters?: {
+    variants?: string[]
+  }
 }
 
 export type ConverterAttributes = {

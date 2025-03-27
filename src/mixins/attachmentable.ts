@@ -7,7 +7,7 @@
 
 import type { BaseModel } from '@adonisjs/lucid/orm'
 import type { NormalizeConstructor } from '@adonisjs/core/types/helpers'
-import type { AttributeOfModelWithAttachment } from '../types/mixin.js'
+import type { AttributeOfRowWithAttachment } from '../types/mixin.js'
 
 import {
   beforeSave,
@@ -23,8 +23,8 @@ import logger from '@adonisjs/core/services/logger'
 type Constructor = NormalizeConstructor<typeof BaseModel>
 
 export function Attachmentable<T extends Constructor>(superclass: T) {
-  class ModelWithAttachment extends superclass {
-    $attachments: AttributeOfModelWithAttachment = structuredClone(defaultStateAttributeMixin)
+  class RowWithAttachment extends superclass {
+    $attachments: AttributeOfRowWithAttachment = structuredClone(defaultStateAttributeMixin)
 
     @beforeCreate()
     @beforeFind()
@@ -38,5 +38,5 @@ export function Attachmentable<T extends Constructor>(superclass: T) {
     }
   }
 
-  return ModelWithAttachment
+  return RowWithAttachment
 }

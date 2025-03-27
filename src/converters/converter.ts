@@ -6,7 +6,8 @@
  */
 
 import type { BinPaths } from '../types/config.js'
-import type { Converter as ConverterInterface, ConverterOptions } from '../types/converter.js'
+import type { Converter as ConverterInterface, ConverterOptions, ConverterAttributes } from '../types/converter.js'
+import type { Input } from '../types/input.js'
 
 export default class Converter implements ConverterInterface {
   options?: ConverterOptions
@@ -15,5 +16,9 @@ export default class Converter implements ConverterInterface {
   constructor(options?: ConverterOptions, binPaths?: BinPaths) {
     this.options = options
     this.binPaths = binPaths
+  }
+
+  async handle({ input }: ConverterAttributes): Promise<Input> {
+    return input
   }
 }

@@ -11,7 +11,7 @@ import type { Attachment, LucidOptions } from '../types/attachment.js'
 import attachmentManager from '../../services/main.js'
 import { optionsSym } from '../utils/symbols.js'
 import { defaultOptionsDecorator } from '../utils/default_values.js'
-import type { AttributeOfModelWithAttachment } from '../types/mixin.js'
+import type { AttributeOfRowWithAttachment } from '../types/mixin.js'
 
 import {
   afterFindHook,
@@ -25,7 +25,7 @@ import { defaultStateAttributeMixin } from '../utils/default_values.js'
 
 export const bootModel = (
   model: LucidModel & {
-    $attachments: AttributeOfModelWithAttachment
+    $attachments: AttributeOfRowWithAttachment
   }
 ) => {
   model.boot()
@@ -97,7 +97,7 @@ const makeAttachmentDecorator =
       target[optionsSym][attributeName] = options
 
       const Model = target.constructor as LucidModel & {
-        $attachments: AttributeOfModelWithAttachment
+        $attachments: AttributeOfRowWithAttachment
       }
 
       bootModel(Model)

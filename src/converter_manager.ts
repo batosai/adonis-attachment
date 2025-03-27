@@ -1,6 +1,6 @@
 import type { LucidModel } from '@adonisjs/lucid/types/model'
 import type { Converter, ConverterInitializeAttributes } from './types/converter.js'
-import type { Attachment, LucidOptions } from './types/attachment.js'
+import type { Attachment, Variant, LucidOptions } from './types/attachment.js'
 import type { Record } from './types/service.js'
 
 import logger from '@adonisjs/core/services/logger'
@@ -8,87 +8,114 @@ import string from '@adonisjs/core/helpers/string'
 import db from '@adonisjs/lucid/services/db'
 import attachmentManager from '../services/main.js'
 import * as errors from './errors.js'
-import { imageToBlurhash } from './utils/helpers.js'
 
 export class ConverterManager {
   #record: Record
   #attributeName: string
   #options: LucidOptions
+  #filters?: {
+    variants?: string[]
+  }
 
-  constructor({ record, attributeName, options }: ConverterInitializeAttributes) {
+  constructor({ record, attributeName, options, filters }: ConverterInitializeAttributes) {
     this.#record = record
     this.#attributeName = attributeName
     this.#options = options
+    this.#filters = filters
   }
 
-  async save() {
-    let attachments: Attachment[] = this.#record.getAttachments({
+  async run() {
+    const attachments: Attachment[] = this.#record.getAttachments({
       attributeName: this.#attributeName,
     })
 
-    const Model = this.#record.model.constructor as LucidModel
-    const id = this.#record.model.$attributes['id']
-    const data: any = {}
+    const variants: Variant[] = []
 
-    if (this.#options.variants) {
-      for await (const option of this.#options.variants) {
-        const converter = (await attachmentManager.getConverter(option)) as Converter
+    await this.#purge(attachments)
 
-        if (attachments && converter) {
-          for await (const attachment of attachments) {
-            const input = attachment.input!
-            const output = await converter.handle!({
-              input,
-              options: converter.options!,
-            })
+    if (!attachments || !this.#options.variants || !this.#options.variants.length) {
+      return
+    }
 
-            if (output === undefined) {
-              throw new errors.E_CANNOT_PATH_BY_CONVERTER()
-            }
+    for await (const key of this.#options.variants) {
+      if (this.#filters?.variants !== undefined && !this.#filters?.variants?.includes(key)) {
+        continue
+      }
 
-            const variant = await attachment.createVariant(option, output)
+      const converter = (await attachmentManager.getConverter(key)) as Converter
 
-            if (converter.options!.blurhash) {
-              if (
-                (typeof converter.options!.blurhash !== 'boolean' &&
-                  converter.options!.blurhash.enabled === true) ||
-                converter.options!.blurhash === true
-              ) {
-                try {
-                  const options =
-                    typeof converter.options!.blurhash !== 'boolean'
-                      ? converter.options!.blurhash
-                      : undefined
-                  variant.blurhash = await imageToBlurhash(variant.input!, options)
-                } catch (error) {
-                  logger.error(error.message)
-                }
-              }
-            }
-
-            await attachmentManager.save(variant)
-          }
+      if (converter) {
+        for await (const attachment of attachments) {
+          const variant = await this.#generate({
+            key,
+            attachment,
+            converter
+          })
+          variants.push(variant)
         }
       }
     }
 
-    if (Array.isArray(this.#record.model.$original[this.#attributeName])) {
-      data[string.snakeCase(this.#attributeName)] = JSON.stringify(
+    return this.#commit(attachments, () => {
+      for (let i = 0; i < variants.length; i++) {
+        attachmentManager.remove(variants[i])
+      }
+    })
+  }
+
+  async #generate({ key, attachment, converter } : { key: string, attachment: Attachment, converter: Converter }) {
+    const input = attachment.input!
+    const output = await converter.handle({
+      input,
+      options: converter.options!,
+    })
+
+    if (output === undefined) {
+      throw new errors.E_CANNOT_PATH_BY_CONVERTER()
+    }
+
+    const variant = await attachment.createVariant(key, output)
+
+    if (converter.options!.blurhash) {
+      if (
+        (typeof converter.options!.blurhash !== 'boolean' &&
+          converter.options!.blurhash.enabled === true) ||
+        converter.options!.blurhash === true
+      ) {
+        try {
+          const options =
+            typeof converter.options!.blurhash !== 'boolean'
+              ? converter.options!.blurhash
+              : undefined
+
+          await variant.generateBlurhash(options)
+        } catch (error) {
+          logger.error(error.message)
+        }
+      }
+    }
+
+    await attachmentManager.write(variant)
+
+    return variant
+  }
+
+  async #commit(attachments: Attachment[], rollback: () => void) {
+    const Model = this.#record.row.constructor as LucidModel
+    const id = this.#record.row.$attributes['id']
+    const data: any = {}
+    const index = string.snakeCase(this.#attributeName)
+
+    if (Array.isArray(this.#record.row.$original[this.#attributeName])) {
+      data[index] = JSON.stringify(
         attachments.map((att) => att.toObject())
       )
     } else {
-      data[string.snakeCase(this.#attributeName)] = JSON.stringify(attachments[0].toObject())
+      data[index] = JSON.stringify(attachments[0].toObject())
     }
 
     const trx = await db.transaction()
-
-    trx.after('rollback', () => {
-      for (let i = 0; i < attachments.length; i++) {
-        for (const variant of attachments[i].variants!) {
-          attachmentManager.delete(variant)
-        }
-      }
-    })
+    trx.after('rollback', rollback)
 
     try {
       await trx.query().from(Model.table).where('id', id).update(data)
@@ -97,5 +124,28 @@ export class ConverterManager {
     } catch (error) {
       return trx.rollback()
     }
+  }
+
+  async #purge(attachments: Attachment[]) {
+    return Promise.all(
+      attachments.map(async (attachment) => {
+        if (attachment.variants) {
+          await Promise.all(
+            attachment.variants.map(async (variant) => {
+              if (this.#filters?.variants !== undefined && !this.#filters?.variants?.includes(variant.key)) {
+                return
+              }
+              return attachmentManager.remove(variant)
+            })
+          )
+
+          if (this.#filters?.variants !== undefined) {
+            attachment.variants = await attachment.variants.filter((variant) => !this.#filters?.variants?.includes(variant.key))
+          } else {
+            attachment.variants = []
+          }
+        }
+      })
+    )
   }
 }

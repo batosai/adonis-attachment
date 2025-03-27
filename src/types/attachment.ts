@@ -11,6 +11,7 @@ import type { Exif, Input } from './input.js'
 import type { Disk } from '@adonisjs/drive'
 import type { SignedURLOptions } from '@adonisjs/drive/types'
 import type { AttachmentVariants } from '@jrmc/adonis-attachment'
+import { BlurhashOptions } from './converter.js'
 
 export type AttachmentBase = {
   drive: DriveService
@@ -60,6 +61,7 @@ export type Variant = AttachmentBase & {
   folder: string
   blurhash?: string
 
+  generateBlurhash(options?: BlurhashOptions): void
   toObject(): VariantAttributes
 }
 

@@ -12,6 +12,7 @@ import type {
   AttachmentBase,
   Attachment as AttachmentType,
 } from './types/attachment.js'
+import type { ResolvedAttachmentConfig } from './define_config.js'
 
 import path from 'node:path'
 import { DeferQueue } from '@poppinss/defer'
@@ -20,7 +21,6 @@ import { Attachment } from './attachments/attachment.js'
 import Converter from './converters/converter.js'
 import { downloadToTempFile, isBase64, streamToTempFile } from './utils/helpers.js'
 import ExifAdapter from './adapters/exif.js'
-import { ResolvedAttachmentConfig } from './define_config.js'
 import { metaFormBuffer, metaFormFile } from './adapters/meta.js'
 import { cuid } from '@adonisjs/core/helpers'
 
@@ -38,10 +38,6 @@ export class AttachmentManager<KnownConverters extends Record<string, Converter>
     const concurrency = this.#config.queue?.concurrency || 1
 
     this.queue = new DeferQueue({ concurrency })
-  }
-
-  getConfig() {
-    return this.#config
   }
 
   createFromDbResponse(response?: string | JSON) {
@@ -173,7 +169,7 @@ export class AttachmentManager<KnownConverters extends Record<string, Converter>
     }
   }
 
-  async save(attachment: AttachmentBase) {
+  async write(attachment: AttachmentBase) {
     const destinationPath = attachment.path!
 
     if (attachment.options?.meta) {
@@ -189,7 +185,7 @@ export class AttachmentManager<KnownConverters extends Record<string, Converter>
     }
   }
 
-  async delete(attachment: AttachmentBase) {
+  async remove(attachment: AttachmentBase) {
     if (attachment.path) {
       await attachment.getDisk().delete(attachment.path)
 

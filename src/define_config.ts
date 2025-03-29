@@ -20,34 +20,36 @@ export type ResolvedAttachmentConfig<KnownConverters extends Record<string, Conv
   meta?: boolean
   rename?: boolean
   preComputeUrl?: boolean
-  converters?: {
-    [K in keyof KnownConverters]: KnownConverters[K]
-  }
+  converters?: { [K in keyof KnownConverters]: Converter }
   queue?: Queue
 }
 
-// export function defineConfig<T extends AttachmentConfig>(config: T): T {
 export function defineConfig<KnownConverter extends Record<string, ConverterConfig>>(
   config: AttachmentConfig<KnownConverter>
-): ConfigProvider<ResolvedAttachmentConfig<KnownConverter>> {
+): ConfigProvider<ResolvedAttachmentConfig<Record<string, Converter>>> {
   return configProvider.create(async (_app) => {
     const convertersList = Object.keys(config.converters || {})
-    const converters = {} as Record<string, BaseConverter>
+    const converters: Record<string, BaseConverter> = {}
 
     if (config.converters) {
       for (let converterName of convertersList) {
         const converter = config.converters[converterName]
         const binConfig = config.bin
-        const { default: value } = await converter.converter()
-        const Converter = value as typeof BaseConverter
 
-        converters[converterName] = new Converter(converter.options, binConfig)
+        try {
+          const { default: value } = await converter.converter()
+          const Converter = value as typeof BaseConverter
+
+          converters[converterName] = new Converter(converter.options, binConfig)
+        } catch (error) {
+          console.error(`Failed to load converter ${converterName}:`, error)
+        }
       }
     }
 
     return {
       ...config,
       converters,
-    } as ResolvedAttachmentConfig<KnownConverter>
+    } as ResolvedAttachmentConfig<Record<string, Converter>>
   })
 }

@@ -96,6 +96,10 @@ export class AttachmentBase implements AttachmentBaseInterface {
     return this.drive.use(this.options?.disk)
   }
 
+  getStream() {
+    return this.getDisk().getStream(this.path)
+  }
+
   getUrl() {
     return this.getDisk().getUrl(this.path)
   }

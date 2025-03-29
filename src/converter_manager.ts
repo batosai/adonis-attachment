@@ -8,6 +8,7 @@ import string from '@adonisjs/core/helpers/string'
 import db from '@adonisjs/lucid/services/db'
 import attachmentManager from '../services/main.js'
 import * as errors from './errors.js'
+import { streamToTempFile } from './utils/helpers.js'
 
 export class ConverterManager {
   #record: Record
@@ -64,7 +65,14 @@ export class ConverterManager {
   }
 
   async #generate({ key, attachment, converter } : { key: string, attachment: Attachment, converter: Converter }) {
-    const input = attachment.input!
+    let input = attachment.input
+
+    if (!input) {
+      input = await streamToTempFile(
+        await attachment.getStream()
+      )
+    }
+
     const output = await converter.handle({
       input,
       options: converter.options!,

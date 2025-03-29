@@ -9,7 +9,6 @@ import { test } from '@japa/runner'
 
 import type { Attachment } from '../src/types/attachment.js'
 
-import { setTimeout } from 'node:timers/promises'
 import { BaseModel, column } from '@adonisjs/lucid/orm'
 import Factory from '@adonisjs/lucid/factories'
 import { DateTime } from 'luxon'

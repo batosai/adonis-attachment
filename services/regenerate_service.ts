@@ -1,32 +1,42 @@
-import type { LucidRow } from '@adonisjs/lucid/types/model'
+import type { LucidRow, LucidModel } from '@adonisjs/lucid/types/model'
 import type { RowWithAttachment } from '../src/types/mixin.js'
 import type { RegenerateOptions } from '../src/types/regenerate.js'
 
 import Record from '../src/services/record_with_attachment.js'
 
 export default class RegenerateService {
-  #record?: Record
-  // #Model?: LucidModel
+  #Model?: LucidModel
   #row?: RowWithAttachment
   #options?: RegenerateOptions
 
-  // model(Object: LucidModel, options: RegenerateOptions) {
-  //   this.#Model = Object
-  //   this.#options = options
-  // }
+  model(Model: LucidModel, options: RegenerateOptions = {}) {
+    this.#Model = Model
+    this.#options = options
+
+    return this
+  }
 
   row(row: LucidRow, options: RegenerateOptions = {}) {
     this.#row = row as RowWithAttachment
     this.#options = options
 
-    this.#record = new Record(this.#row)
-
     return this
   }
 
-  run() {
-    if (this.#record) {
-      this.#record.regenerateVariants(this.#options)
+  async run() {
+    if (this.#row) {
+      const record = new Record(this.#row)
+      return record.regenerateVariants(this.#options)
+    }
+    else if (this.#Model) {
+      const entities = await this.#Model.all() as RowWithAttachment[]
+
+      return Promise.all(
+        entities.map(async (entity) => {
+          const record = new Record(entity)
+          return record.regenerateVariants(this.#options)
+        })
+      )
     }
   }
 }

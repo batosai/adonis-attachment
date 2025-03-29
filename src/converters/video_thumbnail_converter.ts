@@ -16,13 +16,13 @@ import ImageConverter from './image_converter.js'
 import { bufferToTempFile, use } from '../utils/helpers.js'
 
 export default class VideoThumbnailConvert extends Converter {
-  async handle({ input, options }: ConverterAttributes) {
+  async handle({ input, options }: ConverterAttributes): Promise<Input | undefined> {
     const ffmpeg = await use('fluent-ffmpeg')
     const filePath = await this.videoToImage(ffmpeg, input)
 
     if (options && filePath) {
       const converter = new ImageConverter()
-      return await converter.handle({
+      return converter.handle({
         input: filePath,
         options,
       })
@@ -38,7 +38,7 @@ export default class VideoThumbnailConvert extends Converter {
       file = await bufferToTempFile(input)
     }
 
-    return new Promise<string | false>((resolve, reject) => {
+    return new Promise<string | undefined>((resolve, reject) => {
       const folder = os.tmpdir()
       const filename = `${cuid()}.png`
 

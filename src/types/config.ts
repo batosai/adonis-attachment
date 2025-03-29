@@ -5,8 +5,9 @@
  * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
  */
 
-import { ConfigProvider } from '@adonisjs/core/types'
 import type { Converter, ConverterOptions } from './converter.js'
+
+import { ConfigProvider } from '@adonisjs/core/types'
 import { AttachmentManager } from '../attachment_manager.js'
 
 type ImportConverter = {

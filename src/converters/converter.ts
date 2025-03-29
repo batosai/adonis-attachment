@@ -18,7 +18,7 @@ export default class Converter implements ConverterInterface {
     this.binPaths = binPaths
   }
 
-  async handle({ input }: ConverterAttributes): Promise<Input> {
+  async handle({ input }: ConverterAttributes): Promise<Input | undefined> {
     return input
   }
 }

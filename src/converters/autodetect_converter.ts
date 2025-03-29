@@ -6,6 +6,7 @@
  */
 
 import type { ConverterAttributes } from '../types/converter.js'
+import type { Input } from '../types/input.js'
 
 import { fileTypeFromBuffer, fileTypeFromFile } from 'file-type'
 import Converter from './converter.js'
@@ -13,7 +14,7 @@ import ImageConverter from './image_converter.js'
 import VideoThumnailConverter from './video_thumbnail_converter.js'
 
 export default class AutodetectConverter extends Converter {
-  async handle({ input, options }: ConverterAttributes) {
+  async handle({ input, options }: ConverterAttributes): Promise<Input | undefined> {
     let converter
     let fileType
 
@@ -23,17 +24,15 @@ export default class AutodetectConverter extends Converter {
       fileType = await fileTypeFromFile(input)
     }
 
-    if (fileType?.mime.includes('image')) {
-      converter = new ImageConverter(options, this.binPaths)
-    } else if (fileType?.mime.includes('video')) {
+    if (fileType?.mime.includes('video')) {
       converter = new VideoThumnailConverter(options, this.binPaths)
+    } else {
+      converter = new ImageConverter(options, this.binPaths)
     }
 
-    if (converter) {
-      return await converter.handle({
-        input,
-        options,
-      })
-    }
+    return converter.handle({
+      input,
+      options,
+    })
   }
 }

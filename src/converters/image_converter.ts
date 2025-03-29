@@ -23,7 +23,7 @@ export default class ImageConverter extends Converter {
       format = format.format
     }
 
-    const buffer = await sharp(input)
+    const buffer: Input = await sharp(input)
       .withMetadata()
       .resize(resize)
       .toFormat(format, formatoptions)

@@ -310,12 +310,14 @@ export default class Record implements RecordImplementation {
       const isDirtyAttachment =
         dirtyValue instanceof Attachment ||
         (Array.isArray(dirtyValue) &&
-          dirtyValue.every((item) => item instanceof Attachment) &&
-          dirtyValue.length)
+          dirtyValue.length &&
+          dirtyValue.every((item) => item instanceof Attachment))
 
       const isOriginalAttachment =
         originalValue instanceof Attachment ||
-        (Array.isArray(originalValue) && originalValue.every((item) => item instanceof Attachment))
+        (Array.isArray(originalValue) &&
+          originalValue.length &&
+          originalValue.every((item) => item instanceof Attachment))
 
       return isDirtyAttachment || isOriginalAttachment
     })

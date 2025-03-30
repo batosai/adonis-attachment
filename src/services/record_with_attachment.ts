@@ -258,13 +258,20 @@ export default class Record implements RecordImplementation {
   }
 
   getAttachments(options: { attributeName: string, requiredOriginal?: boolean, requiredDirty?: boolean }) {
+    let attachments
+
     if (options.requiredOriginal) {
-      return this.#getOriginalAttachmentsByAttributeName(options.attributeName)
+      attachments = this.#getOriginalAttachmentsByAttributeName(options.attributeName)
     } else if (options.requiredDirty) {
-      return this.#getDirtyAttachmentsByAttributeName(options.attributeName)
+      attachments = this.#getDirtyAttachmentsByAttributeName(options.attributeName)
     } else {
-      return this.#getAttachmentsByAttributeName(options.attributeName)
+      attachments = this.#getAttachmentsByAttributeName(options.attributeName)
     }
+
+    const opts = this.#getOptionsByAttributeName(options.attributeName)
+    attachments.map((attachment) => attachment.setOptions(opts).makeFolder(this.#row))
+
+    return attachments
   }
 
   #getAttachmentsByAttributeName(name: string): AttachmentType[] {

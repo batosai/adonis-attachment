@@ -20,13 +20,13 @@ export type ResolvedAttachmentConfig<KnownConverters extends Record<string, Conv
   meta?: boolean
   rename?: boolean
   preComputeUrl?: boolean
-  converters?: { [K in keyof KnownConverters]: Converter }
+  converters?: { [K in keyof KnownConverters]: KnownConverters[K] }
   queue?: Queue
 }
 
 export function defineConfig<KnownConverter extends Record<string, ConverterConfig>>(
   config: AttachmentConfig<KnownConverter>
-): ConfigProvider<ResolvedAttachmentConfig<Record<string, Converter>>> {
+): ConfigProvider<ResolvedAttachmentConfig<KnownConverter>> {
   return configProvider.create(async (_app) => {
     const convertersList = Object.keys(config.converters || {})
     const converters: Record<string, BaseConverter> = {}
@@ -50,6 +50,6 @@ export function defineConfig<KnownConverter extends Record<string, ConverterConf
     return {
       ...config,
       converters,
-    } as ResolvedAttachmentConfig<Record<string, Converter>>
+    } as ResolvedAttachmentConfig<KnownConverter>
   })
 }

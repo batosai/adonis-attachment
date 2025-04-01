@@ -73,7 +73,7 @@ export class ConverterManager {
       )
     }
 
-    const output = await converter.handle({
+    const output = await converter.handle!({
       input,
       options: converter.options!,
     })

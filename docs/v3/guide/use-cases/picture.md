@@ -129,10 +129,11 @@ export default defineConfig({
 ```
 ```ts [app/models/article.ts]
 import { BaseModel } from '@adonisjs/lucid/orm'
-import { attachment } from '@jrmc/adonis-attachment'
+import { compose } from '@adonisjs/core/helpers'
+import { attachment, Attachmentable } from '@jrmc/adonis-attachment'
 import type { Attachment } from '@jrmc/adonis-attachment/types/attachment'
 
-class User extends BaseModel { 
+class User extends compose(BaseModel, Attachmentable) { 
   @attachment({
     variants: ['small', 'medium', 'large'] 
   }) 

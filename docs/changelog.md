@@ -1,11 +1,13 @@
 # Changelog
 
-## 3.3.0
+## 4.0.0
 
+* add [regenerate Variants](/guide/advanced_usage/regenerate-variant)
 * add [attachments](/guide/basic_usage/model-setup#attachments-decorator) decorator
 * add [blurhash](/guide/converters/image.html#blurhash)
 * add path parameter and function in [folder options](/guide/basic_usage/model-setup#specifying-folder)
 * fix tests variants
+* remove deprecated Attachmentable mixin
 
 > Released at *2025-03-07*
 

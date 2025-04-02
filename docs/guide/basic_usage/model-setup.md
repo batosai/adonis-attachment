@@ -1,18 +1,15 @@
 # Model setup
 
-Next, in the model, import the `attachment` decorator, `Attachmentable` mixin and the `Attachment` type from the package.
-
-⚠️ [The "Attachmentable" mixin is deprecated in 3.2.0](/changelog#_3-2-0) 
+Next, in the model, import the `attachment` decorator and the `Attachment` type from the package.
 
 > Make sure NOT to use the `@column` decorator when using the `@attachment` decorator.
 
 ```ts
 import { BaseModel } from '@adonisjs/lucid/orm'
-import { compose } from '@adonisjs/core/helpers'
-import { attachment, Attachmentable } from '@jrmc/adonis-attachment' // [!code highlight]
+import { attachment } from '@jrmc/adonis-attachment' // [!code highlight]
 import type { Attachment } from '@jrmc/adonis-attachment/types/attachment' // [!code highlight]
 
-class User extends compose(BaseModel, Attachmentable) { // [!code highlight]
+class User extends BaseModel { // [!code highlight]
   @attachment() // [!code highlight]
   declare avatar: Attachment // [!code highlight]
 }
@@ -29,7 +26,7 @@ class User extends BaseModel {
 }
 ```
 
-by path parameters (⚠️ [avalable in v3.3.0](/changelog#_3-3-0))
+by path parameters (⚠️ [avalable in v4.0.0](/changelog#_4-0-0))
 
 ```ts
 class User extends BaseModel {
@@ -47,7 +44,7 @@ Only parameters of the string type are allowed. Additionally, the following proc
 - no case
 - slugify
 
-custom  (⚠️ [avalable in v3.3.0](/changelog#_3-3-0))
+custom  (⚠️ [avalable in v4.0.0](/changelog#_4-0-0))
 
 ```ts
 class User extends BaseModel {
@@ -131,7 +128,7 @@ class User extends BaseModel {
 
 ## `attachments` decorator
 
-⚠️ [avalable in v3.3.0](/changelog#_3-3-0)
+⚠️ [avalable in v4.0.0](/changelog#_4-0-0)
 
 `attachments` decorator is a array of Attachment object, it'a accept all options of `attachment`
 

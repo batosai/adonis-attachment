@@ -6,9 +6,9 @@ For those couple of queries, you can manually compute the URLs within the contro
 
 ```ts
 import type { Attachment } from '@jrmc/adonis-attachment/types/attachment'
-import { attachment, attachmentManager } from '@jrmc/adonis-attachment'
+import { attachment, Attachmentable, attachmentManager } from '@jrmc/adonis-attachment'
 
-class User extends BaseModel {
+class User extends compose(BaseModel, Attachmentable) {
   static async preComputeUrls(models: User | User[]) {
     if (Array.isArray(models)) {
       await Promise.all(models.map((model) => this.preComputeUrls(model)))

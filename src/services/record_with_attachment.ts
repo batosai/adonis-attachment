@@ -1,6 +1,6 @@
 import type { RowWithAttachment } from '../types/mixin.js'
 import type { Attachment as AttachmentType, LucidOptions } from '../types/attachment.js'
-import type { Record as RecordImplementation } from '../types/service.js'
+import type { RecordWithAttachment as RecordWithAttachmentImplementation } from '../types/service.js'
 import type { RegenerateOptions } from '../types/regenerate.js'
 
 import attachmentManager from '../../services/main.js'
@@ -10,7 +10,7 @@ import { optionsSym } from '../utils/symbols.js'
 import { ConverterManager } from '../converter_manager.js'
 import { E_CANNOT_CREATE_VARIANT } from '../errors.js'
 
-export default class Record implements RecordImplementation {
+export default class RecordWithAttachment implements RecordWithAttachmentImplementation {
   #row: RowWithAttachment
 
   constructor(row: RowWithAttachment) {

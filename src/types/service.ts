@@ -1,7 +1,7 @@
 import type { Attachment } from './attachment.js'
 import type { RowWithAttachment } from './mixin.js'
 
-export interface Record {
+export interface RecordWithAttachment {
   row: RowWithAttachment
   commit(): Promise<void>
   rollback(): Promise<void>

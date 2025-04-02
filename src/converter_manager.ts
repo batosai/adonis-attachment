@@ -1,7 +1,7 @@
 import type { LucidModel } from '@adonisjs/lucid/types/model'
 import type { Converter, ConverterInitializeAttributes } from './types/converter.js'
 import type { Attachment, Variant, LucidOptions } from './types/attachment.js'
-import type { Record } from './types/service.js'
+import type { RecordWithAttachment } from './types/service.js'
 
 import logger from '@adonisjs/core/services/logger'
 import string from '@adonisjs/core/helpers/string'
@@ -11,7 +11,7 @@ import * as errors from './errors.js'
 import { streamToTempFile } from './utils/helpers.js'
 
 export class ConverterManager {
-  #record: Record
+  #record: RecordWithAttachment
   #attributeName: string
   #options: LucidOptions
   #filters?: {

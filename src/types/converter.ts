@@ -5,7 +5,7 @@
  * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
  */
 
-import type { Record } from './service.js'
+import type { RecordWithAttachment } from './service.js'
 import type { BinPaths } from './config.js'
 import type { Input } from './input.js'
 import type { LucidOptions } from './attachment.js'
@@ -17,7 +17,7 @@ export type Converter = {
 }
 
 export type ConverterInitializeAttributes = {
-  record: Record
+  record: RecordWithAttachment
   attributeName: string
   options: LucidOptions
   filters?: {

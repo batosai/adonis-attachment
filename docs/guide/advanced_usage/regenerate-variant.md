@@ -2,6 +2,8 @@
 
 You can regenerate the different variants using the `RegenerateService`.
 
+⚠️ [change in v4.0.0](/changelog#_4-0-0)
+
 ## Regeneration by Row
 
 ```ts

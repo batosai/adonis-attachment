@@ -2,6 +2,12 @@
 
 ## 4.0.0
 
+In beta use:
+
+```sh
+node ace add @jrmc/adonis-attachment@beta
+```
+
 * add [regenerate Variants](/guide/advanced_usage/regenerate-variant)
 * add [attachments](/guide/basic_usage/model-setup#attachments-decorator) decorator
 * add [blurhash](/guide/converters/image.html#blurhash)
@@ -9,7 +15,7 @@
 * fix tests variants
 * remove deprecated Attachmentable mixin
 
-> Released at *2025-03-07*
+> Released at *2025-04-02*
 
 ## 3.2.2
 

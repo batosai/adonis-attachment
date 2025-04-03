@@ -10,12 +10,13 @@ node ace add @jrmc/adonis-attachment@beta
 
 * add [regenerate Variants](/guide/advanced_usage/regenerate-variant)
 * add [attachments](/guide/basic_usage/model-setup#attachments-decorator) decorator
+* add [createFromFiles] (/guide/basic_usage/controller-setup.html#from-files)
 * add [blurhash](/guide/converters/image.html#blurhash)
 * add path parameter and function in [folder options](/guide/basic_usage/model-setup#specifying-folder)
 * fix tests variants
 * remove deprecated Attachmentable mixin
 
-> Released at *2025-04-02*
+> Released at *2025-04-03*
 
 ## 3.2.2
 

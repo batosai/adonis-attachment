@@ -105,13 +105,13 @@ const attachmentConfig = defineConfig({
     thumbnail: { // [!code focus:10]
       converter: () => import('@jrmc/adonis-attachment/converters/image_converter'), 
       options: {
-        // blurhash: true
+        blurhash: true
         // or
-        blurhash: {
-          enabled: true,
-          componentX: 4,
-          componentY: 4
-        }
+        // blurhash: {
+        //   enabled: true,
+        //   componentX: 4,
+        //   componentY: 4
+        // }
       }
     }
   }

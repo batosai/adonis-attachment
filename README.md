@@ -26,7 +26,7 @@ Project sample : [adonis-starter-kit](https://github.com/batosai/adonis-starter-
     - [x] [blurhash](https://blurha.sh/)
   - [x] documents thumbnail
   - [x] videos thumbnail
-- [ ] command regenerate
+- [x] command regenerate
 - [x] command make:convert
 - [x] adonis-drive/flydrive
 - [x] jobs queue

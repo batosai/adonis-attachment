@@ -1,24 +1,21 @@
 # Model setup
 
-Next, in the model, import the `attachment` decorator, `Attachmentable` mixin and the `Attachment` type from the package.
-
-⚠️ [The "Attachmentable" mixin is deprecated in 3.2.0](/changelog#_3-2-0) 
+Next, in the model, import the `attachment` decorator and the `Attachment` type from the package.
 
 > Make sure NOT to use the `@column` decorator when using the `@attachment` decorator.
 
 ```ts
 import { BaseModel } from '@adonisjs/lucid/orm'
-import { compose } from '@adonisjs/core/helpers'
-import { attachment, Attachmentable } from '@jrmc/adonis-attachment'
+import { attachment } from '@jrmc/adonis-attachment' // [!code highlight]
 import type { Attachment } from '@jrmc/adonis-attachment/types/attachment' // [!code highlight]
 
-class User extends compose(BaseModel, Attachmentable) { // [!code highlight]
+class User extends BaseModel { // [!code highlight]
   @attachment() // [!code highlight]
   declare avatar: Attachment // [!code highlight]
 }
 ```
 
-## Specifying subfolder
+## Specifying folder
 
 You can also store files inside the subfolder by defining the `folder` property as follows.
 
@@ -28,6 +25,42 @@ class User extends BaseModel {
   declare avatar: Attachment
 }
 ```
+
+by path parameters (⚠️ [avalable in v4.0.0](/changelog#_4-0-0))
+
+```ts
+class User extends BaseModel {
+  @column()
+  declare name: string
+
+  @attachment({ folder: 'uploads/:name/avatars' }) // [!code highlight]
+  declare avatar: Attachment
+}
+```
+
+Only parameters of the string type are allowed. Additionally, the following processes are performed:
+- lowercase
+- escape html
+- no case
+- slugify
+
+custom  (⚠️ [avalable in v4.0.0](/changelog#_4-0-0))
+
+```ts
+class User extends BaseModel {
+  @column()
+  declare name: string
+
+  @attachment({ folder: () => DateTime.now().toFormat('yyyy/MM') }) // [!code highlight]
+  declare avatar: Attachment
+
+  @attachment({ folder: (user: User) => user.name }) // [!code highlight]
+  declare file: Attachment
+}
+```
+
+⚠️ :id autoincrement parameter is not defined on first save
+
 
 ## Specifying variants
 
@@ -93,4 +126,23 @@ class User extends BaseModel {
 }
 ```
 
+## `attachments` decorator
 
+⚠️ [avalable in v4.0.0](/changelog#_4-0-0)
+
+`attachments` decorator is a array of Attachment object, it'a accept all options of `attachment`
+
+```ts
+import { BaseModel } from '@adonisjs/lucid/orm'
+import { compose } from '@adonisjs/core/helpers'
+import { attachments } from '@jrmc/adonis-attachment'  // [!code highlight]
+import type { Attachment } from '@jrmc/adonis-attachment/types/attachment'
+
+class User extends BaseModel {
+  @attachments() // [!code highlight]
+  declare files: Attachment[] | null
+}
+```
+
+
+⚠️ Depending on the number of objects and processing, the `attachments` decorator can be very resource-intensive. I recommend using a HasMany relationship in Lucid to manage `attachment` decorator.

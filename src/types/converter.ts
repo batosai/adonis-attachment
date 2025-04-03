@@ -5,9 +5,10 @@
  * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
  */
 
+import type { RecordWithAttachment } from './service.js'
 import type { BinPaths } from './config.js'
 import type { Input } from './input.js'
-import type { ModelWithAttachment } from './mixin.js'
+import type { LucidOptions } from './attachment.js'
 
 export type Converter = {
   options?: ConverterOptions
@@ -16,8 +17,12 @@ export type Converter = {
 }
 
 export type ConverterInitializeAttributes = {
-  record: ModelWithAttachment
+  record: RecordWithAttachment
   attributeName: string
+  options: LucidOptions
+  filters?: {
+    variants?: string[]
+  }
 }
 
 export type ConverterAttributes = {
@@ -25,22 +30,28 @@ export type ConverterAttributes = {
   options: ConverterOptions
 }
 
+export type BlurhashOptions = {
+  enabled: boolean
+  componentX: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
+  componentY: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
+}
+
 type jpeg = {
   format: 'jpeg'
   options: {
     quality?: number
-    progressive?: Boolean
+    progressive?: boolean
     chromaSubsampling?: string
-    optimiseCoding?: Boolean
-    optimizeCoding?: Boolean
-    mozjpeg?: Boolean
-    trellisQuantisation?: Boolean
-    overshootDeringing?: Boolean
-    optimiseScans?: Boolean
-    optimizeScans?: Boolean
+    optimiseCoding?: boolean
+    optimizeCoding?: boolean
+    mozjpeg?: boolean
+    trellisQuantisation?: boolean
+    overshootDeringing?: boolean
+    optimiseScans?: boolean
+    optimizeScans?: boolean
     quantisationTable?: number
     quantizationTable?: number
-    force?: Boolean
+    force?: boolean
   }
 }
 
@@ -48,23 +59,23 @@ type png = {
   format: 'png'
   options: {
     quality?: number
-    progressive?: Boolean
+    progressive?: boolean
     compressionLevel?: number
-    adaptiveFiltering?: Boolean
-    palette?: Boolean
+    adaptiveFiltering?: boolean
+    palette?: boolean
     effort?: number
     colours?: number
     colors?: number
     dither?: number
-    force?: Boolean
+    force?: boolean
   }
 }
 
 type gif = {
   format: 'gif'
   options: {
-    reuse?: Boolean
-    progressive?: Boolean
+    reuse?: boolean
+    progressive?: boolean
     colours?: number
     colors?: number
     effort?: number
@@ -73,7 +84,7 @@ type gif = {
     interPaletteMaxError?: number
     loop?: number
     delay?: number | number[]
-    force?: Boolean
+    force?: boolean
   }
 }
 
@@ -82,16 +93,16 @@ type webp = {
   options: {
     quality?: number
     alphaQuality?: number
-    lossless?: Boolean
-    nearLossless?: Boolean
-    smartSubsample?: Boolean
+    lossless?: boolean
+    nearLossless?: boolean
+    smartSubsample?: boolean
     preset?: string
     effort?: number
     loop?: number
     delay?: number | number[]
-    minSize?: Boolean
-    mixed?: Boolean
-    force?: Boolean
+    minSize?: boolean
+    mixed?: boolean
+    force?: boolean
   }
 }
 
@@ -99,7 +110,7 @@ type avif = {
   format: 'avif'
   options: {
     quality?: number
-    lossless?: Boolean
+    lossless?: boolean
     effort?: number
     chromaSubsampling?: string
     bitdepth?: number
@@ -111,7 +122,7 @@ type heif = {
   options: {
     compression?: string
     quality?: number
-    lossless?: Boolean
+    lossless?: boolean
     effort?: number
     chromaSubsampling?: string
     bitdepth?: number
@@ -135,9 +146,9 @@ export type ConverterOptions = {
               alpha: number
             }
         kernel?: string
-        withoutEnlargement?: Boolean
-        withoutReduction?: Boolean
-        fastShrinkOnLoad?: Boolean
+        withoutEnlargement?: boolean
+        withoutReduction?: boolean
+        fastShrinkOnLoad?: boolean
       }
   format?:
     | 'jpeg'
@@ -155,4 +166,5 @@ export type ConverterOptions = {
     | webp
     | avif
     | heif
+  blurhash?: boolean | BlurhashOptions
 }

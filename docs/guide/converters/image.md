@@ -5,7 +5,7 @@
 ## Configuration
 
 ```typescript
-// config/attachment.ts // [!code focus:1]
+// config/attachment.ts
 const attachmentConfig = defineConfig({
   converters: {
     large: { // [!code focus:6]
@@ -95,6 +95,27 @@ declare module '@jrmc/adonis-attachment' {
 }
 ```
 
+## BlurHash
 
+The blurhash option is used to enable, disable, and customise the generation of blurhashes ([https://blurha.sh/](https://blurha.sh/)) for the variants. Blurhash generation is disabled by default.
 
+```typescript
+const attachmentConfig = defineConfig({
+  converters: {
+    thumbnail: { // [!code focus:10]
+      converter: () => import('@jrmc/adonis-attachment/converters/image_converter'), 
+      options: {
+        blurhash: true
+        // or
+        // blurhash: {
+        //   enabled: true,
+        //   componentX: 4,
+        //   componentY: 4
+        // }
+      }
+    }
+  }
+})
+```
 
+For more about componentX and componentY properties read [here](https://github.com/woltapp/blurhash?tab=readme-ov-file#how-do-i-pick-the-number-of-x-and-y-components).

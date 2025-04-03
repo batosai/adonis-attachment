@@ -18,6 +18,27 @@ class UsersController {
 }
 ```
 
+## From files
+
+Now you can create an attachments from the user uploaded files as follows.
+
+⚠️ [avalable in v4.0.0](/changelog#_4-0-0)
+
+
+```ts
+import { attachmentManager } from '@jrmc/adonis-attachment' // [!code focus]
+
+class UsersController {
+  public store({ request }: HttpContext) {
+    const files = request.files('files')! // [!code focus]
+    const user = new User()
+
+    user.files = await attachmentManager.createFromFiles(files) // [!code focus]
+    await user.save()
+  }
+}
+```
+
 ## From Buffer
 
 ```ts
@@ -119,7 +140,7 @@ class UsersController {
 
 ::: code-group
 ```ts [model]
-class User extends compose(BaseModel, Attachmentable) { 
+class User extends BaseModel { 
   @attachment()
   declare avatar: Attachment | null
 }

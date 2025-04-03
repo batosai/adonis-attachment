@@ -5,11 +5,13 @@
  * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
  */
 
+import type { LucidRow } from '@adonisjs/lucid/types/model'
 import type { DriveService } from '@adonisjs/drive/types'
 import type { Exif, Input } from './input.js'
 import type { Disk } from '@adonisjs/drive'
 import type { SignedURLOptions } from '@adonisjs/drive/types'
 import type { AttachmentVariants } from '@jrmc/adonis-attachment'
+import { BlurhashOptions } from './converter.js'
 
 export type AttachmentBase = {
   drive: DriveService
@@ -27,9 +29,11 @@ export type AttachmentBase = {
   originalPath?: string
   url?: string
 
-  options?: LucidOptions
+  options: LucidOptions
 
+  makeFolder(record?: LucidRow): void
   getDisk(): Disk
+  getStream(): Promise<NodeJS.ReadableStream>
   getUrl(): Promise<string>
   getSignedUrl(signedUrlOptions?: SignedURLOptions): Promise<string>
 
@@ -56,13 +60,15 @@ export type Attachment = AttachmentBase & {
 export type Variant = AttachmentBase & {
   key: string
   folder: string
+  blurhash?: string
 
+  generateBlurhash(options?: BlurhashOptions): void
   toObject(): VariantAttributes
 }
 
 export type LucidOptions = {
   disk?: string
-  folder?: string
+  folder?: string | ((record?: LucidRow) => string)
   preComputeUrl?: boolean
   variants?: (keyof AttachmentVariants)[]
   rename?: boolean
@@ -87,4 +93,5 @@ export type AttachmentAttributes = AttachmentBaseAttributes & {
 export type VariantAttributes = AttachmentBaseAttributes & {
   key: string
   folder: string
+  blurhash?: string
 }

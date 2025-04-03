@@ -29,3 +29,21 @@ attachmentManager.queue.drained = function () {
 
 ```
 
+## Synchrone mode
+
+If you need to wait for all processes to complete, for example, for unit testing:
+
+
+```ts
+  const notifier = new Promise((resolve) => {
+    attachmentManager.queue.drained = resolve
+  })
+
+  generateUserWithAttachment()
+
+  await notifier
+
+  /**
+   * Tasks have been processed.
+   */
+```

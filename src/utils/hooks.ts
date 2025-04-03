@@ -5,124 +5,43 @@
  * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
  */
 
-import type { ModelWithAttachment } from '../types/mixin.js'
-
-import {
-  persistAttachment,
-  commit,
-  rollback,
-  generateVariants,
-  preComputeUrl,
-} from '../utils/actions.js'
-import {
-  clone,
-  getAttachmentAttributeNames,
-  getDirtyAttachmentAttributeNames,
-} from '../utils/helpers.js'
-import { defaultStateAttributeMixin } from '../utils/default_values.js'
+import type { RowWithAttachment } from '../types/mixin.js'
+import RecordWithAttachment from '../services/record_with_attachment.js'
 
 // @afterFind()
 export const afterFindHook = async (instance: unknown) => {
-  const modelInstance = instance as ModelWithAttachment
-  const attachmentAttributeNames = getAttachmentAttributeNames(modelInstance)
-
-  await Promise.all(
-    attachmentAttributeNames.map((attributeName) => {
-      return preComputeUrl(modelInstance, attributeName)
-    })
-  )
+  const modelInstance = instance as RowWithAttachment
+  const model = new RecordWithAttachment(modelInstance)
+  await model.preComputeUrl()
 }
 
 // @afterFetch()
 // @afterPaginate()
 export const afterFetchHook = async (instance: unknown) => {
-  const modelInstances = instance as ModelWithAttachment[]
+  const modelInstances = instance as RowWithAttachment[]
   await Promise.all(modelInstances.map((row) => afterFindHook(row)))
 }
 
 // @beforeSave()
 export const beforeSaveHook = async (instance: unknown) => {
-  const modelInstance = instance as ModelWithAttachment
-  const attachmentAttributeNames = getDirtyAttachmentAttributeNames(modelInstance)
-
-  /**
-   * Empty previous $attachments
-   */
-  modelInstance.$attachments = clone(defaultStateAttributeMixin)
-
-  /**
-   * Set attributes Attachment type modified
-   */
-  attachmentAttributeNames.forEach((attributeName) =>
-    modelInstance.$attachments.attributesModified.push(attributeName)
-  )
-
-  /**
-   * Persist attachments before saving the model to the database. This
-   * way if file saving fails we will not write anything to the
-   * database
-   */
-  await Promise.all(
-    attachmentAttributeNames.map((attributeName) => persistAttachment(modelInstance, attributeName))
-  )
-
-  try {
-    if (modelInstance.$trx) {
-      modelInstance.$trx.after('commit', () => commit(modelInstance))
-      modelInstance.$trx.after('rollback', () => rollback(modelInstance))
-    } else {
-      await commit(modelInstance)
-    }
-  } catch (error: unknown) {
-    await rollback(modelInstance)
-    throw error
-  }
+  const modelInstance = instance as RowWithAttachment
+  const model = new RecordWithAttachment(modelInstance)
+  await model.detach()
+  await model.persist()
+  await model.transaction()
 }
 
 // @afterSave()
 export const afterSaveHook = async (instance: unknown) => {
-  const modelInstance = instance as ModelWithAttachment
-  const attachmentAttributeNames = getAttachmentAttributeNames(modelInstance)
-
-  /**
-   * For all properties Attachment
-   * Launch async generation variants
-   */
-  await Promise.all(
-    attachmentAttributeNames.map((attributeName) => {
-      if (modelInstance.$attachments.attributesModified.includes(attributeName)) {
-        return generateVariants(modelInstance, attributeName)
-      }
-    })
-  )
+  const modelInstance = instance as RowWithAttachment
+  const model = new RecordWithAttachment(modelInstance)
+  await model.generateVariants()
 }
 
 // @beforeDelete()
 export const beforeDeleteHook = async (instance: unknown) => {
-  const modelInstance = instance as ModelWithAttachment
-  const attachmentAttributeNames = getAttachmentAttributeNames(modelInstance)
-
-  /**
-   * create $attachments
-   */
-  modelInstance.$attachments = clone(defaultStateAttributeMixin)
-
-  /**
-   * Mark all attachments for deletion
-   */
-  attachmentAttributeNames.map((attributeName) => {
-    if (modelInstance.$attributes[attributeName]) {
-      modelInstance.$attachments.detached.push(modelInstance.$attributes[attributeName])
-    }
-  })
-
-  /**
-   * If model is using transaction, then wait for the transaction
-   * to settle
-   */
-  if (modelInstance.$trx) {
-    modelInstance.$trx.after('commit', () => commit(modelInstance))
-  } else {
-    await commit(modelInstance)
-  }
+  const modelInstance = instance as RowWithAttachment
+  const model = new RecordWithAttachment(modelInstance)
+  await model.detachAll()
+  await model.transaction({ enabledRollback: false })
 }

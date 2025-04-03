@@ -65,7 +65,8 @@ Sample struture JSON in database
       },
       "mimeType":"image/webp",
       "path":"uploads/avatars/variants/xjfpa4tuxh66p6s3hrgl0pzn.jpg/ajtugq7224qp9moqyi216vur.webp",
-      "url": "/uploads/avatars/variants/[...]", 
+      "url": "/uploads/avatars/variants/[...]",
+      "blurhash": "UDIMp4S~0L0f01M{~B^j0gn*NGxG^Ot7M{NH" 
     }
   ]
 }

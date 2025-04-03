@@ -5,8 +5,8 @@
  * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
  */
 
-import type { LucidOptions } from '../types/attachment.js'
-import type { ModelWithAttachment } from '../types/mixin.js'
+import type { Input } from '../types/input.js'
+import type { BlurhashOptions } from '../types/converter.js'
 
 import os from 'node:os'
 import path from 'node:path'
@@ -15,32 +15,10 @@ import fs from 'node:fs/promises'
 import { pipeline } from 'node:stream'
 import { promisify } from 'node:util'
 import { createWriteStream, WriteStream } from 'node:fs'
-import { Attachment } from '../attachments/attachment.js'
+import BlurhashAdapter from '../adapters/blurhash.js'
 import * as errors from '../errors.js'
-import { optionsSym } from './symbols.js'
 
 const streamPipeline = promisify(pipeline)
-
-export function getAttachmentAttributeNames(modelInstance: ModelWithAttachment) {
-  return Object.keys(modelInstance.$attributes).filter(
-    (attr) => modelInstance.$attributes[attr] instanceof Attachment
-  )
-}
-
-export function getDirtyAttachmentAttributeNames(modelInstance: ModelWithAttachment) {
-  return Object.keys(modelInstance.$dirty).filter(
-    (attr) =>
-      modelInstance.$dirty[attr] instanceof Attachment ||
-      modelInstance.$original[attr] instanceof Attachment
-  )
-}
-
-export function getOptions(
-  modelInstance: ModelWithAttachment,
-  attributeName: string
-): LucidOptions {
-  return modelInstance.constructor.prototype[optionsSym]?.[attributeName]
-}
 
 export function cleanObject(obj: any) {
   if (obj === null || typeof obj !== 'object') {
@@ -65,10 +43,6 @@ export function cleanObject(obj: any) {
   }
 
   return cleanedObj
-}
-
-export function clone(object: Object) {
-  return JSON.parse(JSON.stringify(object))
 }
 
 export async function use(module: string) {
@@ -136,4 +110,43 @@ export function isBase64(str: string) {
   } catch (err) {
     return false
   }
+}
+
+export function imageToBlurhash(input: Input, options?: BlurhashOptions): Promise<string> {
+  const { componentX, componentY } = options || { componentX: 4, componentY: 4 }
+
+  return new Promise(async (resolve, reject) => {
+    try {
+      const sharp = await use('sharp')
+      // Convert input to pixels
+      const { data: pixels, info: metadata } = await sharp(input)
+        .raw()
+        .ensureAlpha()
+        .toBuffer({ resolveWithObject: true })
+
+      const blurhash = BlurhashAdapter.encode(
+        new Uint8ClampedArray(pixels),
+        metadata.width,
+        metadata.height,
+        componentX,
+        componentY
+      )
+
+      return resolve(blurhash)
+    } catch (error) {
+      return reject(error)
+    }
+  })
+}
+
+export function extractPathParameters(path: string): string[] {
+  const paramRegex = /:(\w+)/g
+  const parameters: string[] = []
+  let match
+
+  while ((match = paramRegex.exec(path)) !== null) {
+    parameters.push(match[1])
+  }
+
+  return parameters
 }

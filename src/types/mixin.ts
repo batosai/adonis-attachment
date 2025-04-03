@@ -8,12 +8,12 @@
 import type { LucidRow } from '@adonisjs/lucid/types/model'
 import type { Attachment } from './attachment.js'
 
-export type AttributeOfModelWithAttachment = {
+export type AttributeOfRowWithAttachment = {
   attached: Attachment[]
   detached: Attachment[]
-  attributesModified: string[]
+  dirtied: string[]
 }
 
-export type ModelWithAttachment = LucidRow & {
-  $attachments: AttributeOfModelWithAttachment
+export type RowWithAttachment = LucidRow & {
+  $attachments: AttributeOfRowWithAttachment
 }

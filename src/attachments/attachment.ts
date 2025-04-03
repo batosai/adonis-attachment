@@ -64,7 +64,7 @@ export class Attachment extends AttachmentBase implements AttachmentInterface {
     const attributes = {
       ...meta,
       key,
-      folder: path.join(this.options!.folder!, 'variants', this.name),
+      folder: path.join(this.folder!, 'variants', this.name),
     }
 
     const variant = new Variant(this.drive, attributes, input)
@@ -82,19 +82,22 @@ export class Attachment extends AttachmentBase implements AttachmentInterface {
     return this.variants?.find((v) => v.key === variantName)
   }
 
-  getUrl(variantName?: string) {
+  async getUrl(variantName?: string) {
     if (variantName) {
       const variant = this.getVariant(variantName)
       if (variant) {
         variant.setOptions(this.options!)
-        return variant.getUrl()
+        const url = await variant.getUrl()
+        if (url) {
+          return url
+        }
       }
     }
 
     return super.getUrl()
   }
 
-  getSignedUrl(
+  async getSignedUrl(
     variantNameOrOptions?: string | SignedURLOptions,
     signedUrlOptions?: SignedURLOptions
   ) {
@@ -111,7 +114,10 @@ export class Attachment extends AttachmentBase implements AttachmentInterface {
       const variant = this.getVariant(variantName)
       if (variant) {
         variant.setOptions(this.options!)
-        return variant.getSignedUrl(options)
+        const url = variant.getSignedUrl(options)
+        if (url) {
+          return url
+        }
       }
     }
 
@@ -168,6 +174,7 @@ export class Attachment extends AttachmentBase implements AttachmentInterface {
           mimeType: v.mimeType,
           meta: v.meta,
           size: v.size,
+          blurhash: v.blurhash,
         }
       })
     }

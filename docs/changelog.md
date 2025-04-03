@@ -2,7 +2,7 @@
 
 ## 4.0.0
 
-In beta use:
+Beta use:
 
 ```sh
 node ace add @jrmc/adonis-attachment@beta

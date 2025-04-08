@@ -73,6 +73,8 @@ export type LucidOptions = {
   variants?: (keyof AttachmentVariants)[]
   rename?: boolean
   meta?: boolean
+  serialize?: (value?: Attachment) => unknown
+  serializeAs?: string | null
 }
 
 export type AttachmentBaseAttributes = {

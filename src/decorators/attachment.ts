@@ -82,7 +82,7 @@ const makeColumnOptions = (options?: LucidOptions) => {
       }
     },
     prepare: (value?: Attachment) => (value ? JSON.stringify(value.toObject()) : null),
-    serialize: (value?: Attachment) => (value ? value.toJSON() : null),
+    serialize: options?.serialize !== undefined ? options?.serialize : (value?: Attachment) => (value ? value.toJSON() : null),
     ...columnOptions,
   }
 }

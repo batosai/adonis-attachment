@@ -10,7 +10,7 @@ node ace add @jrmc/adonis-attachment@beta
 
 * add [regenerate Variants](/guide/advanced_usage/regenerate-variant)
 * add [attachments](/guide/basic_usage/model-setup#attachments-decorator) decorator
-* add [createFromFiles] (/guide/basic_usage/controller-setup.html#from-files)
+* add [createFromFiles](/guide/basic_usage/controller-setup.html#from-files)
 * add [blurhash](/guide/converters/image.html#blurhash)
 * add path parameter and function in [folder options](/guide/basic_usage/model-setup#specifying-folder)
 * add [serializeAs](/guide/basic_usage/model-setup.html#re-naming-properties) and [serialize](/guide/basic_usage/model-setup.html#serialize) options decorator

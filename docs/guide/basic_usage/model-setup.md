@@ -126,6 +126,52 @@ class User extends BaseModel {
 }
 ```
 
+## Re-naming properties
+
+⚠️ [avalable in v4.0.0](/changelog#_4-0-0)
+
+[Just like the other Lucid attributes](https://lucid.adonisjs.com/docs/serializing-models#re-naming-properties), you can rename the serialized property names by using the  `serializeAs` option. You will still access the property by its actual name on the model, but the serialized output will use the `serializeAs` name. For example:
+
+```ts
+@attachment({
+  serializeAs: 'avatar', // [!code highlight]
+})
+declare file: Attachment | null
+
+/**
+ {
+  avatar: {
+    "name": 'lj9kbwvb8gqq8pjsmuog369l.jpg',
+    "originalName": 'photo_2023-11-19_00-21-49.jpg',
+    "size": 201654,
+    "extname": 'jpg',
+    "mimeType": 'image/jpeg',
+    ...
+  }
+ } 
+*/
+```
+
+## Serialize
+
+⚠️ [avalable in v4.0.0](/changelog#_4-0-0)
+
+You can customize the output of a serialize. For example:
+
+```ts
+@attachments({
+  preComputeUrl: true,
+  serialize: (value?: Attachment) => value?.url ?? null // [!code highlight]
+})
+declare avatar: Attachment | null
+
+/**
+ {
+  avatar: '/uploads/lj9kbwvb8gqq8pjsmuog369l.jpg',
+ } 
+*/
+```
+
 ## `attachments` decorator
 
 ⚠️ [avalable in v4.0.0](/changelog#_4-0-0)

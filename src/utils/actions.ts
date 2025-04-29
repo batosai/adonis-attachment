@@ -8,6 +8,7 @@
 import type { Attachment } from '../types/attachment.js'
 import type { ModelWithAttachment } from '../types/mixin.js'
 
+import logger from '@adonisjs/core/services/logger'
 import attachmentManager from '../../services/main.js'
 import { getOptions } from './helpers.js'
 import { ConverterManager } from '../converter_manager.js'
@@ -100,15 +101,18 @@ export async function generateVariants(modelInstance: ModelWithAttachment, attri
   attachmentManager.queue.push({
     name: `${modelInstance.constructor.name}-${attributeName}`,
     async run() {
-      try {
-        const converterManager = new ConverterManager({
-          record: modelInstance,
-          attributeName,
-        })
-        await converterManager.save()
-      } catch (err) {
-        throw new E_CANNOT_CREATE_VARIANT([err.message])
-      }
+      const converterManager = new ConverterManager({
+        record: modelInstance,
+        attributeName,
+      })
+      await converterManager.save()
     },
   })
+  .onError = function (error: any) {
+    if (error.message) {
+      logger.error(error.message)
+    } else {
+      throw new E_CANNOT_CREATE_VARIANT([error])
+    }
+  }
 }

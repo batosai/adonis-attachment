@@ -19,7 +19,14 @@ node ace add @jrmc/adonis-attachment@beta
 * fix prevent app crash when uploading files without extensions
 * remove deprecated Attachmentable mixin
 
-> Released at *2025-04-03*
+> Released at *2025-04-30*
+
+## 3.2.3
+
+* fix exception in queue, show information
+* fix prevent app crash when uploading files without extensions
+
+> Released at *2025-04-30*
 
 ## 3.2.2
 

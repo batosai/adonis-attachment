@@ -15,6 +15,8 @@ node ace add @jrmc/adonis-attachment@beta
 * add path parameter and function in [folder options](/guide/basic_usage/model-setup#specifying-folder)
 * add [serializeAs](/guide/basic_usage/model-setup.html#re-naming-properties) and [serialize](/guide/basic_usage/model-setup.html#serialize) options decorator
 * fix tests variants
+* fix exception in queue, show information
+* fix prevent app crash when uploading files without extensions
 * remove deprecated Attachmentable mixin
 
 > Released at *2025-04-03*

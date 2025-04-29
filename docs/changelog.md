@@ -1,5 +1,12 @@
 # Changelog
 
+## 3.2.3
+
+* fix exception in queue, show information
+* fix prevent app crash when uploading files without extensions
+
+> Released at *2025-04-30*
+
 ## 3.2.2
 
 * fix name of database column for update variant

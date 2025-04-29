@@ -3,6 +3,7 @@ import type { Attachment as AttachmentType, LucidOptions } from '../types/attach
 import type { RecordWithAttachment as RecordWithAttachmentImplementation } from '../types/service.js'
 import type { RegenerateOptions } from '../types/regenerate.js'
 
+import logger from '@adonisjs/core/services/logger'
 import attachmentManager from '../../services/main.js'
 import { defaultStateAttributeMixin } from '../utils/default_values.js'
 import { Attachment } from '../attachments/attachment.js'
@@ -134,7 +135,6 @@ export default class RecordWithAttachment implements RecordWithAttachmentImpleme
   async generateVariants(): Promise<void> {
     /* this.#row.$dirty is not avalable in afterSave hooks */
     const attachmentAttributeNames = this.#row.$attachments.dirtied
-
     /**
      * For all properties Attachment
      * Launch async generation variants
@@ -145,18 +145,21 @@ export default class RecordWithAttachment implements RecordWithAttachmentImpleme
       attachmentManager.queue.push({
         name: `${this.#row.constructor.name}-${name}`,
         async run() {
-          try {
-            const converterManager = new ConverterManager({
-              record,
-              attributeName: name,
-              options: record.#getOptionsByAttributeName(name),
-            })
-            await converterManager.run()
-          } catch (err) {
-            throw new E_CANNOT_CREATE_VARIANT([err.message])
-          }
+          const converterManager = new ConverterManager({
+            record,
+            attributeName: name,
+            options: record.#getOptionsByAttributeName(name),
+          })
+          await converterManager.run()
         },
       })
+      .onError = function (error: any) {
+        if (error.message) {
+          logger.error(error.message)
+        } else {
+          throw new E_CANNOT_CREATE_VARIANT([error])
+        }
+      }
     }
   }
 
@@ -174,21 +177,24 @@ export default class RecordWithAttachment implements RecordWithAttachmentImpleme
       attachmentManager.queue.push({
         name: `${this.#row.constructor.name}-${name}`,
         async run() {
-          try {
-            const converterManager = new ConverterManager({
-              record,
-              attributeName: name,
-              options: record.#getOptionsByAttributeName(name),
-              filters: {
-                variants: options.variants
-              }
-            })
-            await converterManager.run()
-          } catch (err) {
-            throw new E_CANNOT_CREATE_VARIANT([err.message])
-          }
+          const converterManager = new ConverterManager({
+            record,
+            attributeName: name,
+            options: record.#getOptionsByAttributeName(name),
+            filters: {
+              variants: options.variants
+            }
+          })
+          await converterManager.run()
         },
       })
+      .onError = function (error: any) {
+        if (error.message) {
+          logger.error(error.message)
+        } else {
+          throw new E_CANNOT_CREATE_VARIANT([error])
+        }
+      }
     }
   }
 

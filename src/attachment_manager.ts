@@ -60,8 +60,8 @@ export class AttachmentManager<KnownConverters extends Record<string, Converter>
   async createFromFile(input: MultipartFile) {
     const attributes = {
       originalName: input.clientName,
-      extname: input.extname!,
-      mimeType: `${input.type}/${input.subtype}`,
+      extname: input.extname || '',
+      mimeType: input.type && input.subtype ? `${input.type}/${input.subtype}` : '',
       size: input.size!,
     }
 

@@ -152,6 +152,19 @@ declare file: Attachment | null
 */
 ```
 
+## Hiding properties
+
+⚠️ [avalable in v4.0.0](/changelog#_4-0-0)
+
+You can remove the model properties from the serialized output by setting the serializeAs value to null. For example:
+
+```ts
+@attachment({
+  serializeAs: null, // [!code highlight]
+})
+declare file: Attachment | null
+```
+
 ## Serialize
 
 ⚠️ [avalable in v4.0.0](/changelog#_4-0-0)

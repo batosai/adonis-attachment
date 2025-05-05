@@ -96,6 +96,15 @@ export class AttachmentBase implements AttachmentBaseInterface {
     return this.drive.use(this.options?.disk)
   }
 
+  getBytes() {
+    return this.getDisk().getBytes(this.path)
+  }
+
+  async getBuffer() {
+    const arrayBuffer = await this.getBytes()
+    return Buffer.from(arrayBuffer)
+  }
+
   getStream() {
     return this.getDisk().getStream(this.path)
   }

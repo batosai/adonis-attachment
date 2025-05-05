@@ -33,6 +33,8 @@ export type AttachmentBase = {
 
   makeFolder(record?: LucidRow): void
   getDisk(): Disk
+  getBytes(): Promise<Uint8Array>
+  getBuffer(): Promise<Buffer>
   getStream(): Promise<NodeJS.ReadableStream>
   getUrl(): Promise<string>
   getSignedUrl(signedUrlOptions?: SignedURLOptions): Promise<string>

@@ -85,6 +85,10 @@ export default defineConfig({
                 text: 'View Setup',
                 link: '/guide/basic_usage/view-setup',
               },
+              {
+                text: 'Attachment Object',
+                link: '/guide/basic_usage/attachment-object',
+              },
             ],
           },
           {

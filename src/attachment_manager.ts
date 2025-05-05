@@ -24,7 +24,7 @@ import ExifAdapter from './adapters/exif.js'
 import { metaFormBuffer, metaFormFile } from './adapters/meta.js'
 import { cuid } from '@adonisjs/core/helpers'
 
-const REQUIRED_ATTRIBUTES = ['name', 'size', 'extname', 'mimeType']
+const REQUIRED_ATTRIBUTES = ['name', 'size', 'extname', 'mimeType'] as const;
 
 export class AttachmentManager<KnownConverters extends Record<string, Converter>> {
   queue

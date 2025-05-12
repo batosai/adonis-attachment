@@ -2,12 +2,6 @@
 
 ## 4.0.0
 
-Beta use:
-
-```sh
-node ace add @jrmc/adonis-attachment@beta
-```
-
 * add [regenerate Variants](/guide/advanced_usage/regenerate-variant)
 * add [attachments](/guide/basic_usage/model-setup#attachments-decorator) decorator
 * add [createFromFiles](/guide/basic_usage/controller-setup.html#from-files)
@@ -19,7 +13,7 @@ node ace add @jrmc/adonis-attachment@beta
 * fix prevent app crash when uploading files without extensions
 * remove deprecated Attachmentable mixin
 
-> Released at *2025-04-30*
+> Released at *2025-05-12*
 
 ## 3.2.3
 

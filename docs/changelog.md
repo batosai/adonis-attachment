@@ -1,5 +1,11 @@
 # Changelog
 
+## 4.0.1 (3.2.4 and 2.4.3)
+
+* fix issue #18 (PDF to Image conversion fails for documents with 10+ pages)
+
+> Released at *2025-05-25*
+
 ## 4.0.0
 
 * add [regenerate Variants](/guide/advanced_usage/regenerate-variant)

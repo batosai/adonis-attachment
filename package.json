@@ -87,8 +87,7 @@
   },
   "prettier": "@adonisjs/prettier-config",
   "publishConfig": {
-    "access": "public",
-    "tag": "latest"
+    "access": "public"
   },
   "volta": {
     "node": "20.17.0"

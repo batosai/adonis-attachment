@@ -40,6 +40,13 @@ export default class PdfThumbnailConverter extends Converter {
     }
 
     const poppler = new Poppler(binPath)
+
+    const pdfInfo = await poppler.pdfInfo(input)
+    const pagesMatch = pdfInfo.match(/Pages:\s*(\d+)/)
+    const pageCount = pagesMatch ? parseInt(pagesMatch[1]) : 1
+
+    const pageNumberFormat = '0'.repeat(String(pageCount).length - 1)
+
     const options = {
       // firstPageToConvert: 1,
       lastPageToConvert: 1,
@@ -49,6 +56,6 @@ export default class PdfThumbnailConverter extends Converter {
 
     await poppler.pdfToCairo(input, filePath, options)
 
-    return filePath + '-1.jpg'
+    return `${filePath}-${pageNumberFormat}1.jpg`
   }
 }

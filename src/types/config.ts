@@ -26,7 +26,8 @@ export interface Queue {
 export type BinPaths = {
   ffmpegPath?: string
   ffprobePath?: string
-  pdftocairoBasePath?: string
+  pdftoppmPath?: string
+  pdfinfoPath?: string
   libreofficePaths?: Array<string>
 }
 

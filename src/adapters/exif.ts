@@ -14,6 +14,7 @@ import { fileTypeFromBuffer, fileTypeFromFile } from 'file-type'
 import { bufferToTempFile, cleanObject } from '../utils/helpers.js'
 import { ResolvedAttachmentConfig } from '../define_config.js'
 import FFmpeg from './ffmpeg.js'
+import Poppler from './poppler.js'
 
 type KnownConverters = Record<string, Converter>
 
@@ -49,6 +50,10 @@ const exif = async (
 
   if (fileType?.mime.includes('video')) {
     return videoExif(input, config)
+  }
+
+  if (fileType?.mime.includes('pdf')) {
+    return pdfExif(input, config)
   }
 
   if (buffer && fileType?.mime.includes('image')) {
@@ -160,6 +165,38 @@ async function videoExif(input: Input, config: ResolvedAttachmentConfig<KnownCon
         duration: info.duration,
         videoCodec: info?.videoCodec,
         audioCodec: info?.audioCodec,
+      })
+    }
+  })
+}
+
+async function pdfExif(input: Input, config: ResolvedAttachmentConfig<KnownConverters>) {
+  return new Promise<Exif | undefined>(async (resolve) => {
+
+    let file = input
+    if (Buffer.isBuffer(input)) {
+      file = await bufferToTempFile(input)
+    }
+
+    const poppler = new Poppler(file as string)
+
+    if (config.bin) {
+      if (config.bin.pdfinfoPath) {
+        poppler.setPdfInfoPath(config.bin.pdfinfoPath)
+      }
+    }
+
+    const info = await poppler.pdfInfo()
+
+    if (info.width && info.height && info.pages) {
+      resolve({
+        dimension: {
+          width: info.width,
+          height: info.height,
+        },
+        version: info?.version,
+        pages: info?.pages,
+        date: info?.creationDate,
       })
     }
   })

@@ -1,10 +1,17 @@
+/**
+ * @jrmc/adonis-attachment
+ *
+ * @license MIT
+ * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
+ */
+
 import os from 'node:os'
 import path from 'node:path'
 import { $, ExecaError } from 'execa'
 import { cuid } from '@adonisjs/core/helpers'
 import logger from '@adonisjs/core/services/logger'
 import { secondsToTimeFormat } from '../utils/helpers.js'
-import { VideoMetadata } from '../types/metadata.js'
+import { FfmpegMetadata } from '../types/metadata.js'
 
 export default class FFmpeg {
   #ffmpegPath: string
@@ -80,7 +87,7 @@ export default class FFmpeg {
     }
   }
 
-  async exif(): Promise<VideoMetadata> {
+  async exif(): Promise<FfmpegMetadata> {
     try {
     const { stdout } = await $({
       cancelSignal: this.#createAbortController().signal,

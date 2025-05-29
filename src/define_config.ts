@@ -43,9 +43,12 @@ export function defineConfig<KnownConverter extends Record<string, ConverterConf
 
         try {
           const { default: value } = await converter.converter()
+          const { converter: _, ...opt } = converter
+          const options = converter.options || opt
+
           const Converter = value as typeof BaseConverter
 
-          converters[converterName] = new Converter(converter.options, binConfig)
+          converters[converterName] = new Converter(options, binConfig)
         } catch (error) {
           console.error(`Failed to load converter ${converterName}:`, error)
         }

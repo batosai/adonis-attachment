@@ -14,7 +14,7 @@ type ImportConverter = {
   default: unknown
 }
 
-export interface ConverterConfig {
+export interface ConverterConfig extends ConverterOptions {
   converter?: () => Promise<ImportConverter>
   options?: ConverterOptions
 }

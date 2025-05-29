@@ -6,14 +6,14 @@
  */
 
 import type { Exif, Input } from '../types/input.js'
+import type { Converter } from '../types/converter.js'
 
 import fs from 'node:fs/promises'
 import ExifReader from 'exifreader'
-import logger from '@adonisjs/core/services/logger'
 import { fileTypeFromBuffer, fileTypeFromFile } from 'file-type'
-import { bufferToTempFile, cleanObject, use } from '../utils/helpers.js'
+import { bufferToTempFile, cleanObject } from '../utils/helpers.js'
 import { ResolvedAttachmentConfig } from '../define_config.js'
-import { Converter } from '../types/converter.js'
+import FFmpeg from './ffmpeg.js'
 
 type KnownConverters = Record<string, Converter>
 
@@ -135,32 +135,32 @@ async function imageExif(buffer: Buffer) {
 
 async function videoExif(input: Input, config: ResolvedAttachmentConfig<KnownConverters>) {
   return new Promise<Exif | undefined>(async (resolve) => {
-    const ffmpeg = await use('fluent-ffmpeg')
 
     let file = input
     if (Buffer.isBuffer(input)) {
       file = await bufferToTempFile(input)
     }
 
-    const ff = ffmpeg(file)
+    const ffmpeg = new FFmpeg(file as string)
 
     if (config.bin) {
       if (config.bin.ffprobePath) {
-        ff.setFfprobePath(config.bin.ffprobePath)
+        ffmpeg.setFfprobePath(config.bin.ffprobePath)
       }
     }
 
-    ff.ffprobe(0, (err: unknown, data: any) => {
-      if (err) {
-        logger.error({ err })
-      }
+    const info = await ffmpeg.exif()
 
+    if (info.width && info.height && info.duration) {
       resolve({
         dimension: {
-          width: data.streams[0].width,
-          height: data.streams[0].height,
+          width: info.width,
+          height: info.height,
         },
+        duration: info.duration,
+        videoCodec: info?.videoCodec,
+        audioCodec: info?.audioCodec,
       })
-    })
+    }
   })
 }

@@ -44,7 +44,7 @@ export default class VideoThumbnailConvert extends Converter {
     }
 
     return ffmpeg.screenshots({
-      time: 2,
+      time: this.options?.startTime || 2,
     })
   }
 }

@@ -20,6 +20,7 @@ export type ResolvedAttachmentConfig<KnownConverters extends Record<string, Conv
   meta?: boolean
   rename?: boolean
   preComputeUrl?: boolean
+  timeout?: number
   converters?: { [K in keyof KnownConverters]: KnownConverters[K] }
   queue?: Queue
 }

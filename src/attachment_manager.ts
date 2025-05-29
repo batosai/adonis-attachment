@@ -208,6 +208,10 @@ export class AttachmentManager<KnownConverters extends Record<string, Converter>
     }
   }
 
+  getConfig() {
+    return this.#config
+  }
+
   // private methods
 
   #configureAttachment(attachment: AttachmentType) {

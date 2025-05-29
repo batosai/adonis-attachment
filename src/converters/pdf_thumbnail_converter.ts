@@ -45,7 +45,7 @@ export default class PdfThumbnailConverter extends Converter {
     }
 
     return poppler.pdfToPpm({
-      page: 1,
+      page: this.options?.startPage || 1,
       dpi: 300,
     })
   }

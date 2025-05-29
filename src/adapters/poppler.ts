@@ -11,6 +11,7 @@ import path from 'node:path'
 import { $ } from 'execa'
 import { cuid } from '@adonisjs/core/helpers'
 import logger from '@adonisjs/core/services/logger'
+import { attachmentManager } from '@jrmc/adonis-attachment'
 import { PopplerMetadata } from '../types/metadata.js'
 import { DateTime } from 'luxon'
 
@@ -24,7 +25,7 @@ export default class Poppler {
     this.#pdfToPpmPath = 'pdftoppm'
     this.#pdfInfoPath = 'pdfinfo'
     this.#timeout = null
-    this.#TIMEOUT = 30000
+    this.#TIMEOUT = attachmentManager.getConfig().timeout || 30000
   }
 
   #createAbortController() {

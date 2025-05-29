@@ -36,6 +36,7 @@ export type AttachmentConfig<KnownConverter extends Record<string, ConverterConf
   meta?: boolean
   rename?: boolean
   preComputeUrl?: boolean
+  timeout?: number
   converters?: {
     [K in keyof KnownConverter]: KnownConverter[K]
   }
@@ -50,6 +51,7 @@ export type InferConverters<
     meta?: unknown
     rename?: unknown
     preComputeUrl?: unknown
+    timeout?: unknown
     converters?: unknown
     queue?: unknown
   }>,

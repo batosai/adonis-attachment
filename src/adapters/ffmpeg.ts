@@ -10,6 +10,7 @@ import path from 'node:path'
 import { $, ExecaError } from 'execa'
 import { cuid } from '@adonisjs/core/helpers'
 import logger from '@adonisjs/core/services/logger'
+import { attachmentManager } from '@jrmc/adonis-attachment'
 import { secondsToTimeFormat } from '../utils/helpers.js'
 import { FfmpegMetadata } from '../types/metadata.js'
 
@@ -23,7 +24,7 @@ export default class FFmpeg {
     this.#ffmpegPath = 'ffmpeg'
     this.#ffprobePath = 'ffprobe'
     this.#timeout = null
-    this.#TIMEOUT = 30000
+    this.#TIMEOUT = attachmentManager.getConfig().timeout || 30000
   }
 
   #createAbortController() {

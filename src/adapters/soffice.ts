@@ -9,6 +9,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { $ } from 'execa'
 import logger from '@adonisjs/core/services/logger'
+import { attachmentManager } from '@jrmc/adonis-attachment'
 
 export default class Soffice {
   #sofficePath: string
@@ -18,7 +19,7 @@ export default class Soffice {
   constructor(private input: string) {
     this.#sofficePath = 'soffice'
     this.#timeout = null
-    this.#TIMEOUT = 30000
+    this.#TIMEOUT = attachmentManager.getConfig().timeout || 30000
   }
 
   #createAbortController() {

@@ -15,22 +15,22 @@ import { PopplerMetadata } from '../types/metadata.js'
 import { DateTime } from 'luxon'
 
 export default class Poppler {
-  private pdfToPpmPath: string
-  private pdfInfoPath: string
-  private timeout: NodeJS.Timeout | null
+  #pdfToPpmPath: string
+  #pdfInfoPath: string
+  #timeout: NodeJS.Timeout | null
   #TIMEOUT: number
 
   constructor(private input: string) {
-    this.pdfToPpmPath = 'pdftoppm'
-    this.pdfInfoPath = 'pdfinfo'
-    this.timeout = null
+    this.#pdfToPpmPath = 'pdftoppm'
+    this.#pdfInfoPath = 'pdfinfo'
+    this.#timeout = null
     this.#TIMEOUT = 30000
   }
 
   #createAbortController() {
     this.#cleanup()
     const controller = new AbortController()
-    this.timeout = setTimeout(() => {
+    this.#timeout = setTimeout(() => {
       controller.abort()
     }, this.#TIMEOUT)
 
@@ -38,8 +38,8 @@ export default class Poppler {
   }
 
   #cleanup() {
-    if (this.timeout) {
-      clearTimeout(this.timeout)
+    if (this.#timeout) {
+      clearTimeout(this.#timeout)
     }
   }
 
@@ -53,7 +53,7 @@ export default class Poppler {
         cancelSignal: this.#createAbortController().signal,
         gracefulCancel: true,
         timeout: this.#TIMEOUT
-      })`${this.pdfToPpmPath} -f ${options.page.toString()} -l ${options.page.toString()} -r ${options.dpi.toString()} -jpeg ${this.input} ${output}`
+      })`${this.#pdfToPpmPath} -f ${options.page.toString()} -l ${options.page.toString()} -r ${options.dpi.toString()} -jpeg ${this.input} ${output}`
 
       const pdfInfo = await this.pdfInfo()
       const pageNumberFormat = '0'.repeat(String(pdfInfo.pages).length - String(options.page).length)
@@ -74,7 +74,7 @@ export default class Poppler {
         cancelSignal: this.#createAbortController().signal,
         gracefulCancel: true,
         timeout: this.#TIMEOUT
-      })`${this.pdfInfoPath} ${this.input}`
+      })`${this.#pdfInfoPath} ${this.input}`
 
       const metadata: Record<string, string> = {}
       stdout.split('\n').forEach((line: string) => {
@@ -126,10 +126,10 @@ export default class Poppler {
   }
 
   async setPdfToPpmPath(pdftoppm: string) {
-    this.pdfToPpmPath = pdftoppm
+    this.#pdfToPpmPath = pdftoppm
   }
 
   async setPdfInfoPath(pdfinfo: string) {
-    this.pdfInfoPath = pdfinfo
+    this.#pdfInfoPath = pdfinfo
   }
 }

@@ -15,7 +15,7 @@ type ImportConverter = {
 }
 
 export interface ConverterConfig {
-  converter: () => Promise<ImportConverter>
+  converter?: () => Promise<ImportConverter>
   options?: ConverterOptions
 }
 

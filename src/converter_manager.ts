@@ -7,7 +7,6 @@ import logger from '@adonisjs/core/services/logger'
 import string from '@adonisjs/core/helpers/string'
 import db from '@adonisjs/lucid/services/db'
 import attachmentManager from '../services/main.js'
-import * as errors from './errors.js'
 import { streamToTempFile } from './utils/helpers.js'
 
 export class ConverterManager {
@@ -52,7 +51,9 @@ export class ConverterManager {
             attachment,
             converter
           })
-          variants.push(variant)
+          if (variant) {
+            variants.push(variant)
+          }
         }
       }
     }
@@ -79,7 +80,8 @@ export class ConverterManager {
     })
 
     if (output === undefined) {
-      throw new errors.E_CANNOT_PATH_BY_CONVERTER()
+      // throw new errors.E_CANNOT_PATH_BY_CONVERTER()
+      return
     }
 
     const variant = await attachment.createVariant(key, output)

@@ -36,6 +36,10 @@ export function defineConfig<KnownConverter extends Record<string, ConverterConf
         const converter = config.converters[converterName]
         const binConfig = config.bin
 
+        if (converter.converter === undefined) {
+          converter.converter = () => import('@jrmc/adonis-attachment/converters/autodetect_converter')
+        }
+
         try {
           const { default: value } = await converter.converter()
           const Converter = value as typeof BaseConverter

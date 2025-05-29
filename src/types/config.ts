@@ -28,7 +28,7 @@ export type BinPaths = {
   ffprobePath?: string
   pdftoppmPath?: string
   pdfinfoPath?: string
-  libreofficePaths?: Array<string>
+  sofficePath?: string
 }
 
 export type AttachmentConfig<KnownConverter extends Record<string, ConverterConfig>> = {

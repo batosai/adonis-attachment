@@ -10,7 +10,7 @@ export const defaultOptionsDecorator = {
   folder: 'uploads',
   preComputeUrl: false,
   variants: [],
-  meta: true,
+  meta: false,
   rename: true,
 }
 

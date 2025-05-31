@@ -2,6 +2,7 @@ import attachmentManager from './services/main.js'
 import RegenerateService from './services/regenerate_service.js'
 
 export { configure } from './configure.js'
+export { ConverterManager } from './src/converter_manager.js'
 export { Attachment } from './src/attachments/attachment.js'
 export { attachment } from './src/decorators/attachment.js'
 export { attachments } from './src/decorators/attachment.js'

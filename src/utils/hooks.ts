@@ -12,6 +12,7 @@ import RecordWithAttachment from '../services/record_with_attachment.js'
 export const afterFindHook = async (instance: unknown) => {
   const modelInstance = instance as RowWithAttachment
   const model = new RecordWithAttachment(modelInstance)
+  await model.setKeyId()
   await model.preComputeUrl()
 }
 

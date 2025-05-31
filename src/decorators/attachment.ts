@@ -31,7 +31,6 @@ export const bootModel = (
   model.boot()
 
   model.$attachments = structuredClone(defaultStateAttributeMixin)
-
   /**
    * Registering all hooks only once
    */

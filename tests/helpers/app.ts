@@ -24,6 +24,7 @@ const IMPORTER = (filePath: string) => {
 }
 
 const attachmentConfig = defineConfig({
+  meta: true,
   converters: {
     thumbnail: {
       converter: () => import('../fixtures/converters/image_converter.js'),

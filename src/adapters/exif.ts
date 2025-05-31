@@ -13,8 +13,6 @@ import ExifReader from 'exifreader'
 import { fileTypeFromBuffer, fileTypeFromFile } from 'file-type'
 import { bufferToTempFile, cleanObject } from '../utils/helpers.js'
 import { ResolvedAttachmentConfig } from '../define_config.js'
-import FFmpeg from './ffmpeg.js'
-import Poppler from './poppler.js'
 
 type KnownConverters = Record<string, Converter>
 
@@ -139,8 +137,9 @@ async function imageExif(buffer: Buffer) {
 }
 
 async function videoExif(input: Input, config: ResolvedAttachmentConfig<KnownConverters>) {
-  return new Promise<Exif | undefined>(async (resolve) => {
+  const { default: FFmpeg } = await import('./ffmpeg.js')
 
+  return new Promise<Exif | undefined>(async (resolve) => {
     let file = input
     if (Buffer.isBuffer(input)) {
       file = await bufferToTempFile(input)
@@ -171,8 +170,8 @@ async function videoExif(input: Input, config: ResolvedAttachmentConfig<KnownCon
 }
 
 async function pdfExif(input: Input, config: ResolvedAttachmentConfig<KnownConverters>) {
+  const { default: Poppler } = await import('./poppler.js')
   return new Promise<Exif | undefined>(async (resolve) => {
-
     let file = input
     if (Buffer.isBuffer(input)) {
       file = await bufferToTempFile(input)

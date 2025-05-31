@@ -25,6 +25,7 @@ export class AttachmentBase implements AttachmentBaseInterface {
 
   input?: Input
 
+  #keyId?: string
   #name: string
   #folder?: string
 
@@ -117,6 +118,15 @@ export class AttachmentBase implements AttachmentBaseInterface {
     return this.getDisk().getSignedUrl(this.path, signedUrlOptions)
   }
 
+  getKeyId() {
+    return this.#keyId
+  }
+
+  setKeyId(keyId: string) {
+    this.#keyId = keyId
+    return this
+  }
+
   setOptions(options: LucidOptions) {
     this.options = {
       ...this.options,
@@ -155,6 +165,7 @@ export class AttachmentBase implements AttachmentBaseInterface {
 
   toObject(): AttachmentBaseAttributes {
     return {
+      keyId: this.getKeyId(),
       name: this.name,
       extname: this.extname,
       size: this.size,

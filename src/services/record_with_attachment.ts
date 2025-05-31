@@ -1,9 +1,11 @@
+import type { LucidModel } from '@adonisjs/lucid/types/model'
 import type { RowWithAttachment } from '../types/mixin.js'
 import type { Attachment as AttachmentType, LucidOptions } from '../types/attachment.js'
 import type { RecordWithAttachment as RecordWithAttachmentImplementation } from '../types/service.js'
 import type { RegenerateOptions } from '../types/regenerate.js'
 
 import logger from '@adonisjs/core/services/logger'
+import encryption from '@adonisjs/core/services/encryption'
 import attachmentManager from '../../services/main.js'
 import { defaultStateAttributeMixin } from '../utils/default_values.js'
 import { Attachment } from '../attachments/attachment.js'
@@ -126,6 +128,28 @@ export default class RecordWithAttachment implements RecordWithAttachmentImpleme
           for (let i = 0; i < attachments.length; i++) {
             attachments[i].setOptions(options)
             await attachmentManager.preComputeUrl(attachments[i])
+          }
+        }
+      })
+    )
+  }
+
+  async setKeyId(): Promise<void> {
+    const attachmentAttributeNames = this.#getAttributeNamesOfAttachment()
+
+    await Promise.all(
+      attachmentAttributeNames.map(async (name) => {
+        if (this.#row.$attributes[name]) {
+          const attachments = this.#getAttachmentsByAttributeName(name)
+          for (let i = 0; i < attachments.length; i++) {
+            const model = this.#row.constructor as LucidModel
+            const key = encryption.encrypt({
+              model: model.table,
+              id: this.#row.$attributes['id'],
+              attribute: name,
+              options: attachments[i].options
+            })
+            attachments[i].setKeyId(key)
           }
         }
       })

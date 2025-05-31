@@ -158,6 +158,7 @@ export class Attachment extends AttachmentBase implements AttachmentInterface {
 
   toJSON(): Object {
     const data: any = {
+      keyId: this.getKeyId(),
       name: this.name,
       originalName: this.originalName,
       size: this.size,

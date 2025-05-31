@@ -12,7 +12,7 @@ import type { Attachment } from '../src/types/attachment.js'
 import { BaseModel, column } from '@adonisjs/lucid/orm'
 import Factory from '@adonisjs/lucid/factories'
 import { DateTime } from 'luxon'
-
+import { assert } from '@japa/assert'
 import { createApp } from './helpers/app.js'
 import { UserFactory } from './fixtures/factories/user.js'
 import { makeAttachment } from './helpers/index.js'

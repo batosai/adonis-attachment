@@ -46,7 +46,7 @@ export class ConverterManager {
 
       if (converter) {
         for await (const attachment of attachments) {
-          const variant = await this.#generate({
+          const variant = await ConverterManager.generate({
             key,
             attachment,
             converter
@@ -65,7 +65,7 @@ export class ConverterManager {
     })
   }
 
-  async #generate({ key, attachment, converter } : { key: string, attachment: Attachment, converter: Converter }) {
+  static async generate({ key, attachment, converter } : { key: string, attachment: Attachment, converter: Converter }) {
     let input = attachment.input
 
     if (!input) {

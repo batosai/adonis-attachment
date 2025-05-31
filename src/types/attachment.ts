@@ -39,6 +39,7 @@ export type AttachmentBase = {
   getUrl(): Promise<string>
   getSignedUrl(signedUrlOptions?: SignedURLOptions): Promise<string>
 
+  setKeyId(keyId: string): AttachmentBase
   setOptions(options: LucidOptions): AttachmentBase
 
   toObject(): AttachmentBaseAttributes
@@ -80,6 +81,7 @@ export type LucidOptions = {
 }
 
 export type AttachmentBaseAttributes = {
+  keyId?: string
   name?: string
   size: number
   meta?: Exif

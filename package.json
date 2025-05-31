@@ -60,6 +60,7 @@
     "./providers/*": "./build/providers/*.js",
     "./commands": "./build/commands/main.js",
     "./commands/*": "./build/commands/*.js",
+    "./controllers/*": "./build/src/controllers/*.js",
     "./attachment_service": "./build/services/attachment_service.js",
     "./attachment_provider": "./build/providers/attachment_provider.js"
   },

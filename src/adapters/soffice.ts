@@ -52,7 +52,8 @@ export default class Soffice {
         throw stderr
       }
 
-      const baseName = path.basename(this.input)
+      const ext = path.extname(this.input)
+      const baseName = path.basename(this.input, ext)
       const imagePath = path.join(output, baseName + '.jpg')
 
       return imagePath

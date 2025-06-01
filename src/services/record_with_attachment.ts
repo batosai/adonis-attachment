@@ -142,12 +142,18 @@ export default class RecordWithAttachment implements RecordWithAttachmentImpleme
         if (this.#row.$attributes[name]) {
           const attachments = this.#getAttachmentsByAttributeName(name)
           for (let i = 0; i < attachments.length; i++) {
+            const { disk, folder, meta, rename } = attachments[i].options
             const model = this.#row.constructor as LucidModel
             const key = encryption.encrypt({
               model: model.table,
               id: this.#row.$attributes['id'],
               attribute: name,
-              options: attachments[i].options
+              options: {
+                disk,
+                folder,
+                meta,
+                rename
+              }
             })
             attachments[i].setKeyId(key)
           }

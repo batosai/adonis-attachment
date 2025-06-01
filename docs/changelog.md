@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.0.0
+
+> Released at *2025-06-01*
+
 ## 4.0.1 (3.2.4 and 2.4.3)
 
 * fix issue #18 (PDF to Image conversion fails for documents with 10+ pages)

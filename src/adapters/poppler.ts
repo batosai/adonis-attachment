@@ -25,7 +25,7 @@ export default class Poppler {
     this.#pdfToPpmPath = 'pdftoppm'
     this.#pdfInfoPath = 'pdfinfo'
     this.#timeout = null
-    this.#TIMEOUT = attachmentManager.getConfig().timeout || 30000
+    this.#TIMEOUT = attachmentManager.getConfig().timeout || 30_000
   }
 
   #createAbortController() {

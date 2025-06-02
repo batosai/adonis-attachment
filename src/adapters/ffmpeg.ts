@@ -24,7 +24,7 @@ export default class FFmpeg {
     this.#ffmpegPath = 'ffmpeg'
     this.#ffprobePath = 'ffprobe'
     this.#timeout = null
-    this.#TIMEOUT = attachmentManager.getConfig().timeout || 30000
+    this.#TIMEOUT = attachmentManager.getConfig().timeout || 30_000
   }
 
   #createAbortController() {

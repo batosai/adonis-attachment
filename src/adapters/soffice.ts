@@ -19,7 +19,7 @@ export default class Soffice {
   constructor(private input: string) {
     this.#sofficePath = 'soffice'
     this.#timeout = null
-    this.#TIMEOUT = attachmentManager.getConfig().timeout || 30000
+    this.#TIMEOUT = attachmentManager.getConfig().timeout || 30_000
   }
 
   #createAbortController() {

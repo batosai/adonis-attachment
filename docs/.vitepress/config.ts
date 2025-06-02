@@ -111,6 +111,10 @@ export default defineConfig({
                 text: 'Video thumbnail',
                 link: '/guide/converters/video-thumbnail',
               },
+              {
+                text: 'Auto detect',
+                link: '/guide/converters/autodetect',
+              },
             ],
           },
           {

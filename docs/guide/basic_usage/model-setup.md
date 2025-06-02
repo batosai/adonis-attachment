@@ -64,7 +64,7 @@ class User extends BaseModel {
 
 ## Specifying variants
 
-Generate variants
+Generate variants after create entity
 
 ```ts
 class User extends BaseModel {

@@ -185,6 +185,26 @@ declare avatar: Attachment | null
 */
 ```
 
+or for assets route (⚠️ [avalable in v5.0.0](/changelog#_5-0-0))
+
+```ts
+@attachments({
+  serialize: (value?: Attachment) => {
+    if (value) {
+      return `assets/${value.keyId}` // [!code highlight]
+    }
+    return null
+  }
+})
+declare avatar: Attachment | null
+
+/**
+ {
+  avatar: '/assets/[keyId]',
+ } 
+*/
+```
+
 ## `attachments` decorator
 
 ⚠️ [avalable in v4.0.0](/changelog#_4-0-0)

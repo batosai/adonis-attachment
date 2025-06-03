@@ -75,6 +75,10 @@ export default defineConfig({
                 link: '/guide/basic_usage/migration-setup',
               },
               {
+                text: 'Route Setup',
+                link: '/guide/basic_usage/route-setup',
+              },
+              {
                 text: 'Model Setup',
                 link: '/guide/basic_usage/model-setup',
               },

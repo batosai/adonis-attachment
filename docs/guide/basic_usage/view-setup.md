@@ -2,6 +2,30 @@
 
 Now all you have to do is display your images in your view.
 
+## Use assets [routes](/guide/basic_usage/route-setup)
+
+⚠️ [avalable in v5.0.0](/changelog#_5-0-0)
+
+::: code-group
+```sh [edge]
+<img src="/assets/{{ user.avatar.getKeyId() }}" loading="lazy" alt="" />
+
+<img 
+  src="{{ 
+    route('assets', `${user.avatar.getkeyId()}/image-name.webp`, { qs: { 
+      variant: 'thumbnail'
+    }}) 
+  }}/image-name.jpg"
+  loading="lazy"
+  alt=""
+/>
+```
+```sh [Tuyau]
+
+```
+:::
+
+
 ## URLs for edge template
 
 ```ts
@@ -55,3 +79,5 @@ getSignedUrl options params accepts `expiresIn`, `contentType` et `contentDispos
 :::
 
 preComputeUrl is required.
+
+### With [Tuyau](https://tuyau.julr.dev)

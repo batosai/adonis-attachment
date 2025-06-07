@@ -10,18 +10,21 @@ Now all you have to do is display your images in your view.
 ```sh [edge]
 <img src="/assets/{{ user.avatar.getKeyId() }}" loading="lazy" alt="" />
 
+// by route
 <img 
   src="{{ 
-    route('assets', `${user.avatar.getkeyId()}/image-name.webp`, { qs: { 
-      variant: 'thumbnail'
-    }}) 
+    route('assets', `${user.avatar.getkeyId()}/image-name.webp`) 
   }}/image-name.jpg"
   loading="lazy"
   alt=""
 />
 ```
 ```sh [Tuyau]
-
+<img
+  :src="`/assets/${tuyau.assets({ key: user.avatar.getkeyId() }).$url()}`"
+  loading="lazy"
+  alt=""
+/>
 ```
 :::
 
@@ -81,3 +84,29 @@ getSignedUrl options params accepts `expiresIn`, `contentType` et `contentDispos
 preComputeUrl is required.
 
 ### With [Tuyau](https://tuyau.julr.dev)
+
+::: code-group
+```js [react]
+<img
+  src={`/assets/${tuyau.assets({ key: user.avatar.getkeyId() }).$url()}?variant=thumbnail`}
+  loading="lazy"
+  alt=""
+/>
+```
+
+```vue
+<img
+  :src="`/assets/${tuyau.assets({ key: user.avatar.getkeyId() }).$url()}?variant=thumbnail`"
+  loading="lazy"
+  alt=""
+/>
+```
+
+```svelte
+<img
+  src={`/assets/${tuyau.assets({ key: user.avatar.getkeyId() }).$url()}?variant=thumbnail`}
+  loading="lazy"
+  alt=""
+/>
+```
+:::

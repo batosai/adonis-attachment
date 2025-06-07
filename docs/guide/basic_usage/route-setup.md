@@ -26,10 +26,14 @@ const AssetsController = () => import('@jrmc/adonis-attachment/controllers/asset
 router.get('/assets/:key/*', [AssetsController]) // [!code highlight]
 ```
 
+## Query string options
+
+- **variant** : variant name
+- **index** : index of Attachment if Attachments type
+
 ## Example
 
 ::: code-group
-
 ```ts [controller]
 class UsersController {
   public show({ request, view }: HttpContext) {
@@ -41,7 +45,6 @@ class UsersController {
   }
 }
 ```
-
 ```edge
 // edge example
 <img 

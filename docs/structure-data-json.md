@@ -12,7 +12,12 @@ Meta data list (if available):
 - orientation
 - mime type
 - gps
-- url
+- url (if preComputeUrl)
+- duration (for video)
+- videoCodec (for video)
+- audioCodec (for video)
+- pages (for pdf)
+- version (for pdf)
 
 Sample struture JSON in database
 

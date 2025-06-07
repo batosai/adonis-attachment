@@ -1,5 +1,12 @@
 # Changelog
 
+* add [autodetect converter](/guide/converters/autodetect)
+* add [route](/guide/basic_usage/route-setup)
+* [config](/guide/essentials/configuration)
+  * autodetect converter by default
+  * options attribute is now deprecated
+  * add [timeout](/guide/essentials/configuration#timeout-optional-default-30000ms)
+
 ## 5.0.0
 
 > Released at *2025-06-01*

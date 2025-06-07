@@ -66,6 +66,8 @@ class User extends BaseModel {
 
 Generate variants after create entity
 
+Optionnal if when using the [route](/guide/basic_usage/route-setup.html). But it allows pre-generation
+
 ```ts
 class User extends BaseModel {
   @attachment({
@@ -91,6 +93,8 @@ class User extends BaseModel {
 ⚠️ [avalable in v2.2.0](/changelog#_2-2-0)
 
 You can enabled pre compute the URLs after SELECT queries, default is false
+
+⚠️ Please prefer using the [route](/guide/basic_usage/route-setup.html) over this option
 
 ```ts
 class User extends BaseModel {

@@ -36,6 +36,8 @@ declare module '@jrmc/adonis-attachment' {
 
 enable the preComputeUrl flag to pre compute the URLs after SELECT queries.
 
+⚠️ Please prefer using the [route](/guide/basic_usage/route-setup.html)
+
 ```typescript
 const attachmentConfig = defineConfig({
   preComputeUrl: true, // [!code focus]

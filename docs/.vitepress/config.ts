@@ -150,8 +150,12 @@ export default defineConfig({
             text: 'Use cases',
             items: [
               {
-                text: 'Picture',
-                link: '/guide/use-cases/picture',
+                text: 'Picture v1',
+                link: '/guide/use-cases/picture-v1',
+              },
+              {
+                text: 'Picture v2',
+                link: '/guide/use-cases/picture-v2',
               },
             ],
           },

@@ -1,4 +1,4 @@
-# Migration v4 -> v3
+# Migration v4 -> v5
 
 Remove optionnals packages : node-poppler, libreoffice-file-converter and fluent-ffmpeg.
 Adonis-attachment communicates directly with the binaries.
@@ -7,15 +7,16 @@ Adonis-attachment communicates directly with the binaries.
 
 - Binaries Paths
 
-If you specify the path to the binaries.
+  If you specify the path to the binaries.
 
-pdftocairoBasePath -> pdftoppmPath
-libreofficePaths -> sofficePath
+  pdftocairoBasePath -> pdftoppmPath
+
+  libreofficePaths -> sofficePath
 
 
 - New converter : Autodetect
 
-Automatic detection by mime type to redirect to other converters (image/pdf/document/video)
+  Automatic detection by mime type to redirect to other converters (image/pdf/document/video)
 
 ```typescript
 thumbnail: {
@@ -49,7 +50,7 @@ thumbnail: {
 ```
 :::
 
-- Automatic converter by Default
+- Autodetect converter by Default
 
 ::: code-group
 ```typescript [Now]

@@ -21,7 +21,7 @@ By default, image format is `PNG` and size is video size. `options` attribute us
 
 Sample:
 
-```typescript{6-9}
+```typescript{5-8}
 const attachmentConfig = defineConfig({
   converters: {
     preview: { // [!code focus:7]

@@ -102,29 +102,23 @@ import { defineConfig } from '@jrmc/adonis-attachment'
 
 export default defineConfig({
   preComputeUrl: true,
-  converters: [
-    {
-      key: 'small',
+  converters: {
+    small: {
       converter: () => import('@jrmc/adonis-attachment/converters/image_converter'),
-      options: {
-        resize: 480,
-      }
+      resize: 480,
+      format: 'jpeg',
     },
-    {
-      key: 'medium',
+    medium: {
       converter: () => import('@jrmc/adonis-attachment/converters/image_converter'),
-      options: {
-        resize: 768,
-      }
+      resize: 768,
+      format: 'jpeg',
     },
-    {
-      key: 'large',
+    large: {
       converter: () => import('@jrmc/adonis-attachment/converters/image_converter'),
-      options: {
-        resize: 1200,
-      }
+      resize: 1200,
+      format: 'jpeg',
     }
-  ]
+  }
 })
 ```
 ```ts [app/models/article.ts]
@@ -132,11 +126,25 @@ import { BaseModel } from '@adonisjs/lucid/orm'
 import { attachment } from '@jrmc/adonis-attachment'
 import type { Attachment } from '@jrmc/adonis-attachment/types/attachment'
 
-class User extends BaseModel { 
+class Article extends BaseModel { 
   @attachment({
     variants: ['small', 'medium', 'large'] 
   }) 
   declare image: Attachment
+}
+```
+```ts [app/controllers/article_controller.ts]
+import type { HttpContext } from '@adonisjs/core/http'
+
+export default class ArticleController { 
+  async index({ view }: HttpContext) {
+    const articles = await Article.all()
+
+    return view.render('pages/articles/index', {
+      articles // for edge
+      articles: (await articles?.serialize()) // for react, vue, svelte
+    })
+  }
 }
 ```
 

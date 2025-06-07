@@ -8,8 +8,6 @@ This package is currently development and will replace [attachment-advanced](htt
 
 [ChangeLog](https://adonis-attachment.jrmc.dev/changelog.html)
 
-[Discord](https://discord.gg/89eMn2vB)
-
 Project sample : [adonis-starter-kit](https://github.com/batosai/adonis-starter-kit)
 
 ## Roadmap
@@ -19,6 +17,7 @@ Project sample : [adonis-starter-kit](https://github.com/batosai/adonis-starter-
 - [x] attachment file by path
 - [x] attachment file by url
 - [x] attachment file by stream
+- [x] attachment file by Base64
 - [x] attachment files
 - [x] save meta data
 - [x] variantes
@@ -31,6 +30,7 @@ Project sample : [adonis-starter-kit](https://github.com/batosai/adonis-starter-
 - [x] adonis-drive/flydrive
 - [x] jobs queue
 - [x] serialize
+- [x] assets route
 
 
 ## Setup

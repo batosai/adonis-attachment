@@ -21,7 +21,9 @@ export default class AssetsController {
   async handle({ request, response }: HttpContext) {
     const { key } = request.params()
     const format = request.qs()?.variant
+    const index = request.qs()?.index
 
+    let isAttachments = false
     const data = encryption.decrypt(key) as Data
 
     const queryWithTableSelection = await db
@@ -32,7 +34,13 @@ export default class AssetsController {
     /*
     * 1. Get the entity
     */
-    const result = JSON.parse(queryWithTableSelection[data.attribute])
+    let result = JSON.parse(queryWithTableSelection[data.attribute])
+
+    if (Array.isArray(result)) {
+      isAttachments = true
+      result = result[index || 0]
+    }
+
     result.folder = path.dirname(result.path)
 
     /*
@@ -63,6 +71,7 @@ export default class AssetsController {
       response.header('Content-Type', variant?.mimeType)
       response.stream(readable)
     } else {
+      let attachmentOrAttachmentsString: string
       const converter = (await attachmentManager.getConverter(format)) as Converter
 
       const variant = await ConverterManager.generate({
@@ -71,12 +80,18 @@ export default class AssetsController {
         converter
       })
 
+      if (isAttachments) {
+        attachmentOrAttachmentsString = JSON.stringify([attachment.toObject()])
+      } else {
+        attachmentOrAttachmentsString = JSON.stringify(attachment.toObject())
+      }
+
       const trx = await db.transaction()
       // trx.after('rollback', rollback)
 
       try {
         await trx.query().from(data.model).where('id', data.id).update({
-          [data.attribute]: JSON.stringify(attachment.toObject())
+          [data.attribute]: attachmentOrAttachmentsString
         })
 
         await trx.commit()

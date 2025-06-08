@@ -6,6 +6,7 @@
  */
 
 import type { ApplicationService } from '@adonisjs/core/types'
+import type { Route } from '@adonisjs/core/http'
 
 import { configProvider } from '@adonisjs/core'
 import { RuntimeException } from '@poppinss/utils'
@@ -14,6 +15,12 @@ import type { AttachmentService } from '../src/types/config.js'
 declare module '@adonisjs/core/types' {
   export interface ContainerBindings {
     'jrmc.attachment': AttachmentService
+  }
+}
+
+declare module '@adonisjs/core/http' {
+  interface Router {
+    attachments: (pattern?: string) => Route
   }
 }
 
@@ -40,5 +47,14 @@ export default class AttachmentProvider {
 
       return this.#manager
     })
+  }
+
+  async boot() {
+    const router = await this.app.container.make('router')
+    const AssetsController = () => import('@jrmc/adonis-attachment/controllers/assets_controller')
+
+    router.attachments = (pattern: string = '/attachments/:key/:name?') => {
+      return router.get(pattern, [AssetsController])
+    }
   }
 }

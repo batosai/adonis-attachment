@@ -2,18 +2,18 @@
 
 Now all you have to do is display your images in your view.
 
-## Use assets [routes](/guide/basic_usage/route-setup)
+## Use attachments [routes](/guide/basic_usage/route-setup)
 
 ⚠️ [avalable in v5.0.0](/changelog#_5-0-0)
 
 ::: code-group
 ```sh [edge]
-<img src="/assets/{{ user.avatar.getKeyId() }}" loading="lazy" alt="" />
+<img src="/attachments/{{ user.avatar.getKeyId() }}" loading="lazy" alt="" />
 
 // by route
 <img 
   src="{{ 
-    route('assets', `${user.avatar.getkeyId()}/image-name.webp`) 
+    route('attachments', `${user.avatar.getkeyId()}/image-name.webp`) 
   }}/image-name.jpg"
   loading="lazy"
   alt=""
@@ -21,7 +21,7 @@ Now all you have to do is display your images in your view.
 ```
 ```sh [Tuyau]
 <img
-  :src="`/assets/${tuyau.assets({ key: user.avatar.getkeyId() }).$url()}`"
+  :src="`/attachments/${tuyau.attachments({ key: user.avatar.getkeyId() }).$url()}`"
   loading="lazy"
   alt=""
 />
@@ -88,7 +88,7 @@ preComputeUrl is required.
 ::: code-group
 ```js [react]
 <img
-  src={`/assets/${tuyau.assets({ key: user.avatar.getkeyId() }).$url()}?variant=thumbnail`}
+  src={`/attachments/${tuyau.attachments({ key: user.avatar.getkeyId() }).$url()}?variant=thumbnail`}
   loading="lazy"
   alt=""
 />
@@ -96,7 +96,7 @@ preComputeUrl is required.
 
 ```vue
 <img
-  :src="`/assets/${tuyau.assets({ key: user.avatar.getkeyId() }).$url()}?variant=thumbnail`"
+  :src="`/attachments/${tuyau.attachments({ key: user.avatar.getkeyId() }).$url()}?variant=thumbnail`"
   loading="lazy"
   alt=""
 />
@@ -104,7 +104,7 @@ preComputeUrl is required.
 
 ```svelte
 <img
-  src={`/assets/${tuyau.assets({ key: user.avatar.getkeyId() }).$url()}?variant=thumbnail`}
+  src={`/attachments/${tuyau.attachments({ key: user.avatar.getkeyId() }).$url()}?variant=thumbnail`}
   loading="lazy"
   alt=""
 />

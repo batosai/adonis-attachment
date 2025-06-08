@@ -30,7 +30,7 @@ Project sample : [adonis-starter-kit](https://github.com/batosai/adonis-starter-
 - [x] adonis-drive/flydrive
 - [x] jobs queue
 - [x] serialize
-- [x] assets route
+- [x] attachments route
 
 
 ## Setup

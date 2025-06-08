@@ -16,7 +16,7 @@ type Data = {
   options: LucidOptions
 }
 
-export default class AssetsController {
+export default class AttachmentsController {
 
   async handle({ request, response }: HttpContext) {
     const { key } = request.params()

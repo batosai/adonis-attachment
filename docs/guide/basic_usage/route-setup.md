@@ -11,19 +11,28 @@ If the requested variant does not exist, it will be generated on the fly.
 ```ts
 // start/routes.ts
 import router from '@adonisjs/core/services/router'
-const AssetsController = () => import('@jrmc/adonis-attachment/controllers/assets_controller') // [!code highlight]
 
-router.get('/assets/:key', [AssetsController]).as('assets') // [!code highlight]
+router.attachments() // [!code highlight]
 ```
 
-## For SEO
+## Custom pattern
 
 ```ts
 // start/routes.ts
 import router from '@adonisjs/core/services/router'
-const AssetsController = () => import('@jrmc/adonis-attachment/controllers/assets_controller') // [!code highlight]
 
-router.get('/assets/:key/*', [AssetsController]) // [!code highlight]
+router.attachments('/assets/:key/*') // [!code highlight]
+
+// default is '/attachments/:key/:name?'
+```
+
+## Identifier
+
+```ts
+// start/routes.ts
+import router from '@adonisjs/core/services/router'
+
+router.attachments('/assets/:key/*').as('assets') // [!code highlight]
 ```
 
 ## Query string options

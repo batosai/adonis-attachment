@@ -26,9 +26,8 @@ public async up() {
 ```ts
 // start/routes.ts
 import router from '@adonisjs/core/services/router'
-const AssetsController = () => import('@jrmc/adonis-attachment/controllers/assets_controller') // [!code highlight]
 
-router.get('/assets/:key', [AssetsController]) // [!code highlight]
+router.attachments() // [!code highlight]
 ```
 
 ```ts
@@ -59,7 +58,7 @@ class UsersController {
 ```
 
 ```edge
-<img src="/assets/{{ user.avatar.keyId }}" loading="lazy" alt="" />
+<img src="/attachments/{{ user.avatar.keyId }}" loading="lazy" alt="" />
 ```
 
 ---
@@ -96,5 +95,5 @@ const attachmentConfig = defineConfig({
 ```
 
 ```edge
-<img src="/assets/{{ user.avatar.keyId }}?variant=thumbnail" loading="lazy" alt="" />
+<img src="/attachments/{{ user.avatar.keyId }}?variant=thumbnail" loading="lazy" alt="" />
 ```

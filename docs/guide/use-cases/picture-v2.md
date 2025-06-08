@@ -8,22 +8,22 @@ Using your variants with `<picture>` for create a component.
 // picture.edge
 <picture>
   <source media="(min-width: 1200px)" srcset="{{ 
-    route('assets', `${article.image.keyId}/image-name.jpg`, { qs: { 
+    route('attachments', `${article.image.keyId}/image-name.jpg`, { qs: { 
       variant: 'large'
     }})
   }}/image-name.jpg">
   <source media="(min-width: 768px)" srcset="{{ 
-    route('assets', `${article.image.keyId}/image-name.jpg`, { qs: { 
+    route('attachments', `${article.image.keyId}/image-name.jpg`, { qs: { 
       variant: 'medium'
     }})
   }}/image-name.jpg">
   <source media="(min-width: 480px)" srcset="{{ 
-    route('assets', `${article.image.keyId}/image-name.jpg`, { qs: { 
+    route('attachments', `${article.image.keyId}/image-name.jpg`, { qs: { 
       variant: 'small'
     }})
   }}/image-name.jpg">
   <img src="{{ 
-    route('assets', `${article.image.keyId}/image-name.jpg`)
+    route('attachments', `${article.image.keyId}/image-name.jpg`)
   }}/image-name.jpg" alt="image description">
 </picture>
 ```
@@ -34,10 +34,10 @@ import React from 'react';
 const Picture = ({ source, alt }) => {
   return (
     <picture>
-      <source media="(min-width: 1200px)" srcSet="`/assets/${article.image.keyId}/image-name.jpg?variant=large`" />
-      <source media="(min-width: 768px)" srcSet="`/assets/${article.image.keyId}/image-name.jpg?variant=medium`" />
-      <source media="(min-width: 480px)" srcSet="`/assets/${article.image.keyId}/image-name.jpg?variant=small`" />
-      <img src="`/assets/${article.image.keyId}/image-name.jpg`" alt={alt} />
+      <source media="(min-width: 1200px)" srcSet="`/attachments/${article.image.keyId}/image-name.jpg?variant=large`" />
+      <source media="(min-width: 768px)" srcSet="`/attachments/${article.image.keyId}/image-name.jpg?variant=medium`" />
+      <source media="(min-width: 480px)" srcSet="`/attachments/${article.image.keyId}/image-name.jpg?variant=small`" />
+      <img src="`/attachments/${article.image.keyId}/image-name.jpg`" alt={alt} />
     </picture>
   )
 }
@@ -46,10 +46,10 @@ const Picture = ({ source, alt }) => {
 // picture.vue
 <template>
   <picture>
-    <source media="(min-width: 1200px)" srcset="`/assets/${article.image.keyId}/image-name.jpg?variant=large`">
-    <source media="(min-width: 768px)" srcset="`/assets/${article.image.keyId}/image-name.jpg?variant=medium`">
-    <source media="(min-width: 480px)" srcset="`/assets/${article.image.keyId}/image-name.jpg?variant=small`">
-    <img src="`/assets/${article.image.keyId}/image-name.jpg`" :alt="alt">
+    <source media="(min-width: 1200px)" srcset="`/attachments/${article.image.keyId}/image-name.jpg?variant=large`">
+    <source media="(min-width: 768px)" srcset="`/attachments/${article.image.keyId}/image-name.jpg?variant=medium`">
+    <source media="(min-width: 480px)" srcset="`/attachments/${article.image.keyId}/image-name.jpg?variant=small`">
+    <img src="`/attachments/${article.image.keyId}/image-name.jpg`" :alt="alt">
   </picture>
 <template>
 
@@ -68,10 +68,10 @@ const Picture = ({ source, alt }) => {
 </script>
 
 <picture>
-  <source media="(min-width: 1200px)" srcset="`/assets/${article.image.keyId}/image-name.jpg?variant=large`">
-  <source media="(min-width: 768px)" srcset="`/assets/${article.image.keyId}/image-name.jpg?variant=medium`">
-  <source media="(min-width: 480px)" srcset="`/assets/${article.image.keyId}/image-name.jpg?variant=small`">
-  <img src="`/assets/${article.image.keyId}/image-name.jpg`" alt={alt}>
+  <source media="(min-width: 1200px)" srcset="`/attachments/${article.image.keyId}/image-name.jpg?variant=large`">
+  <source media="(min-width: 768px)" srcset="`/attachments/${article.image.keyId}/image-name.jpg?variant=medium`">
+  <source media="(min-width: 480px)" srcset="`/attachments/${article.image.keyId}/image-name.jpg?variant=small`">
+  <img src="`/attachments/${article.image.keyId}/image-name.jpg`" alt={alt}>
 </picture>
 ```
 :::
@@ -148,9 +148,8 @@ export default class ArticleController {
 
 ```ts [start/routes.ts]
 import router from '@adonisjs/core/services/router'
-const AssetsController = () => import('@jrmc/adonis-attachment/controllers/assets_controller') 
 
-router.get('/assets/:key/*', [AssetsController]).as('assets') 
+router.attachments()
 ```
 
 :::

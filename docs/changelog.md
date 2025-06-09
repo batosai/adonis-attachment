@@ -1,15 +1,23 @@
 # Changelog
 
+## 5.0.0
+
+* refacto [document_thumbnail_converter](/guide/converters/document-thumbnail), libreoffice-file-converter package is no longer required
+* refacto [pdf_thumbnail_converter](/guide/converters/pdf-thumbnail), node-poppler package is no longer required 
+* refacto [video_thumbnail_converter](/guide/converters/video-thumbnail), fluent-ffmpeg package is no longer required 
 * add [autodetect converter](/guide/converters/autodetect)
 * add [route](/guide/basic_usage/route-setup)
 * [config](/guide/essentials/configuration)
   * autodetect converter by default
   * options attribute is now deprecated
   * add [timeout](/guide/essentials/configuration#timeout-optional-default-30000ms)
+* Update documentation
+  * documentation v5
+  * new [Use cases](/guide/use-cases/picture-v2)
+  * [migration page](/migration)
 
-## 5.0.0
 
-> Released at *2025-06-01*
+> Released at *2025-06-09*
 
 ## 4.0.1 (3.2.4 and 2.4.3)
 

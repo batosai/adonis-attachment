@@ -21,7 +21,7 @@ Now all you have to do is display your images in your view.
 ```
 ```sh [Tuyau]
 <img
-  :src="`/attachments/${tuyau.attachments({ key: user.avatar.getkeyId() }).$url()}`"
+  :src="tuyau.attachments({ key: user.avatar.getkeyId() }).$url()"
   loading="lazy"
   alt=""
 />
@@ -88,7 +88,7 @@ preComputeUrl is required.
 ::: code-group
 ```js [react]
 <img
-  src={`/attachments/${tuyau.attachments({ key: user.avatar.getkeyId() }).$url()}?variant=thumbnail`}
+  src={`${tuyau.attachments({ key: user.avatar.getkeyId() }).$url()}?variant=thumbnail`}
   loading="lazy"
   alt=""
 />
@@ -96,7 +96,7 @@ preComputeUrl is required.
 
 ```vue
 <img
-  :src="`/attachments/${tuyau.attachments({ key: user.avatar.getkeyId() }).$url()}?variant=thumbnail`"
+  :src="`${tuyau.attachments({ key: user.avatar.getkeyId() }).$url()}?variant=thumbnail`"
   loading="lazy"
   alt=""
 />
@@ -104,7 +104,7 @@ preComputeUrl is required.
 
 ```svelte
 <img
-  src={`/attachments/${tuyau.attachments({ key: user.avatar.getkeyId() }).$url()}?variant=thumbnail`}
+  src={`${tuyau.attachments({ key: user.avatar.getkeyId() }).$url()}?variant=thumbnail`}
   loading="lazy"
   alt=""
 />

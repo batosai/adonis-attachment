@@ -54,35 +54,17 @@ export default class AttachmentsController {
     }
 
     /*
-    * 3. if no format, return the original image
-    */
-    if (!format) {
-      const file = await attachment.getStream()
-      const readable = Readable.from(file)
-
-      response.header('Content-Type', attachment?.mimeType)
-      response.stream(readable)
-      return
-    }
-
-    /*
-    * 4. Get the variant
+    * 3. Get the variant
     */
     const variant = attachment?.getVariant(format)
 
     /*
-    * 5. Get the stream
+    * 4. Get the stream
     * if variant and path, get the stream and return it
     * if not, generate the variant
     * if not, return the default file
     */
-    if (variant && variant?.path) {
-      const image = await variant.getStream()
-      const readable = Readable.from(image)
-
-      response.header('Content-Type', variant?.mimeType)
-      response.stream(readable)
-    } else {
+    if (!variant && format) {
       let attachmentOrAttachmentsString: string
       const converter = (await attachmentManager.getConverter(format)) as Converter
 
@@ -99,7 +81,11 @@ export default class AttachmentsController {
       }
 
       const trx = await db.transaction()
-      // trx.after('rollback', rollback)
+      trx.after('rollback', () => {
+        if (variant) {
+          attachmentManager.remove(variant)
+        }
+      })
 
       try {
         await trx.query().from(data.model).where('id', data.id).update({
@@ -109,16 +95,25 @@ export default class AttachmentsController {
         await trx.commit()
       } catch (error) {
         await trx.rollback()
-      } finally {
-        if (!variant) {
-          return response.notFound()
-        }
-        const image = await variant.getStream()
-        const readable = Readable.from(image)
-
-        response.header('Content-Type', variant.mimeType)
-        response.stream(readable)
       }
     }
+
+    /*
+    * 5. Get the stream
+    */
+    let file
+    let mimeType
+    if (variant) {
+      file = await variant.getStream()
+      mimeType = variant.mimeType
+    } else {
+      file = await attachment.getStream()
+      mimeType = attachment.mimeType
+    }
+
+    const readable = Readable.from(file)
+
+    response.header('Content-Type', mimeType)
+    response.stream(readable)
   }
 }

@@ -12,9 +12,7 @@ Now all you have to do is display your images in your view.
 
 // by route
 <img 
-  src="{{ 
-    route('attachments', `${user.avatar.getkeyId()}/image-name.webp`) 
-  }}/image-name.jpg"
+  src="{{ route('attachments', { key: user.avatar.getkeyId(), name: 'image-name.jpg' }) }}"
   loading="lazy"
   alt=""
 />

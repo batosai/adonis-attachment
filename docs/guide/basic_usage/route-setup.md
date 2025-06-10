@@ -32,7 +32,7 @@ router.attachments('/assets/:key/*') // [!code highlight]
 // start/routes.ts
 import router from '@adonisjs/core/services/router'
 
-router.attachments('/assets/:key/*').as('assets') // [!code highlight]
+router.attachments('/assets/:key/:name?').as('assets') // [!code highlight]
 ```
 
 ## Query string options
@@ -58,10 +58,10 @@ class UsersController {
 // edge example
 <img 
   src="{{ 
-    route('assets', `${user.avatar.keyId}/image-name.webp`, { qs: { 
+    route('assets', { key: user.avatar.keyId, name: 'image-name.jpg' }, { qs: { 
       variant: 'thumbnail'
     }}) 
-  }}/image-name.jpg"
+  }}"
   loading="lazy"
   alt=""
 />

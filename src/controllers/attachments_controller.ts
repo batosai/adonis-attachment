@@ -54,6 +54,18 @@ export default class AttachmentsController {
     }
 
     /*
+    * 3. if no format, return the original image
+    */
+    if (!format) {
+      const file = await attachment.getStream()
+      const readable = Readable.from(file)
+
+      response.header('Content-Type', attachment?.mimeType)
+      response.stream(readable)
+      return
+    }
+
+    /*
     * 4. Get the variant
     */
     const variant = attachment?.getVariant(format)

@@ -86,7 +86,7 @@ preComputeUrl is required.
 ::: code-group
 ```js [react]
 <img
-  src={`${tuyau.attachments({ key: user.avatar.getkeyId() }).$url()}?variant=thumbnail`}
+  src={tuyau.attachments({ key: user.avatar.getkeyId() }).$url({query: { variant: 'thumbnail'}})}
   loading="lazy"
   alt=""
 />
@@ -94,7 +94,7 @@ preComputeUrl is required.
 
 ```vue
 <img
-  :src="`${tuyau.attachments({ key: user.avatar.getkeyId() }).$url()}?variant=thumbnail`"
+  :src="tuyau.attachments({ key: user.avatar.getkeyId() }).$url({query: { variant: 'thumbnail'}})"
   loading="lazy"
   alt=""
 />
@@ -102,7 +102,7 @@ preComputeUrl is required.
 
 ```svelte
 <img
-  src={`${tuyau.attachments({ key: user.avatar.getkeyId() }).$url()}?variant=thumbnail`}
+  src={tuyau.attachments({ key: user.avatar.getkeyId() }).$url({query: { variant: 'thumbnail'}})}
   loading="lazy"
   alt=""
 />

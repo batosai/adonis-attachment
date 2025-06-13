@@ -520,6 +520,7 @@ export default defineConfig({
           if (env.frontmatter?.search === false) return ''
           if (env.relativePath.startsWith('v2/')) return ''
           if (env.relativePath.startsWith('v3/')) return ''
+          if (env.relativePath.startsWith('v4/')) return ''
           return html
         }
       }

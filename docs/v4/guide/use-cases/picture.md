@@ -103,22 +103,19 @@ import { defineConfig } from '@jrmc/adonis-attachment'
 export default defineConfig({
   preComputeUrl: true,
   converters: [
-    {
-      key: 'small',
+    small: {
       converter: () => import('@jrmc/adonis-attachment/converters/image_converter'),
       options: {
         resize: 480,
       }
     },
-    {
-      key: 'medium',
+    medium: {
       converter: () => import('@jrmc/adonis-attachment/converters/image_converter'),
       options: {
         resize: 768,
       }
     },
-    {
-      key: 'large',
+    large: {
       converter: () => import('@jrmc/adonis-attachment/converters/image_converter'),
       options: {
         resize: 1200,

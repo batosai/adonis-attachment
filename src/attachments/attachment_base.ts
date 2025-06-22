@@ -127,7 +127,7 @@ export class AttachmentBase implements AttachmentBaseInterface {
 
   makeFolder(record?: LucidRow) {
     if (typeof this.options.folder === 'function' && record) {
-      this.#folder = this.options.folder(record)
+      this.#folder = (this.options.folder as (record: LucidRow) => string)(record)
     } else if (this.options.folder) {
       this.#folder = this.options.folder as string
     }

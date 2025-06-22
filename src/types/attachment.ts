@@ -68,9 +68,9 @@ export type Variant = AttachmentBase & {
   toObject(): VariantAttributes
 }
 
-export type LucidOptions = {
+export type LucidOptions<T = LucidRow> = {
   disk?: string
-  folder?: string | ((record?: LucidRow) => string)
+  folder?: string | ((record: T) => string)
   preComputeUrl?: boolean
   variants?: (keyof AttachmentVariants)[]
   rename?: boolean

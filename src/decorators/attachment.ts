@@ -5,7 +5,7 @@
  * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
  */
 
-import type { LucidModel } from '@adonisjs/lucid/types/model'
+import type { LucidModel, LucidRow } from '@adonisjs/lucid/types/model'
 import type { Attachment, LucidOptions } from '../types/attachment.js'
 
 import attachmentManager from '../../services/main.js'
@@ -87,7 +87,7 @@ const makeColumnOptions = (options?: LucidOptions) => {
 }
 
 const makeAttachmentDecorator =
-  (columnOptionsTransformer?: (columnOptions: any) => any) => (options?: LucidOptions) => {
+  (columnOptionsTransformer?: (columnOptions: any) => any) => <T = LucidRow>(options?: LucidOptions<T>) => {
     return function (target: any, attributeName: string) {
       if (!target[optionsSym]) {
         target[optionsSym] = {}
@@ -101,7 +101,7 @@ const makeAttachmentDecorator =
 
       bootModel(Model)
 
-      const columnOptions = makeColumnOptions(options)
+      const columnOptions = makeColumnOptions(options as LucidOptions)
       const transformedColumnOptions = columnOptionsTransformer
         ? columnOptionsTransformer(columnOptions)
         : columnOptions

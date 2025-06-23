@@ -141,6 +141,10 @@ export default class RecordWithAttachment implements RecordWithAttachmentImpleme
      */
 
     for await (const name of attachmentAttributeNames) {
+      if (!this.#row.$attributes[name]) {
+        continue
+      }
+
       const record = this
       attachmentManager.queue.push({
         name: `${this.#row.constructor.name}-${name}`,
@@ -173,6 +177,10 @@ export default class RecordWithAttachment implements RecordWithAttachmentImpleme
     }
 
     for await (const name of attachmentAttributeNames) {
+      if (!this.#row.$attributes[name]) {
+        continue
+      }
+
       const record = this
       attachmentManager.queue.push({
         name: `${this.#row.constructor.name}-${name}`,

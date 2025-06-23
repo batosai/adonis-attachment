@@ -137,7 +137,7 @@ export class ConverterManager {
   async #purge(attachments: Attachment[]) {
     return Promise.all(
       attachments.map(async (attachment) => {
-        if (attachment.variants) {
+        if (attachment.variants?.length) {
           await Promise.all(
             attachment.variants.map(async (variant) => {
               if (this.#filters?.variants !== undefined && !this.#filters?.variants?.includes(variant.key)) {

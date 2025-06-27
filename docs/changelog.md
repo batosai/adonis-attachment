@@ -19,6 +19,18 @@
 
 > Released at *2025-06-09*
 
+## 4.0.3
+
+* fix issue #20 (Error when trying to delete an attanchment)
+
+> Released at *2025-06-23*
+
+## 4.0.2
+
+* fix issue #19 (incompatible type)
+
+> Released at *2025-06-22*
+
 ## 4.0.1 (3.2.4 and 2.4.3)
 
 * fix issue #18 (PDF to Image conversion fails for documents with 10+ pages)

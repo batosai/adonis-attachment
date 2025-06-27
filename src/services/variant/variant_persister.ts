@@ -1,19 +1,28 @@
-import type { LucidModel } from '@adonisjs/lucid/types/model'
 import type { Attachment, Variant } from '../../types/attachment.js'
-import type { RecordWithAttachment } from '../../types/service.js'
 
 import logger from '@adonisjs/core/services/logger'
 import string from '@adonisjs/core/helpers/string'
 import db from '@adonisjs/lucid/services/db'
 import attachmentManager from '../../../services/main.js'
 
-export default class VariantPersister {
-  #record: RecordWithAttachment
-  #attributeName: string
+type PersistAttributes = {
+  id: string
+  modelTable: string
+  attributeName: string
+  multiple: boolean
+}
 
-  constructor(record: RecordWithAttachment, attributeName: string) {
-    this.#record = record
+export default class VariantPersister {
+  #id: string
+  #modelTable: string
+  #attributeName: string
+  #multiple: boolean
+
+  constructor({ id, modelTable, attributeName, multiple }: PersistAttributes) {
+    this.#id = id
+    this.#modelTable = modelTable
     this.#attributeName = attributeName
+    this.#multiple = multiple
   }
 
   async persist({ attachments, variants }: {
@@ -48,9 +57,8 @@ export default class VariantPersister {
 
   #prepareUpdateData(attachments: Attachment[]): Record<string, string> {
     const index = string.snakeCase(this.#attributeName)
-    const isArray = Array.isArray(this.#record.row.$original[this.#attributeName])
 
-    const data = isArray
+    const data = this.#multiple
       ? attachments.map(att => att.toObject())
       : attachments[0]?.toObject()
 
@@ -58,12 +66,9 @@ export default class VariantPersister {
   }
 
   async #executeUpdate(trx: any, data: Record<string, string>): Promise<void> {
-    const Model = this.#record.row.constructor as LucidModel
-    const id = this.#record.row.$attributes['id']
-
     await trx.query()
-      .from(Model.table)
-      .where('id', id)
+      .from(this.#modelTable)
+      .where('id', this.#id)
       .update(data)
   }
 }

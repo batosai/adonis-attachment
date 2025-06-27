@@ -7,10 +7,10 @@ import type { RegenerateOptions } from '../types/regenerate.js'
 import logger from '@adonisjs/core/services/logger'
 import encryption from '@adonisjs/core/services/encryption'
 import attachmentManager from '../../services/main.js'
+import VariantService from './variant_service.js'
 import { defaultStateAttributeMixin } from '../utils/default_values.js'
 import { Attachment } from '../attachments/attachment.js'
 import { optionsSym } from '../utils/symbols.js'
-import { ConverterManager } from '../converter_manager.js'
 import { E_CANNOT_CREATE_VARIANT } from '../errors.js'
 
 export default class RecordWithAttachment implements RecordWithAttachmentImplementation {
@@ -148,6 +148,7 @@ export default class RecordWithAttachment implements RecordWithAttachmentImpleme
               model: model.table,
               id: this.#row.$attributes['id'],
               attribute: name,
+              index: i,
               options: {
                 disk,
                 folder,
@@ -171,16 +172,22 @@ export default class RecordWithAttachment implements RecordWithAttachmentImpleme
      */
 
     for await (const name of attachmentAttributeNames) {
+      if (!this.#row.$attributes[name]) {
+        continue
+      }
+
       const record = this
       attachmentManager.queue.push({
         name: `${this.#row.constructor.name}-${name}`,
         async run() {
-          const converterManager = new ConverterManager({
-            record,
-            attributeName: name,
-            options: record.#getOptionsByAttributeName(name),
+          await attachmentManager.lock.createLock(`attachment.${record.#row.constructor.name}-${name}`).run(async () => {
+            const variantService = new VariantService({
+              record,
+              attributeName: name,
+              options: record.#getOptionsByAttributeName(name),
+            })
+            await variantService.run()
           })
-          await converterManager.run()
         },
       })
       .onError = function (error: any) {
@@ -203,11 +210,15 @@ export default class RecordWithAttachment implements RecordWithAttachmentImpleme
     }
 
     for await (const name of attachmentAttributeNames) {
+      if (!this.#row.$attributes[name]) {
+        continue
+      }
+
       const record = this
       attachmentManager.queue.push({
         name: `${this.#row.constructor.name}-${name}`,
         async run() {
-          const converterManager = new ConverterManager({
+          const variantService = new VariantService({
             record,
             attributeName: name,
             options: record.#getOptionsByAttributeName(name),
@@ -215,7 +226,7 @@ export default class RecordWithAttachment implements RecordWithAttachmentImpleme
               variants: options.variants
             }
           })
-          await converterManager.run()
+          await variantService.run()
         },
       })
       .onError = function (error: any) {
@@ -305,7 +316,11 @@ export default class RecordWithAttachment implements RecordWithAttachmentImpleme
     }
 
     const opts = this.#getOptionsByAttributeName(options.attributeName)
-    attachments.map((attachment) => attachment.setOptions(opts).makeFolder(this.#row))
+    attachments.forEach((attachment) => {
+      if (attachment) {
+        attachment.setOptions(opts).makeFolder(this.#row)
+      }
+    })
 
     return attachments
   }

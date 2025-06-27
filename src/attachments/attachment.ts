@@ -79,7 +79,7 @@ export class Attachment extends AttachmentBase implements AttachmentInterface {
   }
 
   getVariant(variantName: string) {
-    return this.variants?.find((v) => v.key === variantName)
+    return this.variants?.find((v) => v.key === variantName) ?? null
   }
 
   async getUrl(variantName?: string) {

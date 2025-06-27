@@ -76,6 +76,7 @@
     "@adonisjs/assembler": "^7.8.2",
     "@adonisjs/core": "^6.17.1",
     "@adonisjs/drive": "^3.2.0",
+    "@adonisjs/lock": "^1.1.1",
     "@adonisjs/lucid": "^21.6.0",
     "@adonisjs/prettier-config": "^1.4.0",
     "@adonisjs/tsconfig": "^1.4.0",
@@ -106,6 +107,7 @@
   "peerDependencies": {
     "@adonisjs/core": "^6.12.1",
     "@adonisjs/drive": "^3.2.0",
+    "@adonisjs/lock": "^1.1.1",
     "@adonisjs/lucid": "^20.6.0 || ^21.0.0"
   },
   "prettier": "@adonisjs/prettier-config",

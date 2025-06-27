@@ -38,7 +38,6 @@ router.attachments('/assets/:key/:name?').as('assets') // [!code highlight]
 ## Query string options
 
 - **variant** : variant name
-- **index** : index of Attachment if Attachments type
 
 ## Example
 

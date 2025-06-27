@@ -13,6 +13,7 @@ import { IgnitorFactory } from '@adonisjs/core/factories'
 import { defineConfig as defineLucidConfig } from '@adonisjs/lucid'
 import { defineConfig } from '../../src/define_config.js'
 import { defineConfig as defineDriveConfig, services } from '@adonisjs/drive'
+import { defineConfig as defineLockConfig, stores } from '@adonisjs/lock'
 
 import { BASE_URL } from './index.js'
 
@@ -59,6 +60,7 @@ export async function createApp(options?: Object) {
         providers: [
           () => import('@adonisjs/lucid/database_provider'),
           () => import('@adonisjs/drive/drive_provider'),
+          () => import('@adonisjs/lock/lock_provider'),
           () => import('../../providers/attachment_provider.js'),
         ],
       },
@@ -85,6 +87,12 @@ export async function createApp(options?: Object) {
               routeBasePath: '/uploads',
               visibility: 'public',
             }),
+          },
+        }),
+        lock: defineLockConfig({
+          default: 'memory',
+          stores: {
+            memory: stores.memory(),
           },
         }),
         database: defineLucidConfig({

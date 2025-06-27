@@ -1,19 +1,21 @@
 import type { HttpContext } from '@adonisjs/core/http'
 import type { Converter } from '../types/converter.js'
+import type { Attachment, LucidOptions } from '../types/attachment.js'
 
 import path from 'node:path'
+import { Readable } from 'node:stream'
 import encryption from '@adonisjs/core/services/encryption'
 import db from '@adonisjs/lucid/services/db'
 import { attachmentManager } from '@jrmc/adonis-attachment'
-import { ConverterManager } from '../converter_manager.js'
-import { LucidOptions } from '../types/attachment.js'
-import { Readable } from 'node:stream'
+import VariantGenerator from '../services/variant/variant_generator.js'
+import VariantPersister from '../services/variant/variant_persister.js'
 
 type Data = {
   model: string
   attribute: string
   id: string
   options: LucidOptions
+  index: number
 }
 
 export default class AttachmentsController {
@@ -21,99 +23,97 @@ export default class AttachmentsController {
   async handle({ request, response }: HttpContext) {
     const { key } = request.params()
     const format = request.qs()?.variant
-    const index = request.qs()?.index
 
-    let isAttachments = false
+    let multiple = false
     const data = encryption.decrypt(key) as Data
 
-    const queryWithTableSelection = await db
-      .from(data.model)
-      .select(data.attribute)
-      .where('id', data.id).first()
+    await attachmentManager.lock.createLock(`attachment.${data.model}-${data.attribute}`).run(async () => {
 
-    /*
-    * 1. Get the entity
-    */
-    let result = JSON.parse(queryWithTableSelection[data.attribute])
+      const queryWithTableSelection = await db
+        .from(data.model)
+        .select(data.attribute)
+        .where('id', data.id).first()
 
-    if (Array.isArray(result)) {
-      isAttachments = true
-      result = result[index || 0]
-    }
+      /*
+      * 1. Get the Attachment(s)
+      */
+      const result = JSON.parse(queryWithTableSelection[data.attribute])
+      const attachments: Attachment[] = []
+      let currentAttachment: Attachment | null = null
 
-    result.folder = path.dirname(result.path)
+      if (Array.isArray(result)) {
+        multiple = true
+        for (const item of result) {
+          item.folder = path.dirname(item.path)
+          const attachment = attachmentManager.createFromDbResponse(item)
+          if (attachment) {
+            attachment.setOptions(data.options)
+            attachments.push(attachment)
+          }
+        }
 
-    /*
-    * 2. Get the attachment
-    */
-    const attachment = attachmentManager.createFromDbResponse(result)
-    attachment?.setOptions(data?.options)
-
-    if (!attachment) {
-      return response.notFound()
-    }
-
-    /*
-    * 3. Get the variant
-    */
-    const variant = attachment?.getVariant(format)
-
-    /*
-    * 4. Get the stream
-    * if variant and path, get the stream and return it
-    * if not, generate the variant
-    * if not, return the default file
-    */
-    if (!variant && format) {
-      let attachmentOrAttachmentsString: string
-      const converter = (await attachmentManager.getConverter(format)) as Converter
-
-      const variant = await ConverterManager.generate({
-        key: format,
-        attachment,
-        converter
-      })
-
-      if (isAttachments) {
-        attachmentOrAttachmentsString = JSON.stringify([attachment.toObject()])
+        currentAttachment = attachments[data.index || 0]
       } else {
-        attachmentOrAttachmentsString = JSON.stringify(attachment.toObject())
+        result.folder = path.dirname(result.path)
+        currentAttachment = attachmentManager.createFromDbResponse(result)
+        if (currentAttachment) {
+          currentAttachment.setOptions(data.options)
+        }
       }
 
-      const trx = await db.transaction()
-      trx.after('rollback', () => {
-        if (variant) {
-          attachmentManager.remove(variant)
-        }
-      })
+      if (!currentAttachment) {
+        return response.notFound()
+      }
 
-      try {
-        await trx.query().from(data.model).where('id', data.id).update({
-          [data.attribute]: attachmentOrAttachmentsString
+      /*
+      * 2. Get the variant
+      */
+      let variant = currentAttachment.getVariant(format)
+
+      /*
+      * 3. Get the stream
+      * if variant and path, get the stream and return it
+      * if not, generate the variant
+      * if not, return the default file
+      */
+      if (!variant && format) {
+        const converter = (await attachmentManager.getConverter(format)) as Converter
+
+        variant = await (new VariantGenerator()).generateVariant({
+          key: format,
+          attachment: currentAttachment,
+          converter
         })
 
-        await trx.commit()
-      } catch (error) {
-        await trx.rollback()
+        if (variant) {
+          const variantPersister = new VariantPersister({
+            id: data.id,
+            modelTable: data.model,
+            attributeName: data.attribute,
+            multiple
+          })
+
+          await variantPersister.persist({ attachments: attachments ?? [currentAttachment], variants: [variant] })
+        }
       }
-    }
 
-    /*
-    * 5. Get the stream
-    */
-    let file
-    let mimeType
-    if (variant) {
-      file = await variant.getStream()
-      mimeType = variant.mimeType
-    } else {
-      file = await attachment.getStream()
-      mimeType = attachment.mimeType
-    }
+      /*
+      * 5. Get the stream
+      */
+      let file
+      let mimeType
+      if (variant) {
+        file = await variant.getStream()
+        mimeType = variant.mimeType
+      } else {
+        file = await currentAttachment.getStream()
+        mimeType = currentAttachment.mimeType
+      }
 
-    const readable = Readable.from(file)
+      const readable = Readable.from(file)
 
-    response.header('Content-Type', mimeType)
-    response.stream(readable)
+      response.header('Content-Type', mimeType)
+      response.stream(readable)
+    })
   }
 }

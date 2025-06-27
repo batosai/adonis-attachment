@@ -1,3 +1,4 @@
+import type { LucidModel } from '@adonisjs/lucid/types/model'
 import type { Attachment, LucidOptions } from '../types/attachment.js'
 import type { RecordWithAttachment } from '../types/service.js'
 import type { ConverterInitializeAttributes } from '../types/converter.js'
@@ -24,7 +25,12 @@ export default class VariantService {
 
     this.#variantGenerator = new VariantGenerator()
     this.#variantPurger = new VariantPurger(filters)
-    this.#variantPersister = new VariantPersister(record, attributeName)
+    this.#variantPersister = new VariantPersister({
+      id: record.row.$attributes['id'],
+      modelTable: (record.row.constructor as LucidModel).table,
+      attributeName,
+      multiple: Array.isArray(record.row.$original[attributeName])
+    })
   }
 
   async run() {

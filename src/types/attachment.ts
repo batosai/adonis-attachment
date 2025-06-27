@@ -51,7 +51,7 @@ export type Attachment = AttachmentBase & {
   variants?: Variant[]
 
   createVariant(key: string, input: Input): Promise<Variant>
-  getVariant(variantName: string): Variant | undefined
+  getVariant(variantName: string): Variant | null
   getUrl(variantName?: string): Promise<string>
   getSignedUrl(
     variantNameOrOptions?: string | SignedURLOptions,

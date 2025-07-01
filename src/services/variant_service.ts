@@ -53,7 +53,7 @@ export default class VariantService {
   }
 
   async #getAttachments(): Promise<Attachment[]> {
-    await this.#record.row.refresh()
+    // await this.#record.row.refresh()
     return this.#record.getAttachments({
       attributeName: this.#attributeName,
     })

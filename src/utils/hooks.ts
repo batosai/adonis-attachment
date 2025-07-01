@@ -6,12 +6,12 @@
  */
 
 import type { RowWithAttachment } from '../types/mixin.js'
-import RecordWithAttachment from '../services/record_with_attachment.js'
+import { AttachmentRecordService } from '../services/attachment/index.js'
 
 // @afterFind()
 export const afterFindHook = async (instance: unknown) => {
   const modelInstance = instance as RowWithAttachment
-  const model = new RecordWithAttachment(modelInstance)
+  const model = new AttachmentRecordService(modelInstance)
   await model.setKeyId()
   await model.preComputeUrl()
 }
@@ -26,7 +26,7 @@ export const afterFetchHook = async (instance: unknown) => {
 // @beforeSave()
 export const beforeSaveHook = async (instance: unknown) => {
   const modelInstance = instance as RowWithAttachment
-  const model = new RecordWithAttachment(modelInstance)
+  const model = new AttachmentRecordService(modelInstance)
   await model.detach()
   await model.persist()
   await model.transaction()
@@ -35,14 +35,14 @@ export const beforeSaveHook = async (instance: unknown) => {
 // @afterSave()
 export const afterSaveHook = async (instance: unknown) => {
   const modelInstance = instance as RowWithAttachment
-  const model = new RecordWithAttachment(modelInstance)
+  const model = new AttachmentRecordService(modelInstance)
   await model.generateVariants()
 }
 
 // @beforeDelete()
 export const beforeDeleteHook = async (instance: unknown) => {
   const modelInstance = instance as RowWithAttachment
-  const model = new RecordWithAttachment(modelInstance)
+  const model = new AttachmentRecordService(modelInstance)
   await model.detachAll()
   await model.transaction({ enabledRollback: false })
 }

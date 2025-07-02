@@ -6,7 +6,7 @@
  */
 
 import type { RowWithAttachment } from '../types/mixin.js'
-import { AttachmentRecordService } from '../services/attachment/index.js'
+import AttachmentRecordService from '../services/attachment_service.js'
 
 // @afterFind()
 export const afterFindHook = async (instance: unknown) => {

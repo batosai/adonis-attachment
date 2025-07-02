@@ -1,9 +1,9 @@
 // Main service
-export { default as AttachmentRecordService } from './attachment_record_service.js'
+export { default as AttachmentRecordService } from './attachment_recorder_service.js'
 
 // Specialized services
 export { AttachmentTransactionService } from './attachment_transaction_service.js'
-export { AttachmentPersistenceService } from './attachment_persistence_service.js'
+export { AttachmentPersisterService } from './attachment_persister_service.js'
 export { AttachmentVariantService } from './attachment_variant_service.js'
 export { AttachmentDetachmentService } from './attachment_detachment_service.js'
 

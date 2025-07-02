@@ -4,18 +4,18 @@ import type { RecordWithAttachment } from '../types/service.js'
 import type { ConverterInitializeAttributes } from '../types/converter.js'
 
 import logger from '@adonisjs/core/services/logger'
-import VariantGenerator from './variant/variant_generator.js'
-import VariantPurger from './variant/variant_purger.js'
-import VariantPersister from './variant/variant_persister.js'
+import VariantGeneratorService from './variant/variant_generator_service.js'
+import VariantPurgerService from './variant/variant_purger_service.js'
+import VariantPersisterService from './variant/variant_persister_service.js'
 
 export default class VariantService {
   #record: RecordWithAttachment
   #attributeName: string
   #options: LucidOptions
   #filters?: { variants?: string[] }
-  #variantGenerator: VariantGenerator
-  #variantPurger: VariantPurger
-  #variantPersister: VariantPersister
+  #variantGenerator: VariantGeneratorService
+  #variantPurger: VariantPurgerService
+  #variantPersister: VariantPersisterService
 
   constructor({ record, attributeName, options, filters }: ConverterInitializeAttributes) {
     this.#record = record
@@ -23,9 +23,9 @@ export default class VariantService {
     this.#options = options
     this.#filters = filters
 
-    this.#variantGenerator = new VariantGenerator()
-    this.#variantPurger = new VariantPurger(filters)
-    this.#variantPersister = new VariantPersister({
+    this.#variantGenerator = new VariantGeneratorService()
+    this.#variantPurger = new VariantPurgerService(filters)
+    this.#variantPersister = new VariantPersisterService({
       id: record.row.$attributes['id'],
       modelTable: (record.row.constructor as LucidModel).table,
       attributeName,

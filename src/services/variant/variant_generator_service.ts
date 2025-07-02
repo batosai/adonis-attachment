@@ -6,7 +6,7 @@ import logger from '@adonisjs/core/services/logger'
 import attachmentManager from '../../../services/main.js'
 import { streamToTempFile } from '../../utils/helpers.js'
 
-export default class VariantGenerator {
+export default class VariantGeneratorService {
   async generate({ attachments, options, filters }: {
     attachments: Attachment[],
     options: LucidOptions,

@@ -7,8 +7,8 @@ import { Readable } from 'node:stream'
 import encryption from '@adonisjs/core/services/encryption'
 import db from '@adonisjs/lucid/services/db'
 import { attachmentManager } from '@jrmc/adonis-attachment'
-import VariantGenerator from '../services/variant/variant_generator.js'
-import VariantPersister from '../services/variant/variant_persister.js'
+import VariantGeneratorService from '../services/variant/variant_generator_service.js'
+import VariantPersisterService from '../services/variant/variant_persister_service.js'
 
 type Data = {
   model: string
@@ -79,14 +79,14 @@ export default class AttachmentsController {
       if (!variant && format) {
         const converter = (await attachmentManager.getConverter(format)) as Converter
 
-        variant = await (new VariantGenerator()).generateVariant({
+        variant = await (new VariantGeneratorService()).generateVariant({
           key: format,
           attachment: currentAttachment,
           converter
         })
 
         if (variant) {
-          const variantPersister = new VariantPersister({
+          const variantPersister = new VariantPersisterService({
             id: data.id,
             modelTable: data.model,
             attributeName: data.attribute,

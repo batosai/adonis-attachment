@@ -12,7 +12,7 @@ type PersistAttributes = {
   multiple: boolean
 }
 
-export default class VariantPersister {
+export default class VariantPersisterService {
   #id: string
   #modelTable: string
   #attributeName: string

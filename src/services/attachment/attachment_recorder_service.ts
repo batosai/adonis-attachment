@@ -6,15 +6,15 @@ import type { TransactionOptions } from './attachment_transaction_service.js'
 
 import { defaultStateAttributeMixin } from '../../utils/default_values.js'
 import { AttachmentTransactionService } from './attachment_transaction_service.js'
-import { AttachmentPersistenceService } from './attachment_persistence_service.js'
+import { AttachmentPersisterService } from './attachment_persister_service.js'
 import { AttachmentVariantService } from './attachment_variant_service.js'
 import { AttachmentDetachmentService } from './attachment_detachment_service.js'
 import { AttachmentUtils } from './attachment_utils.js'
 
-export default class AttachmentRecordService implements RecordWithAttachmentImplementation {
+export default class AttachmentRecorderService implements RecordWithAttachmentImplementation {
   #row: RowWithAttachment
   #transactionService = new AttachmentTransactionService()
-  #persistenceService = new AttachmentPersistenceService()
+  #persistenceService = new AttachmentPersisterService()
   #variantService = new AttachmentVariantService()
   #detachmentService = new AttachmentDetachmentService()
 

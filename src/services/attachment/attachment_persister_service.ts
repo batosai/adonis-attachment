@@ -4,7 +4,7 @@ import encryption from '@adonisjs/core/services/encryption'
 import attachmentManager from '../../../services/main.js'
 import { AttachmentUtils } from './attachment_utils.js'
 
-export class AttachmentPersistenceService {
+export class AttachmentPersisterService {
   /**
    * Persist attachments before saving the row to the database
    */

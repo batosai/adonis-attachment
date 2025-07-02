@@ -7,10 +7,11 @@
 
 import type { ApplicationService } from '@adonisjs/core/types'
 import type { Route } from '@adonisjs/core/http'
+import type { AttachmentService } from '../src/types/config.js'
 
 import { configProvider } from '@adonisjs/core'
 import { RuntimeException } from '@poppinss/utils'
-import type { AttachmentService } from '../src/types/config.js'
+import { verrou } from '../src/adapters/lock.js'
 
 declare module '@adonisjs/core/types' {
   export interface ContainerBindings {
@@ -44,7 +45,7 @@ export default class AttachmentProvider {
         )
       }
 
-      this.#manager = new AttachmentManager(config, drive, lock)
+      this.#manager = new AttachmentManager(config, drive, verrou(lock))
 
       return this.#manager
     })

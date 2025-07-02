@@ -6,8 +6,8 @@
  */
 
 import type { DriveService, SignedURLOptions } from '@adonisjs/drive/types'
-import type { LockService } from '@adonisjs/lock/types'
 import type { MultipartFile } from '@adonisjs/core/bodyparser'
+import type { LockService } from './types/lock.js'
 import type {
   AttachmentAttributes,
   AttachmentBase,
@@ -31,11 +31,11 @@ export class AttachmentManager<KnownConverters extends Record<string, Converter>
   queue
   #config: ResolvedAttachmentConfig<KnownConverters>
   #drive: DriveService
-  lock: LockService
+  #lock: LockService
 
   constructor(config: ResolvedAttachmentConfig<KnownConverters>, drive: DriveService, lock: LockService) {
     this.#drive = drive
-    this.lock = lock
+    this.#lock = lock
     this.#config = config
 
     const concurrency = this.#config.queue?.concurrency || 1
@@ -211,8 +211,14 @@ export class AttachmentManager<KnownConverters extends Record<string, Converter>
     }
   }
 
+  // getters
+
   getConfig() {
     return this.#config
+  }
+
+  get lock() {
+    return this.#lock
   }
 
   // private methods

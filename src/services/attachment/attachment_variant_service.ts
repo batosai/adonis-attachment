@@ -1,3 +1,4 @@
+import type { LucidModel } from '@adonisjs/lucid/types/model'
 import type { RecordWithAttachment as RecordWithAttachmentImplementation } from '../../types/service.js'
 import type { RegenerateOptions } from '../../types/regenerate.js'
 import logger from '@adonisjs/core/services/logger'
@@ -62,7 +63,9 @@ export class AttachmentVariantService {
     attachmentManager.queue.push({
       name: `${record.row.constructor.name}-${name}`,
       async run() {
-        await attachmentManager.lock.createLock(`attachment.${record.row.constructor.name}-${name}`).run(async () => {
+        const model = record.row.constructor as LucidModel
+
+        await attachmentManager.lock.createLock(`attachment.${model.table}-${name}`).run(async () => {
           const variantService = new VariantService({
             record,
             attributeName: name,

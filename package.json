@@ -70,7 +70,8 @@
     "execa": "^9.6.0",
     "exifreader": "^4.26.0",
     "file-type": "^19.6.0",
-    "mime-types": "^2.1.35"
+    "mime-types": "^2.1.35",
+    "@verrou/core": "^0.5.1"
   },
   "devDependencies": {
     "@adonisjs/assembler": "^7.8.2",
@@ -108,7 +109,16 @@
     "@adonisjs/core": "^6.12.1",
     "@adonisjs/drive": "^3.2.0",
     "@adonisjs/lock": "^1.1.1",
+    "sharp": "^0.33.0",
     "@adonisjs/lucid": "^20.6.0 || ^21.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@adonisjs/lock": {
+      "optional": true
+    },
+    "sharp": {
+      "optional": true
+    }
   },
   "prettier": "@adonisjs/prettier-config",
   "c8": {

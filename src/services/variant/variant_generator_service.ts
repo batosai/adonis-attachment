@@ -1,3 +1,10 @@
+/**
+ * @jrmc/adonis-attachment
+ *
+ * @license MIT
+ * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
+ */
+
 import type { Attachment, Variant, LucidOptions } from '../../types/attachment.js'
 import type { Converter } from '../../types/converter.js'
 import type { Input } from '../../types/input.js'

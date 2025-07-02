@@ -1,3 +1,10 @@
+/**
+ * @jrmc/adonis-attachment
+ *
+ * @license MIT
+ * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
+ */
+
 import type { RowWithAttachment } from '../../types/mixin.js'
 import type { Attachment as AttachmentType, LucidOptions } from '../../types/attachment.js'
 import { Attachment } from '../../attachments/attachment.js'

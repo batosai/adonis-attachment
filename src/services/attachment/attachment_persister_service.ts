@@ -1,3 +1,10 @@
+/**
+ * @jrmc/adonis-attachment
+ *
+ * @license MIT
+ * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
+ */
+
 import type { LucidModel } from '@adonisjs/lucid/types/model'
 import type { RecordWithAttachment as RecordWithAttachmentImplementation } from '../../types/service.js'
 import encryption from '@adonisjs/core/services/encryption'

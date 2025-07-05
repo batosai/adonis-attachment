@@ -27,9 +27,6 @@ export default class AttachmentsController {
     let multiple = false
     const data = encryption.decrypt(key) as Data
 
-    let stream
-    let mimeType
-
     await attachmentManager.lock.createLock(`attachment.${data.model}-${data.attribute}`).run(async () => {
 
       const queryWithTableSelection = await db
@@ -104,6 +101,9 @@ export default class AttachmentsController {
       /*
       * 5. Get the stream
       */
+      let stream
+      let mimeType
+
       if (variant) {
         stream = await variant.getStream()
         mimeType = variant.mimeType
@@ -111,18 +111,19 @@ export default class AttachmentsController {
         stream = await currentAttachment.getStream()
         mimeType = currentAttachment.mimeType
       }
+
+      /*
+      * 6. Return the stream
+      */
+      if (stream && mimeType) {
+        const readable = Readable.from(stream)
+
+        response.header('Content-Type', mimeType)
+        response.stream(readable)
+      } else {
+        return response.notFound()
+      }
     })
 
-    /*
-    * 6. Return the stream
-    */
-    if (stream && mimeType) {
-      const readable = Readable.from(stream)
-
-      response.header('Content-Type', mimeType)
-      response.stream(readable)
-    } else {
-      return response.notFound()
-    }
   }
 }

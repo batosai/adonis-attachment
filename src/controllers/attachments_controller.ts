@@ -27,6 +27,9 @@ export default class AttachmentsController {
     let multiple = false
     const data = encryption.decrypt(key) as Data
 
+    let stream
+    let mimeType
+
     await attachmentManager.lock.createLock(`attachment.${data.model}-${data.attribute}`).run(async () => {
 
       const queryWithTableSelection = await db
@@ -93,27 +96,33 @@ export default class AttachmentsController {
             multiple
           })
 
-          await variantPersister.persist({ attachments: attachments ?? [currentAttachment], variants: [variant] })
+          const attachmentsOrCurrent = attachments.length ? attachments : [currentAttachment]
+          await variantPersister.persist({ attachments: attachmentsOrCurrent, variants: [variant] })
         }
       }
 
       /*
       * 5. Get the stream
       */
-      let file
-      let mimeType
       if (variant) {
-        file = await variant.getStream()
+        stream = await variant.getStream()
         mimeType = variant.mimeType
-      } else {
-        file = await currentAttachment.getStream()
+      } else if (currentAttachment) {
+        stream = await currentAttachment.getStream()
         mimeType = currentAttachment.mimeType
       }
+    })
 
-      const readable = Readable.from(file)
+    /*
+    * 6. Return the stream
+    */
+    if (stream && mimeType) {
+      const readable = Readable.from(stream)
 
       response.header('Content-Type', mimeType)
       response.stream(readable)
-    })
+    } else {
+      return response.notFound()
+    }
   }
 }

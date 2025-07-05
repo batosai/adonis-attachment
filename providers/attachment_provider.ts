@@ -37,7 +37,14 @@ export default class AttachmentProvider {
       const attachmentConfig = this.app.config.get<any>('attachment')
       const config = await configProvider.resolve<any>(this.app, attachmentConfig)
       const drive = await this.app.container.make('drive.manager')
-      const lock = await this.app.container.make('lock.manager')
+
+      let lock
+      try {
+        const lockManager = await this.app.container.make('lock.manager')
+        lock = verrou(lockManager)
+      } catch (error) {
+        lock = verrou()
+      }
 
       if (!config) {
         throw new RuntimeException(
@@ -45,7 +52,7 @@ export default class AttachmentProvider {
         )
       }
 
-      this.#manager = new AttachmentManager(config, drive, verrou(lock))
+      this.#manager = new AttachmentManager(config, drive, lock)
 
       return this.#manager
     })

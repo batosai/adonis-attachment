@@ -11,7 +11,11 @@ let testApp: ApplicationService
 processCLIArgs(process.argv.slice(2))
 configure({
   files: ['tests/**/*.spec.ts'],
-  plugins: [assert(), fileSystem({ basePath: BASE_URL }), expectTypeOf()],
+  plugins: [
+    assert(),
+    fileSystem({ basePath: BASE_URL }),
+    expectTypeOf()
+  ],
   setup: [
     async () => {
       testApp = await createApp()

@@ -59,7 +59,9 @@ class User extends BaseModel {
 }
 ```
 
-⚠️ :id autoincrement parameter is not defined on first save
+::: info
+`:id` autoincrement parameter is not defined on first save
+:::
 
 
 ## Specifying variants
@@ -94,14 +96,16 @@ class User extends BaseModel {
 
 You can enabled pre compute the URLs after SELECT queries, default is false
 
-⚠️ Please prefer using the [route](/guide/basic_usage/route-setup.html) over this option
-
 ```ts
 class User extends BaseModel {
   @attachment({ preComputeUrl: true }) // [!code highlight]
   declare avatar: Attachment
 }
 ```
+
+::: info
+Alternate : please look the new [route](/guide/basic_usage/route-setup.html)
+:::
 
 
 ## Specifying meta

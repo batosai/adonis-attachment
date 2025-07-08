@@ -1,6 +1,10 @@
 # General configuration 
 
+
+::: warning
 ⚠️ [change in v5.0.0](/changelog#_5-0-0)
+:::
+
 
 Attachment configuration is located in the `config/attachment.ts` file. By default, the file looks like this:
 
@@ -36,7 +40,6 @@ declare module '@jrmc/adonis-attachment' {
 
 enable the preComputeUrl flag to pre compute the URLs after SELECT queries.
 
-⚠️ Please prefer using the [route](/guide/basic_usage/route-setup.html)
 
 ```typescript
 const attachmentConfig = defineConfig({
@@ -46,6 +49,11 @@ const attachmentConfig = defineConfig({
   }
 })
 ```
+
+::: info
+Alternate : please look the new [route](/guide/basic_usage/route-setup.html)
+:::
+
 
 ## meta (optional, default false)
 

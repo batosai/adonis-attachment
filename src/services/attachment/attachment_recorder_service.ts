@@ -119,11 +119,11 @@ export default class AttachmentRecorderService implements RecordWithAttachmentIm
   /**
    * Get attachments with specific options
    */
-  getAttachments(options: {
+  async getAttachments(options: {
     attributeName: string
     requiredOriginal?: boolean
     requiredDirty?: boolean
-  }): AttachmentType[] {
+  }): Promise<AttachmentType[]> {
     let attachments: AttachmentType[]
 
     if (options.requiredOriginal) {
@@ -135,9 +135,10 @@ export default class AttachmentRecorderService implements RecordWithAttachmentIm
     }
 
     const opts = AttachmentUtils.getOptionsByAttributeName(this.#row, options.attributeName)
-    attachments.forEach((attachment) => {
+    attachments.forEach(async (attachment) => {
       if (attachment) {
-        attachment.setOptions(opts).makeFolder(this.#row)
+        attachment.setOptions(opts)
+        await attachment.makeFolder(this.#row)
       }
     })
 

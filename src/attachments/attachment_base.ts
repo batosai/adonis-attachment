@@ -135,9 +135,9 @@ export class AttachmentBase implements AttachmentBaseInterface {
     return this
   }
 
-  makeFolder(record?: LucidRow) {
+  async makeFolder(record?: LucidRow) {
     if (typeof this.options.folder === 'function' && record) {
-      this.#folder = (this.options.folder as (record: LucidRow) => string)(record)
+      this.#folder = (await (this.options.folder as (record: LucidRow) => Promise<string>)(record)) as string
     } else if (this.options.folder) {
       this.#folder = this.options.folder as string
     }

@@ -7,13 +7,16 @@
 * refacto [video_thumbnail_converter](/guide/converters/video-thumbnail), fluent-ffmpeg package is no longer required 
 * add [autodetect converter](/guide/converters/autodetect)
 * add [route](/guide/basic_usage/route-setup)
+* add custom rename in [model setup](/guide/basic_usage/model-setup#specifying-rename)
+* allow folder option to return Promise for dynamic folder paths
 * [config](/guide/essentials/configuration)
   * autodetect converter by default
   * options attribute is now deprecated
   * add [timeout](/guide/essentials/configuration#timeout-optional-default-30000ms)
-* Update documentation
+* update documentation
   * documentation v5
   * new [Use cases](/guide/use-cases/picture-v2)
+  * update rename option in [model setup](/guide/basic_usage/model-setup#specifying-rename)
   * [migration page](/migration)
 
 

@@ -30,9 +30,10 @@ export class AttachmentTransactionService {
    */
   async rollback(attachedAttachments: AttachmentType[]): Promise<void> {
     await Promise.allSettled(
-      attachedAttachments.map((attachment: AttachmentType) =>
-        attachmentManager.remove(attachment)
-      )
+      attachedAttachments.map(async (attachment: AttachmentType) => {
+        await attachment.rollbackMoveFileForDelete()
+        await attachmentManager.remove(attachment)
+      })
     )
   }
 

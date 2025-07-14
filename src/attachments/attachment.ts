@@ -17,6 +17,7 @@ import path from 'node:path'
 import { AttachmentBase } from './attachment_base.js'
 import { Variant } from './variant_attachment.js'
 import { metaFormBuffer, metaFormFile } from '../adapters/meta.js'
+import { LucidRow } from '@adonisjs/lucid/types/model'
 
 export class Attachment extends AttachmentBase implements AttachmentInterface {
   originalName: string
@@ -35,18 +36,6 @@ export class Attachment extends AttachmentBase implements AttachmentInterface {
         this.variants!.push(variant)
       })
     }
-  }
-
-  /**
-   * Getters
-   */
-
-  get name() {
-    if (this.options && this.options.rename === false) {
-      return this.originalName
-    }
-
-    return super.name
   }
 
   /**
@@ -140,6 +129,28 @@ export class Attachment extends AttachmentBase implements AttachmentInterface {
     }
 
     return this
+  }
+
+  async makeName(record?: LucidRow, attributeName?: string) {
+    return super.makeName(record, attributeName, this.originalName)
+  }
+
+  async moveFileForDelete() {
+    const originalPath = this.path
+    this.name = `${this.name}.trash`
+    const trashPath = this.path
+    this.originalPath = trashPath
+
+    await this.getDisk().move(originalPath, trashPath)
+  }
+
+  async rollbackMoveFileForDelete() {
+    const trashPath = this.path
+    this.name = this.name.replace('.trash', '')
+    const originalPath = this.path
+    this.originalPath = originalPath
+
+    await this.getDisk().move(trashPath, originalPath)
   }
 
   /**

@@ -139,6 +139,7 @@ export default class AttachmentRecorderService implements RecordWithAttachmentIm
       if (attachment) {
         attachment.setOptions(opts)
         await attachment.makeFolder(this.#row)
+        // await attachment.makeName(this.#row, options.attributeName, attachment.originalName)
       }
     })
 

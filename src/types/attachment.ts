@@ -32,6 +32,7 @@ export type AttachmentBase = {
   options: LucidOptions
 
   makeFolder(record?: LucidRow): void
+  makeName(record?: LucidRow, attributeName?: string, originalName?: string): void
   getDisk(): Disk
   getBytes(): Promise<Uint8Array>
   getBuffer(): Promise<Buffer>
@@ -50,6 +51,8 @@ export type Attachment = AttachmentBase & {
   originalName: string
   variants?: Variant[]
 
+  moveFileForDelete(): Promise<void>
+  rollbackMoveFileForDelete(): Promise<void>
   createVariant(key: string, input: Input): Promise<Variant>
   getVariant(variantName: string): Variant | null
   getUrl(variantName?: string): Promise<string>
@@ -72,9 +75,9 @@ export type Variant = AttachmentBase & {
 export type LucidOptions<T = LucidRow> = {
   disk?: string
   folder?: string | ((record: T) => string) | ((record: T) => Promise<string>)
+  rename?: boolean | ((record: T, column?: string, currentName?: string) => string) | ((record: T, column?: string, currentName?: string) => Promise<string>)
   preComputeUrl?: boolean
   variants?: (keyof AttachmentVariants)[]
-  rename?: boolean
   meta?: boolean
   serialize?: (value?: Attachment) => unknown
   serializeAs?: string | null

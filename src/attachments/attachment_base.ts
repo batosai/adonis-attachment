@@ -68,6 +68,10 @@ export class AttachmentBase implements AttachmentBaseInterface {
     return this.#name
   }
 
+  set name(name: string) {
+    this.#name = name
+  }
+
   get folder(): string | undefined {
     if (this.#folder) {
       return this.#folder
@@ -132,6 +136,30 @@ export class AttachmentBase implements AttachmentBaseInterface {
       ...this.options,
       ...options,
     }
+    return this
+  }
+
+  async makeName(record?: LucidRow, attributeName?: string, originalName?: string) {
+    if (typeof this.options.rename === 'function' && record) {
+      this.#name = (await (this.options.rename as (record: LucidRow, attributeName?: string, originalName?: string) => Promise<string>)(record, attributeName, originalName)) as string
+    } else if (originalName && this.options.rename === false) {
+      this.#name = originalName
+    }
+
+    if (this.#name && record) {
+      const parameters = extractPathParameters(this.#name)
+
+      if (parameters) {
+        parameters.forEach((parameter) => {
+          const attribute = record.$attributes[parameter]
+          if (typeof attribute === 'string') {
+            const name = string.slug(string.noCase(string.escapeHTML(attribute.toLowerCase())))
+            this.#name = this.#name?.replace(`:${parameter}`, name)
+          }
+        })
+      }
+    }
+
     return this
   }
 

@@ -5,6 +5,7 @@
  * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
  */
 
+import type { LucidRow } from '@adonisjs/lucid/types/model'
 import type { Converter, ConverterOptions } from './converter.js'
 
 import { ConfigProvider } from '@adonisjs/core/types'
@@ -34,7 +35,7 @@ export type BinPaths = {
 export type AttachmentConfig<KnownConverter extends Record<string, ConverterConfig>> = {
   bin?: BinPaths
   meta?: boolean
-  rename?: boolean
+  rename?: boolean | ((record: LucidRow, column?: string, currentName?: string) => string) | ((record: LucidRow, column?: string, currentName?: string) => Promise<string>)
   preComputeUrl?: boolean
   timeout?: number
   converters?: {

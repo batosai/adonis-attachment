@@ -48,6 +48,7 @@ export class AttachmentPersisterService {
           if (newAttachments[i]) {
             newAttachments[i].setOptions(options)
             await newAttachments[i].makeFolder(record.row)
+            await newAttachments[i].makeName(record.row, name, newAttachments[i].originalName)
             record.row.$attachments.attached.push(newAttachments[i])
 
             /**

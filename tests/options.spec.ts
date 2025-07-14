@@ -152,6 +152,85 @@ test.group('options', () => {
     assert.equal(data.avatar2.name, 'foo.jpg')
   })
 
+  test('with custom rename options', async ({ assert, cleanup }) => {
+    const app = await createApp({
+      rename: () => 'my-attachment.jpg',
+    })
+    const attachmentManager = await app.container.make('jrmc.attachment')
+
+    cleanup(() => {
+      app.terminate()
+    })
+
+    const user = await UserFactory.create()
+    const data = user.serialize()
+
+    assert.equal(data.avatar.name, 'my-attachment.jpg')
+  })
+
+  test('with dynamic rename by entity', async ({ assert, cleanup }) => {
+    class User extends BaseModel {
+      @column()
+      declare name: string
+
+      @attachment({ rename: (u: User) => u.name + '.jpg' })
+      declare avatar: Attachment | null
+    }
+
+    const UserFactory = Factory.define(User, async ({ faker }) => {
+      return {
+        name: faker.person.lastName(),
+        avatar: await makeAttachment(),
+      }
+    }).build()
+
+    const app = await createApp({
+      rename: false,
+    })
+
+    cleanup(() => {
+      app.terminate()
+    })
+
+    const user = (await UserFactory.merge({
+      name: 'jeremy',
+    }).create()) as User
+
+    assert.equal(user.avatar?.name, 'jeremy.jpg')
+  })
+
+  test('with dynamic rename by parameter', async ({ assert, cleanup }) => {
+    class User extends BaseModel {
+      @column()
+      declare name: string
+
+      @attachment({ rename: () => ':name.jpg' })
+      declare avatar: Attachment | null
+    }
+
+    const UserFactory = Factory.define(User, async ({ faker }) => {
+      return {
+        name: faker.person.lastName(),
+        avatar: await makeAttachment(),
+      }
+    }).build()
+
+    const app = await createApp({
+      rename: false,
+    })
+
+    cleanup(() => {
+      app.terminate()
+    })
+
+    const user = (await UserFactory.merge({
+      name: 'jeremy',
+    }).create()) as User
+
+    assert.equal(user.avatar?.name, 'jeremy.jpg')
+  })
+
+
   test('with meta options', async ({ assert, cleanup }) => {
     const app = await createApp({
       meta: true,

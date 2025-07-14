@@ -17,7 +17,7 @@ export class AttachmentDetachmentService {
     const attachmentAttributeNames = AttachmentUtils.getDirtyAttributeNamesOfAttachment(record.row)
 
     await Promise.allSettled(
-      attachmentAttributeNames.map((name) => {
+      attachmentAttributeNames.map(async (name) => {
         let attachments: AttachmentType[] = []
         const options = AttachmentUtils.getOptionsByAttributeName(record.row, name)
 
@@ -45,7 +45,8 @@ export class AttachmentDetachmentService {
           }
         }
 
-        this.#markForDeletion(attachments, record)
+        await this.#moveForDeletion(attachments)
+        await this.#markForDeletion(attachments, record)
       })
     )
   }
@@ -73,9 +74,15 @@ export class AttachmentDetachmentService {
   /**
    * Mark attachments for deletion by adding them to detached array
    */
-  #markForDeletion(attachments: AttachmentType[], record: RecordWithAttachmentImplementation): void {
-    for (let i = 0; i < attachments.length; i++) {
-      record.row.$attachments.detached.push(attachments[i])
-    }
+  async #markForDeletion(attachments: AttachmentType[], record: RecordWithAttachmentImplementation): Promise<void> {
+    await Promise.allSettled(
+      attachments.map((attachment) => record.row.$attachments.detached.push(attachment))
+    )
+  }
+
+  async #moveForDeletion(attachments: AttachmentType[]): Promise<void> {
+    await Promise.allSettled(
+      attachments.map((attachment) => attachment.moveFileForDelete())
+    )
   }
 }

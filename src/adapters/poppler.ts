@@ -103,7 +103,7 @@ export default class Poppler {
       if (metadata['creationdate']) {
         const dateStr = metadata['creationdate']
         const date = DateTime.fromFormat(dateStr, 'EEE MMM dd HH:mm:ss yyyy z', { zone: 'UTC' })
-        console.log('Parsed date:', date.toISO())
+
         if (date.isValid) {
           creationDate = date.toFormat('yyyy-MM-dd\'T\'HH:mm:ss')
         }

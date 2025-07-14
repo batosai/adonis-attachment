@@ -83,6 +83,21 @@ const attachmentConfig = defineConfig({
 })
 ```
 
+`rename` can take a function for customization.
+
+```typescript
+import type { LucidRow } from '@adonisjs/lucid/types/model'
+
+const attachmentConfig = defineConfig({
+  rename: (file: LucidRow, column?: string, currentName?: string) => { // [!code focus]
+    return crypto.randomUUID() // [!code focus]
+  }, // [!code focus]
+  converters: {
+    // ...
+  }
+})
+```
+
 ---
 
 ## bin (optional)

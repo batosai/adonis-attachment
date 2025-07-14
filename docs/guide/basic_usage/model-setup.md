@@ -134,6 +134,41 @@ class User extends BaseModel {
 }
 ```
 
+custom (⚠️ [avalable in v5.0.0](/changelog#_5-0-0))
+
+`rename` can take a function for customization.
+
+```ts
+class User extends BaseModel {
+  static selfAssignPrimaryKey = true
+
+  @column({ isPrimary: true })
+  declare id: string // UUID
+
+  @attachment({ rename: () => 'my-attachment.jpg' }) // [!code highlight]
+  declare avatar: Attachment
+
+  // or
+
+  @attachment({ rename: () => ':id.jpg' }) // [!code highlight]
+  declare avatar: Attachment
+
+  // or
+
+  @attachment({ rename: async (user: User) => { // [!code highlight]
+    return crypto.randomUUID() // [!code highlight]
+  }}) // [!code highlight]
+  declare avatar: Attachment
+}
+```
+
+::: info
+
+option `:model_attribut`
+
+`:id` autoincrement parameter is not defined on first save
+:::
+
 ## Re-naming properties
 
 ⚠️ [avalable in v4.0.0](/changelog#_4-0-0)

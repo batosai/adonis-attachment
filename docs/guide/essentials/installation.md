@@ -30,6 +30,10 @@ node ace configure @jrmc/adonis-attachment
 ```
 :::
 
+::: info
+Doc for v4 stable ⚠️ [v4.x.x](/v4/guide/essentials/installation)
+:::
+
 
 ## Additional install
 

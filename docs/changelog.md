@@ -20,7 +20,7 @@
   * [migration page](/migration)
 
 
-> Released at *2025-06-09*
+> Released at *2025-07-14*
 
 ## 4.0.3
 

@@ -61,7 +61,7 @@ export class AttachmentBase implements AttachmentBaseInterface {
   }
 
   /**
-   * Getters
+   * Getters / Setters
    */
 
   get name(): string {

@@ -136,21 +136,25 @@ export class Attachment extends AttachmentBase implements AttachmentInterface {
   }
 
   async moveFileForDelete() {
-    const originalPath = this.path
-    this.name = `${this.name}.trash`
-    const trashPath = this.path
-    this.originalPath = trashPath
+    if (this.options && this.options.rename === false) {
+      const originalPath = this.path
+      this.name = `${this.name}.trash`
+      const trashPath = this.path
+      this.originalPath = trashPath
 
-    await this.getDisk().move(originalPath, trashPath)
+      await this.getDisk().move(originalPath, trashPath)
+    }
   }
 
   async rollbackMoveFileForDelete() {
-    const trashPath = this.path
-    this.name = this.name.replace('.trash', '')
-    const originalPath = this.path
-    this.originalPath = originalPath
+    if (this.options && this.options.rename === false) {
+      const trashPath = this.path
+      this.name = this.name.replace('.trash', '')
+      const originalPath = this.path
+      this.originalPath = originalPath
 
-    await this.getDisk().move(trashPath, originalPath)
+      await this.getDisk().move(trashPath, originalPath)
+    }
   }
 
   /**

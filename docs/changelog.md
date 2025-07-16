@@ -22,6 +22,12 @@
 
 > Released at *2025-07-14*
 
+## 4.0.4
+
+* fix issue with rename: false option causing file auto-deletion when uploading same filename
+
+> Released at *2025-07-16*
+
 ## 4.0.3
 
 * fix issue #20 (Error when trying to delete an attanchment)

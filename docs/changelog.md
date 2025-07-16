@@ -2,7 +2,7 @@
 
 ## 4.0.4
 
-* fix issue with rename: false option causing file auto-deletion when uploading same filenameL!nk17
+* fix issue with rename: false option causing file auto-deletion when uploading same filename
 
 ## 4.0.3
 

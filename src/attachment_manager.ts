@@ -136,92 +136,45 @@ export class AttachmentManager<KnownConverters extends Record<string, Converter>
     return this.createFromPath(tmpPath, name || path.basename(tmpPath))
   }
 
-  async getConverter(key: string): Promise<void | Converter> {
-    if (this.#config.converters) {
-      return this.#config.converters[key]
-    }
-  }
-
   async computeUrl(
     attachment: AttachmentType | AttachmentBase,
     signedUrlOptions?: SignedURLOptions
   ) {
-    const disk = attachment.getDisk()
-    const fileVisibility = await disk.getVisibility(attachment.path!)
-
-    if (fileVisibility === 'private') {
-      attachment.url = await attachment.getSignedUrl(signedUrlOptions)
-    } else {
-      attachment.url = await attachment.getUrl()
-    }
+    await attachment.computeUrl(signedUrlOptions)
   }
 
   async preComputeUrl(attachment: AttachmentType) {
-    if (attachment.options?.preComputeUrl === false) {
-      return
-    }
-
-    await this.computeUrl(attachment)
-
-    if (attachment instanceof Attachment && attachment.variants) {
-      for (const key in attachment.variants) {
-        if (Object.prototype.hasOwnProperty.call(attachment.variants, key)) {
-          await this.computeUrl(attachment.variants[key])
-        }
-      }
-    }
+    await attachment.preComputeUrl()
   }
 
   async write(attachment: AttachmentBase) {
-    const destinationPath = attachment.path!
-
     if (attachment.options?.meta) {
       attachment.meta = await ExifAdapter.exif(attachment.input!, this.#config)
     } else {
       attachment.meta = undefined
     }
 
-    if (Buffer.isBuffer(attachment.input)) {
-      await attachment.getDisk().put(destinationPath, attachment.input)
-    } else if (attachment.input) {
-      await attachment.getDisk().copyFromFs(attachment.input, destinationPath)
-    }
+    await attachment.put()
   }
 
   async remove(attachment: AttachmentBase) {
-    if (attachment.path) {
-      await attachment.getDisk().delete(attachment.path)
-
-      if (attachment instanceof Attachment) {
-        if (attachment.variants) {
-          const variantPath = attachment.variants[0].folder
-
-          try {
-            await attachment.getDisk().deleteAll(variantPath) // not compatible Minio, necessary for fs as not to leave an empty directory
-          } catch (error) {
-            for (const key in attachment.variants) {
-              if (Object.prototype.hasOwnProperty.call(attachment.variants, key)) {
-                await attachment.getDisk().delete(attachment.variants[key].path)
-              }
-            }
-          }
-        }
-      }
-    }
-
-    if (attachment.originalPath) {
-      await attachment.getDisk().delete(attachment.originalPath)
-    }
+    await attachment.remove()
   }
 
   // getters
+
+  get lock() {
+    return this.#lock
+  }
 
   getConfig() {
     return this.#config
   }
 
-  get lock() {
-    return this.#lock
+  async getConverter(key: string): Promise<void | Converter> {
+    if (this.#config.converters) {
+      return this.#config.converters[key]
+    }
   }
 
   // private methods

@@ -131,6 +131,27 @@ export class Attachment extends AttachmentBase implements AttachmentInterface {
     return this
   }
 
+  /**
+   * Actions
+   */
+
+  async preComputeUrl() {
+    if (this.options?.preComputeUrl === false) {
+      return
+    }
+
+    await this.computeUrl()
+
+    if (this.variants) {
+      for (const key in this.variants) {
+        if (Object.prototype.hasOwnProperty.call(this.variants, key)) {
+          await this.computeUrl(this.variants[key])
+        }
+      }
+    }
+  }
+
+
   async makeName(record?: LucidRow, attributeName?: string) {
     return super.makeName(record, attributeName, this.originalName)
   }
@@ -154,6 +175,24 @@ export class Attachment extends AttachmentBase implements AttachmentInterface {
       this.originalPath = originalPath
 
       await this.getDisk().move(trashPath, originalPath)
+    }
+  }
+
+  async remove() {
+    await super.remove()
+
+    if (this.variants) {
+      const variantPath = this.variants[0].folder
+
+      try {
+        await this.getDisk().deleteAll(variantPath) // not compatible Minio, necessary for fs as not to leave an empty directory
+      } catch (error) {
+        for (const key in this.variants) {
+          if (Object.prototype.hasOwnProperty.call(this.variants, key)) {
+            this.variants[key].remove()
+          }
+        }
+      }
     }
   }
 

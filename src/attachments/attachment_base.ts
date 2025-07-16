@@ -139,6 +139,29 @@ export class AttachmentBase implements AttachmentBaseInterface {
     return this
   }
 
+  /**
+   * Actions
+   */
+
+  async computeUrl(signedUrlOptions?: SignedURLOptions) {
+    const disk = this.getDisk()
+    const fileVisibility = await disk.getVisibility(this.path!)
+
+    if (fileVisibility === 'private') {
+      this.url = await this.getSignedUrl(signedUrlOptions)
+    } else {
+      this.url = await this.getUrl()
+    }
+  }
+
+  async preComputeUrl() {
+    if (this.options?.preComputeUrl === false) {
+      return
+    }
+
+    await this.computeUrl()
+  }
+
   async makeName(record?: LucidRow, attributeName?: string, originalName?: string) {
     if (typeof this.options.rename === 'function' && record) {
       this.#name = (await (this.options.rename as (record: LucidRow, attributeName?: string, originalName?: string) => Promise<string>)(record, attributeName, originalName)) as string
@@ -186,6 +209,23 @@ export class AttachmentBase implements AttachmentBaseInterface {
 
     return this
   }
+
+  async put() {
+    if (Buffer.isBuffer(this.input)) {
+      await this.getDisk().put(this.path, this.input)
+    } else if (this.input) {
+      await this.getDisk().copyFromFs(this.input, this.path)
+    }
+  }
+
+  async remove() {
+    await this.getDisk().delete(this.path)
+
+    if (this.originalPath) {
+      await this.getDisk().delete(this.originalPath)
+    }
+  }
+
 
   /**
    *

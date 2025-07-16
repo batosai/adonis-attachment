@@ -49,6 +49,8 @@ export type Attachment = AttachmentBase & {
   originalName: string
   variants?: Variant[]
 
+  moveFileForDelete(): Promise<void>
+  rollbackMoveFileForDelete(): Promise<void>
   createVariant(key: string, input: Input): Promise<Variant>
   getVariant(variantName: string): Variant | undefined
   getUrl(variantName?: string): Promise<string>

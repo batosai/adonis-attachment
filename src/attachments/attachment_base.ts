@@ -60,11 +60,15 @@ export class AttachmentBase implements AttachmentBaseInterface {
   }
 
   /**
-   * Getters
+   * Getters / setters
    */
 
   get name(): string {
     return this.#name
+  }
+
+  set name(name: string) {
+    this.#name = name
   }
 
   get folder(): string | undefined {

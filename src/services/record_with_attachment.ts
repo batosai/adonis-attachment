@@ -41,9 +41,10 @@ export default class RecordWithAttachment implements RecordWithAttachmentImpleme
    */
   async rollback(): Promise<void> {
     await Promise.allSettled(
-      this.#row.$attachments.attached.map((attachment: AttachmentType) =>
-        attachmentManager.remove(attachment)
-      )
+      this.#row.$attachments.attached.map(async (attachment: AttachmentType) => {
+        await attachment.rollbackMoveFileForDelete()
+        await attachmentManager.remove(attachment)
+      })
     )
   }
 
@@ -213,7 +214,7 @@ export default class RecordWithAttachment implements RecordWithAttachmentImpleme
      * Mark all original attachments for deletion
      */
     return Promise.allSettled(
-      attachmentAttributeNames.map((name) => {
+      attachmentAttributeNames.map(async (name) => {
         let attachments: AttachmentType[] = []
         const options = this.#getOptionsByAttributeName(name)
 
@@ -241,10 +242,13 @@ export default class RecordWithAttachment implements RecordWithAttachmentImpleme
           }
         }
 
-        for (let i = 0; i < attachments.length; i++) {
-          attachments[i].setOptions(options)
-          this.#row.$attachments.detached.push(attachments[i])
-        }
+        await Promise.allSettled(
+          attachments.map(async (attachment) => {
+            attachment.setOptions(options)
+            await attachment.moveFileForDelete()
+            this.#row.$attachments.detached.push(attachment)
+          })
+        )
       })
     )
   }

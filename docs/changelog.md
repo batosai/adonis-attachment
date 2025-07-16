@@ -1,5 +1,9 @@
 # Changelog
 
+## 4.0.4
+
+* fix issue with rename: false option causing file auto-deletion when uploading same filenameL!nk17
+
 ## 4.0.3
 
 * fix issue #20 (Error when trying to delete an attanchment)

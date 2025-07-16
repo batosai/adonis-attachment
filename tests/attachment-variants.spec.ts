@@ -73,7 +73,7 @@ test.group('variants', () => {
     assert.exists(data.weekendPics[1].thumbnail)
   }) //.timeout(25_000)
 
-  test('delete files after remove avatars', async ({ assert, cleanup }) => {
+  test('delete files after remove attribute Attachment', async ({ assert, cleanup }) => {
     const app = await createApp()
     const encodeStub = sinon.stub(BlurhashAdapter, 'encode').returns('mockBlurhash')
     cleanup(() => {
@@ -101,7 +101,7 @@ test.group('variants', () => {
     })
   })
 
-  test('delete files after remove weekendPics', async ({ assert, cleanup }) => {
+  test('delete files after remove attribute Attachment[]', async ({ assert, cleanup }) => {
     const app = await createApp()
     const encodeStub = sinon.stub(BlurhashAdapter, 'encode').returns('mockBlurhash')
     cleanup(() => {
@@ -138,7 +138,7 @@ test.group('variants', () => {
     })
   })
 
-  test('delete files after remove partial weekendPics', async ({ assert, cleanup }) => {
+  test('delete files after remove partial attribute Attachment[]', async ({ assert, cleanup }) => {
     const app = await createApp()
     const encodeStub = sinon.stub(BlurhashAdapter, 'encode').returns('mockBlurhash')
     cleanup(() => {

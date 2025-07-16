@@ -38,7 +38,7 @@ export class Attachment extends AttachmentBase implements AttachmentInterface {
   }
 
   /**
-   * Getters
+   * Getters / setters
    */
 
   get name() {
@@ -47,6 +47,10 @@ export class Attachment extends AttachmentBase implements AttachmentInterface {
     }
 
     return super.name
+  }
+
+  set name(name: string) {
+    super.name = name
   }
 
   /**
@@ -140,6 +144,28 @@ export class Attachment extends AttachmentBase implements AttachmentInterface {
     }
 
     return this
+  }
+
+  async moveFileForDelete() {
+    if (this.options && this.options.rename === false) {
+      const originalPath = this.path
+      this.originalName = `${this.name}.trash`
+      const trashPath = `${originalPath}.trash`
+      this.originalPath = trashPath
+
+      await this.getDisk().move(originalPath, trashPath)
+    }
+  }
+
+  async rollbackMoveFileForDelete() {
+    if (this.options && this.options.rename === false) {
+      const trashPath = this.path
+      this.originalName = this.name.replace('.trash', '')
+      const originalPath = trashPath.replace('.trash', '')
+      this.originalPath = originalPath
+
+      await this.getDisk().move(trashPath, originalPath)
+    }
   }
 
   /**

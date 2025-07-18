@@ -157,7 +157,7 @@ export class Attachment extends AttachmentBase implements AttachmentInterface {
   }
 
   async moveFileForDelete() {
-    if (this.options && this.options.rename === false) {
+    if (this.options && this.options.rename !== true) {
       const originalPath = this.path
       this.name = `${this.name}.trash`
       const trashPath = this.path
@@ -168,7 +168,7 @@ export class Attachment extends AttachmentBase implements AttachmentInterface {
   }
 
   async rollbackMoveFileForDelete() {
-    if (this.options && this.options.rename === false) {
+    if (this.options && this.options.rename !== true) {
       const trashPath = this.path
       this.name = this.name.replace('.trash', '')
       const originalPath = this.path

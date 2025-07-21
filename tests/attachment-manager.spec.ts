@@ -31,7 +31,7 @@ test.group('attachment-manager', () => {
   test('Attachment - should be null when db response is null', async ({ assert }) => {
     const attachmentManager = await app.container.make('jrmc.attachment')
 
-    const attachment = attachmentManager.createFromDbResponse(null)
+    const attachment = attachmentManager.createFromDbResponse(null as any)
     assert.isNull(attachment)
   })
 

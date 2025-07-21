@@ -2,6 +2,31 @@
 
 Now all you have to do is display your images in your view.
 
+## Use attachments [routes](/guide/basic_usage/route-setup)
+
+⚠️ [avalable in v5.0.0](/changelog#_5-0-0)
+
+::: code-group
+```sh [edge]
+<img src="/attachments/{{ user.avatar.getKeyId() }}" loading="lazy" alt="" />
+
+// by route
+<img 
+  src="{{ route('attachments', { key: user.avatar.getkeyId(), name: 'image-name.jpg' }) }}"
+  loading="lazy"
+  alt=""
+/>
+```
+```sh [Tuyau]
+<img
+  :src="tuyau.$url('attachments', { params: { key: user.avatar.keyId, name: 'image-name.jpg' }})"
+  loading="lazy"
+  alt=""
+/>
+```
+:::
+
+
 ## URLs for edge template
 
 ```ts
@@ -55,3 +80,31 @@ getSignedUrl options params accepts `expiresIn`, `contentType` et `contentDispos
 :::
 
 preComputeUrl is required.
+
+### With [Tuyau](https://tuyau.julr.dev)
+
+::: code-group
+```js [react]
+<img
+  src={tuyau.$url('attachments', { params: { key: user.avatar.keyId, name: 'image.jpg' }, query: { variant: 'thumbnail'} })}
+  loading="lazy"
+  alt=""
+/>
+```
+
+```vue
+<img
+  :src="tuyau.$url('attachments', { params: { key: user.avatar.keyId, name: 'image.jpg' }, query: { variant: 'thumbnail'} })"
+  loading="lazy"
+  alt=""
+/>
+```
+
+```svelte
+<img
+  src={tuyau.$url('attachments', { params: { key: user.avatar.keyId, name: 'image.jpg' }, query: { variant: 'thumbnail'} })}
+  loading="lazy"
+  alt=""
+/>
+```
+:::

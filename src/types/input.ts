@@ -21,6 +21,11 @@ export type Exif = {
     width: number
     height: number
   }
+  duration?: number
+  videoCodec?: string
+  audioCodec?: string
+  pages?: number
+  version?: string
 }
 
 export type Meta = {

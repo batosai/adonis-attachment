@@ -1,8 +1,32 @@
 # Changelog
 
+## 5.0.0
+
+* refacto [document_thumbnail_converter](/guide/converters/document-thumbnail), libreoffice-file-converter package is no longer required
+* refacto [pdf_thumbnail_converter](/guide/converters/pdf-thumbnail), node-poppler package is no longer required 
+* refacto [video_thumbnail_converter](/guide/converters/video-thumbnail), fluent-ffmpeg package is no longer required 
+* add [autodetect converter](/guide/converters/autodetect)
+* add [route](/guide/basic_usage/route-setup)
+* add custom rename in [model setup](/guide/basic_usage/model-setup#specifying-rename)
+* allow folder option to return Promise for dynamic folder paths
+* [config](/guide/essentials/configuration)
+  * autodetect converter by default
+  * options attribute is now deprecated
+  * add [timeout](/guide/essentials/configuration#timeout-optional-default-30000ms)
+* update documentation
+  * documentation v5
+  * new [Use cases](/guide/use-cases/picture-v2)
+  * update rename option in [model setup](/guide/basic_usage/model-setup#specifying-rename)
+  * [migration page](/migration)
+
+
+> Released at *2025-07-14*
+
 ## 4.0.4
 
 * fix issue with rename: false option causing file auto-deletion when uploading same filename
+
+> Released at *2025-07-16*
 
 ## 4.0.3
 

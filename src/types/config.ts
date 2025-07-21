@@ -5,6 +5,7 @@
  * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
  */
 
+import type { LucidRow } from '@adonisjs/lucid/types/model'
 import type { Converter, ConverterOptions } from './converter.js'
 
 import { ConfigProvider } from '@adonisjs/core/types'
@@ -14,8 +15,8 @@ type ImportConverter = {
   default: unknown
 }
 
-export interface ConverterConfig {
-  converter: () => Promise<ImportConverter>
+export interface ConverterConfig extends ConverterOptions {
+  converter?: () => Promise<ImportConverter>
   options?: ConverterOptions
 }
 
@@ -26,15 +27,17 @@ export interface Queue {
 export type BinPaths = {
   ffmpegPath?: string
   ffprobePath?: string
-  pdftocairoBasePath?: string
-  libreofficePaths?: Array<string>
+  pdftoppmPath?: string
+  pdfinfoPath?: string
+  sofficePath?: string
 }
 
 export type AttachmentConfig<KnownConverter extends Record<string, ConverterConfig>> = {
   bin?: BinPaths
   meta?: boolean
-  rename?: boolean
+  rename?: boolean | ((record: LucidRow, column?: string, currentName?: string) => string) | ((record: LucidRow, column?: string, currentName?: string) => Promise<string>)
   preComputeUrl?: boolean
+  timeout?: number
   converters?: {
     [K in keyof KnownConverter]: KnownConverter[K]
   }
@@ -49,6 +52,7 @@ export type InferConverters<
     meta?: unknown
     rename?: unknown
     preComputeUrl?: unknown
+    timeout?: unknown
     converters?: unknown
     queue?: unknown
   }>,

@@ -2,7 +2,7 @@ import type { LucidRow, LucidModel } from '@adonisjs/lucid/types/model'
 import type { RowWithAttachment } from '../src/types/mixin.js'
 import type { RegenerateOptions } from '../src/types/regenerate.js'
 
-import RecordWithAttachment from '../src/services/record_with_attachment.js'
+import { AttachmentRecordService } from '../src/services/attachment/index.js'
 
 export default class RegenerateService {
   #Model?: LucidModel
@@ -25,7 +25,7 @@ export default class RegenerateService {
 
   async run() {
     if (this.#row) {
-      const record = new RecordWithAttachment(this.#row)
+      const record = new AttachmentRecordService(this.#row)
       return record.regenerateVariants(this.#options)
     }
     else if (this.#Model) {
@@ -33,7 +33,7 @@ export default class RegenerateService {
 
       return Promise.all(
         entities.map(async (entity) => {
-          const record = new RecordWithAttachment(entity)
+          const record = new AttachmentRecordService(entity)
           return record.regenerateVariants(this.#options)
         })
       )

@@ -8,58 +8,41 @@
 import type { ConverterAttributes } from '../types/converter.js'
 import type { Input } from '../types/input.js'
 
+import { bufferToTempFile } from '../utils/helpers.js'
 import Converter from './converter.js'
 import ImageConverter from './image_converter.js'
-import { use } from '../utils/helpers.js'
+import Soffice from '../adapters/soffice.js'
 
 export default class DocumentThumbnailConverter extends Converter {
   async handle({ input, options }: ConverterAttributes): Promise<Input> {
-    const lib = await use('libreoffice-file-converter')
-    const LibreOfficeFileConverter = lib.LibreOfficeFileConverter
-    const outputBuffer = await this.documentToImage(LibreOfficeFileConverter, input)
+    const filePath = await this.documentToImage(input)
 
-    if (options && outputBuffer) {
+    if (options && filePath) {
       const converter = new ImageConverter()
       return await converter.handle({
-        input: outputBuffer,
+        input: filePath,
         options,
       })
     }
 
-    return outputBuffer
+    return filePath
   }
 
-  async documentToImage(LibreOfficeFileConverter: any, input: Input) {
-    let binaryPaths = undefined
-    if (this.binPaths && this.binPaths.libreofficePaths) {
-      binaryPaths = this.binPaths.libreofficePaths
-    }
-
-    const libreOfficeFileConverter = new LibreOfficeFileConverter({
-      childProcessOptions: {
-        timeout: 60 * 1000,
-      },
-      binaryPaths,
-    })
+  async documentToImage(input: Input) {
+    let file = input
 
     if (Buffer.isBuffer(input)) {
-      const output = await libreOfficeFileConverter.convert({
-        buffer: input,
-        input: 'buffer',
-        output: 'buffer',
-        format: 'jpeg',
-      })
-
-      return output
-    } else {
-      const output = await libreOfficeFileConverter.convert({
-        inputPath: input,
-        input: 'file',
-        output: 'buffer',
-        format: 'jpeg',
-      })
-
-      return output
+      file = await bufferToTempFile(input)
     }
+
+    const soffice = new Soffice(file as string)
+
+    if (this.binPaths) {
+      if (this.binPaths.sofficePath) {
+        soffice.setSofficePath(this.binPaths.sofficePath)
+      }
+    }
+
+    return soffice.convert()
   }
 }

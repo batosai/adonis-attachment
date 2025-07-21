@@ -1,6 +1,10 @@
 # General configuration 
 
-⚠️ [change in v3.0.0](/changelog#_3-0-0)
+
+::: warning
+⚠️ [change in v5.0.0](/changelog#_5-0-0)
+:::
+
 
 Attachment configuration is located in the `config/attachment.ts` file. By default, the file looks like this:
 
@@ -11,10 +15,7 @@ import { InferConverters } from '@jrmc/adonis-attachment/types/config'
 const attachmentConfig = defineConfig({
   converters: {
     thumbnail: {
-      converter: () => import('@jrmc/adonis-attachment/converters/image_converter'),
-      options: {
-        resize: 300,
-      }
+      resize: 300,
     }
   }
 })
@@ -39,6 +40,7 @@ declare module '@jrmc/adonis-attachment' {
 
 enable the preComputeUrl flag to pre compute the URLs after SELECT queries.
 
+
 ```typescript
 const attachmentConfig = defineConfig({
   preComputeUrl: true, // [!code focus]
@@ -48,13 +50,18 @@ const attachmentConfig = defineConfig({
 })
 ```
 
-## meta (optional, default true)
+::: info
+Alternate : please look the new [route](/guide/basic_usage/route-setup.html)
+:::
+
+
+## meta (optional, default false)
 
 you can set the default meta generation or not
 
 ```typescript
 const attachmentConfig = defineConfig({
-  meta: false, // [!code focus]
+  meta: true, // [!code focus]
   converters: {
     // ...
   }
@@ -76,6 +83,21 @@ const attachmentConfig = defineConfig({
 })
 ```
 
+`rename` can take a function for customization.
+
+```typescript
+import type { LucidRow } from '@adonisjs/lucid/types/model'
+
+const attachmentConfig = defineConfig({
+  rename: (file: LucidRow, column?: string, currentName?: string) => { // [!code focus]
+    return crypto.randomUUID() // [!code focus]
+  }, // [!code focus]
+  converters: {
+    // ...
+  }
+})
+```
+
 ---
 
 ## bin (optional)
@@ -87,10 +109,9 @@ const attachmentConfig = defineConfig({
   bin: { // [!code focus:8]
     ffmpegPath: 'ffmpeg_path', // the full path of the binary
     ffprobePath: 'ffprobe_path', // the full path of the binary
-    pdftocairoBasePath: 'base_dir_path' // the path of the directory containing the binary
-    libreofficePaths: [
-      'libreoffice_path', // the full path of the binary
-    ] // Array of paths to LibreOffice binary executables.
+    pdftoppmPath: 'pdftoppm_path' // the full path of the binary
+    pdfinfoPath: 'pdfinfo_path' // the full path of the binary
+    sofficePath: 'soffice_path', // the full path of the binary (libreoffice/openoffice)
   },
   converters: {
     // ...
@@ -99,12 +120,13 @@ const attachmentConfig = defineConfig({
 ```
 
 
-|OPSTIONS           |DESCRIPTIONS:                                                                       |
+|OPTIONS            |DESCRIPTIONS:                                                                       |
 | ----------------- | ---------------------------------------------------------------------------------- |
 |ffmpegPath         |Argument `path` is a string with the full path to the ffmpeg binary                 |
 |ffprobePath        |Argument `path` is a string with the full path to the ffprobe binary                |
-|pdftocairoBasePath |Argument `path` is a string with the path of the directory to the pdftocairo binary |
-|libreofficePaths   |Array of `paths` to LibreOffice binary executables                                  |
+|pdftoppmPath       |Argument `path` is a string with the path of the directory to the pdftoppm binary   |
+|pdfinfoPath        |Argument `path` is a string with the path of the directory to the pdfinfo binary    |
+|sofficePath        |Argument `path` to LibreOffice binary executables                                   |
 
 
 ### sample
@@ -154,6 +176,30 @@ const attachmentConfig = defineConfig({
   queue: { // [!code focus:3]
     concurrency: 2
   },
+  converters: {
+    // ...
+  }
+})
+
+export default attachmentConfig
+
+declare module '@jrmc/adonis-attachment' {
+  interface AttachmentVariants extends InferConverters<typeof attachmentConfig> {}
+}
+```
+
+
+## timeout (optional, Default 30000ms)
+
+Maximum duration (in milliseconds) that an operation can take before being interrupted.
+
+```typescript
+import app from '@adonisjs/core/services/app'
+import { defineConfig } from '@jrmc/adonis-attachment'
+import { InferConverters } from '@jrmc/adonis-attachment/types/config'
+
+const attachmentConfig = defineConfig({
+  timeout: 40_000,
   converters: {
     // ...
   }

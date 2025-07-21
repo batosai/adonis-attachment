@@ -6,7 +6,11 @@ It's required [Adonis Drive](https://docs.adonisjs.com/guides/digging-deeper/dri
 
 You can install it using the following ace command to automagically configure it:
 ```sh
+# V4 stable
 node ace add @jrmc/adonis-attachment
+
+# V5 beta
+node ace add @jrmc/adonis-attachment@beta
 ```
 
 Alternatively, you can install it manually using your favorite package manager and running the configure command:
@@ -24,6 +28,10 @@ node ace configure @jrmc/adonis-attachment
 yarn add @jrmc/adonis-attachment
 node ace configure @jrmc/adonis-attachment
 ```
+:::
+
+::: info
+Doc for v4 stable ⚠️ [v4.x.x](/v4/guide/essentials/installation)
 :::
 
 

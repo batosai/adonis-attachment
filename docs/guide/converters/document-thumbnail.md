@@ -22,15 +22,13 @@ By default, image format is `JPEG` and size is video size. `options` attribute u
 
 Sample:
 
-```typescript{6-9}
+```typescript{4-6}
 const attachmentConfig = defineConfig({
   converters: {
-    preview: { // [!code focus:7]
+    preview: { // [!code focus:5]
       converter: () => import('@jrmc/adonis-attachment/converters/document_thumbnail_converter'),
-      options: {
-        format: 'webp',
-        resize: 720
-      }
+      format: 'webp',
+      resize: 720
     }
   }
 })

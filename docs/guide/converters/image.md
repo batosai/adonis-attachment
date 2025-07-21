@@ -10,9 +10,7 @@ const attachmentConfig = defineConfig({
   converters: {
     large: { // [!code focus:6]
       converter: () => import('@jrmc/adonis-attachment/converters/image_converter'), 
-      options: {
-        resize: 1280,
-      }
+      resize: 1280,
     }
   }
 })
@@ -27,10 +25,8 @@ const attachmentConfig = defineConfig({
   converters: {
     thumbnail: { // [!code focus:7]
       converter: () => import('@jrmc/adonis-attachment/converters/image_converter'),
-      options: {
-        resize: 300,
-        format: 'jpeg', // [!code highlight]
-      }
+      resize: 300,
+      format: 'jpeg', // [!code highlight]
     }
   }
 })
@@ -41,18 +37,16 @@ Options format is `string` or `object` [ format,  options ] details in documenta
 
 Sample for personalize image quality: 
 
-```typescript{8-13}
+```typescript{6-11}
 const attachmentConfig = defineConfig({
   converters: {
     thumbnail: { // [!code focus:12]
       converter: () => import('@jrmc/adonis-attachment/converters/image_converter'),
-      options: {
-        resize: 300,
-        format: {
-          format: 'jpeg',
-          options: {
-            quality: 80
-          }
+      resize: 300,
+      format: {
+        format: 'jpeg',
+        options: {
+          quality: 80
         }
       }
     }
@@ -66,7 +60,7 @@ Options resize is `number` or `object`(options) details in documentation : [shar
 
 Sample:
 
-```typescript{11-16}
+```typescript{10-15}
 import { defineConfig } from '@jrmc/adonis-attachment'
 import { InferConverters } from '@jrmc/adonis-attachment/types/config'
 import sharp from 'sharp'
@@ -75,15 +69,13 @@ const attachmentConfig = defineConfig({
   converters: {
     thumbnail: {
       converter: () => import('@jrmc/adonis-attachment/converters/image_converter'),
-      options: {
-        format: 'jpeg',
-        resize: { // https://sharp.pixelplumbing.com/api-resize
-          width: 400,
-          height: 400,
-          fit: sharp.fit.cover,
-          position: 'top'
-        },
-      }
+      format: 'jpeg',
+      resize: { // https://sharp.pixelplumbing.com/api-resize
+        width: 400,
+        height: 400,
+        fit: sharp.fit.cover,
+        position: 'top'
+      },
     }
   }
 })
@@ -102,17 +94,15 @@ The blurhash option is used to enable, disable, and customise the generation of 
 ```typescript
 const attachmentConfig = defineConfig({
   converters: {
-    thumbnail: { // [!code focus:10]
+    thumbnail: { // [!code focus:9]
       converter: () => import('@jrmc/adonis-attachment/converters/image_converter'), 
-      options: {
-        blurhash: true
-        // or
-        // blurhash: {
-        //   enabled: true,
-        //   componentX: 4,
-        //   componentY: 4
-        // }
-      }
+      blurhash: true
+      // or
+      // blurhash: {
+      //   enabled: true,
+      //   componentX: 4,
+      //   componentY: 4
+      // }
     }
   }
 })

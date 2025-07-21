@@ -6,14 +6,13 @@
  */
 
 import type { Exif, Input } from '../types/input.js'
+import type { Converter } from '../types/converter.js'
 
 import fs from 'node:fs/promises'
 import ExifReader from 'exifreader'
-import logger from '@adonisjs/core/services/logger'
 import { fileTypeFromBuffer, fileTypeFromFile } from 'file-type'
-import { bufferToTempFile, cleanObject, use } from '../utils/helpers.js'
+import { bufferToTempFile, cleanObject } from '../utils/helpers.js'
 import { ResolvedAttachmentConfig } from '../define_config.js'
-import { Converter } from '../types/converter.js'
 
 type KnownConverters = Record<string, Converter>
 
@@ -49,6 +48,10 @@ const exif = async (
 
   if (fileType?.mime.includes('video')) {
     return videoExif(input, config)
+  }
+
+  if (fileType?.mime.includes('pdf')) {
+    return pdfExif(input, config)
   }
 
   if (buffer && fileType?.mime.includes('image')) {
@@ -134,33 +137,66 @@ async function imageExif(buffer: Buffer) {
 }
 
 async function videoExif(input: Input, config: ResolvedAttachmentConfig<KnownConverters>) {
-  return new Promise<Exif | undefined>(async (resolve) => {
-    const ffmpeg = await use('fluent-ffmpeg')
+  const { default: FFmpeg } = await import('./ffmpeg.js')
 
+  return new Promise<Exif | undefined>(async (resolve) => {
     let file = input
     if (Buffer.isBuffer(input)) {
       file = await bufferToTempFile(input)
     }
 
-    const ff = ffmpeg(file)
+    const ffmpeg = new FFmpeg(file as string)
 
     if (config.bin) {
       if (config.bin.ffprobePath) {
-        ff.setFfprobePath(config.bin.ffprobePath)
+        ffmpeg.setFfprobePath(config.bin.ffprobePath)
       }
     }
 
-    ff.ffprobe(0, (err: unknown, data: any) => {
-      if (err) {
-        logger.error({ err })
-      }
+    const info = await ffmpeg.exif()
 
+    if (info.width && info.height && info.duration) {
       resolve({
         dimension: {
-          width: data.streams[0].width,
-          height: data.streams[0].height,
+          width: info.width,
+          height: info.height,
         },
+        duration: info.duration,
+        videoCodec: info?.videoCodec,
+        audioCodec: info?.audioCodec,
       })
-    })
+    }
+  })
+}
+
+async function pdfExif(input: Input, config: ResolvedAttachmentConfig<KnownConverters>) {
+  const { default: Poppler } = await import('./poppler.js')
+  return new Promise<Exif | undefined>(async (resolve) => {
+    let file = input
+    if (Buffer.isBuffer(input)) {
+      file = await bufferToTempFile(input)
+    }
+
+    const poppler = new Poppler(file as string)
+
+    if (config.bin) {
+      if (config.bin.pdfinfoPath) {
+        poppler.setPdfInfoPath(config.bin.pdfinfoPath)
+      }
+    }
+
+    const info = await poppler.pdfInfo()
+
+    if (info.width && info.height && info.pages) {
+      resolve({
+        dimension: {
+          width: info.width,
+          height: info.height,
+        },
+        version: info?.version,
+        pages: info?.pages,
+        date: info?.creationDate,
+      })
+    }
   })
 }

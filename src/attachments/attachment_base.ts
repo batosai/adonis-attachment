@@ -25,6 +25,7 @@ export class AttachmentBase implements AttachmentBaseInterface {
 
   input?: Input
 
+  #keyId?: string
   #name: string
   #folder?: string
 
@@ -60,7 +61,7 @@ export class AttachmentBase implements AttachmentBaseInterface {
   }
 
   /**
-   * Getters / setters
+   * Getters / Setters
    */
 
   get name(): string {
@@ -121,6 +122,15 @@ export class AttachmentBase implements AttachmentBaseInterface {
     return this.getDisk().getSignedUrl(this.path, signedUrlOptions)
   }
 
+  getKeyId() {
+    return this.#keyId
+  }
+
+  setKeyId(keyId: string) {
+    this.#keyId = keyId
+    return this
+  }
+
   setOptions(options: LucidOptions) {
     this.options = {
       ...this.options,
@@ -129,9 +139,56 @@ export class AttachmentBase implements AttachmentBaseInterface {
     return this
   }
 
-  makeFolder(record?: LucidRow) {
+  /**
+   * Actions
+   */
+
+  async computeUrl(signedUrlOptions?: SignedURLOptions) {
+    const disk = this.getDisk()
+    const fileVisibility = await disk.getVisibility(this.path!)
+
+    if (fileVisibility === 'private') {
+      this.url = await this.getSignedUrl(signedUrlOptions)
+    } else {
+      this.url = await this.getUrl()
+    }
+  }
+
+  async preComputeUrl() {
+    if (this.options?.preComputeUrl === false) {
+      return
+    }
+
+    await this.computeUrl()
+  }
+
+  async makeName(record?: LucidRow, attributeName?: string, originalName?: string) {
+    if (typeof this.options.rename === 'function' && record) {
+      this.#name = (await (this.options.rename as (record: LucidRow, attributeName?: string, originalName?: string) => Promise<string>)(record, attributeName, originalName)) as string
+    } else if (originalName && this.options.rename === false) {
+      this.#name = originalName
+    }
+
+    if (this.#name && record) {
+      const parameters = extractPathParameters(this.#name)
+
+      if (parameters) {
+        parameters.forEach((parameter) => {
+          const attribute = record.$attributes[parameter]
+          if (typeof attribute === 'string') {
+            const name = string.slug(string.noCase(string.escapeHTML(attribute.toLowerCase())))
+            this.#name = this.#name?.replace(`:${parameter}`, name)
+          }
+        })
+      }
+    }
+
+    return this
+  }
+
+  async makeFolder(record?: LucidRow) {
     if (typeof this.options.folder === 'function' && record) {
-      this.#folder = (this.options.folder as (record: LucidRow) => string)(record)
+      this.#folder = (await (this.options.folder as (record: LucidRow) => Promise<string>)(record)) as string
     } else if (this.options.folder) {
       this.#folder = this.options.folder as string
     }
@@ -153,12 +210,30 @@ export class AttachmentBase implements AttachmentBaseInterface {
     return this
   }
 
+  async put() {
+    if (Buffer.isBuffer(this.input)) {
+      await this.getDisk().put(this.path, this.input)
+    } else if (this.input) {
+      await this.getDisk().copyFromFs(this.input, this.path)
+    }
+  }
+
+  async remove() {
+    await this.getDisk().delete(this.path)
+
+    if (this.originalPath) {
+      await this.getDisk().delete(this.originalPath)
+    }
+  }
+
+
   /**
    *
    */
 
   toObject(): AttachmentBaseAttributes {
     return {
+      keyId: this.getKeyId(),
       name: this.name,
       extname: this.extname,
       size: this.size,

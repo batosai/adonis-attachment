@@ -20,6 +20,7 @@ export type ResolvedAttachmentConfig<KnownConverters extends Record<string, Conv
   meta?: boolean
   rename?: boolean
   preComputeUrl?: boolean
+  timeout?: number
   converters?: { [K in keyof KnownConverters]: KnownConverters[K] }
   queue?: Queue
 }
@@ -36,11 +37,18 @@ export function defineConfig<KnownConverter extends Record<string, ConverterConf
         const converter = config.converters[converterName]
         const binConfig = config.bin
 
+        if (converter.converter === undefined) {
+          converter.converter = () => import('@jrmc/adonis-attachment/converters/autodetect_converter')
+        }
+
         try {
           const { default: value } = await converter.converter()
+          const { converter: _, ...opt } = converter
+          const options = converter.options || opt
+
           const Converter = value as typeof BaseConverter
 
-          converters[converterName] = new Converter(converter.options, binConfig)
+          converters[converterName] = new Converter(options, binConfig)
         } catch (error) {
           console.error(`Failed to load converter ${converterName}:`, error)
         }

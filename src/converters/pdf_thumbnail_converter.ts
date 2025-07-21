@@ -8,18 +8,15 @@
 import type { ConverterAttributes } from '../types/converter.js'
 import type { Input } from '../types/input.js'
 
-import os from 'node:os'
-import path from 'node:path'
-import { cuid } from '@adonisjs/core/helpers'
+
 import Converter from './converter.js'
 import ImageConverter from './image_converter.js'
-import { use } from '../utils/helpers.js'
+import Poppler from '../adapters/poppler.js'
+import { bufferToTempFile } from '../utils/helpers.js'
 
 export default class PdfThumbnailConverter extends Converter {
   async handle({ input, options }: ConverterAttributes): Promise<Input> {
-    const nodePoppler = await use('node-poppler')
-    const Poppler = nodePoppler.Poppler
-    const filePath = await this.pdfToImage(Poppler, input)
+    const filePath = await this.pdfToImage(input)
 
     if (options && filePath) {
       const converter = new ImageConverter()
@@ -32,30 +29,24 @@ export default class PdfThumbnailConverter extends Converter {
     return filePath
   }
 
-  async pdfToImage(Poppler: any, input: Input) {
-    let binPath = null
+  async pdfToImage(input: Input) {
+    let file = input
 
-    if (this.binPaths && this.binPaths.pdftocairoBasePath) {
-      binPath = this.binPaths.pdftocairoBasePath
+    if (Buffer.isBuffer(input)) {
+      file = await bufferToTempFile(input)
     }
 
-    const poppler = new Poppler(binPath)
+    const poppler = new Poppler(file as string)
 
-    const pdfInfo = await poppler.pdfInfo(input)
-    const pagesMatch = pdfInfo.match(/Pages:\s*(\d+)/)
-    const pageCount = pagesMatch ? parseInt(pagesMatch[1]) : 1
-
-    const pageNumberFormat = '0'.repeat(String(pageCount).length - 1)
-
-    const options = {
-      // firstPageToConvert: 1,
-      lastPageToConvert: 1,
-      jpegFile: true,
+    if (this.binPaths) {
+      if (this.binPaths.pdftoppmPath) {
+        poppler.setPdfToPpmPath(this.binPaths.pdftoppmPath)
+      }
     }
-    const filePath = path.join(os.tmpdir(), cuid())
 
-    await poppler.pdfToCairo(input, filePath, options)
-
-    return `${filePath}-${pageNumberFormat}1.jpg`
+    return poppler.pdfToPpm({
+      page: this.options?.startPage || 1,
+      dpi: 300,
+    })
   }
 }

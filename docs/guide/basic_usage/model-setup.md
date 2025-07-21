@@ -59,12 +59,16 @@ class User extends BaseModel {
 }
 ```
 
-⚠️ :id autoincrement parameter is not defined on first save
+::: info
+`:id` autoincrement parameter is not defined on first save
+:::
 
 
 ## Specifying variants
 
-Generate variants
+Generate variants after create entity
+
+Optionnal if when using the [route](/guide/basic_usage/route-setup.html). But it allows pre-generation
 
 ```ts
 class User extends BaseModel {
@@ -99,6 +103,10 @@ class User extends BaseModel {
 }
 ```
 
+::: info
+Alternate : please look the new [route](/guide/basic_usage/route-setup.html)
+:::
+
 
 ## Specifying meta
 
@@ -125,6 +133,41 @@ class User extends BaseModel {
   declare avatar: Attachment
 }
 ```
+
+custom (⚠️ [avalable in v5.0.0](/changelog#_5-0-0))
+
+`rename` can take a function for customization.
+
+```ts
+class User extends BaseModel {
+  static selfAssignPrimaryKey = true
+
+  @column({ isPrimary: true })
+  declare id: string // UUID
+
+  @attachment({ rename: () => 'my-attachment.jpg' }) // [!code highlight]
+  declare avatar: Attachment
+
+  // or
+
+  @attachment({ rename: () => ':id.jpg' }) // [!code highlight]
+  declare avatar: Attachment
+
+  // or
+
+  @attachment({ rename: async (user: User) => { // [!code highlight]
+    return crypto.randomUUID() // [!code highlight]
+  }}) // [!code highlight]
+  declare avatar: Attachment
+}
+```
+
+::: info
+
+option `:model_attribut`
+
+`:id` autoincrement parameter is not defined on first save
+:::
 
 ## Re-naming properties
 
@@ -181,6 +224,26 @@ declare avatar: Attachment | null
 /**
  {
   avatar: '/uploads/lj9kbwvb8gqq8pjsmuog369l.jpg',
+ } 
+*/
+```
+
+or for assets route (⚠️ [avalable in v5.0.0](/changelog#_5-0-0))
+
+```ts
+@attachments({
+  serialize: (value?: Attachment) => {
+    if (value) {
+      return `assets/${value.keyId}` // [!code highlight]
+    }
+    return null
+  }
+})
+declare avatar: Attachment | null
+
+/**
+ {
+  avatar: '/assets/[keyId]',
  } 
 */
 ```

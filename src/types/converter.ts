@@ -167,4 +167,6 @@ export type ConverterOptions = {
     | avif
     | heif
   blurhash?: boolean | BlurhashOptions
+  startTime?: number
+  startPage?: number
 }

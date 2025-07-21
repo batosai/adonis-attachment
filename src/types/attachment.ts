@@ -31,7 +31,6 @@ export type AttachmentBase = {
 
   options: LucidOptions
 
-  makeFolder(record?: LucidRow): void
   getDisk(): Disk
   getBytes(): Promise<Uint8Array>
   getBuffer(): Promise<Buffer>
@@ -39,7 +38,15 @@ export type AttachmentBase = {
   getUrl(): Promise<string>
   getSignedUrl(signedUrlOptions?: SignedURLOptions): Promise<string>
 
+  setKeyId(keyId: string): AttachmentBase
   setOptions(options: LucidOptions): AttachmentBase
+
+  computeUrl(signedUrlOptions?: SignedURLOptions): Promise<void>
+  preComputeUrl(): Promise<void>
+  makeFolder(record?: LucidRow): void
+  makeName(record?: LucidRow, attributeName?: string, originalName?: string): void
+  put(): Promise<void>
+  remove(): Promise<void>
 
   toObject(): AttachmentBaseAttributes
   toJSON(): Object
@@ -49,15 +56,19 @@ export type Attachment = AttachmentBase & {
   originalName: string
   variants?: Variant[]
 
-  moveFileForDelete(): Promise<void>
-  rollbackMoveFileForDelete(): Promise<void>
   createVariant(key: string, input: Input): Promise<Variant>
-  getVariant(variantName: string): Variant | undefined
+  getVariant(variantName: string): Variant | null
   getUrl(variantName?: string): Promise<string>
   getSignedUrl(
     variantNameOrOptions?: string | SignedURLOptions,
     signedUrlOptions?: SignedURLOptions
   ): Promise<string>
+
+  preComputeUrl(): Promise<void>
+  moveFileForDelete(): Promise<void>
+  rollbackMoveFileForDelete(): Promise<void>
+  remove(): Promise<void>
+
   toObject(): AttachmentAttributes
 }
 
@@ -72,16 +83,17 @@ export type Variant = AttachmentBase & {
 
 export type LucidOptions<T = LucidRow> = {
   disk?: string
-  folder?: string | ((record: T) => string)
+  folder?: string | ((record: T) => string) | ((record: T) => Promise<string>)
+  rename?: boolean | ((record: T, column?: string, currentName?: string) => string) | ((record: T, column?: string, currentName?: string) => Promise<string>)
   preComputeUrl?: boolean
   variants?: (keyof AttachmentVariants)[]
-  rename?: boolean
   meta?: boolean
   serialize?: (value?: Attachment) => unknown
   serializeAs?: string | null
 }
 
 export type AttachmentBaseAttributes = {
+  keyId?: string
   name?: string
   size: number
   meta?: Exif

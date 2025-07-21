@@ -1,6 +1,6 @@
 {
   "name": "@jrmc/adonis-attachment",
-  "version": "4.0.4",
+  "version": "5.0.0-beta.6",
   "type": "module",
   "description": "Turn any field on your Lucid model to an attachment data type",
   "engines": {
@@ -60,51 +60,64 @@
     "./providers/*": "./build/providers/*.js",
     "./commands": "./build/commands/main.js",
     "./commands/*": "./build/commands/*.js",
+    "./controllers/*": "./build/src/controllers/*.js",
     "./attachment_service": "./build/services/attachment_service.js",
     "./attachment_provider": "./build/providers/attachment_provider.js"
   },
   "dependencies": {
-    "@poppinss/defer": "^1.1.1",
+    "@poppinss/defer": "^1.1.2",
+    "@verrou/core": "^0.5.1",
     "blurhash": "^2.0.5",
-    "exifreader": "^4.26.0",
-    "file-type": "^19.6.0",
-    "mime-types": "^2.1.35"
+    "execa": "^9.6.0",
+    "exifreader": "^4.31.1",
+    "file-type": "^21.0.0",
+    "mime-types": "^3.0.1"
   },
   "devDependencies": {
     "@adonisjs/assembler": "^7.8.2",
-    "@adonisjs/core": "^6.17.1",
-    "@adonisjs/drive": "^3.2.0",
-    "@adonisjs/lucid": "^21.6.0",
-    "@adonisjs/prettier-config": "^1.4.0",
-    "@adonisjs/tsconfig": "^1.4.0",
+    "@adonisjs/core": "^6.19.0",
+    "@adonisjs/drive": "^3.4.1",
+    "@adonisjs/lock": "^1.1.1",
+    "@adonisjs/lucid": "^21.7.0",
+    "@adonisjs/prettier-config": "^1.4.5",
+    "@adonisjs/tsconfig": "^1.4.1",
     "@japa/assert": "^4.0.1",
     "@japa/expect-type": "^2.0.3",
     "@japa/file-system": "^2.3.2",
-    "@japa/plugin-adonisjs": "^4.0.0",
     "@japa/runner": "^4.1.0",
     "@poppinss/utils": "^6.9.2",
-    "@swc/core": "^1.10.7",
-    "@types/luxon": "^3.4.2",
-    "@types/mime-types": "^2.1.4",
-    "@types/node": "^22.10.7",
-    "@types/sinon": "^17.0.3",
-    "better-sqlite3": "^11.8.0",
+    "@swc/core": "^1.12.9",
+    "@types/luxon": "^3.6.2",
+    "@types/mime-types": "^3.0.1",
+    "@types/node": "^24.0.10",
+    "@types/sinon": "^17.0.4",
+    "better-sqlite3": "^12.2.0",
     "c8": "^10.1.3",
     "copyfiles": "^2.4.1",
     "del-cli": "^6.0.0",
-    "flydrive": "^1.1.0",
-    "luxon": "^3.5.0",
+    "flydrive": "^1.3.0",
+    "luxon": "^3.6.1",
     "prettier": "^3.4.2",
-    "sharp": "^0.33.5",
-    "sinon": "^19.0.2",
+    "sharp": "^0.34.2",
+    "sinon": "^21.0.0",
     "ts-node": "^10.9.2",
-    "typescript": "^5.7.3",
+    "typescript": "^5.3.3",
     "vitepress": "^1.5.0"
   },
   "peerDependencies": {
     "@adonisjs/core": "^6.12.1",
     "@adonisjs/drive": "^3.2.0",
-    "@adonisjs/lucid": "^20.6.0 || ^21.0.0"
+    "@adonisjs/lock": "^1.1.1",
+    "@adonisjs/lucid": "^20.6.0 || ^21.0.0",
+    "sharp": "^0.33.0"
+  },
+  "peerDependenciesMeta": {
+    "@adonisjs/lock": {
+      "optional": true
+    },
+    "sharp": {
+      "optional": true
+    }
   },
   "prettier": "@adonisjs/prettier-config",
   "c8": {
@@ -118,7 +131,7 @@
   },
   "publishConfig": {
     "access": "public",
-    "tag": "latest"
+    "tag": "beta"
   },
   "volta": {
     "node": "20.17.0"

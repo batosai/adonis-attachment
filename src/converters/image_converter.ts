@@ -16,6 +16,7 @@ export default class ImageConverter extends Converter {
     const sharp = await use('sharp')
     const resize = options?.resize || {}
     let format = options?.format || 'webp'
+    const autoOrient = options?.autoOrient ?? false
     let formatoptions = {}
 
     if (typeof format !== 'string') {
@@ -23,8 +24,14 @@ export default class ImageConverter extends Converter {
       format = format.format
     }
 
-    const buffer: Input = await sharp(input)
+    const image = sharp(input)
       .withMetadata()
+
+    if (autoOrient) {
+      image.autoOrient()
+    }
+
+    const buffer: Input = await image
       .resize(resize)
       .toFormat(format, formatoptions)
       .toBuffer()

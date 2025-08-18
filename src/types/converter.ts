@@ -166,5 +166,6 @@ export type ConverterOptions = {
     | webp
     | avif
     | heif
+  autoOrient?: boolean
   blurhash?: boolean | BlurhashOptions
 }

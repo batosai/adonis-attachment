@@ -105,10 +105,16 @@ const attachmentConfig = defineConfig({
       // }
 
       /**
+      *
+      * https://sharp.pixelplumbing.com/api-operation/#autoorient
+      */
+      // autoOrient: false,
+
+      /**
       * generation of blurhashes (default: true)
       * https://blurha.sh/
       */
-      // blurhash: true
+      // blurhash: true,
     }
   }
 })

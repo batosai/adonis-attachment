@@ -12,6 +12,7 @@
 * [config](/guide/essentials/configuration)
   * autodetect converter by default
   * options attribute is now deprecated
+  * [autoOrient](/guide/converters/image#auto-orient) is true by default
   * add [timeout](/guide/essentials/configuration#timeout-optional-default-30000ms)
 * update documentation
   * documentation v5
@@ -20,7 +21,11 @@
   * [migration page](/migration)
 
 
-> Released at *2025-07-14*
+> Released at *2025-08-18*
+
+## 4.1.0
+
+* add [autoOrient](/v4/guide/converters/image#auto-orient)
 
 ## 4.0.4
 

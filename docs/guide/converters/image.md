@@ -87,6 +87,21 @@ declare module '@jrmc/adonis-attachment' {
 }
 ```
 
+## Auto-orient
+
+Auto-orient based on the EXIF Orientation tag, then remove the tag. Mirroring is supported and may infer the use of a flip operation. ([sharp doc](https://sharp.pixelplumbing.com/api-operation/#autoorient))
+`autoOrient` is true by default.
+
+```typescript
+const attachmentConfig = defineConfig({
+  converters: {
+    thumbnail: { // [!code focus:3]
+      autoOrient: false
+    }
+  }
+})
+```
+
 ## BlurHash
 
 The blurhash option is used to enable, disable, and customise the generation of blurhashes ([https://blurha.sh/](https://blurha.sh/)) for the variants. Blurhash generation is disabled by default.

@@ -27,13 +27,6 @@ declare module '@jrmc/adonis-attachment' {
 }
 ```
 
-## converters
-
-|OPTIONS:  | DESCRIPTIONS:            |
-| -------- | ------------------------ |
-|converter |Class for generate variant|
-|options   |Options converter         |
-
 ---
 
 ## preComputeUrl (optional, default false)

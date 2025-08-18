@@ -70,3 +70,27 @@ thumbnail: {
 },
 ```
 :::
+
+- [autoOrient](/v4/guide/converters/image#auto-orient) is now true by default.
+
+If you do not want this option, please add it with the value false
+
+::: code-group
+```typescript [Now]
+thumbnail: {
+  resize: 300,
+  format: 'webp',
+  autoOrient: false,
+},
+```
+
+```typescript [Before]
+thumbnail: {
+  converter: () => import('@jrmc/adonis-attachment/converters/autodetect_converter'),
+  options: {
+    resize: 300,
+    format: 'webp',
+  },
+},
+```
+:::

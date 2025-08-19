@@ -105,8 +105,11 @@ Auto-orient based on the EXIF Orientation tag, then remove the tag. Mirroring is
 ```typescript
 const attachmentConfig = defineConfig({
   converters: {
-    thumbnail: { // [!code focus:3]
-      autoOrient: true
+    thumbnail: { // [!code focus:6]
+      converter: () => import('@jrmc/adonis-attachment/converters/image_converter'), 
+      options: {
+        autoOrient: true
+      }
     }
   }
 })

@@ -104,7 +104,9 @@ class User extends BaseModel {
 ```
 
 ::: info
-Alternate : please look the new [route](/guide/basic_usage/route-setup.html)
+Please check the [View page](/guide/basic_usage/view-setup) for URL usage.
+
+Alternate : please look the new [route](/guide/basic_usage/route-setup)
 :::
 
 

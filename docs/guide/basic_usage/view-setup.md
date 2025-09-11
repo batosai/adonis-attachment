@@ -29,6 +29,8 @@ Now all you have to do is display your images in your view.
 
 ## URLs for edge template
 
+(preComputeUrl is not necessary)
+
 ```ts
 await user.avatar.getUrl()
 await user.avatar.getUrl('thumbnail')
@@ -55,7 +57,9 @@ await user.avatar.getSignedUrl('thumbnail')
 
 getSignedUrl options params accepts `expiresIn`, `contentType` et `contentDisposition`. [More informations](https://flydrive.dev/docs/disk_api#getsignedurl)
 
-### If preComputeUrl is enabled
+## PreComputeUrl is enabled
+
+Please check the [preComputeUrl](/guide/basic_usage/model-setup#specifying-precomputeurl) option for enabled or [global config](/guide/essentials/configuration#precomputeurl-optional-default-false)
 
 ```edge
 <img src="{{ user.avatar.url }}" loading="lazy" alt="" />
@@ -79,7 +83,7 @@ getSignedUrl options params accepts `expiresIn`, `contentType` et `contentDispos
 ```
 :::
 
-preComputeUrl is required.
+preComputeUrl is required in [model](/guide/basic_usage/model-setup#specifying-precomputeurl) or [global config](/guide/essentials/configuration#precomputeurl-optional-default-false)
 
 ### With [Tuyau](https://tuyau.julr.dev)
 

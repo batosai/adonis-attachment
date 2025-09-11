@@ -2,7 +2,9 @@
 
 You can regenerate the different variants using the `RegenerateService`.
 
-⚠️ [change in v4.0.0](/changelog#_4-0-0)
+Regeneration only applies to the variants defined in the [model](/guide/basic_usage/model-setup#specifying-variants).
+
+⚠️ [avalable in v4.0.0](/changelog#_4-0-0)
 
 ## Regeneration by Row
 
@@ -49,5 +51,3 @@ You can regenerate the different variants using the `RegenerateService`.
     attributes: [ 'avatar', 'files' ]
   }).run()
 ```
-
-

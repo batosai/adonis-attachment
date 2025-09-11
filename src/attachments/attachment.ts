@@ -145,12 +145,11 @@ export class Attachment extends AttachmentBase implements AttachmentInterface {
     if (this.variants) {
       for (const key in this.variants) {
         if (Object.prototype.hasOwnProperty.call(this.variants, key)) {
-          await this.computeUrl(this.variants[key])
+          await this.variants[key].computeUrl()
         }
       }
     }
   }
-
 
   async makeName(record?: LucidRow, attributeName?: string) {
     return super.makeName(record, attributeName, this.originalName)

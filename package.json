@@ -131,7 +131,7 @@
   },
   "publishConfig": {
     "access": "public",
-    "tag": "beta"
+    "tag": "latest"
   },
   "volta": {
     "node": "20.17.0"

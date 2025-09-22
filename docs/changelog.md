@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.0.1 (and 4.1.1)
+
+* fix optionnal peerDependencies version for sharp
+
 ## 5.0.0
 
 * refacto [document_thumbnail_converter](/guide/converters/document-thumbnail), libreoffice-file-converter package is no longer required
@@ -21,7 +25,7 @@
   * [migration page](/migration)
 
 
-> Released at *2025-08-18*
+> Released at *2025-09-22*
 
 ## 4.1.0
 

@@ -1,6 +1,6 @@
 # Changelog
 
-## 5.0.1 (and 4.1.1)
+## 5.0.1
 
 * fix optionnal peerDependencies version for sharp
 

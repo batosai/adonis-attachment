@@ -8,9 +8,6 @@
 import { stubsRoot } from '../../stubs/main.js'
 import { args, BaseCommand } from '@adonisjs/core/ace'
 
-/**
- * The make controller command to create an HTTP controller
- */
 export default class MakeConverter extends BaseCommand {
   static commandName = 'make:converter'
   static description = 'Create a new media converter class'

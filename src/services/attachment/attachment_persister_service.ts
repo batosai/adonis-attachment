@@ -98,7 +98,7 @@ export class AttachmentPersisterService {
             const key = encryption.encrypt({
               model: model.table,
               id: record.row.$attributes['id'],
-              attribute: name,
+              attribute: model.namingStrategy.columnName(model, name),
               index: i,
               options: {
                 disk,

@@ -17,6 +17,7 @@ type PersistAttributes = {
   modelTable: string
   attributeName: string
   multiple: boolean
+  primaryKey: string
 }
 
 export default class VariantPersisterService {
@@ -24,12 +25,14 @@ export default class VariantPersisterService {
   #modelTable: string
   #attributeName: string
   #multiple: boolean
+  #primaryKey: string
 
-  constructor({ id, modelTable, attributeName, multiple }: PersistAttributes) {
+  constructor({ id, modelTable, attributeName, multiple, primaryKey}: PersistAttributes) {
     this.#id = id
     this.#modelTable = modelTable
     this.#attributeName = attributeName
     this.#multiple = multiple
+    this.#primaryKey = primaryKey
   }
 
   async persist({ attachments, variants }: {
@@ -75,7 +78,7 @@ export default class VariantPersisterService {
   async #executeUpdate(trx: any, data: Record<string, string>): Promise<void> {
     await trx.query()
       .from(this.#modelTable)
-      .where('id', this.#id)
+      .where(this.#primaryKey, this.#id)
       .update(data)
   }
 }

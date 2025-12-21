@@ -33,14 +33,16 @@ export default class VariantService {
     this.#variantGenerator = new VariantGeneratorService()
     this.#variantPurger = new VariantPurgerService(filters)
     this.#variantPersister = new VariantPersisterService({
-      id: record.row.$attributes['id'],
+      id: record.row.$primaryKeyValue?.toString() || record.row.$attributes['id'],
       modelTable: (record.row.constructor as LucidModel).table,
       attributeName,
-      multiple: Array.isArray(record.row.$original[attributeName])
+      multiple: Array.isArray(record.row.$original[attributeName]),
+      primaryKey: (record.row.constructor as LucidModel).primaryKey ?? 'id'
     })
   }
 
   async run() {
+    console.log("cc from adonis att")
     try {
       const attachments = await this.#getAttachments()
 

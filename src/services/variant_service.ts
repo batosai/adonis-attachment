@@ -42,7 +42,6 @@ export default class VariantService {
   }
 
   async run() {
-    console.log("cc from adonis att")
     try {
       const attachments = await this.#getAttachments()
 

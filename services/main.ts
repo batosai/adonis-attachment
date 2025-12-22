@@ -5,8 +5,8 @@
  * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
  */
 
+import type { AttachmentService } from '../src/types/config.js'
 import app from '@adonisjs/core/services/app'
-import { AttachmentService } from '../src/types/config.js'
 
 let manager: AttachmentService
 

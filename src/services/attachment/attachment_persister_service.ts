@@ -96,8 +96,9 @@ export class AttachmentPersisterService {
             const { disk, folder, meta, rename } = attachments[i].options
             const model = record.row.constructor as LucidModel
             const key = encryption.encrypt({
-              model: model.table,
-              id: record.row.$attributes['id'],
+              model: model.namingStrategy.tableName(model),
+              id: record.row.$primaryKeyValue?.toString() || record.row.$attributes['id'],
+              primaryKey: (record.row.constructor as LucidModel).primaryKey ?? 'id',
               attribute: model.namingStrategy.columnName(model, name),
               index: i,
               options: {

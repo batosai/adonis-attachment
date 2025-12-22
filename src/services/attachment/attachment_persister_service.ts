@@ -98,6 +98,7 @@ export class AttachmentPersisterService {
             const key = encryption.encrypt({
               model: model.namingStrategy.tableName(model),
               id: record.row.$primaryKeyValue?.toString() || record.row.$attributes['id'],
+              primaryKey: (record.row.constructor as LucidModel).primaryKey ?? 'id',
               attribute: model.namingStrategy.columnName(model, name),
               index: i,
               options: {

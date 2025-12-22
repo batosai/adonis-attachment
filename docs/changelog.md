@@ -1,5 +1,18 @@
 # Changelog
 
+## 5.0.3
+
+* fix route attachment, use primarykey
+* fix use naming strategy for table name
+
+> Released at *2025-12-23*
+
+## 5.0.2
+
+* fix(#24) use naming strategy
+
+> Released at *2025-11-25*
+
 ## 5.0.1
 
 * fix optionnal peerDependencies version for sharp

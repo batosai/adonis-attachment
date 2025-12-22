@@ -12,6 +12,7 @@ import VariantPersisterService from '../services/variant/variant_persister_servi
 
 type Data = {
   model: string
+  primaryKey: string
   attribute: string
   id: string
   options: LucidOptions
@@ -32,7 +33,7 @@ export default class AttachmentsController {
       const queryWithTableSelection = await db
         .from(data.model)
         .select(data.attribute)
-        .where('id', data.id).first()
+        .where(data.primaryKey, data.id).first()
 
       /*
       * 1. Get the Attachment(s)
@@ -90,7 +91,8 @@ export default class AttachmentsController {
             id: data.id,
             modelTable: data.model,
             attributeName: data.attribute,
-            multiple
+            multiple,
+            primaryKey: data.primaryKey
           })
 
           const attachmentsOrCurrent = attachments.length ? attachments : [currentAttachment]

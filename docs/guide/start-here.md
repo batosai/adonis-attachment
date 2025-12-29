@@ -58,7 +58,7 @@ class UsersController {
 ```
 
 ```edge
-<img src="/attachments/{{ user.avatar.keyId }}" loading="lazy" alt="" />
+<img src="/attachments/{{ user.avatar.getKeyId() }}" loading="lazy" alt="" />
 ```
 
 ---
@@ -95,5 +95,5 @@ const attachmentConfig = defineConfig({
 ```
 
 ```edge
-<img src="/attachments/{{ user.avatar.keyId }}?variant=thumbnail" loading="lazy" alt="" />
+<img src="/attachments/{{ user.avatar.getKeyId() }}?variant=thumbnail" loading="lazy" alt="" />
 ```

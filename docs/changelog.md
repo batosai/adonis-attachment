@@ -1,5 +1,11 @@
 # Changelog
 
+## 5.0.4
+
+* fix: json parse, Merge pull request #29
+
+> Released at *2025-12-30*
+
 ## 5.0.3
 
 * fix route attachment, use primarykey

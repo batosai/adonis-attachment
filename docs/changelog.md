@@ -1,5 +1,11 @@
 # Changelog
 
+## 5.0.5
+
+* fix: method getKeyId is missing to Attachment type 
+
+> Released at *2026-01-xx*
+
 ## 5.0.4
 
 * fix: json parse, Merge pull request #29

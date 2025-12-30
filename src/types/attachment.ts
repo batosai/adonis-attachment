@@ -37,6 +37,7 @@ export type AttachmentBase = {
   getStream(): Promise<NodeJS.ReadableStream>
   getUrl(): Promise<string>
   getSignedUrl(signedUrlOptions?: SignedURLOptions): Promise<string>
+  getKeyId(): string | undefined
 
   setKeyId(keyId: string): AttachmentBase
   setOptions(options: LucidOptions): AttachmentBase

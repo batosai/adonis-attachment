@@ -38,7 +38,9 @@ export default class AttachmentsController {
       /*
       * 1. Get the Attachment(s)
       */
-      const result = JSON.parse(queryWithTableSelection[data.attribute])
+      const result = typeof queryWithTableSelection[data.attribute] === 'string'
+        ? JSON.parse(queryWithTableSelection[data.attribute])
+        : queryWithTableSelection[data.attribute]
       const attachments: Attachment[] = []
       let currentAttachment: Attachment | null = null
 

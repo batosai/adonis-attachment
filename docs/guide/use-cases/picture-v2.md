@@ -8,22 +8,22 @@ Using your variants with `<picture>` for create a component.
 // picture.edge
 <picture>
   <source media="(min-width: 1200px)" srcset="{{ 
-    route('attachments', { key: article.image.keyId, name: 'image-name.jpg' }, { qs: {
+    route('attachments', { key: article.image.getKeyId(), name: 'image-name.jpg' }, { qs: {
       variant: 'large'
     }})
   }}/image-name.jpg">
   <source media="(min-width: 768px)" srcset="{{ 
-    route('attachments', { key: article.image.keyId, name: 'image-name.jpg' }, { qs: { 
+    route('attachments', { key: article.image.getKeyId(), name: 'image-name.jpg' }, { qs: { 
       variant: 'medium'
     }})
   }}/image-name.jpg">
   <source media="(min-width: 480px)" srcset="{{ 
-    route('attachments', { key: article.image.keyId, name: 'image-name.jpg' }, { qs: { 
+    route('attachments', { key: article.image.getKeyId(), name: 'image-name.jpg' }, { qs: { 
       variant: 'small'
     }})
   }}/image-name.jpg">
   <img src="{{ 
-    route('attachments', { key: article.image.keyId, name: 'image-name.jpg' })
+    route('attachments', { key: article.image.getKeyId(), name: 'image-name.jpg' })
   }}/image-name.jpg" alt="image description">
 </picture>
 ```

@@ -66,7 +66,7 @@ class UsersController {
 // edge example
 <img 
   src="{{ 
-    route('assets', { key: user.avatar.keyId, name: 'image-name.jpg' }, { qs: { 
+    route('assets', { key: user.avatar.getKeyId(), name: 'image-name.jpg' }, { qs: { 
       variant: 'thumbnail'
     }}) 
   }}"

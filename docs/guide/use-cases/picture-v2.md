@@ -34,10 +34,10 @@ import React from 'react';
 const Picture = ({ source, alt }) => {
   return (
     <picture>
-      <source media="(min-width: 1200px)" srcSet="`/attachments/${article.image.getKeyId()}/image-name.jpg?variant=large`" />
-      <source media="(min-width: 768px)" srcSet="`/attachments/${article.image.getKeyId()}/image-name.jpg?variant=medium`" />
-      <source media="(min-width: 480px)" srcSet="`/attachments/${article.image.getKeyId()}/image-name.jpg?variant=small`" />
-      <img src="`/attachments/${article.image.getKeyId()}/image-name.jpg`" alt={alt} />
+      <source media="(min-width: 1200px)" srcSet="`/attachments/${article.image.keyId}/image-name.jpg?variant=large`" />
+      <source media="(min-width: 768px)" srcSet="`/attachments/${article.image.keyId}/image-name.jpg?variant=medium`" />
+      <source media="(min-width: 480px)" srcSet="`/attachments/${article.image.keyId}/image-name.jpg?variant=small`" />
+      <img src="`/attachments/${article.image.keyId}/image-name.jpg`" alt={alt} />
     </picture>
   )
 }
@@ -46,10 +46,10 @@ const Picture = ({ source, alt }) => {
 // picture.vue
 <template>
   <picture>
-    <source media="(min-width: 1200px)" srcset="`/attachments/${article.image.getKeyId()}/image-name.jpg?variant=large`">
-    <source media="(min-width: 768px)" srcset="`/attachments/${article.image.getKeyId()}/image-name.jpg?variant=medium`">
-    <source media="(min-width: 480px)" srcset="`/attachments/${article.image.getKeyId()}/image-name.jpg?variant=small`">
-    <img src="`/attachments/${article.image.getKeyId()}/image-name.jpg`" :alt="alt">
+    <source media="(min-width: 1200px)" srcset="`/attachments/${article.image.keyId}/image-name.jpg?variant=large`">
+    <source media="(min-width: 768px)" srcset="`/attachments/${article.image.keyId}/image-name.jpg?variant=medium`">
+    <source media="(min-width: 480px)" srcset="`/attachments/${article.image.keyId}/image-name.jpg?variant=small`">
+    <img src="`/attachments/${article.image.keyId}/image-name.jpg`" :alt="alt">
   </picture>
 <template>
 
@@ -68,10 +68,10 @@ const Picture = ({ source, alt }) => {
 </script>
 
 <picture>
-  <source media="(min-width: 1200px)" srcset="`/attachments/${article.image.getKeyId()}/image-name.jpg?variant=large`">
-  <source media="(min-width: 768px)" srcset="`/attachments/${article.image.getKeyId()}/image-name.jpg?variant=medium`">
-  <source media="(min-width: 480px)" srcset="`/attachments/${article.image.getKeyId()}/image-name.jpg?variant=small`">
-  <img src="`/attachments/${article.image.getKeyId()}/image-name.jpg`" alt={alt}>
+  <source media="(min-width: 1200px)" srcset="`/attachments/${article.image.keyId}/image-name.jpg?variant=large`">
+  <source media="(min-width: 768px)" srcset="`/attachments/${article.image.keyId}/image-name.jpg?variant=medium`">
+  <source media="(min-width: 480px)" srcset="`/attachments/${article.image.keyId}/image-name.jpg?variant=small`">
+  <img src="`/attachments/${article.image.keyId}/image-name.jpg`" alt={alt}>
 </picture>
 ```
 :::

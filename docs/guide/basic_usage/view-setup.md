@@ -19,7 +19,7 @@ Now all you have to do is display your images in your view.
 ```
 ```sh [Tuyau]
 <img
-  :src="tuyau.$url('attachments', { params: { key: user.avatar.getKeyId(), name: 'image-name.jpg' }})"
+  :src="tuyau.$url('attachments', { params: { key: user.avatar.keyId, name: 'image-name.jpg' }})"
   loading="lazy"
   alt=""
 />
@@ -90,7 +90,7 @@ preComputeUrl is required in [model](/guide/basic_usage/model-setup#specifying-p
 ::: code-group
 ```js [react]
 <img
-  src={tuyau.$url('attachments', { params: { key: user.avatar.getKeyId(), name: 'image.jpg' }, query: { variant: 'thumbnail'} })}
+  src={tuyau.$url('attachments', { params: { key: user.avatar.keyId, name: 'image.jpg' }, query: { variant: 'thumbnail'} })}
   loading="lazy"
   alt=""
 />
@@ -98,7 +98,7 @@ preComputeUrl is required in [model](/guide/basic_usage/model-setup#specifying-p
 
 ```vue
 <img
-  :src="tuyau.$url('attachments', { params: { key: user.avatar.getKeyId(), name: 'image.jpg' }, query: { variant: 'thumbnail'} })"
+  :src="tuyau.$url('attachments', { params: { key: user.avatar.keyId, name: 'image.jpg' }, query: { variant: 'thumbnail'} })"
   loading="lazy"
   alt=""
 />
@@ -106,7 +106,7 @@ preComputeUrl is required in [model](/guide/basic_usage/model-setup#specifying-p
 
 ```svelte
 <img
-  src={tuyau.$url('attachments', { params: { key: user.avatar.getKeyId(), name: 'image.jpg' }, query: { variant: 'thumbnail'} })}
+  src={tuyau.$url('attachments', { params: { key: user.avatar.keyId, name: 'image.jpg' }, query: { variant: 'thumbnail'} })}
   loading="lazy"
   alt=""
 />

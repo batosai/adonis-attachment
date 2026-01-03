@@ -28,7 +28,7 @@ test.group('attachment create', () => {
 
     assert.deepEqual(data.avatar, {
       extname: 'png',
-      keyId: undefined,
+      keyId: data.avatar.keyId,
       meta: {
         dimension: {
           height: 24,
@@ -54,7 +54,7 @@ test.group('attachment create', () => {
 
     assert.deepEqual(data.avatar, {
       extname: 'png',
-      keyId: undefined,
+      keyId: data.avatar.keyId,
       meta: {
         dimension: {
           height: 24,
@@ -78,7 +78,7 @@ test.group('attachment create', () => {
 
     assert.deepEqual(data.avatar, {
       extname: 'jpg',
-      keyId: undefined,
+      keyId: data.avatar.keyId,
       meta: {
         dimension: {
           height: 1313,
@@ -114,7 +114,7 @@ test.group('attachment create', () => {
 
     assert.deepEqual(data.avatar, {
       extname: 'jpg',
-      keyId: undefined,
+      keyId: data.avatar.keyId,
       meta: {
         dimension: {
           height: 1313,
@@ -142,7 +142,7 @@ test.group('attachment create', () => {
 
     assert.deepEqual(data.avatar, {
       extname: 'jpg',
-      keyId: undefined,
+      keyId: data.avatar.keyId,
       meta: {
         dimension: {
           height: 1313,
@@ -186,7 +186,7 @@ test.group('attachment create', () => {
 
     assert.deepEqual(data.avatar, {
       extname: 'jpg',
-      keyId: undefined,
+      keyId: data.avatar.keyId,
       meta: {
         dimension: {
           height: 1313,
@@ -243,7 +243,7 @@ test.group('attachment create', () => {
 
     assert.deepEqual(data.avatar, {
       extname: 'jpg',
-      keyId: undefined,
+      keyId: data.avatar.keyId,
       meta: {
         dimension: {
           height: 1313,
@@ -299,7 +299,7 @@ test.group('attachments create', () => {
     assert.deepEqual(data.weekendPics, [
       {
         extname: 'jpg',
-        keyId: undefined,
+        keyId: data.weekendPics[0].keyId,
         meta: {
           dimension: {
             height: 1313,
@@ -313,7 +313,7 @@ test.group('attachments create', () => {
       },
       {
         extname: 'jpg',
-        keyId: undefined,
+        keyId: data.weekendPics[1].keyId,
         meta: {
           dimension: {
             height: 1313,

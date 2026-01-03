@@ -37,6 +37,7 @@ export const afterSaveHook = async (instance: unknown) => {
   const modelInstance = instance as RowWithAttachment
   const model = new AttachmentRecordService(modelInstance)
   await model.generateVariants()
+  await model.setKeyId()
 }
 
 // @beforeDelete()

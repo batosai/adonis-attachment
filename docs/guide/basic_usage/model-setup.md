@@ -236,7 +236,7 @@ or for assets route (⚠️ [avalable in v5.0.0](/changelog#_5-0-0))
 @attachments({
   serialize: (value?: Attachment) => {
     if (value) {
-      return `assets/${value.keyId}` // [!code highlight]
+      return `assets/${value.getKeyId()}` // [!code highlight]
     }
     return null
   }

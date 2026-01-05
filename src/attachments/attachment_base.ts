@@ -164,7 +164,13 @@ export class AttachmentBase implements AttachmentBaseInterface {
 
   async makeName(record?: LucidRow, attributeName?: string, originalName?: string) {
     if (typeof this.options.rename === 'function' && record) {
-      this.#name = (await (this.options.rename as (record: LucidRow, attributeName?: string, originalName?: string) => Promise<string>)(record, attributeName, originalName)) as string
+      this.#name = (await (
+        this.options.rename as (
+          record: LucidRow,
+          attributeName?: string,
+          originalName?: string
+        ) => Promise<string>
+      )(record, attributeName, originalName)) as string
     } else if (originalName && this.options.rename === false) {
       this.#name = originalName
     }
@@ -188,7 +194,9 @@ export class AttachmentBase implements AttachmentBaseInterface {
 
   async makeFolder(record?: LucidRow) {
     if (typeof this.options.folder === 'function' && record) {
-      this.#folder = (await (this.options.folder as (record: LucidRow) => Promise<string>)(record)) as string
+      this.#folder = (await (this.options.folder as (record: LucidRow) => Promise<string>)(
+        record
+      )) as string
     } else if (this.options.folder) {
       this.#folder = this.options.folder as string
     }
@@ -225,7 +233,6 @@ export class AttachmentBase implements AttachmentBaseInterface {
       await this.getDisk().delete(this.originalPath)
     }
   }
-
 
   /**
    *

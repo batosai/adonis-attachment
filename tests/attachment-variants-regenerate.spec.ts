@@ -90,9 +90,11 @@ test.group('regenerate - model class', (group) => {
     const notifierRegen = new Promise((resolve) => {
       attachmentManager.queue.drained = resolve
     })
-    await regenerate.model(User, {
-      attributes: ['avatar']
-    }).run()
+    await regenerate
+      .model(User, {
+        attributes: ['avatar'],
+      })
+      .run()
     await notifierRegen
 
     await user.refresh()
@@ -127,10 +129,12 @@ test.group('regenerate - model class', (group) => {
     const notifierRegen = new Promise((resolve) => {
       attachmentManager.queue.drained = resolve
     })
-    await regenerate.model(User, {
-      attributes: ['avatar2'],
-      variants: ['thumbnail']
-    }).run()
+    await regenerate
+      .model(User, {
+        attributes: ['avatar2'],
+        variants: ['thumbnail'],
+      })
+      .run()
     await notifierRegen
 
     await user.refresh()
@@ -142,7 +146,6 @@ test.group('regenerate - model class', (group) => {
     await assert.equal(mediumVariant!.path, mediumVariantRegen!.path)
   })
 })
-
 
 test.group('regenerate - model instance', (group) => {
   test('with just model instance', async ({ assert, cleanup }) => {
@@ -197,9 +200,11 @@ test.group('regenerate - model instance', (group) => {
     const notifierRegen = new Promise((resolve) => {
       attachmentManager.queue.drained = resolve
     })
-    await regenerate.row(user, {
-      attributes: ['avatar']
-    }).run()
+    await regenerate
+      .row(user, {
+        attributes: ['avatar'],
+      })
+      .run()
     await notifierRegen
 
     const variantRegen = user.avatar?.variants![0]
@@ -232,15 +237,16 @@ test.group('regenerate - model instance', (group) => {
     const notifierRegen = new Promise((resolve) => {
       attachmentManager.queue.drained = resolve
     })
-    await regenerate.row(user, {
-      attributes: ['avatar2'],
-      variants: ['thumbnail']
-    }).run()
+    await regenerate
+      .row(user, {
+        attributes: ['avatar2'],
+        variants: ['thumbnail'],
+      })
+      .run()
     await notifierRegen
 
     const thumbVariantRegen = user.avatar2?.variants?.filter((v) => v.key === 'thumbnail')[0]
     const mediumVariantRegen = user.avatar2?.variants?.filter((v) => v.key === 'medium')[0]
-
 
     await assert.notEqual(thumbVariant!.path, thumbVariantRegen!.path)
     await assert.equal(mediumVariant!.path, mediumVariantRegen!.path)

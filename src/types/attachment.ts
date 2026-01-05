@@ -85,7 +85,10 @@ export type Variant = AttachmentBase & {
 export type LucidOptions<T = LucidRow> = {
   disk?: string
   folder?: string | ((record: T) => string) | ((record: T) => Promise<string>)
-  rename?: boolean | ((record: T, column?: string, currentName?: string) => string) | ((record: T, column?: string, currentName?: string) => Promise<string>)
+  rename?:
+    | boolean
+    | ((record: T, column?: string, currentName?: string) => string)
+    | ((record: T, column?: string, currentName?: string) => Promise<string>)
   preComputeUrl?: boolean
   variants?: (keyof AttachmentVariants)[]
   meta?: boolean

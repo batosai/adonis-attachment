@@ -8,7 +8,6 @@
 import type { ConverterAttributes } from '../types/converter.js'
 import type { Input } from '../types/input.js'
 
-
 import Converter from './converter.js'
 import ImageConverter from './image_converter.js'
 import Poppler from '../adapters/poppler.js'

@@ -37,7 +37,7 @@ export default class VariantService {
       modelTable: (record.row.constructor as LucidModel).table,
       attributeName,
       multiple: Array.isArray(record.row.$original[attributeName]),
-      primaryKey: (record.row.constructor as LucidModel).primaryKey ?? 'id'
+      primaryKey: (record.row.constructor as LucidModel).primaryKey ?? 'id',
     })
   }
 
@@ -50,7 +50,11 @@ export default class VariantService {
       }
 
       await this.#variantPurger.purge(attachments)
-      const variants = await this.#variantGenerator.generate({ attachments, options: this.#options, filters: this.#filters })
+      const variants = await this.#variantGenerator.generate({
+        attachments,
+        options: this.#options,
+        filters: this.#filters,
+      })
       await this.#variantPersister.persist({ attachments, variants })
 
       return variants

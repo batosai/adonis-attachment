@@ -16,10 +16,10 @@ export interface FfmpegMetadata {
 }
 
 export interface PopplerMetadata {
-  size: number;
-  version: string;
-  width: number;
-  height: number;
-  pages: number;
-  creationDate: string;
+  size: number
+  version: string
+  width: number
+  height: number
+  pages: number
+  creationDate: string
 }

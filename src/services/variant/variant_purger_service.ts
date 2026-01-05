@@ -19,9 +19,7 @@ export default class VariantPurger {
   async purge(attachments: Attachment[]): Promise<void> {
     const variantsToRemove = this.#getVariantsToRemove(attachments)
 
-    await Promise.all(
-      variantsToRemove.map(variant => attachmentManager.remove(variant))
-    )
+    await Promise.all(variantsToRemove.map((variant) => attachmentManager.remove(variant)))
 
     this.#updateAttachmentVariants(attachments)
   }
@@ -29,9 +27,9 @@ export default class VariantPurger {
   #getVariantsToRemove(attachments: Attachment[]): Variant[] {
     const variants: Variant[] = []
 
-    attachments.forEach(attachment => {
+    attachments.forEach((attachment) => {
       if (attachment.variants) {
-        attachment.variants.forEach(variant => {
+        attachment.variants.forEach((variant) => {
           if (this.#shouldRemoveVariant(variant)) {
             variants.push(variant)
           }
@@ -43,7 +41,7 @@ export default class VariantPurger {
   }
 
   #updateAttachmentVariants(attachments: Attachment[]) {
-    attachments.forEach(attachment => {
+    attachments.forEach((attachment) => {
       if (attachment.variants) {
         attachment.variants = this.#filterVariants(attachment.variants)
       }
@@ -51,14 +49,13 @@ export default class VariantPurger {
   }
 
   #shouldRemoveVariant(variant: Variant): boolean {
-    return this.#filters?.variants === undefined ||
-           this.#filters.variants.includes(variant.key)
+    return this.#filters?.variants === undefined || this.#filters.variants.includes(variant.key)
   }
 
   #filterVariants(variants: Variant[]): Variant[] {
     if (this.#filters?.variants === undefined) {
       return []
     }
-    return variants.filter(variant => !this.#filters!.variants!.includes(variant.key))
+    return variants.filter((variant) => !this.#filters!.variants!.includes(variant.key))
   }
 }

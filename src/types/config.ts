@@ -35,7 +35,10 @@ export type BinPaths = {
 export type AttachmentConfig<KnownConverter extends Record<string, ConverterConfig>> = {
   bin?: BinPaths
   meta?: boolean
-  rename?: boolean | ((record: LucidRow, column?: string, currentName?: string) => string) | ((record: LucidRow, column?: string, currentName?: string) => Promise<string>)
+  rename?:
+    | boolean
+    | ((record: LucidRow, column?: string, currentName?: string) => string)
+    | ((record: LucidRow, column?: string, currentName?: string) => Promise<string>)
   preComputeUrl?: boolean
   timeout?: number
   converters?: {
@@ -58,7 +61,6 @@ export type InferConverters<
   }>,
 > = Exclude<Awaited<ReturnType<Config['resolver']>>['converters'], undefined>
 
-export interface AttachmentService
-  extends AttachmentManager<
-    AttachmentVariants extends Record<string, Converter> ? AttachmentVariants : never
-  > {}
+export interface AttachmentService extends AttachmentManager<
+  AttachmentVariants extends Record<string, Converter> ? AttachmentVariants : never
+> {}

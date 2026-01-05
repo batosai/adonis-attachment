@@ -1,4 +1,3 @@
-
 /**
  * @jrmc/adonis-attachment
  *
@@ -44,27 +43,25 @@ export default class Poppler {
     }
   }
 
-  async pdfToPpm(options: {
-    page: number,
-    dpi: number,
-  }) {
+  async pdfToPpm(options: { page: number; dpi: number }) {
     const output = path.join(os.tmpdir(), cuid())
     try {
       await $({
         cancelSignal: this.#createAbortController().signal,
         gracefulCancel: true,
-        timeout: this.#TIMEOUT
+        timeout: this.#TIMEOUT,
       })`${this.#pdfToPpmPath} -f ${options.page.toString()} -l ${options.page.toString()} -r ${options.dpi.toString()} -jpeg ${this.input} ${output}`
 
       const pdfInfo = await this.pdfInfo()
-      const pageNumberFormat = '0'.repeat(String(pdfInfo.pages).length - String(options.page).length)
+      const pageNumberFormat = '0'.repeat(
+        String(pdfInfo.pages).length - String(options.page).length
+      )
 
       return `${output}-${pageNumberFormat}${options.page}.jpg`
     } catch (error) {
       logger.error('Error while converting PDF to PPM:', error)
       throw error
-    }
-    finally {
+    } finally {
       this.#cleanup()
     }
   }
@@ -74,7 +71,7 @@ export default class Poppler {
       const { stdout } = await $({
         cancelSignal: this.#createAbortController().signal,
         gracefulCancel: true,
-        timeout: this.#TIMEOUT
+        timeout: this.#TIMEOUT,
       })`${this.#pdfInfoPath} ${this.input}`
 
       const metadata: Record<string, string> = {}
@@ -90,7 +87,9 @@ export default class Poppler {
       })
 
       const pageSizeMatch = metadata['page size']?.match(/(\d+)\s*x\s*(\d+)/)
-      const [width, height] = pageSizeMatch ? [parseInt(pageSizeMatch[1]), parseInt(pageSizeMatch[2])] : [0, 0]
+      const [width, height] = pageSizeMatch
+        ? [parseInt(pageSizeMatch[1]), parseInt(pageSizeMatch[2])]
+        : [0, 0]
 
       const fileSizeMatch = metadata['file size']?.match(/(\d+)/)
       const size = fileSizeMatch ? parseInt(fileSizeMatch[1]) : 0
@@ -105,7 +104,7 @@ export default class Poppler {
         const date = DateTime.fromFormat(dateStr, 'EEE MMM dd HH:mm:ss yyyy z', { zone: 'UTC' })
 
         if (date.isValid) {
-          creationDate = date.toFormat('yyyy-MM-dd\'T\'HH:mm:ss')
+          creationDate = date.toFormat("yyyy-MM-dd'T'HH:mm:ss")
         }
       }
 
@@ -115,13 +114,12 @@ export default class Poppler {
         width,
         height,
         pages,
-        creationDate
+        creationDate,
       }
     } catch (error) {
       logger.error('Error while retrieving metadata:', error)
       throw error
-    }
-    finally {
+    } finally {
       this.#cleanup()
     }
   }

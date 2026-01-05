@@ -24,7 +24,10 @@ export class AttachmentUtils {
   /**
    * Get original attachments by attribute name, handling both single and array values
    */
-  static getOriginalAttachmentsByAttributeName(row: RowWithAttachment, name: string): AttachmentType[] {
+  static getOriginalAttachmentsByAttributeName(
+    row: RowWithAttachment,
+    name: string
+  ): AttachmentType[] {
     if (Array.isArray(row.$original[name])) {
       return row.$original[name] as AttachmentType[]
     }
@@ -34,7 +37,10 @@ export class AttachmentUtils {
   /**
    * Get dirty attachments by attribute name, handling both single and array values
    */
-  static getDirtyAttachmentsByAttributeName(row: RowWithAttachment, name: string): AttachmentType[] {
+  static getDirtyAttachmentsByAttributeName(
+    row: RowWithAttachment,
+    name: string
+  ): AttachmentType[] {
     if (Array.isArray(row.$dirty[name])) {
       return row.$dirty[name] as AttachmentType[]
     }

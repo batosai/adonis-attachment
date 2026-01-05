@@ -44,7 +44,7 @@ export default class Soffice {
       const { stderr } = await $({
         cancelSignal: this.#createAbortController().signal,
         gracefulCancel: true,
-        timeout: this.#TIMEOUT
+        timeout: this.#TIMEOUT,
       })`${this.#sofficePath} --headless --writer --convert-to jpg ${this.input} --outdir ${output}`
 
       if (stderr) {
@@ -60,8 +60,7 @@ export default class Soffice {
     } catch (error) {
       logger.error('Error while converting Document to Image:', error)
       throw error
-    }
-    finally {
+    } finally {
       this.#cleanup()
     }
   }

@@ -24,7 +24,10 @@ export class AttachmentDetachmentService {
         if (record.row.$dirty[name] === null) {
           attachments = AttachmentUtils.getOriginalAttachmentsByAttributeName(record.row, name)
         } else {
-          const originalAttachments = AttachmentUtils.getOriginalAttachmentsByAttributeName(record.row, name)
+          const originalAttachments = AttachmentUtils.getOriginalAttachmentsByAttributeName(
+            record.row,
+            name
+          )
           const newAttachments = AttachmentUtils.getAttachmentsByAttributeName(record.row, name)
 
           /**
@@ -74,15 +77,16 @@ export class AttachmentDetachmentService {
   /**
    * Mark attachments for deletion by adding them to detached array
    */
-  async #markForDeletion(attachments: AttachmentType[], record: RecordWithAttachmentImplementation): Promise<void> {
+  async #markForDeletion(
+    attachments: AttachmentType[],
+    record: RecordWithAttachmentImplementation
+  ): Promise<void> {
     await Promise.allSettled(
       attachments.map((attachment) => record.row.$attachments.detached.push(attachment))
     )
   }
 
   async #moveForDeletion(attachments: AttachmentType[]): Promise<void> {
-    await Promise.allSettled(
-      attachments.map((attachment) => attachment.moveFileForDelete())
-    )
+    await Promise.allSettled(attachments.map((attachment) => attachment.moveFileForDelete()))
   }
 }

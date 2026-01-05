@@ -16,5 +16,9 @@ export interface RecordWithAttachment {
   transaction(options?: { enabledRollback: boolean }): Promise<void>
   preComputeUrl(): Promise<void>
   generateVariants(): Promise<void>
-  getAttachments(options: { attributeName: string, requiredOriginal?: boolean, requiredDirty?: boolean }): Promise<Attachment[]>
+  getAttachments(options: {
+    attributeName: string
+    requiredOriginal?: boolean
+    requiredDirty?: boolean
+  }): Promise<Attachment[]>
 }

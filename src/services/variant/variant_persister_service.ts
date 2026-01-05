@@ -27,7 +27,7 @@ export default class VariantPersisterService {
   #multiple: boolean
   #primaryKey: string
 
-  constructor({ id, modelTable, attributeName, multiple, primaryKey}: PersistAttributes) {
+  constructor({ id, modelTable, attributeName, multiple, primaryKey }: PersistAttributes) {
     this.#id = id
     this.#modelTable = modelTable
     this.#attributeName = attributeName
@@ -35,8 +35,11 @@ export default class VariantPersisterService {
     this.#primaryKey = primaryKey
   }
 
-  async persist({ attachments, variants }: {
-    attachments: Attachment[],
+  async persist({
+    attachments,
+    variants,
+  }: {
+    attachments: Attachment[]
     variants: Variant[]
   }): Promise<void> {
     const rollback = () => this.#rollbackVariants(variants)
@@ -56,7 +59,7 @@ export default class VariantPersisterService {
   }
 
   #rollbackVariants(variants: Variant[]): void {
-    variants.forEach(variant => {
+    variants.forEach((variant) => {
       try {
         attachmentManager.remove(variant)
       } catch (error) {
@@ -69,16 +72,13 @@ export default class VariantPersisterService {
     const index = string.snakeCase(this.#attributeName)
 
     const data = this.#multiple
-      ? attachments.map(att => att.toObject())
+      ? attachments.map((att) => att.toObject())
       : attachments[0]?.toObject()
 
     return { [index]: JSON.stringify(data) }
   }
 
   async #executeUpdate(trx: any, data: Record<string, string>): Promise<void> {
-    await trx.query()
-      .from(this.#modelTable)
-      .where(this.#primaryKey, this.#id)
-      .update(data)
+    await trx.query().from(this.#modelTable).where(this.#primaryKey, this.#id).update(data)
   }
 }

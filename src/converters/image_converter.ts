@@ -24,17 +24,13 @@ export default class ImageConverter extends Converter {
       format = format.format
     }
 
-    const image = sharp(input)
-      .withMetadata()
+    const image = sharp(input).withMetadata()
 
     if (autoOrient) {
       image.autoOrient()
     }
 
-    const buffer: Input = await image
-      .resize(resize)
-      .toFormat(format, formatoptions)
-      .toBuffer()
+    const buffer: Input = await image.resize(resize).toFormat(format, formatoptions).toBuffer()
 
     return buffer
   }

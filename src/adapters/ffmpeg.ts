@@ -43,9 +43,7 @@ export default class FFmpeg {
     }
   }
 
-  async screenshots(options: {
-    time: number
-  }) {
+  async screenshots(options: { time: number }) {
     const folder = os.tmpdir()
     const filename = `${cuid()}.jpg`
     const { time } = options
@@ -56,15 +54,19 @@ export default class FFmpeg {
       const { stderr } = await $({
         cancelSignal: this.#createAbortController().signal,
         gracefulCancel: true,
-        timeout: this.#TIMEOUT
+        timeout: this.#TIMEOUT,
       })`${this.#ffmpegPath} -y -i ${this.input} -ss ${timestamp} -vframes 1 -q:v 2 ${output}`
 
       if (stderr.includes('Output file is empty, nothing was encoded')) {
         const durationMatch = stderr.match(/Duration: (\d{2}:\d{2}:\d{2}\.\d{2})/)
         if (durationMatch) {
           const videoDuration = durationMatch[1]
-          logger.error(`Video is not long enough. Duration: ${videoDuration}, Requested timestamp: ${timestamp}`)
-          throw new Error(`Video is not long enough. Duration: ${videoDuration}, Requested timestamp: ${timestamp}`)
+          logger.error(
+            `Video is not long enough. Duration: ${videoDuration}, Requested timestamp: ${timestamp}`
+          )
+          throw new Error(
+            `Video is not long enough. Duration: ${videoDuration}, Requested timestamp: ${timestamp}`
+          )
         }
       }
 
@@ -82,38 +84,36 @@ export default class FFmpeg {
         logger.error(error)
         throw error
       }
-    }
-    finally {
+    } finally {
       this.#cleanup()
     }
   }
 
   async exif(): Promise<FfmpegMetadata> {
     try {
-    const { stdout } = await $({
-      cancelSignal: this.#createAbortController().signal,
-      gracefulCancel: true,
-      timeout: this.#TIMEOUT
-    })`${this.#ffprobePath} -v quiet -print_format json -show_format -show_streams ${this.input}`
+      const { stdout } = await $({
+        cancelSignal: this.#createAbortController().signal,
+        gracefulCancel: true,
+        timeout: this.#TIMEOUT,
+      })`${this.#ffprobePath} -v quiet -print_format json -show_format -show_streams ${this.input}`
 
-    const metadata = JSON.parse(stdout)
-    const videoStream = metadata.streams.find((stream: any) => stream.codec_type === 'video')
-    const audioStream = metadata.streams.find((stream: any) => stream.codec_type === 'audio')
+      const metadata = JSON.parse(stdout)
+      const videoStream = metadata.streams.find((stream: any) => stream.codec_type === 'video')
+      const audioStream = metadata.streams.find((stream: any) => stream.codec_type === 'audio')
 
-    return {
-      types: metadata.streams.map((stream: any) => stream.codec_type),
-      width: videoStream?.width,
-      height: videoStream?.height,
-      videoCodec: videoStream?.codec_name,
-      audioCodec: audioStream?.codec_name,
-      duration: +metadata.format.duration,
-        size: +metadata.format.size
+      return {
+        types: metadata.streams.map((stream: any) => stream.codec_type),
+        width: videoStream?.width,
+        height: videoStream?.height,
+        videoCodec: videoStream?.codec_name,
+        audioCodec: audioStream?.codec_name,
+        duration: +metadata.format.duration,
+        size: +metadata.format.size,
       }
     } catch (error) {
       logger.error(error)
       throw error
-    }
-    finally {
+    } finally {
       this.#cleanup()
     }
   }

@@ -40,36 +40,36 @@ export default class AutodetectConverter extends Converter {
       converter = new PdfThumbnailConverter(options, this.binPaths)
     } else if (
       // Documents texte
-      fileType?.mime.includes('application/vnd.openxmlformats-officedocument.wordprocessingml.document') || // .docx
+      fileType?.mime.includes(
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+      ) || // .docx
       fileType?.mime.includes('application/vnd.oasis.opendocument.text') || // .odt
       fileType?.mime.includes('application/msword') || // .doc
       fileType?.mime.includes('application/rtf') || // .rtf
       fileType?.mime.includes('text/plain') || // .txt
       fileType?.mime.includes('application/xml') || // .xml, .svg
-
       // Feuilles de calcul
       fileType?.mime.includes('application/vnd.oasis.opendocument.spreadsheet') || // .ods
       fileType?.mime.includes('application/vnd.ms-excel') || // .xls
-      fileType?.mime.includes('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') || // .xlsx
+      fileType?.mime.includes(
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      ) || // .xlsx
       fileType?.mime.includes('text/csv') || // .csv
-
       // Présentations
       fileType?.mime.includes('application/vnd.oasis.opendocument.presentation') || // .odp
       fileType?.mime.includes('application/vnd.ms-powerpoint') || // .ppt
-      fileType?.mime.includes('application/vnd.openxmlformats-officedocument.presentationml.presentation') || // .pptx
-
+      fileType?.mime.includes(
+        'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+      ) || // .pptx
       // Dessins
       fileType?.mime.includes('application/vnd.oasis.opendocument.graphics') || // .odg
       fileType?.mime.includes('application/vnd.visio') || // .vsd
-
       // Formules mathématiques
       fileType?.mime.includes('application/vnd.oasis.opendocument.formula') || // .odf
       fileType?.mime.includes('application/mathml+xml') || // .mml
-
       // Bases de données
       fileType?.mime.includes('application/vnd.oasis.opendocument.database') || // .odb
       fileType?.mime.includes('application/x-msaccess') || // .mdb, .accdb
-
       // Autres formats Office
       fileType?.mime.includes('application/vnd.ms-office') || // Formats MS Office génériques
       fileType?.mime.includes('application/vnd.oasis.opendocument') // Formats OpenDocument génériques

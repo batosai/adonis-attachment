@@ -60,7 +60,8 @@ export default class AttachmentProvider {
 
   async boot() {
     const router = await this.app.container.make('router')
-    const AttachmentsController = () => import('@jrmc/adonis-attachment/controllers/attachments_controller')
+    const AttachmentsController = () =>
+      import('@jrmc/adonis-attachment/controllers/attachments_controller')
 
     router.attachments = (pattern: string = '/attachments/:key/:name?') => {
       return router.get(pattern, [AttachmentsController]).as('attachments')

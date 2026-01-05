@@ -127,9 +127,15 @@ export default class AttachmentRecorderService implements RecordWithAttachmentIm
     let attachments: AttachmentType[]
 
     if (options.requiredOriginal) {
-      attachments = AttachmentUtils.getOriginalAttachmentsByAttributeName(this.#row, options.attributeName)
+      attachments = AttachmentUtils.getOriginalAttachmentsByAttributeName(
+        this.#row,
+        options.attributeName
+      )
     } else if (options.requiredDirty) {
-      attachments = AttachmentUtils.getDirtyAttachmentsByAttributeName(this.#row, options.attributeName)
+      attachments = AttachmentUtils.getDirtyAttachmentsByAttributeName(
+        this.#row,
+        options.attributeName
+      )
     } else {
       attachments = AttachmentUtils.getAttachmentsByAttributeName(this.#row, options.attributeName)
     }

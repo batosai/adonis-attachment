@@ -65,20 +65,21 @@ export class AttachmentVariantService {
       async run() {
         const model = record.row.constructor as LucidModel
 
-        await attachmentManager.lock.createLock(`attachment.${model.table}-${name}`).run(async () => {
-          const variantService = new VariantService({
-            record,
-            attributeName: name,
-            options: AttachmentUtils.getOptionsByAttributeName(record.row, name),
-            filters: {
-              variants: options.variants
-            }
+        await attachmentManager.lock
+          .createLock(`attachment.${model.table}-${name}`)
+          .run(async () => {
+            const variantService = new VariantService({
+              record,
+              attributeName: name,
+              options: AttachmentUtils.getOptionsByAttributeName(record.row, name),
+              filters: {
+                variants: options.variants,
+              },
+            })
+            await variantService.run()
           })
-          await variantService.run()
-        })
       },
-    })
-    .onError = (error: any) => this.#handleVariantError(error)
+    }).onError = (error: any) => this.#handleVariantError(error)
   }
 
   /**

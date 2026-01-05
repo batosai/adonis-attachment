@@ -17,8 +17,8 @@ export const verrou = (lock?: LockService): LockService => {
     return new Verrou({
       default: 'memory',
       stores: {
-        memory: { driver: memoryStore() }
-      }
+        memory: { driver: memoryStore() },
+      },
     })
   }
 }

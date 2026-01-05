@@ -20,7 +20,6 @@ import { UserFactory } from './fixtures/factories/user.js'
 import { makeAttachment } from './helpers/index.js'
 import { attachment } from '../index.js'
 
-
 test.group('options', () => {
   test('with default values', async ({ assert, cleanup }) => {
     const app = await createApp()
@@ -255,7 +254,6 @@ test.group('options', () => {
 
     user.avatar = newFile
     await user.save()
-
 
     await assert.fileExists(user.avatar!.path!)
   })

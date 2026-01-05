@@ -151,7 +151,6 @@ export function extractPathParameters(path: string): string[] {
   return parameters
 }
 
-
 export function secondsToTimeFormat(seconds: number) {
   const hours = Math.floor(seconds / 3600)
   const minutes = Math.floor((seconds % 3600) / 60)

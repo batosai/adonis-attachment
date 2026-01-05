@@ -20,7 +20,10 @@ export class AttachmentPersisterService {
 
     await Promise.all(
       attachmentAttributeNames.map(async (name) => {
-        const originalAttachments = AttachmentUtils.getOriginalAttachmentsByAttributeName(record.row, name)
+        const originalAttachments = AttachmentUtils.getOriginalAttachmentsByAttributeName(
+          record.row,
+          name
+        )
         const newAttachments = AttachmentUtils.getAttachmentsByAttributeName(record.row, name)
         const options = AttachmentUtils.getOptionsByAttributeName(record.row, name)
 
@@ -105,8 +108,8 @@ export class AttachmentPersisterService {
                 disk,
                 folder,
                 meta,
-                rename
-              }
+                rename,
+              },
             })
             attachments[i].setKeyId(key)
           }

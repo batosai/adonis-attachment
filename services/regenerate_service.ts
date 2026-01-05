@@ -27,9 +27,8 @@ export default class RegenerateService {
     if (this.#row) {
       const record = new AttachmentRecordService(this.#row)
       return record.regenerateVariants(this.#options)
-    }
-    else if (this.#Model) {
-      const entities = await this.#Model.all() as RowWithAttachment[]
+    } else if (this.#Model) {
+      const entities = (await this.#Model.all()) as RowWithAttachment[]
 
       return Promise.all(
         entities.map(async (entity) => {

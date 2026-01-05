@@ -14,9 +14,13 @@ import attachmentManager from '../../../services/main.js'
 import { streamToTempFile } from '../../utils/helpers.js'
 
 export default class VariantGeneratorService {
-  async generate({ attachments, options, filters }: {
-    attachments: Attachment[],
-    options: LucidOptions,
+  async generate({
+    attachments,
+    options,
+    filters,
+  }: {
+    attachments: Attachment[]
+    options: LucidOptions
     filters?: { variants?: string[] }
   }): Promise<Variant[]> {
     const variants: Variant[] = []
@@ -37,9 +41,13 @@ export default class VariantGeneratorService {
     return variants
   }
 
-  async generateVariant({ key, attachment, converter }: {
-    key: string,
-    attachment: Attachment,
+  async generateVariant({
+    key,
+    attachment,
+    converter,
+  }: {
+    key: string
+    attachment: Attachment
     converter: Converter
   }): Promise<Variant | null> {
     try {
@@ -66,15 +74,14 @@ export default class VariantGeneratorService {
   #getVariantKeysToProcess(options: LucidOptions, filters?: { variants?: string[] }): string[] {
     if (!options.variants) return []
 
-    return options.variants.filter(key =>
-      filters?.variants === undefined ||
-      filters.variants.includes(key)
+    return options.variants.filter(
+      (key) => filters?.variants === undefined || filters.variants.includes(key)
     )
   }
 
   async #getConverter(key: string): Promise<Converter | null> {
     try {
-      return await attachmentManager.getConverter(key) as Converter
+      return (await attachmentManager.getConverter(key)) as Converter
     } catch (error) {
       logger.error(`Failed to get converter for key ${key}: ${error.message}`)
       return null
@@ -110,9 +117,8 @@ export default class VariantGeneratorService {
 
     if (!blurhashConfig) return
 
-    const shouldGenerate = typeof blurhashConfig === 'boolean'
-      ? blurhashConfig
-      : blurhashConfig.enabled === true
+    const shouldGenerate =
+      typeof blurhashConfig === 'boolean' ? blurhashConfig : blurhashConfig.enabled === true
 
     if (!shouldGenerate) return
 

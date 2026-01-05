@@ -19,9 +19,7 @@ export class AttachmentTransactionService {
    */
   async commit(detachedAttachments: AttachmentType[]): Promise<void> {
     await Promise.allSettled(
-      detachedAttachments.map((attachment: AttachmentType) =>
-        attachmentManager.remove(attachment)
-      )
+      detachedAttachments.map((attachment: AttachmentType) => attachmentManager.remove(attachment))
     )
   }
 

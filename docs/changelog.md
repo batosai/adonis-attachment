@@ -2,6 +2,8 @@
 
 ## 5.0.5
 
+* pr: keyId after save #32
+* pr: docs keyId access to edge #30
 * fix: method getKeyId is missing to Attachment type 
 
 > Released at *2026-01-xx*

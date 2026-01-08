@@ -8,6 +8,7 @@
 import type { Input } from '../types/input.js'
 import type { BlurhashOptions } from '../types/converter.js'
 
+import crypto from 'node:crypto'
 import os from 'node:os'
 import path from 'node:path'
 import https from 'node:https'
@@ -157,4 +158,9 @@ export function secondsToTimeFormat(seconds: number) {
   const remainingSeconds = Math.floor(seconds % 60)
 
   return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`
+}
+
+
+export function uuid() {
+  return crypto.randomUUID()
 }

@@ -23,7 +23,7 @@ import Converter from './converters/converter.js'
 import { downloadToTempFile, isBase64, streamToTempFile } from './utils/helpers.js'
 import ExifAdapter from './adapters/exif.js'
 import { metaFormBuffer, metaFormFile } from './adapters/meta.js'
-import { cuid } from '@adonisjs/core/helpers'
+import { uuid } from './utils/helpers.js'
 
 const REQUIRED_ATTRIBUTES = ['name', 'size', 'extname', 'mimeType'] as const
 
@@ -110,7 +110,7 @@ export class AttachmentManager<KnownConverters extends Record<string, Converter>
     const ext = meta.extname || 'tmp'
     const attributes: AttachmentAttributes = {
       ...meta,
-      originalName: name || `${cuid()}.${ext}`,
+      originalName: name || `${uuid()}.${ext}`,
     }
 
     const attachment = new Attachment(this.#drive, attributes, input)

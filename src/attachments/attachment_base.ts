@@ -16,7 +16,7 @@ import type {
 import type { Exif, Input } from '../types/input.js'
 
 import path from 'node:path'
-import { cuid } from '@adonisjs/core/helpers'
+import { uuid } from '../utils/helpers.js'
 import { defaultOptionsDecorator } from '../utils/default_values.js'
 import { extractPathParameters } from '../utils/helpers.js'
 
@@ -53,7 +53,7 @@ export class AttachmentBase implements AttachmentBaseInterface {
     if (attributes.name) {
       this.#name = attributes.name
     } else {
-      this.#name = `${cuid()}.${this.extname}`
+      this.#name = `${uuid()}.${this.extname}`
     }
 
     this.options = defaultOptionsDecorator

@@ -8,7 +8,7 @@
 import os from 'node:os'
 import path from 'node:path'
 import { $, ExecaError } from 'execa'
-import { cuid } from '@adonisjs/core/helpers'
+import { uuid } from '../utils/helpers.js'
 import logger from '@adonisjs/core/services/logger'
 import { attachmentManager } from '@jrmc/adonis-attachment'
 import { secondsToTimeFormat } from '../utils/helpers.js'
@@ -45,7 +45,7 @@ export default class FFmpeg {
 
   async screenshots(options: { time: number }) {
     const folder = os.tmpdir()
-    const filename = `${cuid()}.jpg`
+    const filename = `${uuid()}.jpg`
     const { time } = options
     const output = path.join(folder, filename)
     const timestamp = secondsToTimeFormat(time)

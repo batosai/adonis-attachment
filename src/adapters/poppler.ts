@@ -8,7 +8,7 @@
 import os from 'node:os'
 import path from 'node:path'
 import { $ } from 'execa'
-import { cuid } from '@adonisjs/core/helpers'
+import { uuid } from '../utils/helpers.js'
 import logger from '@adonisjs/core/services/logger'
 import { attachmentManager } from '@jrmc/adonis-attachment'
 import { PopplerMetadata } from '../types/metadata.js'
@@ -44,7 +44,7 @@ export default class Poppler {
   }
 
   async pdfToPpm(options: { page: number; dpi: number }) {
-    const output = path.join(os.tmpdir(), cuid())
+    const output = path.join(os.tmpdir(), uuid())
     try {
       await $({
         cancelSignal: this.#createAbortController().signal,

@@ -58,7 +58,7 @@ import type { Input } from '@jrmc/adonis-attachment/types/input'
 import os from 'node:os'
 import path from 'node:path'
 import fs from 'fs/promises'
-import { cuid } from '@adonisjs/core/helpers'
+import crypto from 'node:crypto'
 import Converter from '@jrmc/adonis-attachment/converters/converter'
 import ffmpeg from 'fluent-ffmpeg'
 
@@ -76,7 +76,7 @@ export default class Video2GifConverter extends Converter {
 
     return new Promise<string>((resolve, reject) => {
       const folder = os.tmpdir()
-      const filename = `${cuid()}.png`
+      const filename = `${crypto.randomUUID()}.png`
       const destination = path.join(folder, filename)
 
 

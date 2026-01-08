@@ -10,7 +10,7 @@ import type { Route } from '@adonisjs/core/http'
 import type { AttachmentService } from '../src/types/config.js'
 
 import { configProvider } from '@adonisjs/core'
-import { RuntimeException } from '@poppinss/utils'
+import { RuntimeException } from '@poppinss/exception'
 import { verrou } from '../src/adapters/lock.js'
 
 declare module '@adonisjs/core/types' {

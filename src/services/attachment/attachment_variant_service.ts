@@ -2,6 +2,7 @@ import type { LucidModel } from '@adonisjs/lucid/types/model'
 import type { RecordWithAttachment as RecordWithAttachmentImplementation } from '../../types/service.js'
 import type { RegenerateOptions } from '../../types/regenerate.js'
 import logger from '@adonisjs/core/services/logger'
+import emitter from '@adonisjs/core/services/emitter'
 import attachmentManager from '../../../services/main.js'
 import VariantService from '../variant_service.js'
 import { AttachmentUtils } from './attachment_utils.js'
@@ -68,18 +69,35 @@ export class AttachmentVariantService {
         await attachmentManager.lock
           .createLock(`attachment.${model.table}-${name}`)
           .run(async () => {
+            const config = AttachmentUtils.getOptionsByAttributeName(record.row, name)
+            const emitterPayload = {
+              tableName: model.table,
+              attributeName: name,
+              variants: config?.variants,
+            }
+            emitter.emit('attachment:variant_started', emitterPayload)
             const variantService = new VariantService({
               record,
               attributeName: name,
-              options: AttachmentUtils.getOptionsByAttributeName(record.row, name),
+              options: config,
               filters: {
                 variants: options.variants,
               },
             })
             await variantService.run()
+            emitter.emit('attachment:variant_completed', emitterPayload)
           })
       },
-    }).onError = (error: any) => this.#handleVariantError(error)
+    }).onError = (error: any) => {
+      this.#handleVariantError(error)
+      const config = AttachmentUtils.getOptionsByAttributeName(record.row, name)
+      const model = record.row.constructor as LucidModel
+      emitter.emit('attachment:variant_failed', {
+        tableName: model.table,
+        attributeName: name,
+        variants: config?.variants,
+      })
+    }
   }
 
   /**

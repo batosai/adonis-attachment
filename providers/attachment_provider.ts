@@ -8,6 +8,7 @@
 import type { ApplicationService } from '@adonisjs/core/types'
 import type { Route } from '@adonisjs/core/http'
 import type { AttachmentService } from '../src/types/config.js'
+import type { AttachmentEventPayload } from '../src/types/event.js'
 
 import { configProvider } from '@adonisjs/core'
 import { RuntimeException } from '@poppinss/exception'
@@ -16,6 +17,12 @@ import { verrou } from '../src/adapters/lock.js'
 declare module '@adonisjs/core/types' {
   export interface ContainerBindings {
     'jrmc.attachment': AttachmentService
+  }
+
+  export interface EventsList {
+    'attachment:variant_started': AttachmentEventPayload
+    'attachment:variant_completed': AttachmentEventPayload
+    'attachment:variant_failed': AttachmentEventPayload
   }
 }
 

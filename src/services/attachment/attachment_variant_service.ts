@@ -74,6 +74,10 @@ export class AttachmentVariantService {
               tableName: model.table,
               attributeName: name,
               variants: config?.variants,
+              primary: {
+                key: model.primaryKey,
+                value: record.row.$primaryKeyValue?.toString() || record.row.$attributes['id'],
+              },
             }
             emitter.emit('attachment:variant_started', emitterPayload)
             const variantService = new VariantService({
@@ -96,6 +100,10 @@ export class AttachmentVariantService {
         tableName: model.table,
         attributeName: name,
         variants: config?.variants,
+        primary: {
+          key: model.primaryKey,
+          value: record.row.$primaryKeyValue?.toString() || record.row.$attributes['id'],
+        },
       })
     }
   }

@@ -8,5 +8,9 @@
 export type AttachmentEventPayload = {
   tableName: string
   attributeName: string
-  variants?: string[]
+  primary: {
+    key: string
+    value: string | number
+  },
+  variants?: string[],
 }

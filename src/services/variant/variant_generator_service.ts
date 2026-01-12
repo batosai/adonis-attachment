@@ -59,8 +59,9 @@ export default class VariantGeneratorService {
         logger.warn(`Converter returned no output for key: ${key}`)
         return null
       }
+      const basePath = attachmentManager.getConfig().variant?.basePath
 
-      const variant = await attachment.createVariant(key, output)
+      const variant = await attachment.createVariant(key, output, basePath)
       await this.#processBlurhash(variant, converter)
       await attachmentManager.write(variant)
 

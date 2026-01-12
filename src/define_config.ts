@@ -23,6 +23,9 @@ export type ResolvedAttachmentConfig<KnownConverters extends Record<string, Conv
   timeout?: number
   converters?: { [K in keyof KnownConverters]: KnownConverters[K] }
   queue?: Queue
+  variant?: {
+    basePath?: string
+  }
 }
 
 export function defineConfig<KnownConverter extends Record<string, ConverterConfig>>(

@@ -45,6 +45,9 @@ export type AttachmentConfig<KnownConverter extends Record<string, ConverterConf
     [K in keyof KnownConverter]: KnownConverter[K]
   }
   queue?: Queue
+  variant?: {
+    basePath?: string
+  }
 }
 
 export interface AttachmentVariants {}
@@ -58,6 +61,7 @@ export type InferConverters<
     timeout?: unknown
     converters?: unknown
     queue?: unknown
+    variant?: unknown
   }>,
 > = Exclude<Awaited<ReturnType<Config['resolver']>>['converters'], undefined>
 

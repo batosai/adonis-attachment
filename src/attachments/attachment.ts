@@ -42,18 +42,25 @@ export class Attachment extends AttachmentBase implements AttachmentInterface {
    * Methods
    */
 
-  async createVariant(key: string, input: Input): Promise<Variant> {
+  async createVariant(key: string, input: Input, basePath?: string): Promise<Variant> {
     let meta
+    let folder: string
     if (Buffer.isBuffer(input)) {
       meta = await metaFormBuffer(input)
     } else {
       meta = await metaFormFile(input, this.name)
     }
 
+    if (basePath) {
+      folder = path.join(basePath, this.folder!, this.name)
+    } else {
+      folder = path.join(this.folder!, 'variants', this.name)
+    }
+
     const attributes = {
       ...meta,
       key,
-      folder: path.join(this.folder!, 'variants', this.name),
+      folder,
     }
 
     const variant = new Variant(this.drive, attributes, input)

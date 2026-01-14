@@ -25,6 +25,7 @@ export type ResolvedAttachmentConfig<KnownConverters extends Record<string, Conv
   queue?: Queue
   variant?: {
     basePath?: string
+    ignoreFolder?: boolean
   }
 }
 

@@ -47,6 +47,7 @@ export type AttachmentConfig<KnownConverter extends Record<string, ConverterConf
   queue?: Queue
   variant?: {
     basePath?: string
+    ignoreFolder?: boolean
   }
 }
 

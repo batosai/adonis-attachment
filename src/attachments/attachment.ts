@@ -42,7 +42,7 @@ export class Attachment extends AttachmentBase implements AttachmentInterface {
    * Methods
    */
 
-  async createVariant(key: string, input: Input, basePath?: string): Promise<Variant> {
+  async createVariant(key: string, input: Input, options?: { basePath?: string, ignoreFolder?: boolean }): Promise<Variant> {
     let meta
     let folder: string
     if (Buffer.isBuffer(input)) {
@@ -51,8 +51,12 @@ export class Attachment extends AttachmentBase implements AttachmentInterface {
       meta = await metaFormFile(input, this.name)
     }
 
-    if (basePath) {
-      folder = path.join(basePath, this.folder!, this.name)
+    if (options?.basePath && !options?.ignoreFolder) {
+      folder = path.join(options.basePath, this.folder!, this.name)
+    } else if (options?.basePath && options?.ignoreFolder) {
+      folder = path.join(options.basePath, this.name)
+    } else if (options?.ignoreFolder) {
+      folder = this.name
     } else {
       folder = path.join(this.folder!, 'variants', this.name)
     }

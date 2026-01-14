@@ -8,12 +8,17 @@
 import type { Attachment, Variant, LucidOptions } from '../../types/attachment.js'
 import type { Converter } from '../../types/converter.js'
 import type { Input } from '../../types/input.js'
+import type { AttachmentService } from '../../types/config.js'
 
+import app from '@adonisjs/core/services/app'
 import logger from '@adonisjs/core/services/logger'
-import attachmentManager from '../../../services/main.js'
 import { streamToTempFile } from '../../utils/helpers.js'
 
 export default class VariantGeneratorService {
+  async #getAttachmentManager(): Promise<AttachmentService> {
+    return app.container.make('jrmc.attachment')
+  }
+
   async generate({
     attachments,
     options,
@@ -51,6 +56,7 @@ export default class VariantGeneratorService {
     converter: Converter
   }): Promise<Variant | null> {
     try {
+      const attachmentManager = await this.#getAttachmentManager()
       const input = await this.#prepareInput(attachment)
       const output = await this.#convertFile(input, converter)
 
@@ -60,8 +66,9 @@ export default class VariantGeneratorService {
         return null
       }
       const basePath = attachmentManager.getConfig().variant?.basePath
+      const ignoreFolder = attachmentManager.getConfig().variant?.ignoreFolder
 
-      const variant = await attachment.createVariant(key, output, basePath)
+      const variant = await attachment.createVariant(key, output, { basePath, ignoreFolder })
       await this.#processBlurhash(variant, converter)
       await attachmentManager.write(variant)
 
@@ -82,6 +89,7 @@ export default class VariantGeneratorService {
 
   async #getConverter(key: string): Promise<Converter | null> {
     try {
+      const attachmentManager = await this.#getAttachmentManager()
       return (await attachmentManager.getConverter(key)) as Converter
     } catch (error) {
       logger.error(`Failed to get converter for key ${key}: ${error.message}`)

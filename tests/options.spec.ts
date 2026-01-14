@@ -18,7 +18,7 @@ import BlurhashAdapter from '../src/adapters/blurhash.js'
 import { createApp } from './helpers/app.js'
 import { UserFactory } from './fixtures/factories/user.js'
 import { makeAttachment } from './helpers/index.js'
-import { attachment } from '../index.js'
+import { attachment, attachmentManager } from '../index.js'
 
 test.group('options', () => {
   test('with default values', async ({ assert, cleanup }) => {
@@ -398,5 +398,139 @@ test.group('options', () => {
     await user.save()
 
     await assert.fileNotExists(path!)
+  })
+
+  test('with variant.basePath option', async ({ assert, cleanup }) => {
+    const app = await createApp({
+      variant: {
+        basePath: 'custom-variants',
+      },
+    })
+    const encodeStub = sinon.stub(BlurhashAdapter, 'encode').returns('mockBlurhash')
+
+    cleanup(() => {
+      encodeStub.restore()
+      app.terminate()
+    })
+
+    class User extends BaseModel {
+      @column({ isPrimary: true })
+      declare id: string
+
+      @column()
+      declare name: string
+
+      @attachment({ variants: ['thumbnail'], folder: 'avatars' })
+      declare avatar: Attachment | null
+    }
+
+    const UserFactory = Factory.define(User, async ({ faker }) => {
+      return {
+        name: faker.person.lastName(),
+        avatar: await makeAttachment(),
+      }
+    }).build()
+
+    const notifier = new Promise((resolve) => {
+      attachmentManager.queue.drained = resolve
+    })
+    const user = await UserFactory.create()
+    await notifier
+
+    const variant = user.avatar?.variants?.[0]
+
+    // With basePath, variant folder should start with: basePath/folder/
+    assert.isTrue(variant?.folder?.startsWith('custom-variants/avatars/'))
+  })
+
+  test('with variant.ignoreFolder option', async ({ assert, cleanup }) => {
+    const app = await createApp({
+      variant: {
+        ignoreFolder: true,
+      },
+    })
+    const encodeStub = sinon.stub(BlurhashAdapter, 'encode').returns('mockBlurhash')
+
+    cleanup(() => {
+      encodeStub.restore()
+      app.terminate()
+    })
+
+    class User extends BaseModel {
+      @column({ isPrimary: true })
+      declare id: string
+
+      @column()
+      declare name: string
+
+      @attachment({ variants: ['thumbnail'], folder: 'avatars' })
+      declare avatar: Attachment | null
+    }
+
+    const UserFactory = Factory.define(User, async ({ faker }) => {
+      return {
+        name: faker.person.lastName(),
+        avatar: await makeAttachment(),
+      }
+    }).build()
+
+    const notifier = new Promise((resolve) => {
+      attachmentManager.queue.drained = resolve
+    })
+    const user = await UserFactory.create()
+    await notifier
+
+    const variant = user.avatar?.variants?.[0]
+
+    // With ignoreFolder, variant folder should NOT include the parent folder
+    assert.isFalse(variant?.folder?.includes('avatars'))
+  })
+
+  test('with variant.basePath and variant.ignoreFolder options combined', async ({
+    assert,
+    cleanup,
+  }) => {
+    const app = await createApp({
+      variant: {
+        basePath: 'all-variants',
+        ignoreFolder: true,
+      },
+    })
+    const encodeStub = sinon.stub(BlurhashAdapter, 'encode').returns('mockBlurhash')
+
+    cleanup(() => {
+      encodeStub.restore()
+      app.terminate()
+    })
+
+    class User extends BaseModel {
+      @column({ isPrimary: true })
+      declare id: string
+
+      @column()
+      declare name: string
+
+      @attachment({ variants: ['thumbnail'], folder: 'avatars' })
+      declare avatar: Attachment | null
+    }
+
+    const UserFactory = Factory.define(User, async ({ faker }) => {
+      return {
+        name: faker.person.lastName(),
+        avatar: await makeAttachment(),
+      }
+    }).build()
+
+    const notifier = new Promise((resolve) => {
+      attachmentManager.queue.drained = resolve
+    })
+    const user = await UserFactory.create()
+    await notifier
+
+    const variant = user.avatar?.variants?.[0]
+
+    // With basePath + ignoreFolder, variant folder should start with basePath but NOT include parent folder
+    assert.isTrue(variant?.folder?.startsWith('all-variants/'))
+    assert.isFalse(variant?.folder?.includes('avatars'))
   })
 })

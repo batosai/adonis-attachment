@@ -1,6 +1,8 @@
 # AdonisJS attachment
 
 This package is currently development and will replace [attachment-advanced](https://github.com/batosai/attachment-advanced) for AdonisJS 6.
+> Ready for AdonisJS 7 🎉
+
 
 ## Links
 

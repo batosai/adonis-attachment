@@ -1,12 +1,22 @@
 # Changelog
 
+## 5.1.0
+
+* add AdonisJS 7 compatibility and Lucid 22
+* add [events](/guide/advanced_usage/events) for variant lifecycle (`attachment:variant_started`, `attachment:variant_completed`, `attachment:variant_failed`)
+* add [variant options](/guide/essentials/configuration#variant-optional) in config
+  * `variant.basePath` - custom base path for variants storage
+  * `variant.ignoreFolder` - ignore parent folder from original attachment
+
+> Released at *2026-01-15*
+
 ## 5.0.5
 
 * pr: keyId after save #32
 * pr: docs keyId access to edge #30
 * fix: method getKeyId is missing to Attachment type 
 
-> Released at *2026-01-xx*
+> Released at *2026-01-05*
 
 ## 5.0.4
 

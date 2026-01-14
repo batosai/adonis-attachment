@@ -144,6 +144,10 @@ export default defineConfig({
                 text: 'Queue',
                 link: '/guide/advanced_usage/queue',
               },
+              {
+                text: 'Events',
+                link: '/guide/advanced_usage/events',
+              },
             ],
           },
           {

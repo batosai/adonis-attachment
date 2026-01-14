@@ -204,3 +204,85 @@ declare module '@jrmc/adonis-attachment' {
   interface AttachmentVariants extends InferConverters<typeof attachmentConfig> {}
 }
 ```
+
+---
+
+## variant (optional)
+
+⚠️ [avalable in v5.1.0](/changelog#_5-1-0)
+
+Configure the storage path for generated variants.
+
+::: info
+In the examples below, `image.jpg` is used for clarity. In practice, filenames are automatically renamed to UUIDs (e.g., `a1b2c3d4-e5f6-7890-abcd-ef1234567890.jpg`) unless you set [`rename: false`](#rename-optional-default-true).
+:::
+
+### variant.basePath
+
+Define a custom base path where all variants will be stored. By default, variants are stored in the same folder as the original file.
+
+```typescript
+const attachmentConfig = defineConfig({
+  variant: { // [!code focus:3]
+    basePath: 'variants',
+  },
+  converters: {
+    // ...
+  }
+})
+```
+
+**Example with `folder: 'avatars'` on the attachment:**
+
+| Option | Original path | Variant path |
+|--------|---------------|--------------|
+| Without `basePath` | `avatars/image.jpg` | `avatars/image.jpg/thumbnail.jpg` |
+| With `basePath: 'variants'` | `avatars/image.jpg` | `variants/avatars/image.jpg/thumbnail.jpg` |
+
+### variant.ignoreFolder
+
+When set to `true`, the variant will not include the parent folder from the original attachment.
+
+```typescript
+const attachmentConfig = defineConfig({
+  variant: { // [!code focus:3]
+    ignoreFolder: true,
+  },
+  converters: {
+    // ...
+  }
+})
+```
+
+**Example with `folder: 'avatars'` on the attachment:**
+
+| Option | Original path | Variant path |
+|--------|---------------|--------------|
+| Without `ignoreFolder` | `avatars/image.jpg` | `avatars/image.jpg/thumbnail.jpg` |
+| With `ignoreFolder: true` | `avatars/image.jpg` | `image.jpg/thumbnail.jpg` |
+
+### Combined options
+
+You can combine both options to have full control over variant storage:
+
+```typescript
+const attachmentConfig = defineConfig({
+  variant: { // [!code focus:4]
+    basePath: 'all-variants',
+    ignoreFolder: true,
+  },
+  converters: {
+    // ...
+  }
+})
+```
+
+**Example with `folder: 'avatars'` on the attachment:**
+
+| Options | Original path | Variant path |
+|---------|---------------|--------------|
+| `basePath` + `ignoreFolder` | `avatars/image.jpg` | `all-variants/image.jpg/thumbnail.jpg` |
+
+::: tip Use case
+This is useful when you want to store all variants in a dedicated folder, separate from the original files. For example, you might want to use a different storage disk or CDN for variants.
+:::

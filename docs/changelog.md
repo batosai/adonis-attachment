@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.1.1
+
+* fix: dependencies adonisjs7(next) for npm
+
 ## 5.1.0
 
 * add AdonisJS 7 compatibility and Lucid 22

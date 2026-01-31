@@ -1,33 +1,33 @@
 {{{
   exports({ to: app.configPath('attachment.ts') })
 }}}
-// import sharp from 'sharp'
+import type { InferConverters } from '@jrmc/adonis-attachment/types/config'
 import { defineConfig } from '@jrmc/adonis-attachment'
-import { InferConverters } from '@jrmc/adonis-attachment/types/config'
+// import sharp from 'sharp'
 
 /**
-* Documentation: https://adonis-attachment.jrmc.dev/guide/essentials/configuration
-*/
+ * Documentation: https://adonis-attachment.jrmc.dev/guide/essentials/configuration
+ */
 
 const attachmentConfig = defineConfig({
   /**
-  * Enable the preComputeUrl flag to pre compute the URLs after SELECT queries. (default: false)
-  */
+   * Enable the preComputeUrl flag to pre compute the URLs after SELECT queries. (default: false)
+   */
   // preComputeUrl: true,
 
   /**
-  * Enable the meta informations after upload. (default: false)
-  */
+   * Enable the meta informations after upload. (default: false)
+   */
   // meta: true,
 
   /**
-  * Enable file rename after upload. (default: true)
-  */
+   * Enable file rename after upload. (default: true)
+   */
   // rename: false,
 
   /**
-  * Specify binary path
-  */
+   * Specify binary path
+   */
   // bin: { // [!code focus:8]
   //   ffmpegPath: 'ffmpeg_path', // the full path of the binary
   //   ffprobePath: 'ffprobe_path', // the full path of the binary
@@ -37,52 +37,52 @@ const attachmentConfig = defineConfig({
   // },
 
   /**
-  * Queue configuration for file processing.
-  * By default, 1 task is processed concurrently. A task corresponds to a model attribute.
-  * For example, if a model has a logo attribute and an avatar attribute,
-  * this represents 2 tasks, regardless of the number of concerts per attribute.
-  *
-  * Increasing concurrency can improve performance but consumes more resources.
-  * A value too high may lead to memory or CPU issues.
-  *
-  */
+   * Queue configuration for file processing.
+   * By default, 1 task is processed concurrently. A task corresponds to a model attribute.
+   * For example, if a model has a logo attribute and an avatar attribute,
+   * this represents 2 tasks, regardless of the number of concerts per attribute.
+   *
+   * Increasing concurrency can improve performance but consumes more resources.
+   * A value too high may lead to memory or CPU issues.
+   *
+   */
   // queue: {
   //   concurrency: 2
   // },
 
   /**
-  * Maximum duration (in milliseconds) that an operation can take before being interrupted.
-  * Default: 30_000 (30 seconds)
-  *
-  * This timeout applies to each individual operation conversion.
-  * If an operation exceeds this time limit, it will be interrupted and an error will be thrown.
-  *
-  * Increase this value if you're processing large files or if your operations
-  * require more time (e.g., long video conversion).
-  *
-  */
+   * Maximum duration (in milliseconds) that an operation can take before being interrupted.
+   * Default: 30_000 (30 seconds)
+   *
+   * This timeout applies to each individual operation conversion.
+   * If an operation exceeds this time limit, it will be interrupted and an error will be thrown.
+   *
+   * Increase this value if you're processing large files or if your operations
+   * require more time (e.g., long video conversion).
+   *
+   */
   // timeout: 40_000,
 
   /**
-  *
-  */
+   *
+   */
   converters: {
     thumbnail: {
       /**
-      * optional converter
-      * default : @jrmc/adonis-attachment/converters/autodetect_converter
-      * image : @jrmc/adonis-attachment/converters/image_converter
-      * pdf : @jrmc/adonis-attachment/converters/pdf_thumbnail_converter
-      * document : @jrmc/adonis-attachment/converters/document_thumbnail_converter
-      * video : @jrmc/adonis-attachment/converters/video_thumbnail_converter
-      * create your custom converter : https://adonis-attachment.jrmc.dev/guide/advanced_usage/custom-converter
-      */
+       * optional converter
+       * default : @jrmc/adonis-attachment/converters/autodetect_converter
+       * image : @jrmc/adonis-attachment/converters/image_converter
+       * pdf : @jrmc/adonis-attachment/converters/pdf_thumbnail_converter
+       * document : @jrmc/adonis-attachment/converters/document_thumbnail_converter
+       * video : @jrmc/adonis-attachment/converters/video_thumbnail_converter
+       * create your custom converter : https://adonis-attachment.jrmc.dev/guide/advanced_usage/custom-converter
+       */
       // converter: () => import('@jrmc/adonis-attachment/converters/autodetect_converter'),
 
       /**
-      *
-      * https://sharp.pixelplumbing.com/api-resize/
-      */
+       *
+       * https://sharp.pixelplumbing.com/api-resize/
+       */
       resize: 300,
 
       // resize: { // https://sharp.pixelplumbing.com/api-resize
@@ -93,9 +93,9 @@ const attachmentConfig = defineConfig({
       // },
 
       /**
-      *
-      * https://sharp.pixelplumbing.com/api-output/#toformat
-      */
+       *
+       * https://sharp.pixelplumbing.com/api-output/#toformat
+       */
       // format: 'jpeg',
       // format: {
       //   format: 'jpeg',
@@ -105,18 +105,18 @@ const attachmentConfig = defineConfig({
       // }
 
       /**
-      *
-      * https://sharp.pixelplumbing.com/api-operation/#autoorient
-      */
+       *
+       * https://sharp.pixelplumbing.com/api-operation/#autoorient
+       */
       // autoOrient: false,
 
       /**
-      * generation of blurhashes (default: true)
-      * https://blurha.sh/
-      */
+       * generation of blurhashes (default: true)
+       * https://blurha.sh/
+       */
       // blurhash: true,
-    }
-  }
+    },
+  },
 })
 
 export default attachmentConfig

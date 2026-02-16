@@ -50,11 +50,10 @@ Simple upload file
 ```ts
 // app/models/user.ts
 import { BaseModel } from '@adonisjs/lucid/orm'
-import { compose } from '@adonisjs/core/helpers'
-import { attachment, Attachmentable } from '@jrmc/adonis-attachment'
+import { attachment } from '@jrmc/adonis-attachment'
 import type { Attachment } from '@jrmc/adonis-attachment/types/attachment'
 
-class User extends compose(BaseModel, Attachmentable) {
+class User extends BaseModel {
   @attachment()
   declare avatar: Attachment
 }

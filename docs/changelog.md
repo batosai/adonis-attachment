@@ -1,8 +1,16 @@
 # Changelog
 
+## 5.1.2
+
+* fix: correct SVG metadata buffer parsing/detection
+
+> Released at *2026-02-28*
+
 ## 5.1.1
 
 * fix: dependencies adonisjs7(next) for npm
+
+> Released at *2026-01-31*
 
 ## 5.1.0
 

@@ -66,10 +66,10 @@ const attachmentConfig = defineConfig({
   /**
    * Configure how variants are stored relative to the original file.
    *
-   * - `basePath`: Define a custom base path where all variants will be stored.
+   * - 'basePath': Define a custom base path where all variants will be stored.
    *   By default, variants are stored in the same folder as the original file.
    *
-   * - `ignoreFolder`: When set to `true`, the variant will not include the parent
+   * - 'ignoreFolder': When set to 'true', the variant will not include the parent
    *   folder from the original attachment.
    */
   // variant: {

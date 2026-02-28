@@ -16,7 +16,7 @@ import type { Input } from '../types/input.js'
 import path from 'node:path'
 import { AttachmentBase } from './attachment_base.js'
 import { Variant } from './variant_attachment.js'
-import { metaFormBuffer, metaFormFile } from '../adapters/meta.js'
+import { metaFromBuffer, metaFromFile } from '../adapters/meta.js'
 import { LucidRow } from '@adonisjs/lucid/types/model'
 
 export class Attachment extends AttachmentBase implements AttachmentInterface {
@@ -42,13 +42,17 @@ export class Attachment extends AttachmentBase implements AttachmentInterface {
    * Methods
    */
 
-  async createVariant(key: string, input: Input, options?: { basePath?: string, ignoreFolder?: boolean }): Promise<Variant> {
+  async createVariant(
+    key: string,
+    input: Input,
+    options?: { basePath?: string; ignoreFolder?: boolean }
+  ): Promise<Variant> {
     let meta
     let folder: string
     if (Buffer.isBuffer(input)) {
-      meta = await metaFormBuffer(input)
+      meta = await metaFromBuffer(input)
     } else {
-      meta = await metaFormFile(input, this.name)
+      meta = await metaFromFile(input, this.name)
     }
 
     if (options?.basePath && !options?.ignoreFolder) {

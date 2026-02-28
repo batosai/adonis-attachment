@@ -28,8 +28,12 @@ function metaByFileName(filename: string) {
   }
 }
 
-export async function metaFormBuffer(input: Buffer): Promise<Meta> {
-  const fileType = await fileTypeFromBuffer(input)
+export async function metaFromBuffer(input: Buffer): Promise<Meta> {
+  let fileType = await fileTypeFromBuffer(input)
+
+  if (input.toString('utf8').includes('<svg')) {
+    fileType = { mime: 'image/svg+xml', ext: 'svg' }
+  }
 
   return {
     extname: fileType?.ext || '',
@@ -38,7 +42,7 @@ export async function metaFormBuffer(input: Buffer): Promise<Meta> {
   }
 }
 
-export async function metaFormFile(input: string, filename: string): Promise<Meta> {
+export async function metaFromFile(input: string, filename: string): Promise<Meta> {
   let fileType
   let size = 0
 

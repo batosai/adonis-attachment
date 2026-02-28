@@ -22,7 +22,7 @@ import { Attachment } from './attachments/attachment.js'
 import Converter from './converters/converter.js'
 import { downloadToTempFile, isBase64, streamToTempFile } from './utils/helpers.js'
 import ExifAdapter from './adapters/exif.js'
-import { metaFormBuffer, metaFormFile } from './adapters/meta.js'
+import { metaFromBuffer, metaFromFile } from './adapters/meta.js'
 import { uuid } from './utils/helpers.js'
 
 const REQUIRED_ATTRIBUTES = ['name', 'size', 'extname', 'mimeType'] as const
@@ -85,7 +85,7 @@ export class AttachmentManager<KnownConverters extends Record<string, Converter>
   }
 
   async createFromPath(input: string, name?: string) {
-    const meta = await metaFormFile(input, name || input)
+    const meta = await metaFromFile(input, name || input)
 
     if (meta.extname === '') {
       meta.extname = 'tmp'
@@ -106,7 +106,7 @@ export class AttachmentManager<KnownConverters extends Record<string, Converter>
       throw new errors.E_ISNOT_BUFFER()
     }
 
-    const meta = await metaFormBuffer(input)
+    const meta = await metaFromBuffer(input)
     const ext = meta.extname || 'tmp'
     const attributes: AttachmentAttributes = {
       ...meta,

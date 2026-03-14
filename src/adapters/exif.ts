@@ -7,12 +7,12 @@
 
 import type { Exif, Input } from '../types/input.js'
 import type { Converter } from '../types/converter.js'
+import type { ResolvedAttachmentConfig } from '../define_config.js'
 
 import fs from 'node:fs/promises'
 import ExifReader from 'exifreader'
 import { fileTypeFromBuffer, fileTypeFromFile } from 'file-type'
 import { bufferToTempFile, cleanObject } from '../utils/helpers.js'
-import { ResolvedAttachmentConfig } from '../define_config.js'
 
 type KnownConverters = Record<string, Converter>
 
@@ -127,8 +127,8 @@ async function imageExif(buffer: Buffer) {
 
     if (tags.icc['Image Width'] && tags.icc['Image Height']) {
       data.dimension = {
-        width: parseInt(tags.icc['Image Width'].value),
-        height: parseInt(tags.icc['Image Height'].value),
+        width: Number.parseInt(tags.icc['Image Width'].value),
+        height: Number.parseInt(tags.icc['Image Height'].value),
       }
     }
   }

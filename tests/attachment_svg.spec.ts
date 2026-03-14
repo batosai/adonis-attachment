@@ -5,8 +5,9 @@
  * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
  */
 
+import type { IncomingMessage } from 'node:http'
+
 import https from 'node:https'
-import { IncomingMessage } from 'node:http'
 import { test } from '@japa/runner'
 import app from '@adonisjs/core/services/app'
 

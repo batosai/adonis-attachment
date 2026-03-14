@@ -5,6 +5,8 @@
  * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
  */
 
+import type { FfmpegMetadata } from '../types/metadata.js'
+
 import os from 'node:os'
 import path from 'node:path'
 import { $, ExecaError } from 'execa'
@@ -12,7 +14,6 @@ import { uuid } from '../utils/helpers.js'
 import logger from '@adonisjs/core/services/logger'
 import { attachmentManager } from '@jrmc/adonis-attachment'
 import { secondsToTimeFormat } from '../utils/helpers.js'
-import { FfmpegMetadata } from '../types/metadata.js'
 
 export default class FFmpeg {
   #ffmpegPath: string

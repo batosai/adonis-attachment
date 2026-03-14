@@ -7,6 +7,7 @@
 
 import type { Input } from '../types/input.js'
 import type { BlurhashOptions } from '../types/converter.js'
+import type { WriteStream } from 'node:fs'
 
 import crypto from 'node:crypto'
 import os from 'node:os'
@@ -15,7 +16,7 @@ import https from 'node:https'
 import fs from 'node:fs/promises'
 import { pipeline } from 'node:stream'
 import { promisify } from 'node:util'
-import { createWriteStream, WriteStream } from 'node:fs'
+import { createWriteStream } from 'node:fs'
 import BlurhashAdapter from '../adapters/blurhash.js'
 import * as errors from '../errors.js'
 
@@ -140,12 +141,12 @@ export function imageToBlurhash(input: Input, options?: BlurhashOptions): Promis
   })
 }
 
-export function extractPathParameters(path: string): string[] {
+export function extractPathParameters(pathValue: string): string[] {
   const paramRegex = /:(\w+)/g
   const parameters: string[] = []
   let match
 
-  while ((match = paramRegex.exec(path)) !== null) {
+  while ((match = paramRegex.exec(pathValue)) !== null) {
     parameters.push(match[1])
   }
 
@@ -159,7 +160,6 @@ export function secondsToTimeFormat(seconds: number) {
 
   return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`
 }
-
 
 export function uuid() {
   return crypto.randomUUID()

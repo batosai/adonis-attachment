@@ -11,6 +11,6 @@ export type AttachmentEventPayload = {
   primary: {
     key: string
     value: string | number
-  },
-  variants?: string[],
+  }
+  variants?: string[]
 }

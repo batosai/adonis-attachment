@@ -36,7 +36,7 @@ export type BlurhashOptions = {
   componentY: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
 }
 
-type jpeg = {
+type Jpeg = {
   format: 'jpeg'
   options: {
     quality?: number
@@ -55,7 +55,7 @@ type jpeg = {
   }
 }
 
-type png = {
+type Png = {
   format: 'png'
   options: {
     quality?: number
@@ -71,7 +71,7 @@ type png = {
   }
 }
 
-type gif = {
+type Gif = {
   format: 'gif'
   options: {
     reuse?: boolean
@@ -88,7 +88,7 @@ type gif = {
   }
 }
 
-type webp = {
+type Webp = {
   format: 'webp'
   options: {
     quality?: number
@@ -106,7 +106,7 @@ type webp = {
   }
 }
 
-type avif = {
+type Avif = {
   format: 'avif'
   options: {
     quality?: number
@@ -117,7 +117,7 @@ type avif = {
   }
 }
 
-type heif = {
+type Heif = {
   format: 'heif'
   options: {
     compression?: string
@@ -160,12 +160,12 @@ export type ConverterOptions = {
     | 'heif'
     | 'tiff'
     | 'raw'
-    | jpeg
-    | png
-    | gif
-    | webp
-    | avif
-    | heif
+    | Jpeg
+    | Png
+    | Gif
+    | Webp
+    | Avif
+    | Heif
   autoOrient?: boolean
   blurhash?: boolean | BlurhashOptions
   startTime?: number

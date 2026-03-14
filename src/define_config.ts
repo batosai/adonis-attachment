@@ -6,11 +6,11 @@
  */
 
 import type { AttachmentConfig, BinPaths, ConverterConfig, Queue } from './types/config.js'
+import type { ConfigProvider } from '@adonisjs/core/types'
+import type BaseConverter from './converters/converter.js'
+import type { Converter } from './types/converter.js'
 
-import { ConfigProvider } from '@adonisjs/core/types'
 import { configProvider } from '@adonisjs/core'
-import BaseConverter from './converters/converter.js'
-import { Converter } from './types/converter.js'
 
 /**
  * Config resolved by the "defineConfig" method
@@ -48,7 +48,7 @@ export function defineConfig<KnownConverter extends Record<string, ConverterConf
 
         try {
           const { default: value } = await converter.converter()
-          const { converter: _, ...opt } = converter
+          const { converter: unusedConverter, ...opt } = converter
           const options = converter.options || opt
 
           const Converter = value as typeof BaseConverter

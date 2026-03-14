@@ -11,7 +11,7 @@ import type { Exif, Input } from './input.js'
 import type { Disk } from '@adonisjs/drive'
 import type { SignedURLOptions } from '@adonisjs/drive/types'
 import type { AttachmentVariants } from '@jrmc/adonis-attachment'
-import { BlurhashOptions } from './converter.js'
+import type { BlurhashOptions } from './converter.js'
 
 export type AttachmentBase = {
   drive: DriveService
@@ -57,7 +57,11 @@ export type Attachment = AttachmentBase & {
   originalName: string
   variants?: Variant[]
 
-  createVariant(key: string, input: Input, options?: { basePath?: string, ignoreFolder?: boolean }): Promise<Variant>
+  createVariant(
+    key: string,
+    input: Input,
+    options?: { basePath?: string; ignoreFolder?: boolean }
+  ): Promise<Variant>
   getVariant(variantName: string): Variant | null
   getUrl(variantName?: string): Promise<string>
   getSignedUrl(

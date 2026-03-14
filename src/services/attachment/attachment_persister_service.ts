@@ -39,8 +39,8 @@ export class AttachmentPersisterService {
          */
         record.row.$attachments.dirtied.push(name)
 
-        for (let i = 0; i < newAttachments.length; i++) {
-          if (originalAttachments.includes(newAttachments[i])) {
+        for (const newAttachment of newAttachments) {
+          if (originalAttachments.includes(newAttachment)) {
             continue
           }
 
@@ -48,16 +48,16 @@ export class AttachmentPersisterService {
            * If there is a new file and its local then we must save this
            * file.
            */
-          if (newAttachments[i]) {
-            newAttachments[i].setOptions(options)
-            await newAttachments[i].makeFolder(record.row)
-            await newAttachments[i].makeName(record.row, name, newAttachments[i].originalName)
-            record.row.$attachments.attached.push(newAttachments[i])
+          if (newAttachment) {
+            newAttachment.setOptions(options)
+            await newAttachment.makeFolder(record.row)
+            await newAttachment.makeName(record.row, name, newAttachment.originalName)
+            record.row.$attachments.attached.push(newAttachment)
 
             /**
              * Also write the file to the disk right away
              */
-            await attachmentManager.write(newAttachments[i])
+            await attachmentManager.write(newAttachment)
           }
         }
       })
@@ -76,9 +76,9 @@ export class AttachmentPersisterService {
 
         if (record.row.$attributes[name]) {
           const attachments = AttachmentUtils.getAttachmentsByAttributeName(record.row, name)
-          for (let i = 0; i < attachments.length; i++) {
-            attachments[i].setOptions(options)
-            await attachmentManager.preComputeUrl(attachments[i])
+          for (const attachment of attachments) {
+            attachment.setOptions(options)
+            await attachmentManager.preComputeUrl(attachment)
           }
         }
       })
@@ -95,8 +95,8 @@ export class AttachmentPersisterService {
       attachmentAttributeNames.map(async (name) => {
         if (record.row.$attributes[name]) {
           const attachments = AttachmentUtils.getAttachmentsByAttributeName(record.row, name)
-          for (let i = 0; i < attachments.length; i++) {
-            const { disk, folder, meta, rename } = attachments[i].options
+          for (const [i, attachment] of attachments.entries()) {
+            const { disk, folder, meta, rename } = attachment.options
             const model = record.row.constructor as LucidModel
             const key = encryption.encrypt({
               model: model.namingStrategy.tableName(model),
@@ -111,7 +111,7 @@ export class AttachmentPersisterService {
                 rename,
               },
             })
-            attachments[i].setKeyId(key)
+            attachment.setKeyId(key)
           }
         }
       })

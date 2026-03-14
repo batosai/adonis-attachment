@@ -7,12 +7,12 @@
 
 import type { Attachment } from '../src/types/attachment.js'
 import type { AttachmentEventPayload } from '../src/types/event.js'
+import type { DateTime } from 'luxon'
 
 import { test } from '@japa/runner'
 import sinon from 'sinon'
 import { BaseModel, column } from '@adonisjs/lucid/orm'
 import Factory from '@adonisjs/lucid/factories'
-import { DateTime } from 'luxon'
 import emitter from '@adonisjs/core/services/emitter'
 
 import BlurhashAdapter from '../src/adapters/blurhash.js'
@@ -120,10 +120,7 @@ test.group('attachment events', () => {
     assert.includeMembers(payload.variants!, ['thumbnail', 'medium'])
   })
 
-  test('should emit events in correct order: started -> completed', async ({
-    assert,
-    cleanup,
-  }) => {
+  test('should emit events in correct order: started -> completed', async ({ assert, cleanup }) => {
     const encodeStub = sinon.stub(BlurhashAdapter, 'encode').returns('mockBlurhash')
 
     const eventOrder: string[] = []

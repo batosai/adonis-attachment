@@ -14,12 +14,12 @@ import type {
   Attachment as AttachmentType,
 } from './types/attachment.js'
 import type { ResolvedAttachmentConfig } from './define_config.js'
+import type Converter from './converters/converter.js'
 
 import path from 'node:path'
 import { DeferQueue } from '@poppinss/defer'
 import * as errors from './errors.js'
 import { Attachment } from './attachments/attachment.js'
-import Converter from './converters/converter.js'
 import { downloadToTempFile, isBase64, streamToTempFile } from './utils/helpers.js'
 import ExifAdapter from './adapters/exif.js'
 import { metaFromBuffer, metaFromFile } from './adapters/meta.js'

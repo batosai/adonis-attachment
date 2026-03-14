@@ -4,9 +4,9 @@
  * @license MIT
  * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
  */
+import type { IncomingMessage } from 'node:http'
 
 import https from 'node:https'
-import { IncomingMessage } from 'node:http'
 import { readFile } from 'node:fs/promises'
 import { test } from '@japa/runner'
 import drive from '@adonisjs/drive/services/main'

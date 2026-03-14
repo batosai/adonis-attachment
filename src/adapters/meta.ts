@@ -5,7 +5,7 @@
  * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
  */
 
-import { Meta } from '../types/input.js'
+import type { Meta } from '../types/input.js'
 
 import path from 'node:path'
 import fs from 'node:fs/promises'

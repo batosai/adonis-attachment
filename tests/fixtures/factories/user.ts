@@ -5,13 +5,14 @@
  * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
  */
 
+import type { DateTime } from 'luxon'
+import type { Attachment } from '../../../src/types/attachment.js'
+
 import Factory from '@adonisjs/lucid/factories'
 import { BaseModel, column } from '@adonisjs/lucid/orm'
-import { DateTime } from 'luxon'
 
 import { makeAttachment } from '../../helpers/index.js'
 import { attachment, attachments } from '../../../index.js'
-import type { Attachment } from '../../../src/types/attachment.js'
 
 export default class User extends BaseModel {
   @column({ isPrimary: true })

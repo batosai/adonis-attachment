@@ -7,9 +7,8 @@
 
 import type { LucidRow } from '@adonisjs/lucid/types/model'
 import type { Converter, ConverterOptions } from './converter.js'
-
-import { ConfigProvider } from '@adonisjs/core/types'
-import { AttachmentManager } from '../attachment_manager.js'
+import type { ConfigProvider } from '@adonisjs/core/types'
+import type { AttachmentManager } from '../attachment_manager.js'
 
 type ImportConverter = {
   default: unknown

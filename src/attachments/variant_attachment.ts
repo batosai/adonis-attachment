@@ -8,9 +8,9 @@
 import type { DriveService } from '@adonisjs/drive/types'
 import type { VariantAttributes, Variant as VariantInterface } from '../types/attachment.js'
 import type { Input } from '../types/input.js'
+import type { BlurhashOptions } from '../types/converter.js'
 
 import { AttachmentBase } from './attachment_base.js'
-import { BlurhashOptions } from '../types/converter.js'
 import { imageToBlurhash } from '../utils/helpers.js'
 
 export class Variant extends AttachmentBase implements VariantInterface {

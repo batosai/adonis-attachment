@@ -5,13 +5,14 @@
  * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
  */
 
+import type { PopplerMetadata } from '../types/metadata.js'
+
 import os from 'node:os'
 import path from 'node:path'
 import { $ } from 'execa'
 import { uuid } from '../utils/helpers.js'
 import logger from '@adonisjs/core/services/logger'
 import { attachmentManager } from '@jrmc/adonis-attachment'
-import { PopplerMetadata } from '../types/metadata.js'
 import { DateTime } from 'luxon'
 
 export default class Poppler {
@@ -88,15 +89,15 @@ export default class Poppler {
 
       const pageSizeMatch = metadata['page size']?.match(/(\d+)\s*x\s*(\d+)/)
       const [width, height] = pageSizeMatch
-        ? [parseInt(pageSizeMatch[1]), parseInt(pageSizeMatch[2])]
+        ? [Number.parseInt(pageSizeMatch[1]), Number.parseInt(pageSizeMatch[2])]
         : [0, 0]
 
       const fileSizeMatch = metadata['file size']?.match(/(\d+)/)
-      const size = fileSizeMatch ? parseInt(fileSizeMatch[1]) : 0
+      const size = fileSizeMatch ? Number.parseInt(fileSizeMatch[1]) : 0
 
       const version = metadata['pdf version'] || ''
 
-      const pages = parseInt(metadata['pages'] || '0')
+      const pages = Number.parseInt(metadata['pages'] || '0')
 
       let creationDate = ''
       if (metadata['creationdate']) {

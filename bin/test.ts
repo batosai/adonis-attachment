@@ -1,10 +1,10 @@
+import type { ApplicationService } from '@adonisjs/core/types'
 import { assert } from '@japa/assert'
 import { expectTypeOf } from '@japa/expect-type'
 import { processCLIArgs, configure, run } from '@japa/runner'
 import { createApp, initializeDatabase, removeDatabase } from '../tests/helpers/app.js'
 import { fileSystem } from '@japa/file-system'
 import app from '@adonisjs/core/services/app'
-import { ApplicationService } from '@adonisjs/core/types'
 import { BASE_URL } from '../tests/helpers/index.js'
 
 let testApp: ApplicationService

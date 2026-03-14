@@ -6,12 +6,12 @@
  */
 
 import type { Attachment } from '../src/types/attachment.js'
+import type { DateTime } from 'luxon'
 
 import { test } from '@japa/runner'
 import sinon from 'sinon'
 import { BaseModel, column } from '@adonisjs/lucid/orm'
 import Factory from '@adonisjs/lucid/factories'
-import { DateTime } from 'luxon'
 
 import BlurhashAdapter from '../src/adapters/blurhash.js'
 import { attachmentManager, attachment, attachments } from '../index.js'

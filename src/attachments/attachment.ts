@@ -6,6 +6,7 @@
  */
 
 import type { DriveService, SignedURLOptions } from '@adonisjs/drive/types'
+import type { LucidRow } from '@adonisjs/lucid/types/model'
 import type {
   AttachmentAttributes,
   Attachment as AttachmentInterface,
@@ -17,7 +18,6 @@ import path from 'node:path'
 import { AttachmentBase } from './attachment_base.js'
 import { Variant } from './variant_attachment.js'
 import { metaFromBuffer, metaFromFile } from '../adapters/meta.js'
-import { LucidRow } from '@adonisjs/lucid/types/model'
 
 export class Attachment extends AttachmentBase implements AttachmentInterface {
   originalName: string

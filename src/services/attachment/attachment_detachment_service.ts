@@ -33,17 +33,17 @@ export class AttachmentDetachmentService {
           /**
            * Clean Attachments changed
            */
-          for (let i = 0; i < originalAttachments.length; i++) {
-            if (newAttachments.includes(originalAttachments[i])) {
+          for (const originalAttachment of originalAttachments) {
+            if (newAttachments.includes(originalAttachment)) {
               continue
             }
 
             /**
              * If there was an existing file, then we must get rid of it
              */
-            if (originalAttachments[i]) {
-              originalAttachments[i].setOptions(options)
-              attachments.push(originalAttachments[i])
+            if (originalAttachment) {
+              originalAttachment.setOptions(options)
+              attachments.push(originalAttachment)
             }
           }
         }
@@ -65,8 +65,8 @@ export class AttachmentDetachmentService {
         const options = AttachmentUtils.getOptionsByAttributeName(record.row, name)
         const attachments = AttachmentUtils.getAttachmentsByAttributeName(record.row, name)
 
-        for (let i = 0; i < attachments.length; i++) {
-          attachments[i].setOptions(options)
+        for (const attachment of attachments) {
+          attachment.setOptions(options)
         }
 
         this.#markForDeletion(attachments, record)

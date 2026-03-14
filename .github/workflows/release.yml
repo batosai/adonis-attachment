@@ -1,16 +1,62 @@
-name: Notify Discord on Release
+name: release
 
 on:
-  release:
-    types: [published]
   workflow_dispatch:
 
-jobs:
-  notify-discord:
-    runs-on: ubuntu-latest
+env:
+  success: ✅
+  failure: 🔴
+  cancelled: ❌
+  skipped: ⭕
+  node_version: 20
+  true: ✅
+  false: 🔴
 
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  checks:
+    uses: ./.github/workflows/checks.yml
+
+  release:
+    needs: checks
+    runs-on: ubuntu-latest
     steps:
-      - name: Send notification to Discord
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: git config
+        run: |
+          git config user.name "${GITHUB_ACTOR}"
+          git config user.email "${GITHUB_ACTOR}@users.noreply.github.com"
+      - name: Init npm config
+        run: npm config set //registry.npmjs.org/:_authToken $NPM_TOKEN
         env:
-          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_URL }}
-        uses: Ilshidur/action-discord@0.3.2
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Install
+        run: npm install
+      - name: Release
+        run: npm run release -- --ci
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Notification
+        if: ${{ always() }}
+        uses: appleboy/telegram-action@master
+        with:
+          token: ${{ secrets.BOT_TOKEN }}
+          to: ${{ secrets.CHAT_ID }}
+          disable_web_page_preview: true
+          message: |
+            Test ${{ env[job.status] }} by ${{ github.actor }} for commit in ${{ github.ref_name }} branch.
+            Comment: ${{ github.event.commits[0].message }}
+
+            Repository: ${{ github.repository }}
+            See changes: https://github.com/${{ github.repository }}/commit/${{ github.sha }}
+            Github action: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}

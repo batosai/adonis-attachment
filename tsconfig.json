@@ -2,11 +2,6 @@
   "extends": "@adonisjs/tsconfig/tsconfig.package.json",
   "compilerOptions": {
     "rootDir": "./",
-    "outDir": "./build",
-    "declaration": true,
-    "declarationMap": true,
-    "noEmitOnError": true,
-    "incremental": true
-  },
-  "exclude": ["tests", "bin", "build"]
+    "outDir": "./build"
+  }
 }

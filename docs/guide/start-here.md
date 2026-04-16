@@ -24,13 +24,6 @@ public async up() {
 ```
 
 ```ts
-// start/routes.ts
-import router from '@adonisjs/core/services/router'
-
-router.attachments() // [!code highlight]
-```
-
-```ts
 // app/models/user.ts
 import { BaseModel } from '@adonisjs/lucid/orm'
 import { attachment } from '@jrmc/adonis-attachment'
@@ -57,8 +50,18 @@ class UsersController {
 }
 ```
 
-```edge
-<img src="/attachments/{{ user.avatar.getKeyId() }}" loading="lazy" alt="" />
+```ts
+// app/transformers/users_transformer.ts -> v7
+import type User from '#models/user'
+import { BaseTransformer } from '@adonisjs/core/transformers'
+
+export default class UserTransformer extends BaseTransformer<User> {
+  async toObject() {
+    return {
+      avatar: this.resource.avatar ? await this.resource.avatar.getUrl('thumbnail') : null,
+    }
+  }
+}
 ```
 
 ---
@@ -94,6 +97,30 @@ const attachmentConfig = defineConfig({
 
 ```
 
-```edge
-<img src="/attachments/{{ user.avatar.getKeyId() }}?variant=thumbnail" loading="lazy" alt="" />
+::: code-group
+
+```edge [edge]
+@!picture({
+  source: user.avatar,
+  alt: "Image alt"
+})
 ```
+```js [react]
+<Picture 
+  source={ user.avatar } 
+  alt="Image alt" 
+/>
+```
+```svelte [vue]
+<Picture 
+  :source="user.avatar" 
+  alt="Image alt" 
+/>
+```
+```svelte
+<Picture 
+  source={ user.avatar } 
+  alt="Image alt" 
+/>
+```
+:::

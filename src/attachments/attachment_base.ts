@@ -227,10 +227,16 @@ export class AttachmentBase implements AttachmentBaseInterface {
   }
 
   async remove() {
-    await this.getDisk().delete(this.path)
-
-    if (this.originalPath) {
-      await this.getDisk().delete(this.originalPath)
+    const pathsToDelete = new Set([this.path, this.originalPath].filter(Boolean) as string[])
+    // If moveFileForDelete() failed silently (e.g. Supabase S3), the .trash path
+    // doesn't exist but the original file is still at the path without .trash suffix
+    if (this.path.endsWith('.trash')) {
+      pathsToDelete.add(this.path.replace(/\.trash$/, ''))
+    }
+    for (const p of pathsToDelete) {
+      try {
+        await this.getDisk().delete(p)
+      } catch (_) {}
     }
   }
 

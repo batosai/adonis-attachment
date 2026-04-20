@@ -194,19 +194,17 @@ export class Attachment extends AttachmentBase implements AttachmentInterface {
 
   async remove() {
     await super.remove()
-
     if (this.variants) {
-      const variantPath = this.variants[0].folder
-
-      try {
-        await this.getDisk().deleteAll(variantPath) // not compatible Minio, necessary for fs as not to leave an empty directory
-      } catch (error) {
-        for (const key in this.variants) {
-          if (Object.prototype.hasOwnProperty.call(this.variants, key)) {
-            this.variants[key].remove()
-          }
+      for (const key in this.variants) {
+        if (Object.prototype.hasOwnProperty.call(this.variants, key)) {
+          await this.variants[key].remove()
         }
       }
+      // Try deleteAll to clean up empty directory (fs only), ignore errors on S3 providers
+      const variantPath = this.variants[0].folder
+      try {
+        await this.getDisk().deleteAll(variantPath)
+      } catch (_) {}
     }
   }
 

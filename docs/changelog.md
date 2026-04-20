@@ -1,5 +1,13 @@
 # Changelog
 
+## 5.1.3
+
+* fix: delete variants and files when using Supabase S3 (and any S3-compatible provider where `move()` or `deleteAll()` fail silently)
+  * `AttachmentBase.remove()` now tries both the `.trash` path and the original path, ignoring not-found errors
+  * `Attachment.remove()` now always deletes variants individually before attempting `deleteAll()` for directory cleanup
+
+> Released at *2026-04-20*
+
 ## 5.1.2
 
 * fix: correct SVG metadata buffer parsing/detection

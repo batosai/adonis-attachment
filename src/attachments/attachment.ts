@@ -177,7 +177,15 @@ export class Attachment extends AttachmentBase implements AttachmentInterface {
       const trashPath = this.path
       this.originalPath = trashPath
 
-      await this.getDisk().move(originalPath, trashPath)
+      try {
+        await this.getDisk().move(originalPath, trashPath)
+      } catch {
+        // move() failed (e.g. S3 provider without ACL support): delete the original directly
+        // so the file is cleaned up without relying on the .trash mechanism
+        try {
+          await this.getDisk().delete(originalPath)
+        } catch (_) {}
+      }
     }
   }
 

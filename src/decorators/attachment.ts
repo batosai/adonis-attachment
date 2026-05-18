@@ -80,7 +80,10 @@ const makeColumnOptions = (options?: LucidOptions) => {
         return null
       }
     },
-    prepare: (value?: Attachment) => (value ? JSON.stringify(value.toObject()) : null),
+    prepare: (value?: Attachment) => {
+      if (!value) return null
+      return value.toDbString()
+    },
     serialize:
       options?.serialize !== undefined
         ? options?.serialize
@@ -122,7 +125,9 @@ export const attachments = makeAttachmentDecorator((columnOptions) => ({
     }
     return null
   },
-  prepare: (value?: Attachment[]) =>
-    value ? JSON.stringify(value.map((v) => v.toObject())) : null,
+  prepare: (value?: Attachment[]) => {
+    if (!value) return null
+    return JSON.stringify(value.map((v) => JSON.parse(v.toDbString())))
+  },
   serialize: (value?: Attachment[]) => (value ? value.map(columnOptions.serialize) : null),
 }))

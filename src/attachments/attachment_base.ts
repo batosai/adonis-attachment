@@ -251,6 +251,11 @@ export class AttachmentBase implements AttachmentBaseInterface {
     }
   }
 
+  toDbString(): string {
+    const { keyId: _, ...obj } = this.toObject()
+    return JSON.stringify(obj)
+  }
+
   toJSON(): Object {
     if (this.url) {
       return {

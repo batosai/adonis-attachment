@@ -50,6 +50,7 @@ export type AttachmentBase = {
   remove(): Promise<void>
 
   toObject(): AttachmentBaseAttributes
+  toDbString(): string
   toJSON(): Object
 }
 

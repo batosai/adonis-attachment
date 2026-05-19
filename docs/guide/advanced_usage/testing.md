@@ -2,6 +2,10 @@
 
 ## Using `db.assertHas()` with attachment fields
 
+::: info
+`db.assertHas()` is available starting from **@adonisjs/lucid v22**.
+:::
+
 When writing tests with AdonisJS, `db.assertHas()` compares values as stored in the database. Since attachment fields are persisted as JSON strings, passing an `Attachment` object directly will cause a type mismatch error:
 
 ```

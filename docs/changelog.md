@@ -1,5 +1,18 @@
 # Changelog
 
+## 5.1.5
+
+* fix(#36): compatibility with db.assertHas
+* add toDbString() method
+
+> Released at *2026-05-19*
+
+## 5.1.4
+
+* fix(#35): allow to use table name
+
+> Released at *2026-05-01*
+
 ## 5.1.3
 
 * fix: delete variants and files when using Supabase S3 (and any S3-compatible provider where `move()` or `deleteAll()` fail silently)

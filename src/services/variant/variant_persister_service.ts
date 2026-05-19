@@ -71,11 +71,11 @@ export default class VariantPersisterService {
   #prepareUpdateData(attachments: Attachment[]): Record<string, string> {
     const index = string.snakeCase(this.#attributeName)
 
-    const data = this.#multiple
-      ? attachments.map((att) => att.toObject())
-      : attachments[0]?.toObject()
+    const value = this.#multiple
+      ? JSON.stringify(attachments.map((att) => JSON.parse(att.toDbString())))
+      : (attachments[0]?.toDbString() ?? JSON.stringify(null))
 
-    return { [index]: JSON.stringify(data) }
+    return { [index]: value }
   }
 
   async #executeUpdate(trx: any, data: Record<string, string>): Promise<void> {

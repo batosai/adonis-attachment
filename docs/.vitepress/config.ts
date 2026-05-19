@@ -148,6 +148,10 @@ export default defineConfig({
                 text: 'Events',
                 link: '/guide/advanced_usage/events',
               },
+              {
+                text: 'Testing',
+                link: '/guide/advanced_usage/testing',
+              },
             ],
           },
           {

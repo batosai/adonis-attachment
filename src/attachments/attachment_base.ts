@@ -22,6 +22,7 @@ import { extractPathParameters } from '../utils/helpers.js'
 
 export class AttachmentBase implements AttachmentBaseInterface {
   drive: DriveService
+  disk?: string
 
   input?: Input
 
@@ -98,7 +99,7 @@ export class AttachmentBase implements AttachmentBaseInterface {
    */
 
   getDisk() {
-    return this.drive.use(this.options?.disk)
+    return this.drive.use(this.disk ?? this.options?.disk)
   }
 
   getBytes() {

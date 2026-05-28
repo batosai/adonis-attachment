@@ -31,7 +31,7 @@ test.group('options', () => {
     const user = await UserFactory.create()
 
     assert.deepEqual(user!.avatar!.options, {
-      disk: undefined,
+      disk: 'fs',
       folder: 'uploads',
       preComputeUrl: false,
       variants: [],
@@ -54,7 +54,7 @@ test.group('options', () => {
     const user = await UserFactory.create()
 
     assert.deepEqual(user!.avatar!.options, {
-      disk: undefined,
+      disk: 'fs',
       folder: 'uploads',
       preComputeUrl: true,
       variants: [],

@@ -28,11 +28,16 @@ export class Attachment extends AttachmentBase implements AttachmentInterface {
 
     this.originalName = attributes.originalName
 
+    if (attributes.disk) {
+      this.disk = attributes.disk
+    }
+
     if (attributes.variants) {
       this.variants = []
 
       attributes.variants.forEach((v) => {
         const variant = new Variant(this.drive, v)
+        variant.disk = this.disk
         this.variants!.push(variant)
       })
     }
@@ -134,8 +139,15 @@ export class Attachment extends AttachmentBase implements AttachmentInterface {
       ...options,
     }
 
+    if (!this.disk && options?.disk) {
+      this.disk = options.disk
+    }
+
     if (this.variants) {
       this.variants.forEach((v) => {
+        if (!v.disk) {
+          v.disk = this.disk
+        }
         v.setOptions({
           ...this.options,
           variants: [],
@@ -225,6 +237,7 @@ export class Attachment extends AttachmentBase implements AttachmentInterface {
 
     return {
       ...super.toObject(),
+      disk: this.disk,
       originalName: this.originalName,
       variants,
     }

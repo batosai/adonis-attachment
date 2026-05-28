@@ -5,9 +5,11 @@
  * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
  */
 
-import type { DriveService, SignedURLOptions } from '@adonisjs/drive/types'
+import type { SignedURLOptions } from '@adonisjs/drive/types'
 import type { MultipartFile } from '@adonisjs/core/bodyparser'
 import type { LockService } from './types/lock.js'
+import type { Drive } from './types/drive.js'
+
 import type {
   AttachmentAttributes,
   AttachmentBase,
@@ -30,14 +32,10 @@ const REQUIRED_ATTRIBUTES = ['name', 'size', 'extname', 'mimeType'] as const
 export class AttachmentManager<KnownConverters extends Record<string, Converter>> {
   queue
   #config: ResolvedAttachmentConfig<KnownConverters>
-  #drive: DriveService
+  #drive: Drive
   #lock: LockService
 
-  constructor(
-    config: ResolvedAttachmentConfig<KnownConverters>,
-    drive: DriveService,
-    lock: LockService
-  ) {
+  constructor(config: ResolvedAttachmentConfig<KnownConverters>, drive: Drive, lock: LockService) {
     this.#drive = drive
     this.#lock = lock
     this.#config = config
@@ -60,7 +58,7 @@ export class AttachmentManager<KnownConverters extends Record<string, Converter>
       }
     })
 
-    const attachment = new Attachment(this.#drive, attributes)
+    const attachment = new Attachment(this.#drive.driveManager, attributes)
     return this.#configureAttachment(attachment)
   }
 
@@ -76,7 +74,7 @@ export class AttachmentManager<KnownConverters extends Record<string, Converter>
       throw new errors.ENOENT()
     }
 
-    const attachment = new Attachment(this.#drive, attributes, input.tmpPath)
+    const attachment = new Attachment(this.#drive.driveManager, attributes, input.tmpPath)
     return this.#configureAttachment(attachment)
   }
 
@@ -97,7 +95,7 @@ export class AttachmentManager<KnownConverters extends Record<string, Converter>
       originalName: name?.replace('tmp', meta.extname) || path.basename(input),
     }
 
-    const attachment = new Attachment(this.#drive, attributes, input)
+    const attachment = new Attachment(this.#drive.driveManager, attributes, input)
     return this.#configureAttachment(attachment)
   }
 
@@ -113,7 +111,7 @@ export class AttachmentManager<KnownConverters extends Record<string, Converter>
       originalName: name || `${uuid()}.${ext}`,
     }
 
-    const attachment = new Attachment(this.#drive, attributes, input)
+    const attachment = new Attachment(this.#drive.driveManager, attributes, input)
     return this.#configureAttachment(attachment)
   }
 
@@ -156,6 +154,10 @@ export class AttachmentManager<KnownConverters extends Record<string, Converter>
       attachment.meta = await ExifAdapter.exif(attachment.input!, this.#config)
     } else {
       attachment.meta = undefined
+    }
+
+    if (this.#drive.diskDefault !== undefined && attachment.disk === undefined) {
+      attachment.setOptions({ disk: attachment.options?.disk ?? this.#drive.diskDefault })
     }
 
     await attachment.put()

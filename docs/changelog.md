@@ -1,5 +1,15 @@
 # Changelog
 
+## 5.2.0
+
+* feat: persist `disk` in attachment data to preserve storage location across config changes
+  * The `disk` used at upload time is now stored alongside the attachment metadata in the database
+  * When a model's `disk` option is changed, existing records continue to resolve files from their original disk
+  * New uploads will use the updated config as expected
+  * Variants inherit the `disk` from their parent attachment
+
+> Released at *2026-01-*
+
 ## 5.1.5
 
 * fix(#36): compatibility with db.assertHas

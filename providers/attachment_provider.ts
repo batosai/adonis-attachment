@@ -43,7 +43,14 @@ export default class AttachmentProvider {
 
       const attachmentConfig = this.app.config.get<any>('attachment')
       const config = await configProvider.resolve<any>(this.app, attachmentConfig)
-      const drive = await this.app.container.make('drive.manager')
+
+      const driveManager = await this.app.container.make('drive.manager')
+      const driveConfigProvider = this.app.config.get<any>('drive')
+      const driveConfig = await configProvider.resolve<any>(this.app, driveConfigProvider)
+      const drive = {
+        driveManager,
+        diskDefault: driveConfig.config.default,
+      }
 
       let lock
       try {

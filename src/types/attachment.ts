@@ -15,6 +15,7 @@ import { BlurhashOptions } from './converter.js'
 
 export type AttachmentBase = {
   drive: DriveService
+  disk?: string
 
   input?: Input
 
@@ -58,7 +59,11 @@ export type Attachment = AttachmentBase & {
   originalName: string
   variants?: Variant[]
 
-  createVariant(key: string, input: Input, options?: { basePath?: string, ignoreFolder?: boolean }): Promise<Variant>
+  createVariant(
+    key: string,
+    input: Input,
+    options?: { basePath?: string; ignoreFolder?: boolean }
+  ): Promise<Variant>
   getVariant(variantName: string): Variant | null
   getUrl(variantName?: string): Promise<string>
   getSignedUrl(
@@ -111,6 +116,7 @@ export type AttachmentBaseAttributes = {
 export type AttachmentAttributes = AttachmentBaseAttributes & {
   variants?: VariantAttributes[]
   originalName: string
+  disk?: string
 }
 
 export type VariantAttributes = AttachmentBaseAttributes & {

@@ -43,6 +43,14 @@ Install and configure the package:
 node ace add @jrmc/adonis-attachment
 ```
 
+## Agent skills
+
+If you use an AI coding agent (Claude Code, Cursor, Codex...), you can install skills that teach it the package API, variants/converters configuration and version migrations:
+
+```sh
+npx skills add batosai/adonis-attachment
+```
+
 ## Sample
 
 Simple upload file

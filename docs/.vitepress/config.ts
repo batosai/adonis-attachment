@@ -174,6 +174,10 @@ export default defineConfig({
         link: '/structure-data-json',
       },
       {
+        text: 'Agent Skills',
+        link: '/agent-skills',
+      },
+      {
         text: 'Migration',
         link: '/migration',
       },

@@ -6,6 +6,18 @@ For an external queue, implement `AttachmentQueue` and dispatch the payload to t
 
 This keeps the package independent from worker deployment while allowing an Adonis queue job to delegate its `execute` method to the processor.
 
+## Memory queue
+
+Pass `processor` to `defineConfig` to execute jobs in-process. This is the default queue implementation and is suitable for simple deployments or tests.
+
+```ts
+export default defineConfig({
+  defaultDisk: 'fs',
+  storage: new AdonisDriveStorage(drive),
+  processor: attachmentProcessor,
+})
+```
+
 `AdonisAttachmentQueue` adapts an application job class to `AttachmentQueue`:
 
 ```ts
@@ -16,4 +28,18 @@ const queue = new AdonisAttachmentQueue({
   job: GenerateAttachmentVariants,
   queue: 'attachments',
 })
+```
+
+The application job owns dependency injection and delegates its payload to the processor:
+
+```ts
+import { Job } from '@adonisjs/queue'
+import type { AttachmentJob } from '@jrmc/adonis-attachment'
+import attachmentProcessor from '#services/attachment_processor'
+
+export default class GenerateAttachmentVariants extends Job<AttachmentJob> {
+  async execute() {
+    await attachmentProcessor.process(this.payload)
+  }
+}
 ```

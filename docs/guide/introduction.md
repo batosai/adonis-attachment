@@ -17,3 +17,5 @@ An `Attachment` is a plain immutable value describing a stored file:
 ```
 
 Your application chooses how that value is persisted. The Lucid integration provides a polymorphic `attachments` table for projects that want database-backed ownership and variants.
+
+Variants use the same lifecycle as originals: generate bytes with a converter, store the generated file, then persist a child attachment row when Lucid is enabled.

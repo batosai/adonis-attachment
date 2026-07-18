@@ -21,11 +21,9 @@ export type LegacyVariant = {
   meta?: Record<string, unknown>
 }
 
-export type AttachmentOwner = {
-  type: string
-  id: string
-  field: string
-}
+import type { AttachmentOwner } from './attachment_owner.js'
+
+export type { AttachmentOwner } from './attachment_owner.js'
 
 export type MigratedAttachmentRow = {
   id: string

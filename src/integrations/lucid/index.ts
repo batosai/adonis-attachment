@@ -1,5 +1,7 @@
 export { AttachmentModel } from './attachment_model.js'
 export { LucidAttachmentRepository } from './lucid_attachment_repository.js'
+export { LucidAttachmentStore } from './lucid_attachment_store.js'
+export { type AttachmentOwner } from './attachment_owner.js'
 export {
   createAttachmentsMigrationFile,
   type CreateAttachmentsMigrationFileOptions,
@@ -10,7 +12,6 @@ export {
 } from './render_attachments_migration.js'
 export {
   migrateLegacyAttachment,
-  type AttachmentOwner,
   type LegacyAttachment,
   type LegacyVariant,
   type MigrateLegacyAttachmentOptions,

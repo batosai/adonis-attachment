@@ -47,6 +47,10 @@ export class LucidAttachmentStore {
       .first()
   }
 
+  findById(id: string): Promise<AttachmentModel | null> {
+    return this.#model.find(id)
+  }
+
   listVariants(originalId: string): Promise<AttachmentModel[]> {
     return this.#model.query().where('parent_id', originalId)
   }

@@ -6,6 +6,11 @@ export {
   type AttachmentFileService,
   type LucidAttachmentPersistence,
 } from './lucid_attachment_lifecycle_service.js'
+export {
+  LucidVariantGenerationService,
+  PersistedAttachmentNotFoundError,
+  type LucidVariantGenerationServiceOptions,
+} from './lucid_variant_generation_service.js'
 export { type AttachmentOwner } from './attachment_owner.js'
 export {
   createAttachmentsMigrationFile,

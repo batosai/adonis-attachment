@@ -14,6 +14,15 @@ export {
 } from './src/variants/variant_converter.js'
 export { MemoryAttachmentQueue } from './src/queues/memory_queue.js'
 export {
+  AttachmentManager,
+  AttachmentSourceError,
+  type AttachmentManagerOptions,
+  type AttachmentSourceFetch,
+  type AttachmentSourceOptions,
+  type AttachmentSourceResponse,
+  type MultipartAttachmentFile,
+} from './src/sources/attachment_manager.js'
+export {
   AdonisAttachmentQueue,
   type AdonisAttachmentJob,
   type AdonisAttachmentQueueOptions,

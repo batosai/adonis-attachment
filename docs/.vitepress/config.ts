@@ -16,6 +16,7 @@ export default defineConfig({
             { text: 'Introduction', link: '/guide/introduction' },
             { text: 'Installation', link: '/guide/installation' },
             { text: 'Configuration', link: '/guide/configuration' },
+            { text: 'Sources', link: '/guide/sources' },
             { text: 'Custom Persistence', link: '/guide/custom-persistence' },
             { text: 'Routes', link: '/guide/routes' },
             { text: 'Variants', link: '/guide/variants' },

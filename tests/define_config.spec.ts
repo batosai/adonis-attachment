@@ -100,6 +100,21 @@ test.group('defineConfig', () => {
     assert.deepEqual(prefixed.route, { path: '/media/files/:id' })
   })
 
+  test('preserves source-manager options', async ({ assert }) => {
+    const storage: AttachmentStorage = {
+      async write() {},
+      async read() {
+        return new Uint8Array()
+      },
+      async remove() {},
+    }
+    const sources = { maxBytes: 10 * 1024 * 1024 }
+
+    const resolved = await defineConfig({ defaultDisk: 'public', storage, sources }).resolver({} as never)
+
+    assert.equal(resolved.sources, sources)
+  })
+
   test('rejects invalid route prefixes', async ({ assert }) => {
     const storage: AttachmentStorage = {
       async write() {},

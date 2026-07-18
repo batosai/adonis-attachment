@@ -5,10 +5,12 @@ import { AttachmentService } from '../src/core/attachment_service.js'
 import type { AttachmentRepository } from '../src/core/attachment_repository.js'
 import { AttachmentsController } from '../src/controllers/attachments_controller.js'
 import type { ResolvedAttachmentConfig } from '../src/define_config.js'
+import { AttachmentManager } from '../src/sources/attachment_manager.js'
 
 declare module '@adonisjs/core/types' {
   export interface ContainerBindings {
     'jrmc.attachment': AttachmentService
+    'jrmc.attachment.manager': AttachmentManager
     'jrmc.attachment.repository': AttachmentRepository
   }
 }
@@ -45,6 +47,17 @@ export default class AttachmentProvider {
       }
 
       return config.repository
+    })
+
+    this.app.container.singleton('jrmc.attachment.manager', async () => {
+      const attachmentConfig = this.app.config.get('attachment')
+      const config = await configProvider.resolve<ResolvedAttachmentConfig>(
+        this.app,
+        attachmentConfig
+      )
+      const attachments = await this.app.container.make('jrmc.attachment')
+
+      return new AttachmentManager(attachments, config?.sources)
     })
   }
 

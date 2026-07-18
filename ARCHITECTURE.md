@@ -25,6 +25,7 @@ La documentation contient un flux de persistence personnalisee avec un `Attachme
 - `AttachmentQueue` : recoit des travaux serialisables. Le premier est `generate-variants`.
 - `MemoryAttachmentQueue` : implementation par defaut, executee dans le processus avec une concurrence configuree.
 - `AttachmentService` : facade de creation, suppression et planification des variants.
+- `AttachmentManager` : normalise buffer, Base64, fichier multipart, chemin, URL et stream avant la creation par le service.
 - `defineConfig` : resout le stockage et la queue au boot Adonis, en direct ou depuis le conteneur applicatif. Sans queue externe, il utilise `MemoryAttachmentQueue`.
 - `configure` : enregistre le provider et la commande `make:attachments-table` dans l'application Adonis.
 - `AttachmentRepository` : lit un attachment pour un worker, sans imposer de mecanisme de persistence.

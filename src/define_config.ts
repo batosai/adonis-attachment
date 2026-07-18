@@ -7,6 +7,7 @@ import type { AttachmentRepository } from './core/attachment_repository.js'
 import type { AttachmentJobHandler, AttachmentQueue } from './core/queue.js'
 import type { AttachmentStorage } from './core/storage.js'
 import { MemoryAttachmentQueue } from './queues/memory_queue.js'
+import type { AttachmentManagerOptions } from './sources/attachment_manager.js'
 
 type Integration<T> = T | ((app: ApplicationService) => T | Promise<T>)
 
@@ -23,6 +24,7 @@ export type AttachmentConfig = {
   jobHandler?: Integration<AttachmentJobHandler>
   processor?: Integration<AttachmentJobProcessor>
   repository?: Integration<AttachmentRepository>
+  sources?: AttachmentManagerOptions
   route?: AttachmentRouteConfig
   queueConcurrency?: number
   createId?: () => string
@@ -30,6 +32,7 @@ export type AttachmentConfig = {
 
 export type ResolvedAttachmentConfig = AttachmentServiceOptions & {
   repository?: AttachmentRepository
+  sources?: AttachmentManagerOptions
   route: ResolvedAttachmentRouteConfig | false
 }
 
@@ -60,6 +63,7 @@ export function defineConfig(config: AttachmentConfig): ConfigProvider<ResolvedA
       ...(config.repository
         ? { repository: await resolveIntegration(config.repository, app) }
         : {}),
+      ...(config.sources ? { sources: config.sources } : {}),
       ...(config.createId ? { createId: config.createId } : {}),
     }
   })

@@ -25,6 +25,10 @@
       "types": "./build/src/queues/memory_queue.d.ts",
       "default": "./build/src/queues/memory_queue.js"
     },
+    "./queues/adonis": {
+      "types": "./build/src/queues/adonis_queue.d.ts",
+      "default": "./build/src/queues/adonis_queue.js"
+    },
     "./adapters/adonis-drive": {
       "types": "./build/src/adapters/adonis_drive_storage.d.ts",
       "default": "./build/src/adapters/adonis_drive_storage.js"

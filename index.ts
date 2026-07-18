@@ -14,6 +14,12 @@ export {
 } from './src/variants/variant_converter.js'
 export { MemoryAttachmentQueue } from './src/queues/memory_queue.js'
 export {
+  AdonisAttachmentQueue,
+  type AdonisAttachmentJob,
+  type AdonisAttachmentQueueOptions,
+  type AdonisQueueDispatcher,
+} from './src/queues/adonis_queue.js'
+export {
   migrateLegacyAttachment,
   type AttachmentOwner,
   type LegacyAttachment,

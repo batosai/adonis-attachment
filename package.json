@@ -40,9 +40,33 @@
     "test": "npm run build && node build/bin/test.js"
   },
   "devDependencies": {
+    "@adonisjs/core": "^7.3.5",
+    "@adonisjs/drive": "^4.0.0",
+    "@adonisjs/lucid": "^22.4.2",
+    "@adonisjs/queue": "^0.6.2",
     "@japa/assert": "^4.2.0",
     "@japa/runner": "^4.5.0",
     "@types/node": "^24.0.0",
     "typescript": "^5.9.3"
+  },
+  "peerDependencies": {
+    "@adonisjs/core": "^7.0.0",
+    "@adonisjs/drive": "^4.0.0",
+    "@adonisjs/lucid": "^22.0.0",
+    "@adonisjs/queue": "^0.6.0"
+  },
+  "peerDependenciesMeta": {
+    "@adonisjs/core": {
+      "optional": true
+    },
+    "@adonisjs/drive": {
+      "optional": true
+    },
+    "@adonisjs/lucid": {
+      "optional": true
+    },
+    "@adonisjs/queue": {
+      "optional": true
+    }
   }
 }

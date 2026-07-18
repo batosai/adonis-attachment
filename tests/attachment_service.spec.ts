@@ -1,5 +1,4 @@
-import assert from 'node:assert/strict'
-import test from 'node:test'
+import { test } from '@japa/runner'
 
 import {
   AttachmentService,
@@ -30,7 +29,7 @@ class FakeQueue {
   }
 }
 
-test('creates a standalone attachment and delegates its content to storage', async () => {
+test('creates a standalone attachment and delegates its content to storage', async ({ assert }) => {
   const storage = new FakeStorage()
   const queue = new FakeQueue()
   const service = new AttachmentService({
@@ -66,7 +65,7 @@ test('creates a standalone attachment and delegates its content to storage', asy
   })
 })
 
-test('schedules variant generation without requiring a database or Lucid', async () => {
+test('schedules variant generation without requiring a database or Lucid', async ({ assert }) => {
   const storage = new FakeStorage()
   const queue = new FakeQueue()
   const service = new AttachmentService({

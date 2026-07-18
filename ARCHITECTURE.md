@@ -19,11 +19,14 @@ La persistence en base n'est pas une responsabilite du noyau : l'appelant recupe
 ## Contrats initiaux
 
 - `AttachmentStorage` : ecrit et supprime un fichier a partir d'un disque et d'un chemin.
+- `AdonisDriveStorage` : adaptateur optionnel pour un `DriveService` Adonis, sans dependance Lucid.
 - `AttachmentQueue` : recoit des travaux serialisables. Le premier est `generate-variants`.
 - `MemoryAttachmentQueue` : implementation par defaut, executee dans le processus avec une concurrence configuree.
 - `AttachmentService` : facade de creation, suppression et planification des variants.
+- `AttachmentRepository` : lit un attachment pour un worker, sans imposer de mecanisme de persistence.
+- `AttachmentJobProcessor` : resout un job puis appelle le generateur de variants configure.
 
-Un adaptateur `@adonisjs/queue` devra implementer le meme contrat. Son worker resolvra ensuite l'attachment et executera les converters.
+Un adaptateur `@adonisjs/queue` devra implementer le meme contrat. Le job Adonis appelle `AttachmentJobProcessor.process(this.payload)` dans sa methode `execute`. Cette limite permet de garder les jobs Adonis dans l'application, ou ils peuvent etre auto-decouverts et injectes par le conteneur.
 
 ## Modele Lucid cible
 
@@ -45,7 +48,6 @@ Contraintes a prevoir dans la migration Lucid : index sur `(attachable_type, att
 
 ## Prochaine tranche
 
-1. Ajouter un adaptateur Adonis Drive sans introduire Lucid.
-2. Definir le contrat de lecture et de generation de variants pour les workers externes.
-3. Ajouter le provider Adonis optionnel et l'integration Lucid sur table polymorphe.
-4. Ecrire la commande de migration depuis les colonnes JSON v5.
+1. Definir le contrat de lecture et de generation de variants pour les workers externes.
+2. Ajouter le provider Adonis optionnel et l'integration Lucid sur table polymorphe.
+3. Ecrire la commande de migration depuis les colonnes JSON v5.

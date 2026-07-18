@@ -1,9 +1,8 @@
-import assert from 'node:assert/strict'
-import test from 'node:test'
+import { test } from '@japa/runner'
 
 import { MemoryAttachmentQueue } from '../index.js'
 
-test('processes queued jobs up to its configured concurrency', async () => {
+test('processes queued jobs up to its configured concurrency', async ({ assert }) => {
   let active = 0
   let maximumActive = 0
   const completed: string[] = []
@@ -29,7 +28,7 @@ test('processes queued jobs up to its configured concurrency', async () => {
   assert.deepEqual(completed.sort(), ['one', 'three', 'two'])
 })
 
-test('reports failures and continues with subsequent jobs', async () => {
+test('reports failures and continues with subsequent jobs', async ({ assert }) => {
   const failures: string[] = []
   const completed: string[] = []
   const queue = new MemoryAttachmentQueue({

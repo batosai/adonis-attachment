@@ -6,6 +6,14 @@ export {
 } from './attachment.js'
 export { AttachmentService, type AttachmentServiceOptions } from './attachment_service.js'
 export {
+  AttachmentJobProcessor,
+  AttachmentNotFoundError,
+  type AttachmentJobProcessorOptions,
+  type VariantGenerationRequest,
+  type VariantGenerator,
+} from './attachment_job_processor.js'
+export { type AttachmentRepository } from './attachment_repository.js'
+export {
   type AttachmentJob,
   type AttachmentJobHandler,
   type AttachmentQueue,

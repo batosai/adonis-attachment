@@ -13,6 +13,6 @@
     "exactOptionalPropertyTypes": true,
     "skipLibCheck": true
   },
-  "include": ["index.ts", "src/**/*.ts", "tests/**/*.ts"],
+  "include": ["index.ts", "bin/**/*.ts", "src/**/*.ts", "tests/**/*.ts"],
   "exclude": ["build", "node_modules"]
 }

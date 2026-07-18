@@ -24,14 +24,20 @@
     "./queues/memory": {
       "types": "./build/src/queues/memory_queue.d.ts",
       "default": "./build/src/queues/memory_queue.js"
+    },
+    "./adapters/adonis-drive": {
+      "types": "./build/src/adapters/adonis_drive_storage.d.ts",
+      "default": "./build/src/adapters/adonis_drive_storage.js"
     }
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "test": "npm run build && node --test build/tests/*.spec.js"
+    "test": "npm run build && node build/bin/test.js"
   },
   "devDependencies": {
+    "@japa/assert": "^4.2.0",
+    "@japa/runner": "^4.5.0",
     "@types/node": "^24.0.0",
     "typescript": "^5.9.3"
   }

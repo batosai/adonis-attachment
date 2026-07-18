@@ -30,6 +30,8 @@ La persistence en base n'est pas une responsabilite du noyau : l'appelant recupe
 
 Un adaptateur `@adonisjs/queue` devra implementer le meme contrat. Le job Adonis appelle `AttachmentJobProcessor.process(this.payload)` dans sa methode `execute`. Cette limite permet de garder les jobs Adonis dans l'application, ou ils peuvent etre auto-decouverts et injectes par le conteneur.
 
+Les converters v6 implementent `VariantConverter`. Ils recoivent l'attachment et ses octets, puis retournent les octets et les metadonnees du variant. `VariantGenerationService` ecrit les fichiers generes et peut etre utilise directement comme `VariantGenerator` par le processeur de jobs.
+
 ## Modele Lucid cible
 
 Le mode table dediee utilise une seule table `attachments`. Un variant est un attachment dont `parent_id` designe l'attachment original. Cela evite de reintroduire un document JSON imbrique.

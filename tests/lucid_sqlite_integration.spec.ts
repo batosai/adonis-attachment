@@ -81,6 +81,26 @@ test.group('Lucid SQLite integration', (group) => {
     )
   })
 
+  test('prevents duplicate variant keys for the same original', async ({ assert }) => {
+    const store = new LucidAttachmentStore()
+    const original = await store.createOriginal(owner, makeAttachment('original-id', 'users/42/avatar.jpg'))
+    await store.createVariant(
+      original,
+      'thumbnail',
+      makeAttachment('first-variant-id', 'users/42/thumbnail.jpg')
+    )
+
+    await assert.rejects(
+      () =>
+        store.createVariant(
+          original,
+          'thumbnail',
+          makeAttachment('second-variant-id', 'users/42/thumbnail-2.jpg')
+        ),
+      /UNIQUE constraint failed/
+    )
+  })
+
   test('uses persisted rows for lifecycle replacement, deletion, and repository reads', async ({ assert }) => {
     const removed: string[] = []
     const attachments = [

@@ -165,7 +165,16 @@ export class AttachmentManager {
   }
 
   #assertSize(size: number, override: number | undefined): void {
-    const maxBytes = override ?? this.#maxBytes
+    if (override !== undefined && (!Number.isSafeInteger(override) || override < 1)) {
+      throw new Error('Attachment source maxBytes must be a positive integer')
+    }
+
+    const maxBytes =
+      override === undefined
+        ? this.#maxBytes
+        : this.#maxBytes === undefined
+          ? override
+          : Math.min(override, this.#maxBytes)
 
     if (maxBytes !== undefined && size > maxBytes) {
       throw new AttachmentSourceError(`Attachment source exceeds the ${maxBytes}-byte limit`)

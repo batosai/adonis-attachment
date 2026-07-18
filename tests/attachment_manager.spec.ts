@@ -88,11 +88,15 @@ test.group('AttachmentManager', () => {
     }
   })
 
-  test('reads a stream and enforces the configured byte limit', async ({ assert }) => {
+  test('reads a stream and prevents calls from raising the configured byte limit', async ({ assert }) => {
     const { manager } = createManager({ maxBytes: 3 })
 
     await assert.rejects(
-      () => manager.createFromStream(Readable.from([new Uint8Array([1, 2]), new Uint8Array([3, 4])])),
+      () =>
+        manager.createFromStream(
+          Readable.from([new Uint8Array([1, 2]), new Uint8Array([3, 4])]),
+          { maxBytes: 10 }
+        ),
       AttachmentSourceError
     )
   })

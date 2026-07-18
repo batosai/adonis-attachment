@@ -23,6 +23,9 @@ export class AttachmentModel extends BaseModel {
   @column()
   declare field: string
 
+  @column({ serializeAs: null })
+  declare ownerKey: string | null
+
   @column()
   declare parentId: string | null
 

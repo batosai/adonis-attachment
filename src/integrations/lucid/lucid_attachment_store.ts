@@ -1,5 +1,5 @@
 import type { Attachment } from '../../core/attachment.js'
-import type { AttachmentOwner } from './attachment_owner.js'
+import { createAttachmentOwnerKey, type AttachmentOwner } from './attachment_owner.js'
 import { AttachmentModel } from './attachment_model.js'
 
 export type LucidAttachmentWithVariants = {
@@ -20,6 +20,7 @@ export class LucidAttachmentStore {
       attachableType: owner.type,
       attachableId: owner.id,
       field: owner.field,
+      ownerKey: createAttachmentOwnerKey(owner),
       parentId: null,
       variantKey: null,
       metadata: attachment.metadata ?? null,
@@ -36,10 +37,25 @@ export class LucidAttachmentStore {
       attachableType: original.attachableType,
       attachableId: original.attachableId,
       field: original.field,
+      ownerKey: null,
       parentId: original.id,
       variantKey: key,
       metadata: attachment.metadata ?? null,
     })
+  }
+
+  async releaseOwner(original: AttachmentModel): Promise<void> {
+    original.ownerKey = null
+    await original.save()
+  }
+
+  async restoreOwner(original: AttachmentModel): Promise<void> {
+    original.ownerKey = createAttachmentOwnerKey({
+      type: original.attachableType,
+      id: original.attachableId,
+      field: original.field,
+    })
+    await original.save()
   }
 
   findOriginal(owner: AttachmentOwner): Promise<AttachmentModel | null> {

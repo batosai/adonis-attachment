@@ -26,6 +26,7 @@ export default class Create${toPascalCase(tableName)}Table extends BaseSchema {
       table.string('attachable_type').notNullable()
       table.string('attachable_id').notNullable()
       table.string('field').notNullable()
+      table.string('owner_key', 64).nullable().unique()
       table.uuid('parent_id').nullable().references('id').inTable(this.tableName).onDelete('CASCADE')
       table.string('variant_key').nullable()
       table.string('disk').notNullable()

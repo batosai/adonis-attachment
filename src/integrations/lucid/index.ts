@@ -14,7 +14,7 @@ export {
   PersistedAttachmentNotFoundError,
   type LucidVariantGenerationServiceOptions,
 } from './lucid_variant_generation_service.js'
-export { type AttachmentOwner } from './attachment_owner.js'
+export { createAttachmentOwnerKey, type AttachmentOwner } from './attachment_owner.js'
 export {
   createAttachmentsMigrationFile,
   type CreateAttachmentsMigrationFileOptions,

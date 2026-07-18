@@ -43,6 +43,7 @@ Le mode table dediee utilise une seule table `attachments`. Un variant est un at
 | `id` | identifiant stable de l'attachment |
 | `attachable_type`, `attachable_id` | relation polymorphe du fichier original |
 | `field` | nom logique de l'attribut, par exemple `avatar` |
+| `owner_key` | hash interne unique de l'owner pour garantir un seul original |
 | `parent_id` | `NULL` pour l'original, sinon attachment parent du variant |
 | `variant_key` | cle du variant, `NULL` pour l'original |
 | `disk`, `path`, `name` | localisation du fichier |
@@ -50,7 +51,7 @@ Le mode table dediee utilise une seule table `attachments`. Un variant est un at
 | `metadata` | metadonnees extensibles non structurelles |
 | `created_at`, `updated_at` | audit |
 
-Contraintes a prevoir dans la migration Lucid : index sur `(attachable_type, attachable_id, field)`, index sur `parent_id`, et unicite de `(parent_id, variant_key)` lorsque `parent_id` est defini.
+Contraintes a prevoir dans la migration Lucid : unicite de `owner_key` pour les originaux, index sur `(attachable_type, attachable_id, field)`, index sur `parent_id`, et unicite de `(parent_id, variant_key)` lorsque `parent_id` est defini.
 
 Le package expose `renderAttachmentsMigration()` et `createAttachmentsMigrationFile()` afin de produire cette migration pour l'application. La commande Ace `make:attachments-table` ecrit le fichier dans `database/migrations` par defaut et accepte `--table` et `--folder`.
 
@@ -58,7 +59,7 @@ Le package expose `renderAttachmentsMigration()` et `createAttachmentsMigrationF
 
 Le sous-chemin `@jrmc/adonis-attachment/lucid` expose `AttachmentModel`, `LucidAttachmentRepository` et `LucidAttachmentStore`. Le repository donne au worker un acces type aux fichiers, et le store persiste originaux et variants dans la meme table sans introduire Lucid dans le noyau.
 
-`LucidAttachmentLifecycleService` orchestre l'ecriture du fichier et la persistence Lucid. Il supprime un nouveau fichier si l'insertion de sa ligne echoue. Les suppressions de fichiers qui suivent une suppression de ligne restent compensables par un job de nettoyage, car le stockage externe ne partage pas la transaction SQL.
+`LucidAttachmentLifecycleService` orchestre l'ecriture du fichier et la persistence Lucid. Lors d'un remplacement, il transfere temporairement la cle d'owner avant d'inserer le nouvel original, puis la restaure si l'insertion echoue. Il supprime un nouveau fichier si la persistence echoue. Les suppressions de fichiers qui suivent une suppression de ligne restent compensables par un job de nettoyage, car le stockage externe ne partage pas la transaction SQL.
 
 La commande Ace `make:attachment-v5-migration` genere un script de migration de donnees. Le script utilise `migrateLegacyAttachmentRecords()` pour inserer les lignes par lots. Il laisse l'iteration du modele legacy et le mapping `{ type, id, field }` a l'application, car ces informations ne peuvent pas etre deduites de maniere fiable par le package.
 

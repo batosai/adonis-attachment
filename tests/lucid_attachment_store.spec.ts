@@ -1,6 +1,7 @@
 import { test } from '@japa/runner'
 
 import { AttachmentModel } from '../src/integrations/lucid/attachment_model.js'
+import { createAttachmentOwnerKey } from '../src/integrations/lucid/attachment_owner.js'
 import { LucidAttachmentStore } from '../src/integrations/lucid/lucid_attachment_store.js'
 
 const attachment = {
@@ -32,6 +33,7 @@ test.group('LucidAttachmentStore', () => {
         attachableType: 'users',
         attachableId: '42',
         field: 'avatar',
+        ownerKey: createAttachmentOwnerKey({ type: 'users', id: '42', field: 'avatar' }),
         parentId: null,
         variantKey: null,
         metadata: null,
@@ -62,6 +64,7 @@ test.group('LucidAttachmentStore', () => {
       attachableType: 'users',
       attachableId: '42',
       field: 'avatar',
+      ownerKey: null,
       parentId: 'original-id',
       variantKey: 'thumbnail',
       metadata: null,

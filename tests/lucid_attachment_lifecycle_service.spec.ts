@@ -46,6 +46,8 @@ test.group('LucidAttachmentLifecycleService', () => {
         async listVariants() {
           return []
         },
+        async releaseOwner() {},
+        async restoreOwner() {},
         async remove() {},
       }
     )
@@ -79,6 +81,8 @@ test.group('LucidAttachmentLifecycleService', () => {
         async listVariants() {
           return []
         },
+        async releaseOwner() {},
+        async restoreOwner() {},
         async remove() {},
       }
     )
@@ -122,6 +126,10 @@ test.group('LucidAttachmentLifecycleService', () => {
         async listVariants() {
           return []
         },
+        async releaseOwner() {
+          events.push('release-previous')
+        },
+        async restoreOwner() {},
         async remove(row) {
           events.push(`remove-row:${row.id}`)
         },
@@ -136,9 +144,61 @@ test.group('LucidAttachmentLifecycleService', () => {
     assert.equal(row, current)
     assert.deepEqual(events, [
       'write-current',
+      'release-previous',
       'persist-current',
       'remove-row:previous-id',
       'remove-file:previous-id',
+    ])
+  })
+
+  test('restores the previous owner when replacement persistence fails', async ({ assert }) => {
+    const events: string[] = []
+    const previous = makeRow(attachment, 'previous-id')
+    const currentAttachment = { ...attachment, id: 'current-id', path: 'users/42/current.jpg' }
+    const service = new LucidAttachmentLifecycleService(
+      {
+        async create() {
+          events.push('write-current')
+          return currentAttachment
+        },
+        async remove(value) {
+          events.push(`remove-file:${value.id}`)
+        },
+      },
+      {
+        async createOriginal() {
+          throw new Error('database unavailable')
+        },
+        async findOriginal() {
+          return previous
+        },
+        async listVariants() {
+          return []
+        },
+        async releaseOwner() {
+          events.push('release-previous')
+        },
+        async restoreOwner() {
+          events.push('restore-previous')
+        },
+        async remove() {},
+      }
+    )
+
+    await assert.rejects(
+      () =>
+        service.replace({ type: 'users', id: '42', field: 'avatar' }, {
+          body: new Uint8Array(),
+          originalName: 'profile.jpg',
+        }),
+      'database unavailable'
+    )
+
+    assert.deepEqual(events, [
+      'write-current',
+      'release-previous',
+      'restore-previous',
+      'remove-file:current-id',
     ])
   })
 
@@ -166,6 +226,8 @@ test.group('LucidAttachmentLifecycleService', () => {
         async listVariants() {
           return [variant]
         },
+        async releaseOwner() {},
+        async restoreOwner() {},
         async remove(row) {
           removedRows.push(row.id)
         },

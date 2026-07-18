@@ -1,6 +1,7 @@
 import { test } from '@japa/runner'
 
 import { migrateLegacyAttachment } from '../index.js'
+import { createAttachmentOwnerKey } from '../src/integrations/lucid/attachment_owner.js'
 
 test.group('migrateLegacyAttachment', () => {
   test('converts an original attachment and its variants to polymorphic rows', ({ assert }) => {
@@ -39,6 +40,7 @@ test.group('migrateLegacyAttachment', () => {
         attachableType: 'users',
         attachableId: '42',
         field: 'avatar',
+        ownerKey: createAttachmentOwnerKey({ type: 'users', id: '42', field: 'avatar' }),
         parentId: null,
         variantKey: null,
         disk: 's3',
@@ -55,6 +57,7 @@ test.group('migrateLegacyAttachment', () => {
         attachableType: 'users',
         attachableId: '42',
         field: 'avatar',
+        ownerKey: null,
         parentId: 'original-id',
         variantKey: 'thumbnail',
         disk: 'public',

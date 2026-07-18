@@ -21,7 +21,7 @@ export type LegacyVariant = {
   meta?: Record<string, unknown>
 }
 
-import type { AttachmentOwner } from './attachment_owner.js'
+import { createAttachmentOwnerKey, type AttachmentOwner } from './attachment_owner.js'
 
 export type { AttachmentOwner } from './attachment_owner.js'
 
@@ -30,6 +30,7 @@ export type MigratedAttachmentRow = {
   attachableType: string
   attachableId: string
   field: string
+  ownerKey: string | null
   parentId: string | null
   variantKey: string | null
   disk: string
@@ -63,6 +64,7 @@ export function migrateLegacyAttachment(
     id,
     attachment,
     owner: options.owner,
+    ownerKey: createAttachmentOwnerKey(options.owner),
     parentId: null,
     variantKey: null,
     originalName,
@@ -76,6 +78,7 @@ export function migrateLegacyAttachment(
         id: options.createId(),
         attachment: variant,
         owner: options.owner,
+        ownerKey: null,
         parentId: id,
         variantKey: variant.key,
         originalName,
@@ -97,6 +100,7 @@ function toRow({
   id,
   attachment,
   owner,
+  ownerKey,
   parentId,
   variantKey,
   originalName,
@@ -105,6 +109,7 @@ function toRow({
   id: string
   attachment: Omit<LegacyAttachment, 'variants'>
   owner: AttachmentOwner
+  ownerKey: string | null
   parentId: string | null
   variantKey: string | null
   originalName: string
@@ -115,6 +120,7 @@ function toRow({
     attachableType: owner.type,
     attachableId: owner.id,
     field: owner.field,
+    ownerKey,
     parentId,
     variantKey,
     disk: attachment.disk ?? defaultDisk,

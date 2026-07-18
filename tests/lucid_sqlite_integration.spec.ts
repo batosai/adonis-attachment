@@ -71,6 +71,16 @@ test.group('Lucid SQLite integration', (group) => {
     assert.isNull(result)
   })
 
+  test('prevents two original attachments for the same owner field', async ({ assert }) => {
+    const store = new LucidAttachmentStore()
+    await store.createOriginal(owner, makeAttachment('first-id', 'users/42/first.jpg'))
+
+    await assert.rejects(
+      () => store.createOriginal(owner, makeAttachment('second-id', 'users/42/second.jpg')),
+      /UNIQUE constraint failed/
+    )
+  })
+
   test('uses persisted rows for lifecycle replacement, deletion, and repository reads', async ({ assert }) => {
     const removed: string[] = []
     const attachments = [

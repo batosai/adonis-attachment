@@ -9,6 +9,7 @@ test.group('renderAttachmentsMigration', () => {
     assert.include(migration, "protected tableName = 'attachments'")
     assert.include(migration, "table.string('attachable_type').notNullable()")
     assert.include(migration, "table.string('attachable_id').notNullable()")
+    assert.include(migration, "table.string('owner_key', 64).nullable().unique()")
     assert.include(migration, "table.uuid('parent_id').nullable()")
     assert.include(migration, "table.string('variant_key').nullable()")
     assert.include(migration, "table.unique(['parent_id', 'variant_key'])")

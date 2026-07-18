@@ -7,7 +7,7 @@ import { LucidAttachmentStore } from './lucid_attachment_store.js'
 export type AttachmentFileService = Pick<AttachmentService, 'create' | 'remove'>
 export type LucidAttachmentPersistence = Pick<
   LucidAttachmentStore,
-  'createOriginal' | 'findOriginal' | 'listVariants' | 'remove'
+  'createOriginal' | 'findOriginal' | 'listVariants' | 'releaseOwner' | 'restoreOwner' | 'remove'
 >
 
 export class LucidAttachmentLifecycleService {
@@ -32,16 +32,28 @@ export class LucidAttachmentLifecycleService {
 
   async replace(owner: AttachmentOwner, input: CreateAttachmentInput): Promise<AttachmentModel> {
     const previous = await this.#store.findOriginal(owner)
-    const current = await this.attach(owner, input)
 
     if (!previous) {
-      return current
+      return this.attach(owner, input)
+    }
+
+    const attachment = await this.#attachments.create(input)
+    let current: AttachmentModel
+
+    try {
+      await this.#store.releaseOwner(previous)
+      current = await this.#store.createOriginal(owner, attachment)
+    } catch (error) {
+      await this.#store.restoreOwner(previous).catch(() => undefined)
+      await this.#removeStoredFile(attachment)
+      throw error
     }
 
     try {
       await this.#store.remove(previous)
     } catch (error) {
       await this.#store.remove(current).catch(() => undefined)
+      await this.#store.restoreOwner(previous).catch(() => undefined)
       await this.#removeStoredFile(current.toAttachment())
       throw error
     }

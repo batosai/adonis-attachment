@@ -2,11 +2,14 @@ import type { ApplicationService } from '@adonisjs/core/types'
 
 import { configProvider } from '@adonisjs/core'
 import { AttachmentService } from '../src/core/attachment_service.js'
+import type { AttachmentRepository } from '../src/core/attachment_repository.js'
+import { AttachmentsController } from '../src/controllers/attachments_controller.js'
 import type { ResolvedAttachmentConfig } from '../src/define_config.js'
 
 declare module '@adonisjs/core/types' {
   export interface ContainerBindings {
     'jrmc.attachment': AttachmentService
+    'jrmc.attachment.repository': AttachmentRepository
   }
 }
 
@@ -28,6 +31,30 @@ export default class AttachmentProvider {
       }
 
       return new AttachmentService(config)
+    })
+
+    this.app.container.singleton('jrmc.attachment.repository', async () => {
+      const attachmentConfig = this.app.config.get('attachment')
+      const config = await configProvider.resolve<ResolvedAttachmentConfig>(
+        this.app,
+        attachmentConfig
+      )
+
+      if (!config?.repository) {
+        throw new Error('Attachment routes require a repository in config/attachment.ts')
+      }
+
+      return config.repository
+    })
+  }
+
+  async boot(): Promise<void> {
+    const router = await this.app.container.make('router')
+    router.get('/attachments/:id', async (context) => {
+      const attachments = await this.app.container.make('jrmc.attachment')
+      const repository = await this.app.container.make('jrmc.attachment.repository')
+
+      return new AttachmentsController(attachments, repository).handle(context)
     })
   }
 }

@@ -3,6 +3,7 @@ import type { ApplicationService, ConfigProvider } from '@adonisjs/core/types'
 import { configProvider } from '@adonisjs/core'
 import type { AttachmentServiceOptions } from './core/attachment_service.js'
 import type { AttachmentJobProcessor } from './core/attachment_job_processor.js'
+import type { AttachmentRepository } from './core/attachment_repository.js'
 import type { AttachmentJobHandler, AttachmentQueue } from './core/queue.js'
 import type { AttachmentStorage } from './core/storage.js'
 import { MemoryAttachmentQueue } from './queues/memory_queue.js'
@@ -15,11 +16,14 @@ export type AttachmentConfig = {
   queue?: Integration<AttachmentQueue>
   jobHandler?: Integration<AttachmentJobHandler>
   processor?: Integration<AttachmentJobProcessor>
+  repository?: Integration<AttachmentRepository>
   queueConcurrency?: number
   createId?: () => string
 }
 
-export type ResolvedAttachmentConfig = AttachmentServiceOptions
+export type ResolvedAttachmentConfig = AttachmentServiceOptions & {
+  repository?: AttachmentRepository
+}
 
 /**
  * Defers resolution of optional Adonis integrations until application boot.
@@ -44,6 +48,9 @@ export function defineConfig(config: AttachmentConfig): ConfigProvider<ResolvedA
       defaultDisk: config.defaultDisk,
       storage: await resolveIntegration(config.storage, app),
       queue,
+      ...(config.repository
+        ? { repository: await resolveIntegration(config.repository, app) }
+        : {}),
       ...(config.createId ? { createId: config.createId } : {}),
     }
   })

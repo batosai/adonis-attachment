@@ -43,10 +43,15 @@ const lifecycle = new LucidAttachmentLifecycleService(
   new LucidAttachmentStore()
 )
 
-await lifecycle.attach(
+const avatar = await lifecycle.attach(
   { type: 'users', id: user.id, field: 'avatar' },
   { body: fileBytes, originalName: 'profile.jpg', mimeType: 'image/jpeg' }
 )
+
+await attachmentService.scheduleVariantGeneration(
+  avatar.toAttachment(),
+  ['thumbnail']
+)
 ```
 
-`replace` keeps the previous row until the replacement is persisted, transferring its internal owner key just before insertion. It restores that key when persistence fails. `detach` removes the original, its variants, and their files. External storage cannot participate in a SQL transaction, so applications should monitor failed file cleanup and retry it when necessary.
+Schedule variants after `attach` or `replace` returns, so a worker can resolve the persisted original. `replace` keeps the previous row until the replacement is persisted, transferring its internal owner key just before insertion. It restores that key when persistence fails. `detach` removes the original, its variants, and their files. External storage cannot participate in a SQL transaction, so applications should monitor failed file cleanup and retry it when necessary.

@@ -16,7 +16,7 @@ export default defineConfig({
 })
 ```
 
-Without `repository`, the route cannot resolve attachment ids and the provider reports a configuration error when the route is called.
+Without `repository`, the provider does not register the route.
 
 Set `route: false` to omit the built-in route, or change its prefix while preserving the `:id` parameter:
 

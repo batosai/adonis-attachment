@@ -52,7 +52,7 @@ export default class AttachmentProvider {
     const attachmentConfig = this.app.config.get('attachment')
     const config = await configProvider.resolve<ResolvedAttachmentConfig>(this.app, attachmentConfig)
 
-    if (!config || config.route === false) {
+    if (!config || config.route === false || !config.repository) {
       return
     }
 

@@ -23,6 +23,7 @@ La persistence en base n'est pas une responsabilite du noyau : l'appelant recupe
 - `AttachmentQueue` : recoit des travaux serialisables. Le premier est `generate-variants`.
 - `MemoryAttachmentQueue` : implementation par defaut, executee dans le processus avec une concurrence configuree.
 - `AttachmentService` : facade de creation, suppression et planification des variants.
+- `defineConfig` : resout le stockage et la queue au boot Adonis, en direct ou depuis le conteneur applicatif.
 - `AttachmentRepository` : lit un attachment pour un worker, sans imposer de mecanisme de persistence.
 - `AttachmentJobProcessor` : resout un job puis appelle le generateur de variants configure.
 
@@ -52,6 +53,6 @@ Le package expose deja `renderAttachmentsMigration()` afin de produire cette mig
 
 ## Prochaine tranche
 
-1. Ajouter le provider Adonis optionnel et la commande Ace qui ecrit la migration Lucid.
+1. Ajouter la commande Ace qui ecrit la migration Lucid.
 2. Implementer le repository Lucid sur table polymorphe.
 3. Construire la commande de migration depuis les colonnes JSON v5 autour de `migrateLegacyAttachment()`.

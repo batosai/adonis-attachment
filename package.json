@@ -32,6 +32,10 @@
     "./lucid": {
       "types": "./build/src/integrations/lucid/index.d.ts",
       "default": "./build/src/integrations/lucid/index.js"
+    },
+    "./attachment_provider": {
+      "types": "./build/providers/attachment_provider.d.ts",
+      "default": "./build/providers/attachment_provider.js"
     }
   },
   "scripts": {

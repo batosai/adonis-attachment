@@ -1,0 +1,131 @@
+export type LegacyAttachment = {
+  name: string
+  originalName?: string
+  size: number
+  extname: string
+  mimeType: string
+  disk?: string
+  path?: string
+  meta?: Record<string, unknown>
+  variants?: LegacyVariant[]
+}
+
+export type LegacyVariant = {
+  key: string
+  name: string
+  size: number
+  extname: string
+  mimeType: string
+  disk?: string
+  path?: string
+  meta?: Record<string, unknown>
+}
+
+export type AttachmentOwner = {
+  type: string
+  id: string
+  field: string
+}
+
+export type MigratedAttachmentRow = {
+  id: string
+  attachableType: string
+  attachableId: string
+  field: string
+  parentId: string | null
+  variantKey: string | null
+  disk: string
+  path: string
+  name: string
+  originalName: string
+  mimeType: string
+  extname: string
+  size: number
+  metadata: Record<string, unknown> | null
+}
+
+export type MigrateLegacyAttachmentOptions = {
+  owner: AttachmentOwner
+  defaultDisk: string
+  createId: () => string
+}
+
+/**
+ * Converts one v5 JSON attachment document into rows for the polymorphic table.
+ * Callers can run it from an Ace command, another ORM migration, or a one-off script.
+ */
+export function migrateLegacyAttachment(
+  value: LegacyAttachment | string,
+  options: MigrateLegacyAttachmentOptions
+): MigratedAttachmentRow[] {
+  const attachment = typeof value === 'string' ? parseLegacyAttachment(value) : value
+  const id = options.createId()
+  const originalName = attachment.originalName ?? attachment.name
+  const original = toRow({
+    id,
+    attachment,
+    owner: options.owner,
+    parentId: null,
+    variantKey: null,
+    originalName,
+    defaultDisk: options.defaultDisk,
+  })
+
+  return [
+    original,
+    ...(attachment.variants ?? []).map((variant) =>
+      toRow({
+        id: options.createId(),
+        attachment: variant,
+        owner: options.owner,
+        parentId: id,
+        variantKey: variant.key,
+        originalName,
+        defaultDisk: options.defaultDisk,
+      })
+    ),
+  ]
+}
+
+function parseLegacyAttachment(value: string): LegacyAttachment {
+  try {
+    return JSON.parse(value) as LegacyAttachment
+  } catch {
+    throw new Error('Legacy attachment value must be valid JSON')
+  }
+}
+
+function toRow({
+  id,
+  attachment,
+  owner,
+  parentId,
+  variantKey,
+  originalName,
+  defaultDisk,
+}: {
+  id: string
+  attachment: Omit<LegacyAttachment, 'variants'>
+  owner: AttachmentOwner
+  parentId: string | null
+  variantKey: string | null
+  originalName: string
+  defaultDisk: string
+}): MigratedAttachmentRow {
+  return {
+    id,
+    attachableType: owner.type,
+    attachableId: owner.id,
+    field: owner.field,
+    parentId,
+    variantKey,
+    disk: attachment.disk ?? defaultDisk,
+    path: attachment.path ?? attachment.name,
+    name: attachment.name,
+    originalName,
+    mimeType: attachment.mimeType,
+    extname: attachment.extname,
+    size: attachment.size,
+    metadata: attachment.meta ?? null,
+  }
+}

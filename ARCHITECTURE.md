@@ -46,8 +46,12 @@ Le mode table dediee utilise une seule table `attachments`. Un variant est un at
 
 Contraintes a prevoir dans la migration Lucid : index sur `(attachable_type, attachable_id, field)`, index sur `parent_id`, et unicite de `(parent_id, variant_key)` lorsque `parent_id` est defini.
 
+Le package expose deja `renderAttachmentsMigration()` afin de produire cette migration pour l'application. Une commande Ace optionnelle l'ecrira dans le dossier de migrations lorsque le provider Lucid sera ajoute.
+
+`migrateLegacyAttachment()` convertit un document JSON v5 (original et variants) en lignes de cette table. Les variants reutilisent l'`original_name` du fichier parent, car ce champ represente le nom envoye par le client et non le nom produit par le converter.
+
 ## Prochaine tranche
 
-1. Definir le contrat de lecture et de generation de variants pour les workers externes.
-2. Ajouter le provider Adonis optionnel et l'integration Lucid sur table polymorphe.
-3. Ecrire la commande de migration depuis les colonnes JSON v5.
+1. Ajouter le provider Adonis optionnel et la commande Ace qui ecrit la migration Lucid.
+2. Implementer le repository Lucid sur table polymorphe.
+3. Construire la commande de migration depuis les colonnes JSON v5 autour de `migrateLegacyAttachment()`.

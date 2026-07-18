@@ -1,6 +1,7 @@
 import { test } from '@japa/runner'
 
 import {
+  AttachmentJobProcessor,
   defineConfig,
   MemoryAttachmentQueue,
   type AttachmentJob,
@@ -72,5 +73,36 @@ test.group('defineConfig', () => {
     const resolved = await config.resolver({} as never)
 
     assert.instanceOf(resolved.queue, MemoryAttachmentQueue)
+  })
+
+  test('uses the configured processor as the memory queue handler', async ({ assert }) => {
+    const storage: AttachmentStorage = {
+      async write() {},
+      async read() {
+        return new Uint8Array()
+      },
+      async remove() {},
+    }
+    const processed: AttachmentJob[] = []
+    const processor = new AttachmentJobProcessor({
+      attachments: {
+        async findById() {
+          return null
+        },
+      },
+      variants: {
+        async generate() {},
+      },
+    })
+    processor.process = async (job) => {
+      processed.push(job)
+    }
+    const config = defineConfig({ defaultDisk: 'public', storage, processor })
+    const resolved = await config.resolver({} as never)
+
+    await resolved.queue.enqueue({ type: 'generate-variants', attachmentId: 'attachment-id' })
+    await (resolved.queue as MemoryAttachmentQueue).drain()
+
+    assert.deepEqual(processed, [{ type: 'generate-variants', attachmentId: 'attachment-id' }])
   })
 })

@@ -2,6 +2,7 @@ import type { ApplicationService, ConfigProvider } from '@adonisjs/core/types'
 
 import { configProvider } from '@adonisjs/core'
 import type { AttachmentServiceOptions } from './core/attachment_service.js'
+import type { AttachmentJobProcessor } from './core/attachment_job_processor.js'
 import type { AttachmentJobHandler, AttachmentQueue } from './core/queue.js'
 import type { AttachmentStorage } from './core/storage.js'
 import { MemoryAttachmentQueue } from './queues/memory_queue.js'
@@ -13,6 +14,7 @@ export type AttachmentConfig = {
   storage: Integration<AttachmentStorage>
   queue?: Integration<AttachmentQueue>
   jobHandler?: Integration<AttachmentJobHandler>
+  processor?: Integration<AttachmentJobProcessor>
   queueConcurrency?: number
   createId?: () => string
 }
@@ -24,11 +26,16 @@ export type ResolvedAttachmentConfig = AttachmentServiceOptions
  */
 export function defineConfig(config: AttachmentConfig): ConfigProvider<ResolvedAttachmentConfig> {
   return configProvider.create(async (app) => {
+    const processor = config.processor
+      ? await resolveIntegration(config.processor, app)
+      : undefined
     const queue = config.queue
       ? await resolveIntegration(config.queue, app)
       : new MemoryAttachmentQueue({
           handler: config.jobHandler
             ? await resolveIntegration(config.jobHandler, app)
+            : processor
+              ? (job) => processor.process(job)
             : async () => {},
           ...(config.queueConcurrency ? { concurrency: config.queueConcurrency } : {}),
         })

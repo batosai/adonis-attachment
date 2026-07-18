@@ -14,3 +14,5 @@ export default defineConfig({
 ```
 
 Applications that do not use Drive can provide any object implementing `AttachmentStorage`. A custom queue implements `AttachmentQueue` and receives serializable attachment jobs.
+
+For in-process variant generation, pass an `AttachmentJobProcessor` as `processor`. The default memory queue delegates every job to it.

@@ -36,6 +36,10 @@
     "./attachment_provider": {
       "types": "./build/providers/attachment_provider.d.ts",
       "default": "./build/providers/attachment_provider.js"
+    },
+    "./commands/make/attachments_table": {
+      "types": "./build/commands/make/attachments_table.d.ts",
+      "default": "./build/commands/make/attachments_table.js"
     }
   },
   "scripts": {

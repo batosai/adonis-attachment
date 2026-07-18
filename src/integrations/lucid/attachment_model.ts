@@ -1,4 +1,5 @@
 import { BaseModel, column } from '@adonisjs/lucid/orm'
+import type { DateTime } from 'luxon'
 
 import type { Attachment } from '../../core/attachment.js'
 
@@ -8,6 +9,7 @@ import type { Attachment } from '../../core/attachment.js'
  */
 export class AttachmentModel extends BaseModel {
   static table = 'attachments'
+  static selfAssignPrimaryKey = true
 
   @column({ isPrimary: true })
   declare id: string
@@ -48,8 +50,25 @@ export class AttachmentModel extends BaseModel {
   @column()
   declare size: number
 
-  @column()
+  @column({
+    prepare(value: Record<string, unknown> | null) {
+      return value === null ? null : JSON.stringify(value)
+    },
+    consume(value: unknown) {
+      if (value === null || value === undefined || typeof value !== 'string') {
+        return value as Record<string, unknown> | null
+      }
+
+      return JSON.parse(value) as Record<string, unknown>
+    },
+  })
   declare metadata: Record<string, unknown> | null
+
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime
 
   toAttachment(): Attachment {
     return {

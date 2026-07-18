@@ -10,7 +10,7 @@ node ace make:attachments-table
 
 Use `--table=media_attachments` or `--folder=database/migrations` to customize the generated file.
 
-`AttachmentModel` maps the default table and can be extended by the application. `LucidAttachmentStore` creates original and variant rows; `LucidAttachmentRepository` lets a queued worker resolve an attachment by id.
+`AttachmentModel` maps the default table and can be extended by the application. It keeps application-assigned UUIDs, serializes `metadata`, and automatically maintains `created_at` and `updated_at`, matching the generated migration. `LucidAttachmentStore` creates original and variant rows; `LucidAttachmentRepository` lets a queued worker resolve an attachment by id.
 
 ## Attachment lifecycle
 

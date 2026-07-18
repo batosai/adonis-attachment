@@ -69,7 +69,9 @@
     "@adonisjs/queue": "^0.6.2",
     "@japa/assert": "^4.2.0",
     "@japa/runner": "^4.5.0",
+    "@types/luxon": "^3.7.2",
     "@types/node": "^24.0.0",
+    "better-sqlite3": "^12.11.1",
     "typescript": "^5.9.3",
     "vitepress": "^1.6.4"
   },

@@ -1,0 +1,38 @@
+{
+  "name": "@jrmc/adonis-attachment",
+  "version": "6.0.0-alpha.0",
+  "private": true,
+  "type": "module",
+  "description": "Next-generation attachment primitives for AdonisJS and standalone TypeScript applications",
+  "engines": {
+    "node": ">=20.12.0"
+  },
+  "files": [
+    "build"
+  ],
+  "main": "./build/index.js",
+  "types": "./build/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./build/index.d.ts",
+      "default": "./build/index.js"
+    },
+    "./core": {
+      "types": "./build/src/core/index.d.ts",
+      "default": "./build/src/core/index.js"
+    },
+    "./queues/memory": {
+      "types": "./build/src/queues/memory_queue.d.ts",
+      "default": "./build/src/queues/memory_queue.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "npm run build && node --test build/tests/*.spec.js"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^5.9.3"
+  }
+}

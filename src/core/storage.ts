@@ -1,0 +1,16 @@
+import type { Attachment } from './attachment.js'
+
+export type StorageLocation = Pick<Attachment, 'disk' | 'path'>
+
+export type WriteAttachmentInput = StorageLocation & {
+  body: Uint8Array
+  mimeType: string
+}
+
+/**
+ * Storage boundary implemented by Adonis Drive or any application-specific backend.
+ */
+export interface AttachmentStorage {
+  write(input: WriteAttachmentInput): Promise<void>
+  remove(location: StorageLocation): Promise<void>
+}

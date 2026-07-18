@@ -48,6 +48,10 @@
     "./commands/make/attachments_table": {
       "types": "./build/commands/make/attachments_table.d.ts",
       "default": "./build/commands/make/attachments_table.js"
+    },
+    "./commands/make/attachment_v5_migration": {
+      "types": "./build/commands/make/attachment_v5_migration.d.ts",
+      "default": "./build/commands/make/attachment_v5_migration.js"
     }
   },
   "scripts": {

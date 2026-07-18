@@ -27,3 +27,18 @@ export {
   type MigrateLegacyAttachmentOptions,
   type MigratedAttachmentRow,
 } from './migrate_legacy_attachment.js'
+export {
+  migrateLegacyAttachmentRecords,
+  type LegacyAttachmentMigrationRecord,
+  type LegacyAttachmentMigrationResult,
+  type LegacyAttachmentMigrationWriter,
+  type MigrateLegacyAttachmentRecordsOptions,
+} from './migrate_legacy_attachment_records.js'
+export {
+  createLegacyAttachmentMigrationScript,
+  type CreateLegacyAttachmentMigrationScriptOptions,
+} from './create_legacy_attachment_migration_script.js'
+export {
+  renderLegacyAttachmentMigrationScript,
+  type RenderLegacyAttachmentMigrationScriptOptions,
+} from './render_legacy_attachment_migration_script.js'

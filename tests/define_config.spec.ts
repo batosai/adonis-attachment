@@ -28,6 +28,7 @@ test.group('defineConfig', () => {
     assert.equal(resolved.defaultDisk, 'public')
     assert.equal(resolved.storage, storage)
     assert.equal(resolved.queue, queue)
+    assert.deepEqual(resolved.route, { path: '/attachments/:id' })
   })
 
   test('resolves integrations from the application at boot time', async ({ assert }) => {
@@ -73,6 +74,45 @@ test.group('defineConfig', () => {
     const resolved = await config.resolver({} as never)
 
     assert.instanceOf(resolved.queue, MemoryAttachmentQueue)
+  })
+
+  test('allows applications to disable or prefix the read route', async ({ assert }) => {
+    const storage: AttachmentStorage = {
+      async write() {},
+      async read() {
+        return new Uint8Array()
+      },
+      async remove() {},
+    }
+
+    const disabled = await defineConfig({
+      defaultDisk: 'public',
+      storage,
+      route: false,
+    }).resolver({} as never)
+    const prefixed = await defineConfig({
+      defaultDisk: 'public',
+      storage,
+      route: { prefix: '/media/files/' },
+    }).resolver({} as never)
+
+    assert.isFalse(disabled.route)
+    assert.deepEqual(prefixed.route, { path: '/media/files/:id' })
+  })
+
+  test('rejects invalid route prefixes', async ({ assert }) => {
+    const storage: AttachmentStorage = {
+      async write() {},
+      async read() {
+        return new Uint8Array()
+      },
+      async remove() {},
+    }
+
+    await assert.rejects(
+      () => defineConfig({ defaultDisk: 'public', storage, route: { prefix: 'attachments/:id' } }).resolver({} as never),
+      'Attachment route prefix must start with "/" and cannot contain parameters'
+    )
   })
 
   test('uses the configured processor as the memory queue handler', async ({ assert }) => {

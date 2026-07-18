@@ -10,6 +10,12 @@ import { MemoryAttachmentQueue } from './queues/memory_queue.js'
 
 type Integration<T> = T | ((app: ApplicationService) => T | Promise<T>)
 
+export type AttachmentRouteConfig = false | { prefix?: string }
+
+export type ResolvedAttachmentRouteConfig = {
+  path: string
+}
+
 export type AttachmentConfig = {
   defaultDisk: string
   storage: Integration<AttachmentStorage>
@@ -17,12 +23,14 @@ export type AttachmentConfig = {
   jobHandler?: Integration<AttachmentJobHandler>
   processor?: Integration<AttachmentJobProcessor>
   repository?: Integration<AttachmentRepository>
+  route?: AttachmentRouteConfig
   queueConcurrency?: number
   createId?: () => string
 }
 
 export type ResolvedAttachmentConfig = AttachmentServiceOptions & {
   repository?: AttachmentRepository
+  route: ResolvedAttachmentRouteConfig | false
 }
 
 /**
@@ -48,12 +56,27 @@ export function defineConfig(config: AttachmentConfig): ConfigProvider<ResolvedA
       defaultDisk: config.defaultDisk,
       storage: await resolveIntegration(config.storage, app),
       queue,
+      route: resolveRoute(config.route),
       ...(config.repository
         ? { repository: await resolveIntegration(config.repository, app) }
         : {}),
       ...(config.createId ? { createId: config.createId } : {}),
     }
   })
+}
+
+function resolveRoute(route: AttachmentRouteConfig | undefined): ResolvedAttachmentRouteConfig | false {
+  if (route === false) {
+    return false
+  }
+
+  const prefix = route?.prefix ?? '/attachments'
+
+  if (!prefix.startsWith('/') || prefix.includes(':')) {
+    throw new Error('Attachment route prefix must start with "/" and cannot contain parameters')
+  }
+
+  return { path: `${prefix.replace(/\/+$/, '') || ''}/:id` }
 }
 
 async function resolveIntegration<T>(

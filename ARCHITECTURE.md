@@ -62,4 +62,4 @@ La commande Ace `make:attachment-v5-migration` genere un script de migration de 
 
 ## Route de lecture
 
-Le provider expose `GET /attachments/:id` lorsque l'application est configuree avec un `AttachmentRepository`. La route lit les octets via `AttachmentService` et renseigne le type MIME. Elle est publique par defaut : les applications qui ont besoin d'autorisation doivent definir leur propre route autour du repository et du service.
+Le provider expose `GET /attachments/:id` lorsque l'application est configuree avec un `AttachmentRepository`. La route est desactivable et son prefixe est configurable. Elle lit les octets via `AttachmentService` et renseigne le type MIME. Elle est publique par defaut : les applications qui ont besoin d'autorisation doivent definir leur propre route autour du repository et du service.

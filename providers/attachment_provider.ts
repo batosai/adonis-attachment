@@ -49,8 +49,15 @@ export default class AttachmentProvider {
   }
 
   async boot(): Promise<void> {
+    const attachmentConfig = this.app.config.get('attachment')
+    const config = await configProvider.resolve<ResolvedAttachmentConfig>(this.app, attachmentConfig)
+
+    if (!config || config.route === false) {
+      return
+    }
+
     const router = await this.app.container.make('router')
-    router.get('/attachments/:id', async (context) => {
+    router.get(config.route.path, async (context) => {
       const attachments = await this.app.container.make('jrmc.attachment')
       const repository = await this.app.container.make('jrmc.attachment.repository')
 

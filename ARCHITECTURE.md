@@ -23,7 +23,7 @@ La persistence en base n'est pas une responsabilite du noyau : l'appelant recupe
 - `AttachmentQueue` : recoit des travaux serialisables. Le premier est `generate-variants`.
 - `MemoryAttachmentQueue` : implementation par defaut, executee dans le processus avec une concurrence configuree.
 - `AttachmentService` : facade de creation, suppression et planification des variants.
-- `defineConfig` : resout le stockage et la queue au boot Adonis, en direct ou depuis le conteneur applicatif.
+- `defineConfig` : resout le stockage et la queue au boot Adonis, en direct ou depuis le conteneur applicatif. Sans queue externe, il utilise `MemoryAttachmentQueue`.
 - `AttachmentRepository` : lit un attachment pour un worker, sans imposer de mecanisme de persistence.
 - `AttachmentJobProcessor` : resout un job puis appelle le generateur de variants configure.
 

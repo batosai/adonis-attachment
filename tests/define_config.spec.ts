@@ -1,6 +1,12 @@
 import { test } from '@japa/runner'
 
-import { defineConfig, type AttachmentJob, type AttachmentQueue, type AttachmentStorage } from '../index.js'
+import {
+  defineConfig,
+  MemoryAttachmentQueue,
+  type AttachmentJob,
+  type AttachmentQueue,
+  type AttachmentStorage,
+} from '../index.js'
 
 test.group('defineConfig', () => {
   test('resolves direct storage and queue integrations', async ({ assert }) => {
@@ -45,5 +51,17 @@ test.group('defineConfig', () => {
 
     assert.equal(resolved.storage, storage)
     assert.equal(resolved.queue, queue)
+  })
+
+  test('uses the in-memory queue by default', async ({ assert }) => {
+    const storage: AttachmentStorage = {
+      async write() {},
+      async remove() {},
+    }
+    const config = defineConfig({ defaultDisk: 'public', storage, queueConcurrency: 2 })
+
+    const resolved = await config.resolver({} as never)
+
+    assert.instanceOf(resolved.queue, MemoryAttachmentQueue)
   })
 })

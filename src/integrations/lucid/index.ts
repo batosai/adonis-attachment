@@ -1,3 +1,5 @@
+export { AttachmentModel } from './attachment_model.js'
+export { LucidAttachmentRepository } from './lucid_attachment_repository.js'
 export {
   renderAttachmentsMigration,
   type RenderAttachmentsMigrationOptions,

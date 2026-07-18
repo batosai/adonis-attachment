@@ -51,8 +51,9 @@ Le package expose deja `renderAttachmentsMigration()` afin de produire cette mig
 
 `migrateLegacyAttachment()` convertit un document JSON v5 (original et variants) en lignes de cette table. Les variants reutilisent l'`original_name` du fichier parent, car ce champ represente le nom envoye par le client et non le nom produit par le converter.
 
+Le sous-chemin `@jrmc/adonis-attachment/lucid` expose `AttachmentModel` et `LucidAttachmentRepository`. Le repository donne au worker un acces type aux fichiers sans introduire Lucid dans le noyau.
+
 ## Prochaine tranche
 
 1. Ajouter la commande Ace qui ecrit la migration Lucid.
-2. Implementer le repository Lucid sur table polymorphe.
-3. Construire la commande de migration depuis les colonnes JSON v5 autour de `migrateLegacyAttachment()`.
+2. Construire la commande de migration depuis les colonnes JSON v5 autour de `migrateLegacyAttachment()`.

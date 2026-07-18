@@ -54,6 +54,8 @@ Le package expose `renderAttachmentsMigration()` et `createAttachmentsMigrationF
 
 Le sous-chemin `@jrmc/adonis-attachment/lucid` expose `AttachmentModel`, `LucidAttachmentRepository` et `LucidAttachmentStore`. Le repository donne au worker un acces type aux fichiers, et le store persiste originaux et variants dans la meme table sans introduire Lucid dans le noyau.
 
+`LucidAttachmentLifecycleService` orchestre l'ecriture du fichier et la persistence Lucid. Il supprime un nouveau fichier si l'insertion de sa ligne echoue. Les suppressions de fichiers qui suivent une suppression de ligne restent compensables par un job de nettoyage, car le stockage externe ne partage pas la transaction SQL.
+
 ## Prochaine tranche
 
 1. Construire la commande de migration depuis les colonnes JSON v5 autour de `migrateLegacyAttachment()`.

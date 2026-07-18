@@ -12,6 +12,21 @@ Use `--table=media_attachments` or `--folder=database/migrations` to customize t
 
 `AttachmentModel` maps the default table and can be extended by the application. It keeps application-assigned UUIDs, serializes `metadata`, and automatically maintains `created_at` and `updated_at`, matching the generated migration. `LucidAttachmentStore` creates original and variant rows; `LucidAttachmentRepository` lets a queued worker resolve an attachment by id.
 
+Read an owner field together with its generated variants through the same store:
+
+```ts
+const attachment = await new LucidAttachmentStore().findByOwner({
+  type: 'users',
+  id: user.id,
+  field: 'avatar',
+})
+
+if (attachment) {
+  attachment.original.toAttachment()
+  attachment.variants.map((variant) => variant.toAttachment())
+}
+```
+
 ## Attachment lifecycle
 
 `LucidAttachmentLifecycleService` coordinates storage and persistence. It writes the file first, then creates its polymorphic row. If the database operation fails, it removes the new file as compensation.

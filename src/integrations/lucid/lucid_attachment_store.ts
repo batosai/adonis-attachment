@@ -2,6 +2,11 @@ import type { Attachment } from '../../core/attachment.js'
 import type { AttachmentOwner } from './attachment_owner.js'
 import { AttachmentModel } from './attachment_model.js'
 
+export type LucidAttachmentWithVariants = {
+  original: AttachmentModel
+  variants: AttachmentModel[]
+}
+
 export class LucidAttachmentStore {
   readonly #model: typeof AttachmentModel
 
@@ -49,6 +54,19 @@ export class LucidAttachmentStore {
 
   findById(id: string): Promise<AttachmentModel | null> {
     return this.#model.find(id)
+  }
+
+  async findByOwner(owner: AttachmentOwner): Promise<LucidAttachmentWithVariants | null> {
+    const original = await this.findOriginal(owner)
+
+    if (!original) {
+      return null
+    }
+
+    return {
+      original,
+      variants: await this.listVariants(original.id),
+    }
   }
 
   listVariants(originalId: string): Promise<AttachmentModel[]> {

@@ -51,7 +51,7 @@ test.group('Lucid SQLite integration', (group) => {
     )
 
     const reloaded = await AttachmentModel.findOrFail(original.id)
-    const variants = await store.listVariants(original.id)
+    const persisted = await store.findByOwner(owner)
 
     assert.equal(reloaded.attachableType, 'users')
     assert.equal(reloaded.attachableId, '42')
@@ -61,7 +61,14 @@ test.group('Lucid SQLite integration', (group) => {
     assert.isNotNull(reloaded.updatedAt)
     assert.equal(variant.parentId, original.id)
     assert.equal(variant.variantKey, 'thumbnail')
-    assert.deepEqual(variants.map((row) => row.id), ['variant-id'])
+    assert.equal(persisted?.original.id, original.id)
+    assert.deepEqual(persisted?.variants.map((row) => row.id), ['variant-id'])
+  })
+
+  test('returns null when no attachment exists for the owner field', async ({ assert }) => {
+    const result = await new LucidAttachmentStore().findByOwner(owner)
+
+    assert.isNull(result)
   })
 
   test('uses persisted rows for lifecycle replacement, deletion, and repository reads', async ({ assert }) => {

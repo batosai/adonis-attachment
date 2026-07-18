@@ -16,6 +16,8 @@ AttachmentStorage  AttachmentQueue
 
 La persistence en base n'est pas une responsabilite du noyau : l'appelant recupere l'objet `Attachment` cree puis le stocke avec l'ORM ou le mecanisme de son choix.
 
+La documentation contient un flux de persistence personnalisee avec un `AttachmentRepository` applicatif. Ce repository permet aux workers et a la route de lecture de retrouver un attachment sans introduire Lucid.
+
 ## Contrats initiaux
 
 - `AttachmentStorage` : ecrit et supprime un fichier a partir d'un disque et d'un chemin.

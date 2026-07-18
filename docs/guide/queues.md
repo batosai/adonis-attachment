@@ -6,6 +6,23 @@ For an external queue, implement `AttachmentQueue` and dispatch the payload to t
 
 This keeps the package independent from worker deployment while allowing an Adonis queue job to delegate its `execute` method to the processor.
 
+`AttachmentJobProcessor` also accepts an asynchronous variant-generator factory. This resolves the generator on the first job and avoids a circular dependency when the generator itself needs `jrmc.attachment` from the Adonis container:
+
+```ts
+const processor = new AttachmentJobProcessor({
+  attachments: new LucidAttachmentRepository(),
+  async variants() {
+    const attachments = await app.container.make('jrmc.attachment')
+
+    return new LucidVariantGenerationService({
+      attachments,
+      generator: new VariantGenerationService({ attachments, converters }),
+      store: new LucidAttachmentStore(),
+    })
+  },
+})
+```
+
 ## Memory queue
 
 Pass `processor` to `defineConfig` to execute jobs in-process. This is the default queue implementation and is suitable for simple deployments or tests.

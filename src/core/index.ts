@@ -11,6 +11,7 @@ export {
   type AttachmentJobProcessorOptions,
   type VariantGenerationRequest,
   type VariantGenerator,
+  type VariantGeneratorFactory,
 } from './attachment_job_processor.js'
 export { type AttachmentRepository } from './attachment_repository.js'
 export {

@@ -11,14 +11,17 @@ export interface VariantGenerator {
   generate(request: VariantGenerationRequest): Promise<void>
 }
 
+export type VariantGeneratorFactory = () => VariantGenerator | Promise<VariantGenerator>
+
 export type AttachmentJobProcessorOptions = {
   attachments: AttachmentRepository
-  variants: VariantGenerator
+  variants: VariantGenerator | VariantGeneratorFactory
 }
 
 export class AttachmentJobProcessor {
   readonly #attachments: AttachmentRepository
-  readonly #variants: VariantGenerator
+  readonly #variants: VariantGenerator | VariantGeneratorFactory
+  #resolvedVariants: Promise<VariantGenerator> | undefined
 
   constructor(options: AttachmentJobProcessorOptions) {
     this.#attachments = options.attachments
@@ -40,10 +43,20 @@ export class AttachmentJobProcessor {
       throw new AttachmentNotFoundError(attachmentId)
     }
 
-    await this.#variants.generate({
+    const variants = await this.#getVariants()
+    await variants.generate({
       attachment,
       ...(variantKeys ? { variantKeys } : {}),
     })
+  }
+
+  #getVariants(): Promise<VariantGenerator> {
+    if (typeof this.#variants !== 'function') {
+      return Promise.resolve(this.#variants)
+    }
+
+    this.#resolvedVariants ??= Promise.resolve(this.#variants())
+    return this.#resolvedVariants
   }
 }
 

@@ -32,6 +32,8 @@ Un adaptateur `@adonisjs/queue` devra implementer le meme contrat. Le job Adonis
 
 Les converters v6 implementent `VariantConverter`. Ils recoivent l'attachment et ses octets, puis retournent les octets et les metadonnees du variant. `VariantGenerationService` ecrit les fichiers generes et peut etre utilise directement comme `VariantGenerator` par le processeur de jobs.
 
+`AttachmentJobProcessor` peut aussi recevoir une factory de generateur asynchrone. Elle est resolue et memorisee au premier job, ce qui permet de construire un generateur dependant du service `jrmc.attachment` sans cycle au boot.
+
 ## Modele Lucid cible
 
 Le mode table dediee utilise une seule table `attachments`. Un variant est un attachment dont `parent_id` designe l'attachment original. Cela evite de reintroduire un document JSON imbrique.

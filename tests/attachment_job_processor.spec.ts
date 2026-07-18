@@ -64,4 +64,41 @@ test.group('AttachmentJobProcessor', () => {
       AttachmentNotFoundError
     )
   })
+
+  test('resolves a deferred variant generator once when a job is processed', async ({ assert }) => {
+    let resolutions = 0
+    const requests: string[] = []
+    const processor = new AttachmentJobProcessor({
+      attachments: {
+        async findById(id) {
+          return {
+            id,
+            disk: 'public',
+            path: 'users/42/avatar.jpg',
+            name: 'avatar.jpg',
+            originalName: 'profile.jpg',
+            mimeType: 'image/jpeg',
+            extname: 'jpg',
+            size: 42,
+          }
+        },
+      },
+      async variants() {
+        resolutions += 1
+        return {
+          async generate({ attachment }) {
+            requests.push(attachment.id)
+          },
+        }
+      },
+    })
+
+    assert.equal(resolutions, 0)
+
+    await processor.process({ type: 'generate-variants', attachmentId: 'first-id' })
+    await processor.process({ type: 'generate-variants', attachmentId: 'second-id' })
+
+    assert.equal(resolutions, 1)
+    assert.deepEqual(requests, ['first-id', 'second-id'])
+  })
 })

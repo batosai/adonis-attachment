@@ -15,7 +15,7 @@ export default defineConfig({
 
 Applications that do not use Drive can provide any object implementing `AttachmentStorage`. A custom queue implements `AttachmentQueue` and receives serializable attachment jobs.
 
-For in-process variant generation, pass an `AttachmentJobProcessor` as `processor`. The default memory queue delegates every job to it.
+For in-process variant generation, pass an `AttachmentJobProcessor` as `processor`. The default memory queue delegates every job to it. The processor may resolve its variant generator lazily when that generator depends on `jrmc.attachment`; see [Queues](/guide/queues).
 
 To enable the built-in `GET /attachments/:id` route, provide an `AttachmentRepository` as `repository`. Set `route: false` to disable it or `route: { prefix: '/media' }` to move it. See [Routes](/guide/routes) for its response behavior and access-control considerations.
 

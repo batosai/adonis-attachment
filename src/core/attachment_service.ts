@@ -45,6 +45,10 @@ export class AttachmentService {
     return this.#storage.remove(attachment)
   }
 
+  read(attachment: Attachment): Promise<Uint8Array> {
+    return this.#storage.read({ disk: attachment.disk, path: attachment.path })
+  }
+
   scheduleVariantGeneration(
     attachment: Attachment,
     variantKeys?: readonly string[]

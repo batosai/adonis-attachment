@@ -12,5 +12,6 @@ export type WriteAttachmentInput = StorageLocation & {
  */
 export interface AttachmentStorage {
   write(input: WriteAttachmentInput): Promise<void>
+  read(location: StorageLocation): Promise<Uint8Array>
   remove(location: StorageLocation): Promise<void>
 }

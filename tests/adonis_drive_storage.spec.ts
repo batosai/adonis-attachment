@@ -11,6 +11,9 @@ test.group('AdonisDriveStorage', () => {
           async put(path, contents) {
             calls.push({ disk, path, contents })
           },
+          async getBytes() {
+            return new Uint8Array()
+          },
           async delete() {},
         }
       },
@@ -34,6 +37,9 @@ test.group('AdonisDriveStorage', () => {
       use(disk) {
         return {
           async put() {},
+          async getBytes() {
+            return new Uint8Array()
+          },
           async delete(path) {
             calls.push({ disk, path })
           },
@@ -44,5 +50,25 @@ test.group('AdonisDriveStorage', () => {
     await storage.remove({ disk: 'public', path: 'users/42/avatar.jpg' })
 
     assert.deepEqual(calls, [{ disk: 'public', path: 'users/42/avatar.jpg' }])
+  })
+
+  test('reads an attachment through the selected Drive disk', async ({ assert }) => {
+    const storage = new AdonisDriveStorage({
+      use() {
+        return {
+          async put() {},
+          async getBytes(path) {
+            assert.equal(path, 'users/42/avatar.jpg')
+            return new Uint8Array([1, 2, 3])
+          },
+          async delete() {},
+        }
+      },
+    })
+
+    assert.deepEqual(
+      await storage.read({ disk: 'public', path: 'users/42/avatar.jpg' }),
+      new Uint8Array([1, 2, 3])
+    )
   })
 })

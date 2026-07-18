@@ -11,9 +11,15 @@ import {
 class FakeStorage implements AttachmentStorage {
   writes: WriteAttachmentInput[] = []
   removals: StorageLocation[] = []
+  reads: StorageLocation[] = []
 
   async write(input: WriteAttachmentInput): Promise<void> {
     this.writes.push(input)
+  }
+
+  async read(location: StorageLocation): Promise<Uint8Array> {
+    this.reads.push(location)
+    return new Uint8Array([1, 2, 3])
   }
 
   async remove(location: StorageLocation): Promise<void> {
@@ -81,4 +87,19 @@ test('schedules variant generation without requiring a database or Lucid', async
   assert.deepEqual(queue.jobs, [
     { type: 'generate-variants', attachmentId: 'attachment-id', variantKeys: ['thumbnail'] },
   ])
+})
+
+test('reads an attachment from the configured storage', async ({ assert }) => {
+  const storage = new FakeStorage()
+  const queue = new FakeQueue()
+  const service = new AttachmentService({
+    storage,
+    queue,
+    defaultDisk: 'public',
+    createId: () => 'attachment-id',
+  })
+  const attachment = await service.create({ body: new Uint8Array(), originalName: 'report.pdf' })
+
+  assert.deepEqual(await service.read(attachment), new Uint8Array([1, 2, 3]))
+  assert.deepEqual(storage.reads, [{ disk: 'public', path: 'attachment-id.pdf' }])
 })

@@ -2,6 +2,7 @@ import type { AttachmentStorage, StorageLocation, WriteAttachmentInput } from '.
 
 export type AdonisDriveDisk = {
   put(path: string, contents: Uint8Array): Promise<void>
+  getBytes(path: string): Promise<Uint8Array>
   delete(path: string): Promise<void>
 }
 
@@ -22,6 +23,10 @@ export class AdonisDriveStorage implements AttachmentStorage {
 
   async write(input: WriteAttachmentInput): Promise<void> {
     await this.#drive.use(input.disk).put(input.path, input.body)
+  }
+
+  read(location: StorageLocation): Promise<Uint8Array> {
+    return this.#drive.use(location.disk).getBytes(location.path)
   }
 
   async remove(location: StorageLocation): Promise<void> {

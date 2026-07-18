@@ -12,6 +12,9 @@ test.group('defineConfig', () => {
   test('resolves direct storage and queue integrations', async ({ assert }) => {
     const storage: AttachmentStorage = {
       async write() {},
+      async read() {
+        return new Uint8Array()
+      },
       async remove() {},
     }
     const queue: AttachmentQueue = {
@@ -29,6 +32,9 @@ test.group('defineConfig', () => {
   test('resolves integrations from the application at boot time', async ({ assert }) => {
     const storage: AttachmentStorage = {
       async write() {},
+      async read() {
+        return new Uint8Array()
+      },
       async remove() {},
     }
     const queue: AttachmentQueue = {
@@ -56,6 +62,9 @@ test.group('defineConfig', () => {
   test('uses the in-memory queue by default', async ({ assert }) => {
     const storage: AttachmentStorage = {
       async write() {},
+      async read() {
+        return new Uint8Array()
+      },
       async remove() {},
     }
     const config = defineConfig({ defaultDisk: 'public', storage, queueConcurrency: 2 })

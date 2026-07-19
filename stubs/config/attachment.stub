@@ -8,8 +8,7 @@ import { AdonisDriveStorage, defineConfig } from '@jrmc/adonis-attachment'
  * custom storage, and read routes can be added as the application needs them.
  */
 export default defineConfig({
-  defaultDisk: 'fs',
-  storage: async (app) => new AdonisDriveStorage(await app.container.make('drive.manager')),
+  storage: AdonisDriveStorage.fromApp,
   sources: {
     maxBytes: 10 * 1024 * 1024,
   },

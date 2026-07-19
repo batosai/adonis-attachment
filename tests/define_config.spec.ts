@@ -1,3 +1,4 @@
+import { configProvider } from '@adonisjs/core'
 import { test } from '@japa/runner'
 
 import {
@@ -11,7 +12,7 @@ import {
 } from '../index.js'
 
 test.group('defineConfig', () => {
-  test('resolves the Drive manager after application boot', async ({ assert }) => {
+  test('uses the default disk resolved from Drive config', async ({ assert }) => {
     const disks: string[] = []
     const drive = {
       use(disk?: string) {
@@ -26,11 +27,16 @@ test.group('defineConfig', () => {
       },
     }
     const config = defineConfig({
-      defaultDisk: 'fs',
-      storage: async (app) => new AdonisDriveStorage(await app.container.make('drive.manager')),
+      storage: AdonisDriveStorage.fromApp,
     })
 
     const resolved = await config.resolver({
+      config: {
+        get(binding: string) {
+          assert.equal(binding, 'drive')
+          return configProvider.create(async () => ({ config: { default: 's3' } }))
+        },
+      },
       container: {
         async make(binding: string) {
           assert.equal(binding, 'drive.manager')
@@ -39,14 +45,30 @@ test.group('defineConfig', () => {
       },
     } as never)
 
+    assert.equal(resolved.defaultDisk, 's3')
+
     await resolved.storage.write({
-      disk: 'fs',
+      disk: resolved.defaultDisk,
       path: 'attachments/avatar.png',
       body: new Uint8Array(),
       mimeType: 'image/png',
     })
 
-    assert.deepEqual(disks, ['fs'])
+    assert.deepEqual(disks, ['s3'])
+  })
+
+  test('uses fs when storage does not define a default disk', async ({ assert }) => {
+    const storage: AttachmentStorage = {
+      async write() {},
+      async read() {
+        return new Uint8Array()
+      },
+      async remove() {},
+    }
+
+    const resolved = await defineConfig({ storage }).resolver({} as never)
+
+    assert.equal(resolved.defaultDisk, 'fs')
   })
 
   test('resolves direct storage and queue integrations', async ({ assert }) => {

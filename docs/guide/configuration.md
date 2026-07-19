@@ -7,12 +7,11 @@ The attachment service needs a disk name and a storage adapter. The queue is opt
 import { AdonisDriveStorage, defineConfig } from '@jrmc/adonis-attachment'
 
 export default defineConfig({
-  defaultDisk: 'fs',
-  storage: async (app) => new AdonisDriveStorage(await app.container.make('drive.manager')),
+  storage: AdonisDriveStorage.fromApp,
 })
 ```
 
-Applications that do not use Drive can provide any object implementing `AttachmentStorage`. A custom queue implements `AttachmentQueue` and receives serializable attachment jobs.
+The Drive adapter reads the default disk from `config/drive.ts`. Applications that do not use Drive can provide any object implementing `AttachmentStorage`; the fallback disk is `fs`, unless the adapter exposes `defaultDisk` or the config explicitly overrides it. A custom queue implements `AttachmentQueue` and receives serializable attachment jobs.
 
 `sources` configures `AttachmentManager`, which creates attachments from multipart files, paths, streams, URLs, Base64 values, and buffers. See [Sources](/guide/sources).
 

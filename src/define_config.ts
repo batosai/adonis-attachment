@@ -18,7 +18,8 @@ export type ResolvedAttachmentRouteConfig = {
 }
 
 export type AttachmentConfig = {
-  defaultDisk: string
+  /** Overrides the storage default. Falls back to `fs` when no adapter provides one. */
+  defaultDisk?: string
   storage: Integration<AttachmentStorage>
   queue?: Integration<AttachmentQueue>
   jobHandler?: Integration<AttachmentJobHandler>
@@ -41,6 +42,7 @@ export type ResolvedAttachmentConfig = AttachmentServiceOptions & {
  */
 export function defineConfig(config: AttachmentConfig): ConfigProvider<ResolvedAttachmentConfig> {
   return configProvider.create(async (app) => {
+    const storage = await resolveIntegration(config.storage, app)
     const processor = config.processor
       ? await resolveIntegration(config.processor, app)
       : undefined
@@ -56,8 +58,8 @@ export function defineConfig(config: AttachmentConfig): ConfigProvider<ResolvedA
         })
 
     return {
-      defaultDisk: config.defaultDisk,
-      storage: await resolveIntegration(config.storage, app),
+      defaultDisk: config.defaultDisk ?? storage.defaultDisk ?? 'fs',
+      storage,
       queue,
       route: resolveRoute(config.route),
       ...(config.repository

@@ -46,8 +46,7 @@ Configure an optional byte limit for every source. A request may lower it per ca
 
 ```ts
 export default defineConfig({
-  defaultDisk: 'fs',
-  storage: async (app) => new AdonisDriveStorage(await app.container.make('drive.manager')),
+  storage: AdonisDriveStorage.fromApp,
   sources: { maxBytes: 10 * 1024 * 1024 },
 })
 ```

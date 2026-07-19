@@ -1,3 +1,6 @@
+import { configProvider } from '@adonisjs/core'
+import type { ApplicationService } from '@adonisjs/core/types'
+
 import type { AttachmentStorage, StorageLocation, WriteAttachmentInput } from '../core/storage.js'
 
 export type AdonisDriveDisk = {
@@ -16,9 +19,30 @@ export type AdonisDriveService = {
 
 export class AdonisDriveStorage implements AttachmentStorage {
   readonly #drive: AdonisDriveService
+  readonly defaultDisk: string | undefined
 
-  constructor(drive: AdonisDriveService) {
+  constructor(drive: AdonisDriveService, defaultDisk?: string) {
     this.#drive = drive
+    this.defaultDisk = defaultDisk
+  }
+
+  /**
+   * Creates a Drive adapter using the default disk declared in config/drive.ts.
+   */
+  static async fromApp(app: ApplicationService): Promise<AdonisDriveStorage> {
+    const config = await configProvider.resolve<{ config: { default: string } }>(
+      app,
+      app.config.get('drive')
+    )
+
+    if (!config) {
+      throw new Error('Drive config is required when using AdonisDriveStorage.fromApp')
+    }
+
+    return new AdonisDriveStorage(
+      (await app.container.make('drive.manager')) as AdonisDriveService,
+      config.config.default
+    )
   }
 
   async write(input: WriteAttachmentInput): Promise<void> {

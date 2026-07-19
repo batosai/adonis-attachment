@@ -37,7 +37,7 @@ test.group('configure', () => {
     await access(join(stubsRoot, 'config/attachment.stub'))
     assert.include(
       await readFile(join(stubsRoot, 'config/attachment.stub'), 'utf8'),
-      "app.container.make('drive.manager')"
+      'storage: AdonisDriveStorage.fromApp'
     )
   })
 })

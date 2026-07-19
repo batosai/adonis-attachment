@@ -29,8 +29,7 @@ Pass `processor` to `defineConfig` to execute jobs in-process. This is the defau
 
 ```ts
 export default defineConfig({
-  defaultDisk: 'fs',
-  storage: new AdonisDriveStorage(drive),
+  storage: AdonisDriveStorage.fromApp,
   processor: attachmentProcessor,
 })
 ```

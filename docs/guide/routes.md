@@ -10,7 +10,6 @@ import { defineConfig } from '@jrmc/adonis-attachment'
 import { LucidAttachmentRepository } from '@jrmc/adonis-attachment/lucid'
 
 export default defineConfig({
-  defaultDisk: 'fs',
   storage: /* AttachmentStorage */,
   repository: new LucidAttachmentRepository(),
 })
@@ -22,7 +21,6 @@ Set `route: false` to omit the built-in route, or change its prefix while preser
 
 ```ts
 export default defineConfig({
-  defaultDisk: 'fs',
   storage: /* AttachmentStorage */,
   repository: new LucidAttachmentRepository(),
   route: { prefix: '/media/files' }, // GET /media/files/:id

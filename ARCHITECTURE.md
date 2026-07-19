@@ -56,7 +56,7 @@ Le mode table dediee utilise une seule table `attachments`. Un variant est un at
 
 Contraintes a prevoir dans la migration Lucid : unicite de `owner_key` pour les originaux, index sur `(attachable_type, attachable_id, field)`, index sur `parent_id`, et unicite de `(parent_id, variant_key)` lorsque `parent_id` est defini.
 
-Le package expose `renderAttachmentsMigration()` et `createAttachmentsMigrationFile()` afin de produire cette migration pour l'application. La commande Ace `make:attachments-table` ecrit le fichier dans `database/migrations` par defaut et accepte `--table` et `--folder`.
+La commande Ace `make:attachments-table` rend le stub package `stubs/migrations/attachments_table.stub` dans `database/migrations` par defaut et accepte `--table` et `--folder`.
 
 `migrateLegacyAttachment()` convertit un document JSON v5 (original et variants) en lignes de cette table. Les variants reutilisent l'`original_name` du fichier parent, car ce champ represente le nom envoye par le client et non le nom produit par le converter.
 

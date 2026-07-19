@@ -1,6 +1,7 @@
 import { BaseCommand } from '@adonisjs/core/ace'
 
-import { createAttachmentsMigrationFile } from '../../src/integrations/lucid/create_attachments_migration_file.js'
+import { stubsRoot } from '../../configure.js'
+import { createAttachmentsTableStubState } from '../../src/integrations/lucid/attachments_table_stub.js'
 
 export default class MakeAttachmentsTable extends BaseCommand {
   static commandName = 'make:attachments-table'
@@ -14,11 +15,13 @@ export default class MakeAttachmentsTable extends BaseCommand {
     const flags = this.parsed.flags as { table?: string; folder?: string }
     const tableName = flags.table ?? 'attachments'
     const folder = flags.folder ?? 'database/migrations'
-    const filePath = await createAttachmentsMigrationFile({
+    const state = createAttachmentsTableStubState({
       directory: this.app.makePath(folder),
       tableName,
     })
+    const codemods = await this.createCodemods()
 
-    this.logger.success(`Created ${filePath}`)
+    await codemods.makeUsingStub(stubsRoot, 'migrations/attachments_table.stub', state)
+    this.logger.success(`Created ${state.destination}`)
   }
 }

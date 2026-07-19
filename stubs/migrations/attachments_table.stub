@@ -1,24 +1,10 @@
-export type RenderAttachmentsMigrationOptions = {
-  tableName?: string
-}
+{{{
+  exports({ to: destination })
+}}}
+import { BaseSchema } from '@adonisjs/lucid/schema'
 
-/**
- * Produces the Lucid migration source for the polymorphic attachment table.
- * The application owns the timestamped migration file and runs it with Lucid.
- */
-export function renderAttachmentsMigration(
-  options: RenderAttachmentsMigrationOptions = {}
-): string {
-  const tableName = options.tableName ?? 'attachments'
-
-  if (!/^[a-z][a-z0-9_]*$/.test(tableName)) {
-    throw new Error('Lucid attachment table names must be snake_case identifiers')
-  }
-
-  return `import { BaseSchema } from '@adonisjs/lucid/schema'
-
-export default class Create${toPascalCase(tableName)}Table extends BaseSchema {
-  protected tableName = '${tableName}'
+export default class Create{{ className }}Table extends BaseSchema {
+  protected tableName = '{{ tableName }}'
 
   async up() {
     this.schema.createTable(this.tableName, (table) => {
@@ -49,12 +35,4 @@ export default class Create${toPascalCase(tableName)}Table extends BaseSchema {
   async down() {
     this.schema.dropTable(this.tableName)
   }
-}
-`
-}
-
-function toPascalCase(value: string): string {
-  return value.replace(/(^|_)([a-z0-9])/g, (_, _separator: string, character: string) =>
-    character.toUpperCase()
-  )
 }

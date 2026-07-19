@@ -17,13 +17,10 @@ export {
 } from './lucid_variant_generation_service.js'
 export { createAttachmentOwnerKey, type AttachmentOwner } from './attachment_owner.js'
 export {
-  createAttachmentsMigrationFile,
-  type CreateAttachmentsMigrationFileOptions,
-} from './create_attachments_migration_file.js'
-export {
-  renderAttachmentsMigration,
-  type RenderAttachmentsMigrationOptions,
-} from './render_attachments_migration.js'
+  createAttachmentsTableStubState,
+  type AttachmentsTableStubOptions,
+  type AttachmentsTableStubState,
+} from './attachments_table_stub.js'
 export {
   migrateLegacyAttachment,
   type LegacyAttachment,

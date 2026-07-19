@@ -54,4 +54,4 @@ export {
   type MigratedAttachmentRow,
 } from './src/integrations/lucid/migrate_legacy_attachment.js'
 export { createAttachmentOwnerKey } from './src/integrations/lucid/attachment_owner.js'
-export { renderAttachmentsMigration } from './src/integrations/lucid/render_attachments_migration.js'
+export { createAttachmentsTableStubState } from './src/integrations/lucid/attachments_table_stub.js'

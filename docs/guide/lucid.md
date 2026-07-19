@@ -6,6 +6,12 @@ Lucid is optional. When enabled, attachments and variants are stored in one poly
 
 For a single attachment, an application may keep a JSON column on its Lucid model. The `@attachment()` decorator preserves the v5 assignment workflow while tracking file cleanup.
 
+Declare the column as JSON in its migration:
+
+```ts
+table.json('avatar').nullable()
+```
+
 ```ts
 import { attachment, attachmentManager, type Attachment } from '@jrmc/adonis-attachment'
 import { BaseModel, column } from '@adonisjs/lucid/orm'

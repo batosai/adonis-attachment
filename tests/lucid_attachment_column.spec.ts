@@ -41,7 +41,7 @@ test.group('Lucid attachment column', (group) => {
     await database.connection().schema.createTable('column_users', (table) => {
       table.string('id').primary()
       table.string('name').notNullable().unique()
-      table.text('avatar').nullable()
+      table.json('avatar').nullable()
     })
   })
 

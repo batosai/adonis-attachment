@@ -1,5 +1,4 @@
 import { BaseCommand } from '@adonisjs/core/ace'
-import type { AbstractBaseCommand, CommandMetaData } from '@adonisjs/ace/types'
 
 import { createLegacyAttachmentMigrationScript } from '../../src/integrations/lucid/create_legacy_attachment_migration_script.js'
 
@@ -21,16 +20,4 @@ export default class MakeAttachmentV5Migration extends BaseCommand {
 
     this.logger.success(`Created ${filePath}`)
   }
-}
-
-/**
- * Compatibility loader for projects configured before the package command
- * loader was introduced.
- */
-export async function getMetaData(): Promise<CommandMetaData[]> {
-  return [MakeAttachmentV5Migration.serialize()]
-}
-
-export async function getCommand(metaData: CommandMetaData): Promise<AbstractBaseCommand | null> {
-  return metaData.commandName === MakeAttachmentV5Migration.commandName ? MakeAttachmentV5Migration : null
 }

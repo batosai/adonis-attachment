@@ -20,7 +20,7 @@
     "lucid"
   ],
   "engines": {
-    "node": ">=20.12.0"
+    "node": ">=24.0.0"
   },
   "files": [
     "build",

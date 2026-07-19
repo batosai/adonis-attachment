@@ -3,6 +3,7 @@ import {
   type Attachment,
   type CreateAttachmentInput,
 } from './attachment.js'
+import { markAttachmentPending } from './attachment_state.js'
 import type { AttachmentQueue } from './queue.js'
 import type { AttachmentStorage } from './storage.js'
 
@@ -38,6 +39,7 @@ export class AttachmentService {
       mimeType: attachment.mimeType,
     })
 
+    markAttachmentPending(attachment)
     return attachment
   }
 

@@ -1,4 +1,5 @@
 import type { Attachment } from '../../core/attachment.js'
+import { markAttachmentPersisted } from '../../core/attachment_state.js'
 import { createAttachmentOwnerKey, type AttachmentOwner } from './attachment_owner.js'
 import { AttachmentModel } from './attachment_model.js'
 
@@ -14,8 +15,8 @@ export class LucidAttachmentStore {
     this.#model = model
   }
 
-  createOriginal(owner: AttachmentOwner, attachment: Attachment): Promise<AttachmentModel> {
-    return this.#model.create({
+  async createOriginal(owner: AttachmentOwner, attachment: Attachment): Promise<AttachmentModel> {
+    const row = await this.#model.create({
       ...attachment,
       attachableType: owner.type,
       attachableId: owner.id,
@@ -25,14 +26,17 @@ export class LucidAttachmentStore {
       variantKey: null,
       metadata: attachment.metadata ?? null,
     })
+
+    markAttachmentPersisted(attachment)
+    return row
   }
 
-  createVariant(
+  async createVariant(
     original: AttachmentModel,
     key: string,
     attachment: Attachment
   ): Promise<AttachmentModel> {
-    return this.#model.create({
+    const row = await this.#model.create({
       ...attachment,
       attachableType: original.attachableType,
       attachableId: original.attachableId,
@@ -42,6 +46,9 @@ export class LucidAttachmentStore {
       variantKey: key,
       metadata: attachment.metadata ?? null,
     })
+
+    markAttachmentPersisted(attachment)
+    return row
   }
 
   async releaseOwner(original: AttachmentModel): Promise<void> {

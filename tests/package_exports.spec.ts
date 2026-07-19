@@ -25,4 +25,5 @@ test('exports the Ace configure hook from the package root', async ({ assert }) 
 
   assert.isFunction(packageExports.configure)
   assert.property(packageExports, 'attachmentManager')
+  assert.isFunction(packageExports.attachment)
 })

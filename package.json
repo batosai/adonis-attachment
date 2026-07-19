@@ -61,6 +61,10 @@
       "types": "./build/configure.d.ts",
       "default": "./build/configure.js"
     },
+    "./commands": {
+      "types": "./build/commands/main.d.ts",
+      "default": "./build/commands/main.js"
+    },
     "./commands/make/attachments_table": {
       "types": "./build/commands/make/attachments_table.d.ts",
       "default": "./build/commands/make/attachments_table.js"

@@ -14,7 +14,6 @@ export async function configure(command: Configure): Promise<void> {
 
   await codemods.updateRcFile((rcFile) => {
     rcFile.addProvider('@jrmc/adonis-attachment/attachment_provider')
-    rcFile.addCommand('@jrmc/adonis-attachment/commands/make/attachments_table')
-    rcFile.addCommand('@jrmc/adonis-attachment/commands/make/attachment_v5_migration')
+    rcFile.addCommand('@jrmc/adonis-attachment/commands')
   })
 }

@@ -33,10 +33,7 @@ test.group('configure', () => {
 
     assert.deepEqual(stubs, [{ root: stubsRoot, path: 'config/attachment.stub', state: {} }])
     assert.deepEqual(providers, ['@jrmc/adonis-attachment/attachment_provider'])
-    assert.deepEqual(commands, [
-      '@jrmc/adonis-attachment/commands/make/attachments_table',
-      '@jrmc/adonis-attachment/commands/make/attachment_v5_migration',
-    ])
+    assert.deepEqual(commands, ['@jrmc/adonis-attachment/commands'])
     await access(join(stubsRoot, 'config/attachment.stub'))
     assert.include(await readFile(join(stubsRoot, 'config/attachment.stub'), 'utf8'), 'new AdonisDriveStorage(drive)')
   })

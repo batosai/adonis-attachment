@@ -1,4 +1,5 @@
 import { BaseCommand } from '@adonisjs/core/ace'
+import type { AbstractBaseCommand, CommandMetaData } from '@adonisjs/ace/types'
 
 import { createAttachmentsMigrationFile } from '../../src/integrations/lucid/create_attachments_migration_file.js'
 
@@ -21,4 +22,16 @@ export default class MakeAttachmentsTable extends BaseCommand {
 
     this.logger.success(`Created ${filePath}`)
   }
+}
+
+/**
+ * Compatibility loader for projects configured before the package command
+ * loader was introduced.
+ */
+export async function getMetaData(): Promise<CommandMetaData[]> {
+  return [MakeAttachmentsTable.serialize()]
+}
+
+export async function getCommand(metaData: CommandMetaData): Promise<AbstractBaseCommand | null> {
+  return metaData.commandName === MakeAttachmentsTable.commandName ? MakeAttachmentsTable : null
 }

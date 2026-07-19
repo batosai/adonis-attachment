@@ -1,6 +1,13 @@
+/**
+ * @jrmc/adonis-attachment
+ *
+ * @license MIT
+ * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
+ */
+
 import { BaseCommand } from '@adonisjs/core/ace'
 
-import { stubsRoot } from '../../configure.js'
+import { stubsRoot } from '../../stubs/main.js'
 import { createAttachmentsTableStubState } from '../../src/integrations/lucid/attachments_table_stub.js'
 
 export default class MakeAttachmentsTable extends BaseCommand {

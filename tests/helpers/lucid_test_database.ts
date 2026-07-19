@@ -1,3 +1,10 @@
+/**
+ * @jrmc/adonis-attachment
+ *
+ * @license MIT
+ * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
+ */
+
 import { Database } from '@adonisjs/lucid/database'
 
 import { AttachmentModel } from '../../src/integrations/lucid/attachment_model.js'

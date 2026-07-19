@@ -1,12 +1,19 @@
-import type { ApplicationService, ConfigProvider } from '@adonisjs/core/types'
+/**
+ * @jrmc/adonis-attachment
+ *
+ * @license MIT
+ * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
+ */
 
 import { configProvider } from '@adonisjs/core'
+import { MemoryAttachmentQueue } from './queues/memory_queue.js'
+
+import type { ApplicationService, ConfigProvider } from '@adonisjs/core/types'
 import type { AttachmentServiceOptions } from './core/attachment_service.js'
 import type { AttachmentJobProcessor } from './core/attachment_job_processor.js'
 import type { AttachmentRepository } from './core/attachment_repository.js'
 import type { AttachmentJobHandler, AttachmentQueue } from './core/queue.js'
 import type { AttachmentStorage } from './core/storage.js'
-import { MemoryAttachmentQueue } from './queues/memory_queue.js'
 import type { AttachmentManagerOptions } from './sources/attachment_manager.js'
 
 type Integration<T> = T | ((app: ApplicationService) => T | Promise<T>)

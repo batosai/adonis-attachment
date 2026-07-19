@@ -1,3 +1,10 @@
+/**
+ * @jrmc/adonis-attachment
+ *
+ * @license MIT
+ * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
+ */
+
 import type { AttachmentOwner } from './attachment_owner.js'
 import {
   migrateLegacyAttachment,

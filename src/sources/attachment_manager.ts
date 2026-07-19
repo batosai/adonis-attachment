@@ -1,5 +1,13 @@
+/**
+ * @jrmc/adonis-attachment
+ *
+ * @license MIT
+ * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
+ */
+
 import { basename, extname } from 'node:path'
 import { readFile, stat } from 'node:fs/promises'
+
 import type { Readable } from 'node:stream'
 
 import type { Attachment, CreateAttachmentInput } from '../core/attachment.js'

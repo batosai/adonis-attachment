@@ -3,7 +3,8 @@ import { join } from 'node:path'
 
 import { test } from '@japa/runner'
 
-import { configure, stubsRoot } from '../configure.js'
+import { configure } from '../configure.js'
+import { stubsRoot } from '../stubs/main.js'
 
 test.group('configure', () => {
   test('generates the default attachment config and registers package integrations', async ({ assert }) => {

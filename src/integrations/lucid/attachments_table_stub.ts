@@ -1,3 +1,10 @@
+/**
+ * @jrmc/adonis-attachment
+ *
+ * @license MIT
+ * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
+ */
+
 import { join } from 'node:path'
 
 export type AttachmentsTableStubOptions = {

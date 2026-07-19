@@ -1,3 +1,10 @@
+/**
+ * @jrmc/adonis-attachment
+ *
+ * @license MIT
+ * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
+ */
+
 import { test } from '@japa/runner'
 
 import { migrateLegacyAttachmentRecords, type MigratedAttachmentRow } from '../src/integrations/lucid/index.js'

@@ -1,3 +1,10 @@
+/**
+ * @jrmc/adonis-attachment
+ *
+ * @license MIT
+ * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
+ */
+
 import { BaseCommand } from '@adonisjs/core/ace'
 
 import { createLegacyAttachmentMigrationScript } from '../../src/integrations/lucid/create_legacy_attachment_migration_script.js'

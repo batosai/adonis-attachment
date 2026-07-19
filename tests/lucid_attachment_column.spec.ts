@@ -1,3 +1,10 @@
+/**
+ * @jrmc/adonis-attachment
+ *
+ * @license MIT
+ * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
+ */
+
 import type { Database } from '@adonisjs/lucid/database'
 import { BaseModel, column } from '@adonisjs/lucid/orm'
 import { setApp } from '@adonisjs/core/services/app'

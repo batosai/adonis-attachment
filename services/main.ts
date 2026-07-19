@@ -1,6 +1,13 @@
-import type { AttachmentManager } from '../src/sources/attachment_manager.js'
+/**
+ * @jrmc/adonis-attachment
+ *
+ * @license MIT
+ * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
+ */
 
 import app from '@adonisjs/core/services/app'
+
+import type { AttachmentManager } from '../src/sources/attachment_manager.js'
 
 class AttachmentManagerService {
   #manager: Promise<AttachmentManager> | undefined

@@ -1,3 +1,10 @@
+/**
+ * @jrmc/adonis-attachment
+ *
+ * @license MIT
+ * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
+ */
+
 import type { AttachmentJob, AttachmentQueue } from '../core/queue.js'
 
 export type AdonisQueueDispatcher = {

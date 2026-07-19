@@ -1,3 +1,10 @@
+/**
+ * @jrmc/adonis-attachment
+ *
+ * @license MIT
+ * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
+ */
+
 import { test } from '@japa/runner'
 import { setApp } from '@adonisjs/core/services/app'
 import type { ApplicationService } from '@adonisjs/core/types'

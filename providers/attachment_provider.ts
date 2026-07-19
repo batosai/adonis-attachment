@@ -1,11 +1,17 @@
-import type { ApplicationService } from '@adonisjs/core/types'
+/**
+ * @jrmc/adonis-attachment
+ *
+ * @license MIT
+ * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
+ */
 
 import { configProvider } from '@adonisjs/core'
 import { AttachmentService } from '../src/core/attachment_service.js'
-import type { AttachmentRepository } from '../src/core/attachment_repository.js'
 import { AttachmentsController } from '../src/controllers/attachments_controller.js'
-import type { ResolvedAttachmentConfig } from '../src/define_config.js'
 import { AttachmentManager } from '../src/sources/attachment_manager.js'
+
+import type { ApplicationService } from '@adonisjs/core/types'
+import type { ResolvedAttachmentConfig } from '../src/define_config.js'
 
 export default class AttachmentProvider {
   constructor(protected app: ApplicationService) {}

@@ -1,3 +1,10 @@
+/**
+ * @jrmc/adonis-attachment
+ *
+ * @license MIT
+ * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
+ */
+
 import app from '@adonisjs/core/services/app'
 import type { LucidModel, LucidRow } from '@adonisjs/lucid/types/model'
 

@@ -1,3 +1,10 @@
+/**
+ * @jrmc/adonis-attachment
+ *
+ * @license MIT
+ * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
+ */
+
 import type { Attachment } from '../../core/attachment.js'
 import { markAttachmentPersisted } from '../../core/attachment_state.js'
 import { createAttachmentOwnerKey, type AttachmentOwner } from './attachment_owner.js'

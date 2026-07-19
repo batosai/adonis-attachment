@@ -1,3 +1,10 @@
+/**
+ * @jrmc/adonis-attachment
+ *
+ * @license MIT
+ * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
+ */
+
 import { test } from '@japa/runner'
 
 import { AttachmentsController } from '../src/controllers/attachments_controller.js'

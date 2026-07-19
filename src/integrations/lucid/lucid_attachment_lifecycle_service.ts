@@ -1,3 +1,10 @@
+/**
+ * @jrmc/adonis-attachment
+ *
+ * @license MIT
+ * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
+ */
+
 import type { Attachment, CreateAttachmentInput } from '../../core/attachment.js'
 import type { AttachmentService } from '../../core/attachment_service.js'
 import type { AttachmentOwner } from './attachment_owner.js'

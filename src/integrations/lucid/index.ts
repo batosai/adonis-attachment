@@ -1,3 +1,10 @@
+/**
+ * @jrmc/adonis-attachment
+ *
+ * @license MIT
+ * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
+ */
+
 export { AttachmentModel } from './attachment_model.js'
 export { attachment } from './attachment_column.js'
 export { LucidAttachmentRepository } from './lucid_attachment_repository.js'

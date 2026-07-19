@@ -13,18 +13,29 @@
   "license": "MIT",
   "keywords": [
     "adonisjs",
+    "lucid",
     "attachment",
+    "attachment-advanced",
+    "image-attachment",
+    "image-manipulation",
+    "responsive-images",
     "upload",
     "storage",
     "queue",
-    "lucid"
+    "resize-images",
+    "optimize-images",
+    "image",
+    "pdf",
+    "video",
+    "document",
+    "word",
+    "sharp"
   ],
   "engines": {
     "node": ">=24.0.0"
   },
   "files": [
-    "build",
-    "stubs"
+    "build"
   ],
   "main": "./build/index.js",
   "types": "./build/index.d.ts",
@@ -79,9 +90,14 @@
     }
   },
   "scripts": {
-    "build": "rm -rf build && tsc -p tsconfig.build.json",
-    "typecheck": "tsc --noEmit -p tsconfig.json",
-    "test": "rm -rf build && tsc -p tsconfig.json && node build/bin/test.js",
+    "typecheck": "tsc --noEmit",
+    "build": "npm run clean && tsc",
+    "postbuild": "npm run copyfiles && npm run index:commands",
+    "clean": "del-cli build",
+    "copyfiles": "copyfiles \"stubs/**/**/*.stub\" build",
+    "index:commands": "adonis-kit index build/commands",
+    "format": "prettier --write .",
+    "test": "rm -rf build && tsc -p tsconfig.json && npm run copyfiles && node build/bin/test.js",
     "prepack": "npm run build",
     "prepublishOnly": "npm run typecheck && npm test",
     "docs:dev": "vitepress dev docs",
@@ -96,8 +112,11 @@
     "@japa/assert": "^4.2.0",
     "@japa/runner": "^4.5.0",
     "@types/luxon": "^3.7.2",
-    "@types/node": "^24.0.0",
+    "@types/node": "^24.13.3",
     "better-sqlite3": "^12.11.1",
+    "copyfiles": "^2.4.1",
+    "del-cli": "^7.0.0",
+    "prettier": "^3.9.5",
     "typescript": "^5.9.3",
     "vitepress": "^1.6.4"
   },

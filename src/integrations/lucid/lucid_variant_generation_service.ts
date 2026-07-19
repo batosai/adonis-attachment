@@ -1,3 +1,10 @@
+/**
+ * @jrmc/adonis-attachment
+ *
+ * @license MIT
+ * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
+ */
+
 import type { AttachmentService } from '../../core/attachment_service.js'
 import type { VariantGenerationRequest, VariantGenerator } from '../../core/attachment_job_processor.js'
 import type { GeneratedVariant, VariantGenerationService } from '../../variants/variant_generation_service.js'

@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { test } from '@japa/runner'
 
 import MakeAttachmentsTable from '../commands/make/attachments_table.js'
-import { stubsRoot } from '../configure.js'
+import { stubsRoot } from '../stubs/main.js'
 import { createAttachmentsTableStubState } from '../src/integrations/lucid/attachments_table_stub.js'
 
 test.group('attachments table migration stub', () => {

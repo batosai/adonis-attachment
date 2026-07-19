@@ -1,3 +1,10 @@
+/**
+ * @jrmc/adonis-attachment
+ *
+ * @license MIT
+ * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
+ */
+
 import type { HttpContext } from '@adonisjs/core/http'
 
 import type { AttachmentService } from '../core/attachment_service.js'

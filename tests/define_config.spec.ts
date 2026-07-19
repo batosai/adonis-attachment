@@ -1,6 +1,7 @@
 import { test } from '@japa/runner'
 
 import {
+  AdonisDriveStorage,
   AttachmentJobProcessor,
   defineConfig,
   MemoryAttachmentQueue,
@@ -10,6 +11,44 @@ import {
 } from '../index.js'
 
 test.group('defineConfig', () => {
+  test('resolves the Drive manager after application boot', async ({ assert }) => {
+    const disks: string[] = []
+    const drive = {
+      use(disk?: string) {
+        disks.push(disk ?? 'default')
+        return {
+          async put() {},
+          async getBytes() {
+            return new Uint8Array()
+          },
+          async delete() {},
+        }
+      },
+    }
+    const config = defineConfig({
+      defaultDisk: 'fs',
+      storage: async (app) => new AdonisDriveStorage(await app.container.make('drive.manager')),
+    })
+
+    const resolved = await config.resolver({
+      container: {
+        async make(binding: string) {
+          assert.equal(binding, 'drive.manager')
+          return drive
+        },
+      },
+    } as never)
+
+    await resolved.storage.write({
+      disk: 'fs',
+      path: 'attachments/avatar.png',
+      body: new Uint8Array(),
+      mimeType: 'image/png',
+    })
+
+    assert.deepEqual(disks, ['fs'])
+  })
+
   test('resolves direct storage and queue integrations', async ({ assert }) => {
     const storage: AttachmentStorage = {
       async write() {},

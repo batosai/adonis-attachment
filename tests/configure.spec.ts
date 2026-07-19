@@ -35,6 +35,9 @@ test.group('configure', () => {
     assert.deepEqual(providers, ['@jrmc/adonis-attachment/attachment_provider'])
     assert.deepEqual(commands, ['@jrmc/adonis-attachment/commands'])
     await access(join(stubsRoot, 'config/attachment.stub'))
-    assert.include(await readFile(join(stubsRoot, 'config/attachment.stub'), 'utf8'), 'new AdonisDriveStorage(drive)')
+    assert.include(
+      await readFile(join(stubsRoot, 'config/attachment.stub'), 'utf8'),
+      "app.container.make('drive.manager')"
+    )
   })
 })

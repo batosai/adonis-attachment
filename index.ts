@@ -1,4 +1,5 @@
 export * from './src/core/index.js'
+export { configure } from './configure.js'
 export { defineConfig, type AttachmentConfig, type ResolvedAttachmentConfig } from './src/define_config.js'
 export { AdonisDriveStorage } from './src/adapters/adonis_drive_storage.js'
 export {

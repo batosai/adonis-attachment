@@ -18,3 +18,9 @@ test('imports every published package entry point', async ({ assert }) => {
 
   assert.lengthOf(modules, entryPoints.length)
 })
+
+test('exports the Ace configure hook from the package root', async ({ assert }) => {
+  const packageExports = await import('@jrmc/adonis-attachment')
+
+  assert.isFunction(packageExports.configure)
+})

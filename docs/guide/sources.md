@@ -8,6 +8,19 @@ The Adonis provider binds it as `jrmc.attachment.manager`:
 const manager = await app.container.make('jrmc.attachment.manager')
 ```
 
+## Adonis service
+
+In an AdonisJS application, import the ready-to-use manager from the package root:
+
+```ts
+import { attachmentManager } from '@jrmc/adonis-attachment'
+
+const attachment = await attachmentManager.createFromBuffer(buffer, {
+  originalName: 'avatar.png',
+  mimeType: 'image/png',
+})
+```
+
 It accepts buffers, Base64 values and data URIs, local paths, Node readable streams, URLs, and Adonis multipart files.
 
 ```ts

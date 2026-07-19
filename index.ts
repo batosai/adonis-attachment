@@ -1,5 +1,20 @@
+import type { AttachmentService } from './src/core/attachment_service.js'
+import type { AttachmentRepository } from './src/core/attachment_repository.js'
+import type { AttachmentManager } from './src/sources/attachment_manager.js'
+
+import attachmentManager from './services/main.js'
+
+declare module '@adonisjs/core/types' {
+  export interface ContainerBindings {
+    'jrmc.attachment': AttachmentService
+    'jrmc.attachment.manager': AttachmentManager
+    'jrmc.attachment.repository': AttachmentRepository
+  }
+}
+
 export * from './src/core/index.js'
 export { configure } from './configure.js'
+export { attachmentManager }
 export { defineConfig, type AttachmentConfig, type ResolvedAttachmentConfig } from './src/define_config.js'
 export { AdonisDriveStorage } from './src/adapters/adonis_drive_storage.js'
 export {

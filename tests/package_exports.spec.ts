@@ -23,4 +23,5 @@ test('exports the Ace configure hook from the package root', async ({ assert }) 
   const packageExports = await import('@jrmc/adonis-attachment')
 
   assert.isFunction(packageExports.configure)
+  assert.property(packageExports, 'attachmentManager')
 })

@@ -5,6 +5,7 @@
     "configure.ts",
     "commands/**/*.ts",
     "providers/**/*.ts",
+    "services/**/*.ts",
     "src/**/*.ts"
   ],
   "exclude": ["build", "node_modules"]

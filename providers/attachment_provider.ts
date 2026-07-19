@@ -7,14 +7,6 @@ import { AttachmentsController } from '../src/controllers/attachments_controller
 import type { ResolvedAttachmentConfig } from '../src/define_config.js'
 import { AttachmentManager } from '../src/sources/attachment_manager.js'
 
-declare module '@adonisjs/core/types' {
-  export interface ContainerBindings {
-    'jrmc.attachment': AttachmentService
-    'jrmc.attachment.manager': AttachmentManager
-    'jrmc.attachment.repository': AttachmentRepository
-  }
-}
-
 export default class AttachmentProvider {
   constructor(protected app: ApplicationService) {}
 

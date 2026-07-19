@@ -42,7 +42,7 @@ const fromBase64 = await manager.createFromBase64('data:image/png;base64,...', {
 
 ## Source limits
 
-Configure an optional byte limit for every source. A request may lower it per call with `maxBytes`.
+The package does not define a size policy by default: validate uploads in the application. An application may configure an optional technical byte limit for every source; a call may lower it with `maxBytes`.
 
 ```ts
 import { defineConfig, LocalFileStorage } from '@jrmc/adonis-attachment'

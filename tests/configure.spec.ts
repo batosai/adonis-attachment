@@ -39,5 +39,6 @@ test.group('configure', () => {
       await readFile(join(stubsRoot, 'config/attachment.stub'), 'utf8'),
       'storage: LocalFileStorage.fromApp'
     )
+    assert.notInclude(await readFile(join(stubsRoot, 'config/attachment.stub'), 'utf8'), 'maxBytes')
   })
 })

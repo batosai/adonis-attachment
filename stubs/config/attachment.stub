@@ -9,7 +9,4 @@ import { defineConfig, LocalFileStorage } from '@jrmc/adonis-attachment'
  */
 export default defineConfig({
   storage: LocalFileStorage.fromApp,
-  sources: {
-    maxBytes: 10 * 1024 * 1024,
-  },
 })

@@ -1,14 +1,14 @@
 {{{
   exports({ to: app.configPath('attachment.ts') })
 }}}
-import { AdonisDriveStorage, defineConfig } from '@jrmc/adonis-attachment'
+import { defineConfig, LocalFileStorage } from '@jrmc/adonis-attachment'
 
 /**
- * Attachments use the configured Drive disk by default. Lucid, external queues,
+ * Attachments are stored locally by default. Lucid, Drive, external queues,
  * custom storage, and read routes can be added as the application needs them.
  */
 export default defineConfig({
-  storage: AdonisDriveStorage.fromApp,
+  storage: LocalFileStorage.fromApp,
   sources: {
     maxBytes: 10 * 1024 * 1024,
   },

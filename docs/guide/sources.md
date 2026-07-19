@@ -45,8 +45,10 @@ const fromBase64 = await manager.createFromBase64('data:image/png;base64,...', {
 Configure an optional byte limit for every source. A request may lower it per call with `maxBytes`.
 
 ```ts
+import { defineConfig, LocalFileStorage } from '@jrmc/adonis-attachment'
+
 export default defineConfig({
-  storage: AdonisDriveStorage.fromApp,
+  storage: LocalFileStorage.fromApp,
   sources: { maxBytes: 10 * 1024 * 1024 },
 })
 ```

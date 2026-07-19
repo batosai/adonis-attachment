@@ -49,6 +49,10 @@
       "types": "./build/src/adapters/adonis_drive_storage.d.ts",
       "default": "./build/src/adapters/adonis_drive_storage.js"
     },
+    "./adapters/local-file": {
+      "types": "./build/src/adapters/local_file_storage.d.ts",
+      "default": "./build/src/adapters/local_file_storage.js"
+    },
     "./lucid": {
       "types": "./build/src/integrations/lucid/index.d.ts",
       "default": "./build/src/integrations/lucid/index.js"

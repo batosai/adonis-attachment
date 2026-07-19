@@ -28,8 +28,10 @@ const processor = new AttachmentJobProcessor({
 Pass `processor` to `defineConfig` to execute jobs in-process. This is the default queue implementation and is suitable for simple deployments or tests.
 
 ```ts
+import { defineConfig, LocalFileStorage } from '@jrmc/adonis-attachment'
+
 export default defineConfig({
-  storage: AdonisDriveStorage.fromApp,
+  storage: LocalFileStorage.fromApp,
   processor: attachmentProcessor,
 })
 ```

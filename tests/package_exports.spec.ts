@@ -7,6 +7,7 @@ test('imports every published package entry point', async ({ assert }) => {
     '@jrmc/adonis-attachment/queues/memory',
     '@jrmc/adonis-attachment/queues/adonis',
     '@jrmc/adonis-attachment/adapters/adonis-drive',
+    '@jrmc/adonis-attachment/adapters/local-file',
     '@jrmc/adonis-attachment/lucid',
     '@jrmc/adonis-attachment/attachment_provider',
     '@jrmc/adonis-attachment/configure',

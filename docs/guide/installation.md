@@ -7,7 +7,7 @@ npm install @jrmc/adonis-attachment
 node ace add @jrmc/adonis-attachment
 ```
 
-The configure hook registers the attachment provider and the `make:attachments-table` command. Create `config/attachment.ts` next, then select the integrations your application uses.
+The configure hook creates `config/attachment.ts`, registers the attachment provider, and adds the migration commands. The generated config uses the Drive adapter; replace it with custom storage when Drive is not used.
 
 Install optional packages only when their integration is enabled:
 

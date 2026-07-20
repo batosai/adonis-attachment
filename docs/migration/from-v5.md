@@ -30,3 +30,27 @@ await user.save();
 ```
 
 Legacy attachments containing variants must migrate to the polymorphic table instead: the v6 column mode intentionally represents one file only.
+
+## Attachment table upgrade
+
+The current `make:attachments-table` stub includes the nullable `position` column used by `@attachmentsRelation()` collections. Projects that generated the table from an earlier v6 alpha can add it with a normal Lucid migration:
+
+```ts
+export default class AddAttachmentPosition extends BaseSchema {
+  protected tableName = "attachments";
+
+  async up() {
+    this.schema.alterTable(this.tableName, (table) => {
+      table.integer("position").unsigned().nullable();
+    });
+  }
+
+  async down() {
+    this.schema.alterTable(this.tableName, (table) => {
+      table.dropColumn("position");
+    });
+  }
+}
+```
+
+Existing singular attachment rows keep `position = NULL`. New collection rows are assigned contiguous zero-based positions by the relation manager.

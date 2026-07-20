@@ -46,7 +46,8 @@ Le mode table dediee utilise une seule table `attachments`. Un variant est un at
 | `id`                                            | identifiant stable de l'attachment                            |
 | `attachable_type`, `attachable_id`              | relation polymorphe du fichier original                       |
 | `field`                                         | nom logique de l'attribut, par exemple `avatar`               |
-| `owner_key`                                     | hash interne unique de l'owner pour garantir un seul original |
+| `owner_key`                                     | hash interne unique pour une relation singuliere, `NULL` pour une collection |
+| `position`                                      | ordre zero-based des elements d'une collection, `NULL` sinon  |
 | `parent_id`                                     | `NULL` pour l'original, sinon attachment parent du variant    |
 | `variant_key`                                   | cle du variant, `NULL` pour l'original                        |
 | `disk`, `path`, `name`                          | localisation du fichier                                       |
@@ -60,7 +61,9 @@ La commande Ace `make:attachments-table` rend le stub package `stubs/migrations/
 
 `migrateLegacyAttachment()` convertit un document JSON v5 (original et variants) en lignes de cette table. Les variants reutilisent l'`original_name` du fichier parent, car ce champ represente le nom envoye par le client et non le nom produit par le converter.
 
-Le sous-chemin `@jrmc/adonis-attachment/lucid` expose `AttachmentModel`, `LucidAttachmentRepository` et `LucidAttachmentStore`. Le repository donne au worker un acces type aux fichiers, et le store persiste originaux et variants dans la meme table sans introduire Lucid dans le noyau.
+Le sous-chemin `@jrmc/adonis-attachment/lucid` expose `AttachmentModel`, `LucidAttachmentRepository` et `LucidAttachmentStore`. Le repository donne au worker un acces type aux fichiers, et le store persiste originaux, collections et variants dans la meme table sans introduire Lucid dans le noyau.
+
+Deux decorateurs de relation completent le decorateur JSON `@attachment()`. `@attachmentRelation()` expose une relation singuliere sur le modele avec `get`, `attach`, `set`, `replace`, `detach`, `variants` et `regenerateVariants`. `attach` est strict et refuse de remplacer une valeur existante; `set` et `replace` effectuent la creation ou le remplacement. `@attachmentsRelation()` expose une collection ordonnee avec `all`, `add`, `remove`, `clear`, `replaceAll` et `move`. Les deux relations exigent un modele Lucid deja persiste et passent le modele au contexte de persistence pour resoudre les options de decorateur.
 
 `LucidAttachmentLifecycleService` orchestre l'ecriture du fichier et la persistence Lucid. Lors d'un remplacement, il transfere temporairement la cle d'owner avant d'inserer le nouvel original, puis la restaure si l'insertion echoue. Il supprime un nouveau fichier si la persistence echoue. Les suppressions de fichiers qui suivent une suppression de ligne restent compensables par un job de nettoyage, car le stockage externe ne partage pas la transaction SQL.
 

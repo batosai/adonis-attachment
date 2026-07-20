@@ -27,7 +27,7 @@ Applications can also provide any object implementing `AttachmentStorage`. The f
 
 `sources` configures `AttachmentManager`, which creates attachments from multipart files, paths, streams, URLs, Base64 values, and buffers. See [Sources](/guide/sources).
 
-`defaults` defines the lowest-priority file persistence options. `disk`, `folder`, `rename`, `meta`, `preComputeUrl`, and `variants` are resolved per setting with this precedence: options passed to `createFrom*`, then `@attachment()`, then `defaults`. Set one option to `null` at a higher level to disable an inherited value. Today, `disk`, `folder`, and `rename` affect `persist()`; metadata extraction, URL precomputation, and automatic variants will be activated by the media pipeline.
+`defaults` defines the lowest-priority file persistence options. `disk`, `folder`, `rename`, `meta`, `preComputeUrl`, and `variants` are resolved per setting with this precedence: options passed to `createFrom*`, then `@attachment()`, `@attachmentRelation()`, or `@attachmentsRelation()`, then `defaults`. Set one option to `null` at a higher level to disable an inherited value. Today, `disk`, `folder`, and `rename` affect `persist()`; metadata extraction, URL precomputation, and automatic variants will be activated by the media pipeline.
 
 ```ts
 export default defineConfig({

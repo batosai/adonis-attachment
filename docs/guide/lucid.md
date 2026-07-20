@@ -75,6 +75,7 @@ import {
   LucidAttachmentLifecycleService,
   LucidAttachmentStore,
 } from "@jrmc/adonis-attachment/lucid";
+import { attachmentManager } from "@jrmc/adonis-attachment";
 import attachmentService from "#services/attachment_service";
 
 const lifecycle = new LucidAttachmentLifecycleService(
@@ -82,9 +83,14 @@ const lifecycle = new LucidAttachmentLifecycleService(
   new LucidAttachmentStore(),
 );
 
+const draft = await attachmentManager.createFromBuffer(fileBytes, {
+  originalName: "profile.jpg",
+  folder: `users/${user.id}`,
+});
+
 const avatar = await lifecycle.attach(
   { type: "users", id: user.id, field: "avatar" },
-  { body: fileBytes, originalName: "profile.jpg", mimeType: "image/jpeg" },
+  draft,
 );
 
 await attachmentService.scheduleVariantGeneration(avatar.toAttachment(), [

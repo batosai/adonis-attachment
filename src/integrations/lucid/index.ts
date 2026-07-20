@@ -10,6 +10,13 @@ export {
   attachment,
   type LucidAttachmentOptions,
 } from "./attachment_column.js";
+export {
+  attachmentRelation,
+  attachmentsRelation,
+  AttachmentRelation,
+  AttachmentCollectionRelation,
+  type AttachmentRelationOptions,
+} from "./attachment_relation.js";
 export { LucidAttachmentRepository } from "./lucid_attachment_repository.js";
 export {
   LucidAttachmentStore,

@@ -43,6 +43,10 @@ export class LucidAttachmentLifecycleService {
     this.#store = store
   }
 
+  get(owner: AttachmentOwner): Promise<AttachmentModel | null> {
+    return this.#store.findOriginal(owner)
+  }
+
   async attach(
     owner: AttachmentOwner,
     input: CreateAttachmentInput | AttachmentDraft,
@@ -109,6 +113,12 @@ export class LucidAttachmentLifecycleService {
       this.#removeStoredFile(original.toAttachment()),
       ...variants.map((variant) => this.#removeStoredFile(variant.toAttachment())),
     ])
+  }
+
+  async listVariants(owner: AttachmentOwner): Promise<AttachmentModel[]> {
+    const original = await this.#store.findOriginal(owner)
+
+    return original ? this.#store.listVariants(original.id) : []
   }
 
   async add(
@@ -230,13 +240,19 @@ export class LucidAttachmentLifecycleService {
     options?: AttachmentPersistenceOptions<any>
   ): Promise<Attachment> {
     if (isAttachmentDraft(input)) {
-      return input.persist({ ...(options ? { options } : {}), context: { field: owner.field } })
+      return input.persist({
+        ...(options ? { options } : {}),
+        context: { model: owner.model, field: owner.field },
+      })
     }
 
     if (this.#attachments.createDraft) {
       return this.#attachments
         .createDraft(input)
-        .persist({ ...(options ? { options } : {}), context: { field: owner.field } })
+        .persist({
+          ...(options ? { options } : {}),
+          context: { model: owner.model, field: owner.field },
+        })
     }
 
     return this.#attachments.create(input)

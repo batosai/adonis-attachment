@@ -7,10 +7,11 @@
 
 import { createHash } from 'node:crypto'
 
-export type AttachmentOwner = {
+export type AttachmentOwner<Model = unknown> = {
   type: string
   id: string
   field: string
+  model?: Model
 }
 
 /**

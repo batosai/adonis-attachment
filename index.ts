@@ -30,6 +30,13 @@ export {
   type LucidAttachmentOptions,
 } from "./src/integrations/lucid/attachment_column.js";
 export {
+  attachmentRelation,
+  attachmentsRelation,
+  AttachmentRelation,
+  AttachmentCollectionRelation,
+  type AttachmentRelationOptions,
+} from "./src/integrations/lucid/attachment_relation.js";
+export {
   VariantGenerationService,
   UnknownVariantConverterError,
   type GeneratedVariant,

@@ -34,6 +34,9 @@ export class AttachmentModel extends BaseModel {
   declare ownerKey: string | null
 
   @column()
+  declare position: number | null
+
+  @column()
   declare parentId: string | null
 
   @column()

@@ -11,3 +11,22 @@ Version 6 is a breaking release. Attachments are no longer persisted as nested J
 The script uses `migrateLegacyAttachmentRecords`, which writes rows in batches of 100 by default. It preserves file paths, disk names, metadata, and the relationship between an original and its variants. It does not move files in storage.
 
 The package cannot infer the legacy model, JSON column, or polymorphic owner from an application. The generated script deliberately leaves that mapping to the application instead of guessing it. Use `--disk=s3` or `--folder=database/scripts` to change its defaults.
+
+## Retaining a single JSON column
+
+v6 can retain one attachment JSON column with `@attachment()`. A v5 document needs a new attachment id before it can be used by v6. For a column without variants, migrate each value with `migrateLegacyAttachmentColumn` and write the returned value back to the JSON column:
+
+```ts
+import { randomUUID } from "node:crypto";
+import { migrateLegacyAttachmentColumn } from "@jrmc/adonis-attachment/lucid";
+
+const avatar = migrateLegacyAttachmentColumn(user.avatar, {
+  defaultDisk: "public",
+  createId: randomUUID,
+});
+
+user.avatar = avatar;
+await user.save();
+```
+
+Legacy attachments containing variants must migrate to the polymorphic table instead: the v6 column mode intentionally represents one file only.

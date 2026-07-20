@@ -9,31 +9,34 @@ For a single attachment, an application may keep a JSON column on its Lucid mode
 Declare the column as JSON in its migration:
 
 ```ts
-table.json('avatar').nullable()
+table.json("avatar").nullable();
 ```
 
 ```ts
-import { attachment, attachmentManager, type Attachment } from '@jrmc/adonis-attachment'
-import { BaseModel, column } from '@adonisjs/lucid/orm'
+import {
+  attachment,
+  attachmentManager,
+  type Attachment,
+} from "@jrmc/adonis-attachment";
+import { BaseModel, column } from "@adonisjs/lucid/orm";
 
 export default class User extends BaseModel {
   @column({ isPrimary: true })
-  declare id: string
+  declare id: string;
 
   @attachment({
     folder: ({ model }) => `users/${model?.id}`,
-    variants: ['thumbnail'],
   })
-  declare avatar: Attachment | null
+  declare avatar: Attachment | null;
 }
 
 const attachment = await attachmentManager.createFromBase64(base64, {
-  originalName: 'avatar.png',
-  mimeType: 'image/png',
-})
+  originalName: "avatar.png",
+  mimeType: "image/png",
+});
 
-user.avatar = attachment
-await user.save()
+user.avatar = attachment;
+await user.save();
 ```
 
 The decorator persists a draft automatically during `save()`, after resolving its own options and the model context. Do not call `persist()` manually for this workflow. It serializes the persisted value as JSON. When a save fails, it removes a newly created attachment; when a replacement succeeds, it removes the former file. Deleting the model also removes its attachment. This mode supports one attachment per column. Use the polymorphic table for collections, persisted variants, queues, and the built-in read route.
@@ -52,14 +55,14 @@ Read an owner field together with its generated variants through the same store:
 
 ```ts
 const attachment = await new LucidAttachmentStore().findByOwner({
-  type: 'users',
+  type: "users",
   id: user.id,
-  field: 'avatar',
-})
+  field: "avatar",
+});
 
 if (attachment) {
-  attachment.original.toAttachment()
-  attachment.variants.map((variant) => variant.toAttachment())
+  attachment.original.toAttachment();
+  attachment.variants.map((variant) => variant.toAttachment());
 }
 ```
 
@@ -71,23 +74,22 @@ if (attachment) {
 import {
   LucidAttachmentLifecycleService,
   LucidAttachmentStore,
-} from '@jrmc/adonis-attachment/lucid'
-import attachmentService from '#services/attachment_service'
+} from "@jrmc/adonis-attachment/lucid";
+import attachmentService from "#services/attachment_service";
 
 const lifecycle = new LucidAttachmentLifecycleService(
   attachmentService,
-  new LucidAttachmentStore()
-)
+  new LucidAttachmentStore(),
+);
 
 const avatar = await lifecycle.attach(
-  { type: 'users', id: user.id, field: 'avatar' },
-  { body: fileBytes, originalName: 'profile.jpg', mimeType: 'image/jpeg' }
-)
+  { type: "users", id: user.id, field: "avatar" },
+  { body: fileBytes, originalName: "profile.jpg", mimeType: "image/jpeg" },
+);
 
-await attachmentService.scheduleVariantGeneration(
-  avatar.toAttachment(),
-  ['thumbnail']
-)
+await attachmentService.scheduleVariantGeneration(avatar.toAttachment(), [
+  "thumbnail",
+]);
 ```
 
 Schedule variants after `attach` or `replace` returns, so a worker can resolve the persisted original. `replace` keeps the previous row until the replacement is persisted, transferring its internal owner key just before insertion. It restores that key when persistence fails. `detach` removes the original, its variants, and their files. External storage cannot participate in a SQL transaction, so applications should monitor failed file cleanup and retry it when necessary.

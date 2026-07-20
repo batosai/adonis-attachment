@@ -14,7 +14,7 @@ AttachmentStorage  AttachmentQueue
     Drive/S3/...  memory/@adonisjs/queue/...
 ```
 
-La persistence en base n'est pas une responsabilite du noyau : l'appelant recupere l'objet `Attachment` cree puis le stocke avec l'ORM ou le mecanisme de son choix.
+La persistence en base n'est pas une responsabilite du noyau : l'appelant cree un draft, appelle `persist()`, puis stocke l'objet `Attachment` avec l'ORM ou le mecanisme de son choix. Le decorateur Lucid appelle `persist()` automatiquement pendant `save()`.
 
 La documentation contient un flux de persistence personnalisee avec un `AttachmentRepository` applicatif. Ce repository permet aux workers et a la route de lecture de retrouver un attachment sans introduire Lucid.
 
@@ -24,8 +24,8 @@ La documentation contient un flux de persistence personnalisee avec un `Attachme
 - `AdonisDriveStorage` : adaptateur optionnel pour un `DriveService` Adonis, sans dependance Lucid.
 - `AttachmentQueue` : recoit des travaux serialisables. Le premier est `generate-variants`.
 - `MemoryAttachmentQueue` : implementation par defaut, executee dans le processus avec une concurrence configuree.
-- `AttachmentService` : facade de creation, suppression et planification des variants.
-- `AttachmentManager` : normalise buffer, Base64, fichier multipart, chemin, URL et stream avant la creation par le service.
+- `AttachmentService` : facade de persistance, suppression et planification des variants.
+- `AttachmentManager` : normalise buffer, Base64, fichier multipart, chemin, URL et stream en drafts avant leur persistance par le service.
 - `defineConfig` : resout le stockage et la queue au boot Adonis, en direct ou depuis le conteneur applicatif. Sans queue externe, il utilise `MemoryAttachmentQueue`.
 - `configure` : enregistre le provider et la commande `make:attachments-table` dans l'application Adonis.
 - `AttachmentRepository` : lit un attachment pour un worker, sans imposer de mecanisme de persistence.
@@ -41,18 +41,18 @@ Les converters v6 implementent `VariantConverter`. Ils recoivent l'attachment et
 
 Le mode table dediee utilise une seule table `attachments`. Un variant est un attachment dont `parent_id` designe l'attachment original. Cela evite de reintroduire un document JSON imbrique.
 
-| Colonne | Role |
-| --- | --- |
-| `id` | identifiant stable de l'attachment |
-| `attachable_type`, `attachable_id` | relation polymorphe du fichier original |
-| `field` | nom logique de l'attribut, par exemple `avatar` |
-| `owner_key` | hash interne unique de l'owner pour garantir un seul original |
-| `parent_id` | `NULL` pour l'original, sinon attachment parent du variant |
-| `variant_key` | cle du variant, `NULL` pour l'original |
-| `disk`, `path`, `name` | localisation du fichier |
-| `original_name`, `mime_type`, `extname`, `size` | metadonnees de fichier |
-| `metadata` | metadonnees extensibles non structurelles |
-| `created_at`, `updated_at` | audit |
+| Colonne                                         | Role                                                          |
+| ----------------------------------------------- | ------------------------------------------------------------- |
+| `id`                                            | identifiant stable de l'attachment                            |
+| `attachable_type`, `attachable_id`              | relation polymorphe du fichier original                       |
+| `field`                                         | nom logique de l'attribut, par exemple `avatar`               |
+| `owner_key`                                     | hash interne unique de l'owner pour garantir un seul original |
+| `parent_id`                                     | `NULL` pour l'original, sinon attachment parent du variant    |
+| `variant_key`                                   | cle du variant, `NULL` pour l'original                        |
+| `disk`, `path`, `name`                          | localisation du fichier                                       |
+| `original_name`, `mime_type`, `extname`, `size` | metadonnees de fichier                                        |
+| `metadata`                                      | metadonnees extensibles non structurelles                     |
+| `created_at`, `updated_at`                      | audit                                                         |
 
 Contraintes a prevoir dans la migration Lucid : unicite de `owner_key` pour les originaux, index sur `(attachable_type, attachable_id, field)`, index sur `parent_id`, et unicite de `(parent_id, variant_key)` lorsque `parent_id` est defini.
 

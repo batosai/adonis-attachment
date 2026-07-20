@@ -132,7 +132,10 @@ export class AttachmentRelation {
   async #lifecycle(): Promise<LucidAttachmentLifecycleService> {
     return new LucidAttachmentLifecycleService(
       await resolveAttachmentService(),
-      new LucidAttachmentStore(),
+      new LucidAttachmentStore(
+        AttachmentModel,
+        this.#row.$trx ? { client: this.#row.$trx } : {},
+      ),
     );
   }
 
@@ -197,7 +200,10 @@ export class AttachmentCollectionRelation {
   async #lifecycle(): Promise<LucidAttachmentLifecycleService> {
     return new LucidAttachmentLifecycleService(
       await resolveAttachmentService(),
-      new LucidAttachmentStore(),
+      new LucidAttachmentStore(
+        AttachmentModel,
+        this.#row.$trx ? { client: this.#row.$trx } : {},
+      ),
     );
   }
 

@@ -235,4 +235,56 @@ test.group("Lucid attachment relations", (group) => {
       /require a persisted Lucid model/,
     );
   });
+
+  test("uses the owner transaction and cleans up a new file after rollback", async ({
+    assert,
+  }) => {
+    const user = await createUser();
+    const draft = createDraft("rollback.txt");
+
+    await assert.rejects(
+      () =>
+        database.transaction(async (trx) => {
+          const transactionalUser = await RelationUser.query({ client: trx })
+            .where("id", user.id)
+            .firstOrFail();
+          transactionalUser.useTransaction(trx);
+
+          await transactionalUser.avatar.attach(draft);
+          assert.isNotNull(await transactionalUser.avatar.get());
+
+          throw new Error("Rollback requested");
+        }),
+      /Rollback requested/,
+    );
+
+    assert.isNull(await user.avatar.get());
+    assert.deepEqual(removed, [draft.path]);
+  });
+
+  test("defers file deletion until an owner transaction commits", async ({ assert }) => {
+    const user = await createUser();
+    const draft = createDraft("avatar.txt");
+    await user.avatar.attach(draft);
+    removed = [];
+
+    await assert.rejects(
+      () =>
+        database.transaction(async (trx) => {
+          const transactionalUser = await RelationUser.query({ client: trx })
+            .where("id", user.id)
+            .firstOrFail();
+          transactionalUser.useTransaction(trx);
+
+          await transactionalUser.avatar.detach();
+          assert.isNull(await transactionalUser.avatar.get());
+
+          throw new Error("Rollback requested");
+        }),
+      /Rollback requested/,
+    );
+
+    assert.equal((await user.avatar.get())?.id, draft.id);
+    assert.deepEqual(removed, []);
+  });
 });

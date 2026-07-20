@@ -55,7 +55,9 @@ export class LucidAttachmentLifecycleService {
     const attachment = await this.#persist(owner, input, options)
 
     try {
-      return await this.#store.createOriginal(owner, attachment)
+      const original = await this.#store.createOriginal(owner, attachment)
+      this.#removeOnRollback(owner, [attachment])
+      return original
     } catch (error) {
       await this.#removeStoredFile(attachment)
       throw error
@@ -72,6 +74,8 @@ export class LucidAttachmentLifecycleService {
     if (!previous) {
       return this.attach(owner, input, options)
     }
+
+    const previousVariants = await this.#store.listVariants(previous.id)
 
     const attachment = await this.#persist(owner, input, options)
     let current: AttachmentModel
@@ -94,7 +98,11 @@ export class LucidAttachmentLifecycleService {
       throw error
     }
 
-    await this.#removeStoredFile(previous.toAttachment())
+    await this.#removeOnCommit(owner, [
+      previous.toAttachment(),
+      ...previousVariants.map((variant) => variant.toAttachment()),
+    ])
+    this.#removeOnRollback(owner, [current.toAttachment()])
 
     return current
   }
@@ -109,9 +117,9 @@ export class LucidAttachmentLifecycleService {
     const variants = await this.#store.listVariants(original.id)
     await this.#store.remove(original)
 
-    await Promise.all([
-      this.#removeStoredFile(original.toAttachment()),
-      ...variants.map((variant) => this.#removeStoredFile(variant.toAttachment())),
+    await this.#removeOnCommit(owner, [
+      original.toAttachment(),
+      ...variants.map((variant) => variant.toAttachment()),
     ])
   }
 
@@ -130,7 +138,9 @@ export class LucidAttachmentLifecycleService {
     const attachment = await this.#persist(owner, input, options)
 
     try {
-      return await this.#collectionStore().createCollectionItem(owner, attachment, position)
+      const item = await this.#collectionStore().createCollectionItem(owner, attachment, position)
+      this.#removeOnRollback(owner, [attachment])
+      return item
     } catch (error) {
       await this.#removeStoredFile(attachment)
       throw error
@@ -190,13 +200,38 @@ export class LucidAttachmentLifecycleService {
     await this.#attachments.remove(attachment)
   }
 
+  async #removeOnCommit(owner: AttachmentOwner, attachments: readonly Attachment[]): Promise<void> {
+    const transaction = getOwnerTransaction(owner)
+
+    if (transaction) {
+      transaction.after('commit', () => this.#removeStoredFiles(attachments))
+      return
+    }
+
+    await this.#removeStoredFiles(attachments)
+  }
+
+  #removeOnRollback(owner: AttachmentOwner, attachments: readonly Attachment[]): void {
+    const transaction = getOwnerTransaction(owner)
+
+    if (transaction) {
+      transaction.after('rollback', () => this.#removeStoredFiles(attachments))
+    }
+  }
+
+  #removeStoredFiles(attachments: readonly Attachment[]): Promise<void> {
+    return Promise.all(attachments.map((attachment) => this.#removeStoredFile(attachment))).then(
+      () => undefined
+    )
+  }
+
   async #detachCollectionItem(owner: AttachmentOwner, item: AttachmentModel): Promise<void> {
     const variants = await this.#store.listVariants(item.id)
     await this.#collectionStore().removeCollectionItem(owner, item)
 
-    await Promise.all([
-      this.#removeStoredFile(item.toAttachment()),
-      ...variants.map((variant) => this.#removeStoredFile(variant.toAttachment())),
+    await this.#removeOnCommit(owner, [
+      item.toAttachment(),
+      ...variants.map((variant) => variant.toAttachment()),
     ])
   }
 
@@ -257,4 +292,18 @@ export class LucidAttachmentLifecycleService {
 
     return this.#attachments.create(input)
   }
+}
+
+function getOwnerTransaction(owner: AttachmentOwner): {
+  after(event: 'commit' | 'rollback', callback: () => void | Promise<void>): void
+} | null {
+  const model = owner.model as
+    | {
+        $trx?: {
+          after(event: 'commit' | 'rollback', callback: () => void | Promise<void>): void
+        }
+      }
+    | undefined
+
+  return model?.$trx ?? null
 }

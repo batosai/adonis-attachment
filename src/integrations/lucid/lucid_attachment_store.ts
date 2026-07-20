@@ -6,6 +6,7 @@
  */
 
 import type { Attachment } from '../../core/attachment.js'
+import type { TransactionClientContract } from '@adonisjs/lucid/types/database'
 import { markAttachmentPersisted } from '../../core/attachment_state.js'
 import { createAttachmentOwnerKey, type AttachmentOwner } from './attachment_owner.js'
 import { AttachmentModel } from './attachment_model.js'
@@ -15,11 +16,20 @@ export type LucidAttachmentWithVariants = {
   variants: AttachmentModel[]
 }
 
+export type LucidAttachmentStoreOptions = {
+  client?: TransactionClientContract
+}
+
 export class LucidAttachmentStore {
   readonly #model: typeof AttachmentModel
+  readonly #client: TransactionClientContract | undefined
 
-  constructor(model: typeof AttachmentModel = AttachmentModel) {
+  constructor(
+    model: typeof AttachmentModel = AttachmentModel,
+    options: LucidAttachmentStoreOptions = {}
+  ) {
     this.#model = model
+    this.#client = options.client
   }
 
   async createOriginal(owner: AttachmentOwner, attachment: Attachment): Promise<AttachmentModel> {
@@ -33,7 +43,7 @@ export class LucidAttachmentStore {
       parentId: null,
       variantKey: null,
       metadata: attachment.metadata ?? null,
-    })
+    }, this.#client ? { client: this.#client } : undefined)
 
     markAttachmentPersisted(attachment)
     return row
@@ -59,7 +69,7 @@ export class LucidAttachmentStore {
       parentId: null,
       variantKey: null,
       metadata: attachment.metadata ?? null,
-    })
+    }, this.#client ? { client: this.#client } : undefined)
 
     markAttachmentPersisted(attachment)
     return row
@@ -80,7 +90,7 @@ export class LucidAttachmentStore {
       parentId: original.id,
       variantKey: key,
       metadata: attachment.metadata ?? null,
-    })
+    }, this.#client ? { client: this.#client } : undefined)
 
     markAttachmentPersisted(attachment)
     return row
@@ -101,8 +111,7 @@ export class LucidAttachmentStore {
   }
 
   findOriginal(owner: AttachmentOwner): Promise<AttachmentModel | null> {
-    return this.#model
-      .query()
+    return this.#query()
       .where('attachable_type', owner.type)
       .where('attachable_id', owner.id)
       .where('field', owner.field)
@@ -112,8 +121,7 @@ export class LucidAttachmentStore {
   }
 
   listCollection(owner: AttachmentOwner): Promise<AttachmentModel[]> {
-    return this.#model
-      .query()
+    return this.#query()
       .where('attachable_type', owner.type)
       .where('attachable_id', owner.id)
       .where('field', owner.field)
@@ -123,8 +131,7 @@ export class LucidAttachmentStore {
   }
 
   findCollectionItem(owner: AttachmentOwner, id: string): Promise<AttachmentModel | null> {
-    return this.#model
-      .query()
+    return this.#query()
       .where('id', id)
       .where('attachable_type', owner.type)
       .where('attachable_id', owner.id)
@@ -165,7 +172,7 @@ export class LucidAttachmentStore {
   }
 
   findById(id: string): Promise<AttachmentModel | null> {
-    return this.#model.find(id)
+    return this.#query().where('id', id).first()
   }
 
   async findByOwner(owner: AttachmentOwner): Promise<LucidAttachmentWithVariants | null> {
@@ -182,7 +189,7 @@ export class LucidAttachmentStore {
   }
 
   listVariants(originalId: string): Promise<AttachmentModel[]> {
-    return this.#model.query().where('parent_id', originalId)
+    return this.#query().where('parent_id', originalId)
   }
 
   async remove(original: AttachmentModel): Promise<void> {
@@ -191,6 +198,10 @@ export class LucidAttachmentStore {
 
   async #normalizeCollection(owner: AttachmentOwner): Promise<void> {
     await this.#reorderCollection(await this.listCollection(owner))
+  }
+
+  #query() {
+    return this.#model.query(this.#client ? { client: this.#client } : undefined)
   }
 
   async #shiftCollection(

@@ -21,6 +21,7 @@ export { LucidAttachmentRepository } from "./lucid_attachment_repository.js";
 export {
   LucidAttachmentStore,
   type LucidAttachmentWithVariants,
+  type LucidAttachmentStoreOptions,
 } from "./lucid_attachment_store.js";
 export {
   LucidAttachmentLifecycleService,

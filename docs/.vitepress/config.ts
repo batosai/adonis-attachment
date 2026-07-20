@@ -1,6 +1,7 @@
 import { defineConfig } from 'vitepress'
+import { withMermaid } from 'vitepress-plugin-mermaid'
 
-export default defineConfig({
+export default withMermaid(defineConfig({
   title: 'Adonis Attachment',
   description: 'Attachments for AdonisJS 7, with optional Lucid and queue integrations.',
   themeConfig: {
@@ -39,4 +40,4 @@ export default defineConfig({
     },
     socialLinks: [{ icon: 'github', link: 'https://github.com/batosai/adonis-attachment' }],
   },
-})
+}))

@@ -20,7 +20,10 @@ export default class User extends BaseModel {
   @column({ isPrimary: true })
   declare id: string
 
-  @attachment()
+  @attachment({
+    folder: ({ model }) => `users/${model?.id}`,
+    variants: ['thumbnail'],
+  })
   declare avatar: Attachment | null
 }
 
@@ -33,7 +36,7 @@ user.avatar = attachment
 await user.save()
 ```
 
-The decorator serializes the value as JSON. When a save fails, it removes a newly created attachment; when a replacement succeeds, it removes the former file. Deleting the model also removes its attachment. This mode supports one attachment per column. Use the polymorphic table for collections, persisted variants, queues, and the built-in read route.
+The decorator persists a draft automatically during `save()`, after resolving its own options and the model context. Do not call `persist()` manually for this workflow. It serializes the persisted value as JSON. When a save fails, it removes a newly created attachment; when a replacement succeeds, it removes the former file. Deleting the model also removes its attachment. This mode supports one attachment per column. Use the polymorphic table for collections, persisted variants, queues, and the built-in read route.
 
 Create the migration:
 
@@ -62,7 +65,7 @@ if (attachment) {
 
 ## Attachment lifecycle
 
-`LucidAttachmentLifecycleService` coordinates storage and persistence. It writes the file first, then creates its polymorphic row. If the database operation fails, it removes the new file as compensation.
+`LucidAttachmentLifecycleService` coordinates storage and persistence. It accepts either a source input or an `AttachmentDraft`, writes the file first, then creates its polymorphic row. If the database operation fails, it removes the new file as compensation.
 
 ```ts
 import {

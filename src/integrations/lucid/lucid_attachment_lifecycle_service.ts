@@ -5,13 +5,19 @@
  * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
  */
 
-import type { Attachment, CreateAttachmentInput } from '../../core/attachment.js'
+import {
+  isAttachmentDraft,
+  type Attachment,
+  type AttachmentDraft,
+  type CreateAttachmentInput,
+} from '../../core/attachment.js'
 import type { AttachmentService } from '../../core/attachment_service.js'
 import type { AttachmentOwner } from './attachment_owner.js'
 import { AttachmentModel } from './attachment_model.js'
 import { LucidAttachmentStore } from './lucid_attachment_store.js'
 
-export type AttachmentFileService = Pick<AttachmentService, 'create' | 'remove'>
+export type AttachmentFileService = Pick<AttachmentService, 'create' | 'remove'> &
+  Partial<Pick<AttachmentService, 'createDraft'>>
 export type LucidAttachmentPersistence = Pick<
   LucidAttachmentStore,
   'createOriginal' | 'findOriginal' | 'listVariants' | 'releaseOwner' | 'restoreOwner' | 'remove'
@@ -26,8 +32,11 @@ export class LucidAttachmentLifecycleService {
     this.#store = store
   }
 
-  async attach(owner: AttachmentOwner, input: CreateAttachmentInput): Promise<AttachmentModel> {
-    const attachment = await this.#attachments.create(input)
+  async attach(
+    owner: AttachmentOwner,
+    input: CreateAttachmentInput | AttachmentDraft
+  ): Promise<AttachmentModel> {
+    const attachment = await this.#persist(owner, input)
 
     try {
       return await this.#store.createOriginal(owner, attachment)
@@ -37,14 +46,17 @@ export class LucidAttachmentLifecycleService {
     }
   }
 
-  async replace(owner: AttachmentOwner, input: CreateAttachmentInput): Promise<AttachmentModel> {
+  async replace(
+    owner: AttachmentOwner,
+    input: CreateAttachmentInput | AttachmentDraft
+  ): Promise<AttachmentModel> {
     const previous = await this.#store.findOriginal(owner)
 
     if (!previous) {
       return this.attach(owner, input)
     }
 
-    const attachment = await this.#attachments.create(input)
+    const attachment = await this.#persist(owner, input)
     let current: AttachmentModel
 
     try {
@@ -88,5 +100,20 @@ export class LucidAttachmentLifecycleService {
 
   async #removeStoredFile(attachment: Attachment): Promise<void> {
     await this.#attachments.remove(attachment)
+  }
+
+  async #persist(
+    owner: AttachmentOwner,
+    input: CreateAttachmentInput | AttachmentDraft
+  ): Promise<Attachment> {
+    if (isAttachmentDraft(input)) {
+      return input.persist({ context: { field: owner.field } })
+    }
+
+    if (this.#attachments.createDraft) {
+      return this.#attachments.createDraft(input).persist({ context: { field: owner.field } })
+    }
+
+    return this.#attachments.create(input)
   }
 }

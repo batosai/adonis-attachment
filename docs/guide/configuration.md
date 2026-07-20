@@ -27,6 +27,19 @@ Applications can also provide any object implementing `AttachmentStorage`. The f
 
 `sources` configures `AttachmentManager`, which creates attachments from multipart files, paths, streams, URLs, Base64 values, and buffers. See [Sources](/guide/sources).
 
+`defaults` defines the lowest-priority file persistence options. `disk`, `folder`, `rename`, `meta`, `preComputeUrl`, and `variants` are resolved per setting with this precedence: options passed to `createFrom*`, then `@attachment()`, then `defaults`. Set one option to `null` at a higher level to disable an inherited value.
+
+```ts
+export default defineConfig({
+  storage: LocalFileStorage.fromApp,
+  defaults: {
+    folder: 'uploads',
+    rename: true,
+    variants: ['thumbnail'],
+  },
+})
+```
+
 For in-process variant generation, pass an `AttachmentJobProcessor` as `processor`. The default memory queue delegates every job to it. The processor may resolve its variant generator lazily when that generator depends on `jrmc.attachment`; see [Queues](/guide/queues).
 
 To enable the built-in `GET /attachments/:id` route, provide an `AttachmentRepository` as `repository`. Set `route: false` to disable it or `route: { prefix: '/media' }` to move it. See [Routes](/guide/routes) for its response behavior and access-control considerations.

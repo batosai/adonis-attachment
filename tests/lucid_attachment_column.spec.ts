@@ -29,9 +29,28 @@ class ColumnUser extends BaseModel {
   declare avatar: Attachment | null
 }
 
+class ConfiguredColumnUser extends BaseModel {
+  static table = 'column_users'
+  static selfAssignPrimaryKey = true
+
+  @column({ isPrimary: true })
+  declare id: string
+
+  @column()
+  declare name: string
+
+  @attachment({
+    disk: 'decorator',
+    folder: ({ model }) => `avatars/${(model as ConfiguredColumnUser).id}`,
+    rename: false,
+  })
+  declare avatar: Attachment | null
+}
+
 let database: Database
 let attachments: AttachmentService
 let removed: string[]
+let writes: Array<{ disk: string; path: string }>
 
 async function createAttachment(name: string): Promise<Attachment> {
   return attachments.create({
@@ -45,6 +64,7 @@ test.group('Lucid attachment column', (group) => {
   group.setup(async () => {
     database = await createLucidTestDatabase()
     ColumnUser.useAdapter(database.modelAdapter())
+    ConfiguredColumnUser.useAdapter(database.modelAdapter())
     await database.connection().schema.createTable('column_users', (table) => {
       table.string('id').primary()
       table.string('name').notNullable().unique()
@@ -54,12 +74,16 @@ test.group('Lucid attachment column', (group) => {
 
   group.each.setup(async () => {
     removed = []
+    writes = []
     await database.from('column_users').delete()
     attachments = new AttachmentService({
       defaultDisk: 'fs',
+      defaults: { disk: 'config', folder: 'config' },
       queue: { async enqueue() {} },
       storage: {
-        async write() {},
+        async write(input) {
+          writes.push({ disk: input.disk, path: input.path })
+        },
         async read() {
           return new Uint8Array()
         },
@@ -102,6 +126,49 @@ test.group('Lucid attachment column', (group) => {
     await user.save()
 
     assert.deepEqual(removed, [first.path])
+  })
+
+  test('persists drafts with decorator options and lets manager options override them', async ({ assert }) => {
+    const decoratorDraft = attachments.createDraft({
+      body: Buffer.from('decorator'),
+      originalName: 'avatar.txt',
+      mimeType: 'text/plain',
+    })
+    const decoratorUser = new ConfiguredColumnUser()
+    decoratorUser.id = 'user-1'
+    decoratorUser.name = 'Jeremy'
+    decoratorUser.avatar = decoratorDraft
+
+    assert.isFalse(decoratorDraft.isPersisted)
+    assert.deepEqual(writes, [])
+
+    await decoratorUser.save()
+
+    assert.isTrue(decoratorDraft.isPersisted)
+    assert.equal(decoratorDraft.disk, 'decorator')
+    assert.equal(decoratorDraft.path, 'avatars/user-1/avatar.txt')
+
+    const managerDraft = attachments.createDraft(
+      {
+        body: Buffer.from('manager'),
+        originalName: 'manager.txt',
+        mimeType: 'text/plain',
+      },
+      { disk: 'manager', folder: 'imports', rename: true }
+    )
+    const managerUser = new ConfiguredColumnUser()
+    managerUser.id = 'user-2'
+    managerUser.name = 'Paul'
+    managerUser.avatar = managerDraft
+
+    await managerUser.save()
+
+    assert.equal(managerDraft.disk, 'manager')
+    assert.equal(managerDraft.path, `imports/${managerDraft.id}.txt`)
+    assert.deepEqual(writes, [
+      { disk: 'decorator', path: 'avatars/user-1/avatar.txt' },
+      { disk: 'manager', path: `imports/${managerDraft.id}.txt` },
+    ])
   })
 
   test('removes a newly assigned file when save fails', async ({ assert }) => {

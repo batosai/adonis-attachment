@@ -25,14 +25,14 @@ export type Attachment = Readonly<{
   metadata?: Record<string, unknown> | undefined
 }>
 
-export type AttachmentPersistRequest<Model = unknown> = {
+export type AttachmentPersistRequest<Model = any> = {
   options?: AttachmentPersistenceOptions<Model>
   context?: Omit<AttachmentPersistenceContext<Model>, 'originalName'>
 }
 
 export type AttachmentDraftPersistence = (
   draft: AttachmentDraft,
-  request?: AttachmentPersistRequest
+  request?: AttachmentPersistRequest<any>
 ) => Promise<Attachment>
 
 export type CreateAttachmentInput = {
@@ -103,7 +103,7 @@ export class AttachmentDraft implements Attachment {
     return this.#options
   }
 
-  persist(request?: AttachmentPersistRequest): Promise<Attachment> {
+  persist(request?: AttachmentPersistRequest<any>): Promise<Attachment> {
     if (this.#persisted) {
       return Promise.resolve(this)
     }

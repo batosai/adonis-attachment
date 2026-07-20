@@ -8,6 +8,7 @@
 import { test } from '@japa/runner'
 
 import type { Attachment } from '../src/core/attachment.js'
+import { AttachmentService } from '../src/core/attachment_service.js'
 import { AttachmentModel } from '../src/integrations/lucid/attachment_model.js'
 import { LucidAttachmentLifecycleService } from '../src/integrations/lucid/lucid_attachment_lifecycle_service.js'
 
@@ -32,6 +33,52 @@ function makeRow(value: Attachment, id = value.id): AttachmentModel {
 }
 
 test.group('LucidAttachmentLifecycleService', () => {
+  test('persists a manager draft before inserting its polymorphic row', async ({ assert }) => {
+    const events: string[] = []
+    const attachments = new AttachmentService({
+      defaultDisk: 'fs',
+      createId: () => 'attachment-id',
+      queue: { async enqueue() {} },
+      storage: {
+        async write() {
+          events.push('write')
+        },
+        async read() {
+          return new Uint8Array()
+        },
+        async remove() {},
+      },
+    })
+    const draft = attachments.createDraft({
+      body: new Uint8Array([1]),
+      originalName: 'profile.jpg',
+    })
+    const service = new LucidAttachmentLifecycleService(
+      attachments,
+      {
+        async createOriginal() {
+          events.push('persist')
+          return {} as AttachmentModel
+        },
+        async findOriginal() {
+          return null
+        },
+        async listVariants() {
+          return []
+        },
+        async releaseOwner() {},
+        async restoreOwner() {},
+        async remove() {},
+      }
+    )
+
+    assert.isFalse(draft.isPersisted)
+    await service.attach({ type: 'users', id: '42', field: 'avatar' }, draft)
+
+    assert.isTrue(draft.isPersisted)
+    assert.deepEqual(events, ['write', 'persist'])
+  })
+
   test('persists the file before creating its polymorphic row', async ({ assert }) => {
     const events: string[] = []
     const service = new LucidAttachmentLifecycleService(

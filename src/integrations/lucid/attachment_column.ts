@@ -8,8 +8,9 @@
 import app from '@adonisjs/core/services/app'
 import type { LucidModel, LucidRow } from '@adonisjs/lucid/types/model'
 
-import type { Attachment } from '../../core/attachment.js'
+import { isAttachmentDraft, type Attachment } from '../../core/attachment.js'
 import { isAttachmentPending, markAttachmentPersisted } from '../../core/attachment_state.js'
+import type { AttachmentPersistenceOptions } from '../../core/attachment_options.js'
 import type { AttachmentService } from '../../core/attachment_service.js'
 
 type AttachmentColumnRow = LucidRow & {
@@ -29,7 +30,12 @@ type AttachmentSaveState = {
   detached: Attachment[]
 }
 
-const columnNames = new WeakMap<object, Set<string>>()
+export type LucidAttachmentOptions<Model = any> = AttachmentPersistenceOptions<Model> & {
+  serialize?: (value: Attachment | null | undefined) => unknown
+  serializeAs?: string | null
+}
+
+const columnOptions = new WeakMap<object, Map<string, LucidAttachmentOptions<any>>>()
 const saveStates = new WeakMap<object, AttachmentSaveState>()
 const deleteStates = new WeakMap<object, Attachment[]>()
 const patchedModels = new WeakSet<object>()
@@ -37,16 +43,16 @@ const patchedModels = new WeakSet<object>()
 /**
  * Persists one Attachment JSON value in a Lucid column and coordinates file cleanup.
  */
-export function attachment(): PropertyDecorator {
+export function attachment<Model = LucidRow>(options: LucidAttachmentOptions<Model> = {}): PropertyDecorator {
   return (target, propertyKey) => {
     const Model = target.constructor as AttachmentColumnModel
     const name = String(propertyKey)
 
     Model.boot()
-    const columns = columnNames.get(Model) ?? new Set<string>()
-    columns.add(name)
-    columnNames.set(Model, columns)
-    Model.$addColumn(name, makeColumnOptions())
+    const columns = columnOptions.get(Model) ?? new Map<string, LucidAttachmentOptions<any>>()
+    columns.set(name, options as LucidAttachmentOptions<any>)
+    columnOptions.set(Model, columns)
+    Model.$addColumn(name, makeColumnOptions(options))
 
     if (!patchedModels.has(Model)) {
       patchedModels.add(Model)
@@ -59,7 +65,7 @@ export function attachment(): PropertyDecorator {
   }
 }
 
-function makeColumnOptions() {
+function makeColumnOptions(options: LucidAttachmentOptions<any>) {
   return {
     prepare(value: Attachment | null | undefined) {
       return value ? JSON.stringify(value) : null
@@ -71,9 +77,8 @@ function makeColumnOptions() {
 
       return JSON.parse(value) as Attachment
     },
-    serialize(value: Attachment | null | undefined) {
-      return value ?? null
-    },
+    serialize: options.serialize ?? ((value: Attachment | null | undefined) => value ?? null),
+    ...(options.serializeAs !== undefined ? { serializeAs: options.serializeAs } : {}),
   }
 }
 
@@ -82,7 +87,7 @@ async function prepareSave(row: AttachmentColumnRow): Promise<void> {
 
   for (const name of getColumnNames(row)) {
     const previous = toAttachment(row.$original[name])
-    const current = toAttachment(row.$attributes[name])
+    const current = await persistDraft(row, name)
 
     if (previous?.id === current?.id) {
       continue
@@ -161,7 +166,24 @@ function wrapSave(Model: AttachmentColumnModel): void {
 }
 
 function getColumnNames(row: AttachmentColumnRow): Set<string> {
-  return columnNames.get(row.constructor) ?? new Set<string>()
+  return new Set(columnOptions.get(row.constructor)?.keys())
+}
+
+async function persistDraft(row: AttachmentColumnRow, name: string): Promise<Attachment | null> {
+  const value = row.$attributes[name]
+
+  if (!isAttachmentDraft(value)) {
+    return toAttachment(value)
+  }
+
+  const options = columnOptions.get(row.constructor)?.get(name)
+  const attachment = await value.persist({
+    ...(options ? { options } : {}),
+    context: { model: row, field: name },
+  })
+  row.$attributes[name] = attachment
+
+  return attachment
 }
 
 function toAttachment(value: unknown): Attachment | null {

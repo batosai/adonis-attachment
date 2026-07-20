@@ -74,7 +74,7 @@ export class AttachmentService {
     return this.createDraft(input).persist()
   }
 
-  async #persistDraft(draft: AttachmentDraft, request?: AttachmentPersistRequest): Promise<Attachment> {
+  async #persistDraft(draft: AttachmentDraft, request?: AttachmentPersistRequest<any>): Promise<Attachment> {
     const source = draft.source
     const context: AttachmentPersistenceContext = {
       ...request?.context,

@@ -6,7 +6,7 @@
  */
 
 export { AttachmentModel } from './attachment_model.js'
-export { attachment } from './attachment_column.js'
+export { attachment, type LucidAttachmentOptions } from './attachment_column.js'
 export { LucidAttachmentRepository } from './lucid_attachment_repository.js'
 export {
   LucidAttachmentStore,

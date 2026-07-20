@@ -78,6 +78,68 @@ test('creates a standalone attachment and delegates its content to storage', asy
   })
 })
 
+test('keeps drafts in memory until persist resolves their contextual options', async ({ assert }) => {
+  const storage = new FakeStorage()
+  const service = new AttachmentService({
+    storage,
+    queue: new FakeQueue(),
+    defaultDisk: 'public',
+    defaults: { disk: 'fs', folder: 'attachments' },
+    createId: () => 'attachment-id',
+  })
+  const draft = service.createDraft({
+    body: new Uint8Array([1, 2, 3]),
+    originalName: 'avatar.jpg',
+  })
+
+  assert.isFalse(draft.isPersisted)
+  assert.lengthOf(storage.writes, 0)
+
+  const attachment = await draft.persist({
+    options: {
+      disk: 's3',
+      folder: ({ model, field }) => `${model as string}/${field}`,
+      rename: false,
+    },
+    context: { model: 'users/42', field: 'avatar' },
+  })
+
+  assert.equal(attachment, draft)
+  assert.isTrue(draft.isPersisted)
+  assert.deepEqual(draft.toJSON(), {
+    id: 'attachment-id',
+    disk: 's3',
+    name: 'avatar.jpg',
+    originalName: 'avatar.jpg',
+    path: 'users/42/avatar/avatar.jpg',
+    size: 3,
+    extname: 'jpg',
+    mimeType: 'application/octet-stream',
+  })
+  assert.deepEqual(storage.writes, [{
+    disk: 's3',
+    path: 'users/42/avatar/avatar.jpg',
+    body: new Uint8Array([1, 2, 3]),
+    mimeType: 'application/octet-stream',
+  }])
+})
+
+test('persists a draft only once when called concurrently', async ({ assert }) => {
+  const storage = new FakeStorage()
+  const service = new AttachmentService({
+    storage,
+    queue: new FakeQueue(),
+    defaultDisk: 'public',
+    createId: () => 'attachment-id',
+  })
+  const draft = service.createDraft({ body: new Uint8Array([1]), originalName: 'avatar.jpg' })
+
+  const [first, second] = await Promise.all([draft.persist(), draft.persist()])
+
+  assert.equal(first, second)
+  assert.lengthOf(storage.writes, 1)
+})
+
 test('schedules variant generation without requiring a database or Lucid', async ({ assert }) => {
   const storage = new FakeStorage()
   const queue = new FakeQueue()

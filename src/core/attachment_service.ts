@@ -6,11 +6,20 @@
  */
 
 import {
+  AttachmentDraft,
   AttachmentFactory,
   type Attachment,
+  type AttachmentPersistRequest,
   type CreateAttachmentInput,
 } from './attachment.js'
 import { markAttachmentPending } from './attachment_state.js'
+import {
+  resolveAttachmentPersistenceOptions,
+  type AttachmentFolder,
+  type AttachmentPersistenceContext,
+  type AttachmentPersistenceOptions,
+  type AttachmentRename,
+} from './attachment_options.js'
 import type { AttachmentQueue } from './queue.js'
 import type { AttachmentStorage } from './storage.js'
 
@@ -19,6 +28,7 @@ export type AttachmentServiceOptions = {
   queue: AttachmentQueue
   defaultDisk: string
   createId?: () => string
+  defaults?: AttachmentPersistenceOptions
 }
 
 /**
@@ -29,24 +39,62 @@ export class AttachmentService {
   readonly #storage: AttachmentStorage
   readonly #queue: AttachmentQueue
   readonly #factory: AttachmentFactory
+  readonly #defaults: AttachmentPersistenceOptions
 
   constructor(options: AttachmentServiceOptions) {
     this.#storage = options.storage
     this.#queue = options.queue
     this.#factory = new AttachmentFactory(options)
+    this.#defaults = options.defaults ?? {}
   }
 
+  createDraft(input: CreateAttachmentInput): AttachmentDraft {
+    const options = {
+      ...(input.disk !== undefined ? { disk: input.disk } : {}),
+      ...(input.folder !== undefined ? { folder: input.folder } : {}),
+    }
+    const provisional = this.#factory.create(input)
+
+    return new AttachmentDraft(input, provisional, options, (draft, request) =>
+      this.#persistDraft(draft, request)
+    )
+  }
+
+  /**
+   * Backward-compatible immediate persistence for direct service consumers.
+   */
   async create(input: CreateAttachmentInput): Promise<Attachment> {
-    const attachment = this.#factory.create(input)
+    return this.createDraft(input).persist()
+  }
+
+  async #persistDraft(draft: AttachmentDraft, request?: AttachmentPersistRequest): Promise<Attachment> {
+    const source = draft.source
+    const context: AttachmentPersistenceContext = {
+      ...request?.context,
+      originalName: source.originalName,
+    }
+    const options = resolveAttachmentPersistenceOptions(
+      this.#defaults,
+      request?.options,
+      draft.options
+    )
+    const folder = await resolveFolder(options.folder, context)
+    const name = await resolveName(options.rename, context)
+    const attachment = this.#factory.create(source, {
+      id: draft.id,
+      ...(options.disk ? { disk: options.disk } : {}),
+      ...(folder ? { folder } : {}),
+      ...(name ? { name } : {}),
+    })
 
     await this.#storage.write({
       disk: attachment.disk,
       path: attachment.path,
-      body: input.body,
+      body: source.body,
       mimeType: attachment.mimeType,
     })
 
-    markAttachmentPending(attachment)
+    markAttachmentPending(draft)
     return attachment
   }
 
@@ -68,4 +116,26 @@ export class AttachmentService {
       ...(variantKeys ? { variantKeys } : {}),
     })
   }
+}
+
+async function resolveFolder(
+  folder: AttachmentFolder | undefined,
+  context: AttachmentPersistenceContext
+): Promise<string | undefined> {
+  if (typeof folder === 'function') {
+    return folder(context)
+  }
+
+  return folder
+}
+
+async function resolveName(
+  rename: AttachmentRename | undefined,
+  context: AttachmentPersistenceContext
+): Promise<string | undefined> {
+  if (typeof rename === 'function') {
+    return rename(context)
+  }
+
+  return rename === false ? context.originalName : undefined
 }

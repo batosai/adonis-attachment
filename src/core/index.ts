@@ -7,8 +7,12 @@
 
 export {
   AttachmentFactory,
+  AttachmentDraft,
+  isAttachmentDraft,
   type Attachment,
+  type AttachmentDraftPersistence,
   type AttachmentFactoryOptions,
+  type AttachmentPersistRequest,
   type CreateAttachmentInput,
 } from './attachment.js'
 export {

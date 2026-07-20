@@ -8,6 +8,11 @@
 import { randomUUID } from 'node:crypto'
 import { extname } from 'node:path'
 
+import type {
+  AttachmentPersistenceContext,
+  AttachmentPersistenceOptions,
+} from './attachment_options.js'
+
 export type Attachment = Readonly<{
   id: string
   disk: string
@@ -17,8 +22,18 @@ export type Attachment = Readonly<{
   size: number
   extname: string
   mimeType: string
-  metadata?: Record<string, unknown>
+  metadata?: Record<string, unknown> | undefined
 }>
+
+export type AttachmentPersistRequest<Model = unknown> = {
+  options?: AttachmentPersistenceOptions<Model>
+  context?: Omit<AttachmentPersistenceContext<Model>, 'originalName'>
+}
+
+export type AttachmentDraftPersistence = (
+  draft: AttachmentDraft,
+  request?: AttachmentPersistRequest
+) => Promise<Attachment>
 
 export type CreateAttachmentInput = {
   body: Uint8Array
@@ -27,6 +42,124 @@ export type CreateAttachmentInput = {
   disk?: string
   folder?: string
   metadata?: Record<string, unknown>
+}
+
+/**
+ * A source-backed attachment that has not been written to storage yet.
+ * Its public properties become final after `persist()` resolves.
+ */
+export class AttachmentDraft implements Attachment {
+  readonly id: string
+  disk: string
+  name: string
+  originalName: string
+  path: string
+  size: number
+  extname: string
+  mimeType: string
+  metadata?: Record<string, unknown> | undefined
+
+  readonly #options: AttachmentPersistenceOptions
+  #source: CreateAttachmentInput | undefined
+  #persisted = false
+  #persisting: Promise<Attachment> | undefined
+  readonly #persistence: AttachmentDraftPersistence
+
+  constructor(
+    source: CreateAttachmentInput,
+    provisional: Attachment,
+    options: AttachmentPersistenceOptions,
+    persistence: AttachmentDraftPersistence
+  ) {
+    this.id = provisional.id
+    this.disk = provisional.disk
+    this.name = provisional.name
+    this.originalName = provisional.originalName
+    this.path = provisional.path
+    this.size = provisional.size
+    this.extname = provisional.extname
+    this.mimeType = provisional.mimeType
+    if (provisional.metadata) {
+      this.metadata = provisional.metadata
+    }
+    this.#source = source
+    this.#options = options
+    this.#persistence = persistence
+  }
+
+  get isPersisted(): boolean {
+    return this.#persisted
+  }
+
+  get source(): Readonly<CreateAttachmentInput> {
+    if (!this.#source) {
+      throw new Error('Attachment draft source is no longer available after persistence')
+    }
+
+    return this.#source
+  }
+
+  get options(): Readonly<AttachmentPersistenceOptions> {
+    return this.#options
+  }
+
+  persist(request?: AttachmentPersistRequest): Promise<Attachment> {
+    if (this.#persisted) {
+      return Promise.resolve(this)
+    }
+
+    if (!this.#persisting) {
+      this.#persisting = this.#persistence(this, request)
+        .then((attachment) => {
+          this.disk = attachment.disk
+          this.name = attachment.name
+          this.path = attachment.path
+          this.size = attachment.size
+          this.extname = attachment.extname
+          this.mimeType = attachment.mimeType
+          if (attachment.metadata) {
+            this.metadata = attachment.metadata
+          } else {
+            delete this.metadata
+          }
+          this.#source = undefined
+          this.#persisted = true
+          return this
+        })
+        .catch((error: unknown) => {
+          this.#persisting = undefined
+          throw error
+        })
+    }
+
+    return this.#persisting!
+  }
+
+  toJSON(): Attachment {
+    if (!this.#persisted) {
+      throw new Error('Attachment drafts must be persisted before serialization')
+    }
+
+    return this.toAttachment()
+  }
+
+  toAttachment(): Attachment {
+    return {
+      id: this.id,
+      disk: this.disk,
+      name: this.name,
+      originalName: this.originalName,
+      path: this.path,
+      size: this.size,
+      extname: this.extname,
+      mimeType: this.mimeType,
+      ...(this.metadata ? { metadata: this.metadata } : {}),
+    }
+  }
+}
+
+export function isAttachmentDraft(value: unknown): value is AttachmentDraft {
+  return value instanceof AttachmentDraft
 }
 
 export type AttachmentFactoryOptions = {
@@ -43,15 +176,18 @@ export class AttachmentFactory {
     this.#createId = options.createId ?? randomUUID
   }
 
-  create(input: CreateAttachmentInput): Attachment {
-    const id = this.#createId()
+  create(
+    input: CreateAttachmentInput,
+    options: { id?: string; name?: string; disk?: string; folder?: string } = {}
+  ): Attachment {
+    const id = options.id ?? this.#createId()
     const extension = getExtension(input.originalName)
-    const name = extension ? `${id}.${extension}` : id
-    const path = joinPath(input.folder, name)
+    const name = options.name ?? (extension ? `${id}.${extension}` : id)
+    const path = joinPath(options.folder ?? input.folder, name)
 
     return {
       id,
-      disk: input.disk ?? this.#defaultDisk,
+      disk: options.disk ?? input.disk ?? this.#defaultDisk,
       name,
       originalName: input.originalName,
       path,
@@ -68,6 +204,10 @@ function getExtension(fileName: string): string {
 }
 
 function joinPath(folder: string | undefined, name: string): string {
+  if (name.includes('/') || name.includes('\\') || name === '.' || name === '..') {
+    throw new Error('Attachment names must not contain path separators')
+  }
+
   if (!folder) {
     return name
   }

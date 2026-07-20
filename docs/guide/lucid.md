@@ -128,6 +128,8 @@ Collection commands are `all()`, `add(draft, position?)`, `remove(id)`, `clear()
 
 Both relation decorators receive the same persistence options as `@attachment()`. Per setting, the priority is: options passed to `attachmentManager.createFrom*`, then the relation decorator, then `defaults` in `config/attachment.ts`. Relation folder and rename callbacks receive `{ model, field, originalName }` at persistence time.
 
+When the model uses a Lucid transaction, relation commands use the same transaction for attachment rows. Files newly written by `attach`, `set`, `replace`, or `add` are removed on rollback. File removals caused by `detach`, `replace`, `remove`, `clear`, or `replaceAll` are deferred until commit, so a rollback retains the previous files.
+
 Create the migration:
 
 ```sh

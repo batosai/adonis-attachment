@@ -11,6 +11,14 @@ export {
   type AttachmentFactoryOptions,
   type CreateAttachmentInput,
 } from './attachment.js'
+export {
+  resolveAttachmentPersistenceOptions,
+  type AttachmentFolder,
+  type AttachmentPersistenceContext,
+  type AttachmentPersistenceOptions,
+  type AttachmentRename,
+  type ResolvedAttachmentPersistenceOptions,
+} from './attachment_options.js'
 export { AttachmentService, type AttachmentServiceOptions } from './attachment_service.js'
 export {
   AttachmentJobProcessor,

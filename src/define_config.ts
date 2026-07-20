@@ -15,6 +15,7 @@ import type { AttachmentRepository } from './core/attachment_repository.js'
 import type { AttachmentJobHandler, AttachmentQueue } from './core/queue.js'
 import type { AttachmentStorage } from './core/storage.js'
 import type { AttachmentManagerOptions } from './sources/attachment_manager.js'
+import type { AttachmentPersistenceOptions } from './core/attachment_options.js'
 
 type Integration<T> = T | ((app: ApplicationService) => T | Promise<T>)
 
@@ -32,6 +33,8 @@ export type AttachmentConfig = {
   jobHandler?: Integration<AttachmentJobHandler>
   processor?: Integration<AttachmentJobProcessor>
   repository?: Integration<AttachmentRepository>
+  /** Lowest-priority defaults for file persistence. */
+  defaults?: AttachmentPersistenceOptions
   sources?: AttachmentManagerOptions
   route?: AttachmentRouteConfig
   queueConcurrency?: number
@@ -40,6 +43,7 @@ export type AttachmentConfig = {
 
 export type ResolvedAttachmentConfig = AttachmentServiceOptions & {
   repository?: AttachmentRepository
+  defaults?: AttachmentPersistenceOptions
   sources?: AttachmentManagerOptions
   route: ResolvedAttachmentRouteConfig | false
 }
@@ -72,6 +76,7 @@ export function defineConfig(config: AttachmentConfig): ConfigProvider<ResolvedA
       ...(config.repository
         ? { repository: await resolveIntegration(config.repository, app) }
         : {}),
+      ...(config.defaults ? { defaults: config.defaults } : {}),
       ...(config.sources ? { sources: config.sources } : {}),
       ...(config.createId ? { createId: config.createId } : {}),
     }

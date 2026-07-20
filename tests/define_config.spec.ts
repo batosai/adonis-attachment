@@ -183,6 +183,21 @@ test.group('defineConfig', () => {
     assert.equal(resolved.sources, sources)
   })
 
+  test('preserves attachment persistence defaults', async ({ assert }) => {
+    const storage: AttachmentStorage = {
+      async write() {},
+      async read() {
+        return new Uint8Array()
+      },
+      async remove() {},
+    }
+    const defaults = { folder: 'attachments', variants: ['thumbnail'] }
+
+    const resolved = await defineConfig({ defaultDisk: 'public', storage, defaults }).resolver({} as never)
+
+    assert.equal(resolved.defaults, defaults)
+  })
+
   test('rejects invalid route prefixes', async ({ assert }) => {
     const storage: AttachmentStorage = {
       async write() {},

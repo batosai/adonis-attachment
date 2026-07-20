@@ -1,6 +1,6 @@
 # Sources
 
-`AttachmentManager` normalizes common input sources and delegates file creation to `AttachmentService`. It is independent from Lucid and does not inspect media metadata; the media pipeline adds that later.
+`AttachmentManager` normalizes common input sources into drafts. It is independent from Lucid and does not inspect media metadata; the media pipeline adds that later. A draft writes no file until `persist()` is called, unless an integration such as the Lucid decorator persists it during `save()`.
 
 The Adonis provider binds it as `jrmc.attachment.manager`:
 
@@ -19,6 +19,8 @@ const attachment = await attachmentManager.createFromBuffer(buffer, {
   originalName: 'avatar.png',
   mimeType: 'image/png',
 })
+
+await attachment.persist()
 ```
 
 It accepts buffers, Base64 values and data URIs, local paths, Node readable streams, URLs, and Adonis multipart files.
@@ -38,7 +40,7 @@ const fromBase64 = await manager.createFromBase64('data:image/png;base64,...', {
 })
 ```
 
-`createFromFiles` accepts a list of multipart files and resolves them in parallel. Every method accepts `disk`, `folder`, `metadata`, `mimeType`, and `originalName` where applicable.
+`createFromFiles` accepts a list of multipart files and resolves them in parallel. Every method accepts `disk`, `folder`, `rename`, `meta`, `preComputeUrl`, `variants`, `metadata`, `mimeType`, and `originalName` where applicable. These options take precedence over decorator and configuration defaults.
 
 ## Source limits
 

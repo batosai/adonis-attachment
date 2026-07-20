@@ -13,29 +13,19 @@ import { Readable } from 'node:stream'
 import { test } from '@japa/runner'
 
 import {
+  AttachmentDraft,
   AttachmentManager,
   AttachmentSourceError,
   type CreateAttachmentInput,
 } from '../index.js'
 
-type CreatedAttachment = {
-  id: string
-  disk: string
-  name: string
-  originalName: string
-  path: string
-  size: number
-  extname: string
-  mimeType: string
-}
-
 function createManager(options: ConstructorParameters<typeof AttachmentManager>[1] = {}) {
-  const inputs: CreateAttachmentInput[] = []
+  const inputs: Array<{ input: CreateAttachmentInput; options: Record<string, unknown> | undefined }> = []
   let count = 0
   const manager = new AttachmentManager(
     {
-      async create(input) {
-        inputs.push(input)
+      createDraft(input, attachmentOptions) {
+        inputs.push({ input, options: attachmentOptions })
         count += 1
         return {
           id: `attachment-${count}`,
@@ -46,7 +36,8 @@ function createManager(options: ConstructorParameters<typeof AttachmentManager>[
           size: input.body.byteLength,
           extname: input.originalName.split('.').at(-1) ?? '',
           mimeType: input.mimeType ?? 'application/octet-stream',
-        } as CreatedAttachment
+          isPersisted: false,
+        } as AttachmentDraft
       },
     },
     options
@@ -56,7 +47,7 @@ function createManager(options: ConstructorParameters<typeof AttachmentManager>[
 }
 
 test.group('AttachmentManager', () => {
-  test('creates an attachment from a buffer with supplied creation options', async ({ assert }) => {
+  test('creates a draft from a buffer with supplied persistence options', async ({ assert }) => {
     const { manager, inputs } = createManager()
 
     const attachment = await manager.createFromBuffer(new Uint8Array([1, 2, 3]), {
@@ -67,13 +58,15 @@ test.group('AttachmentManager', () => {
     })
 
     assert.equal(attachment.mimeType, 'image/jpeg')
+    assert.isFalse(attachment.isPersisted)
     assert.deepEqual(inputs, [{
-      body: new Uint8Array([1, 2, 3]),
-      originalName: 'avatar.jpg',
-      mimeType: 'image/jpeg',
-      disk: 's3',
-      folder: 'users/42',
-      metadata: { imported: true },
+      input: {
+        body: new Uint8Array([1, 2, 3]),
+        originalName: 'avatar.jpg',
+        mimeType: 'image/jpeg',
+        metadata: { imported: true },
+      },
+      options: { disk: 's3', folder: 'users/42' },
     }])
   })
 
@@ -87,9 +80,9 @@ test.group('AttachmentManager', () => {
 
       await manager.createFromPath(path)
 
-      assert.equal(inputs[0]?.originalName, 'report.pdf')
-      assert.equal(inputs[0]?.mimeType, 'application/pdf')
-      assert.deepEqual(inputs[0]?.body, new Uint8Array([1, 2]))
+      assert.equal(inputs[0]?.input.originalName, 'report.pdf')
+      assert.equal(inputs[0]?.input.mimeType, 'application/pdf')
+      assert.deepEqual(inputs[0]?.input.body, new Uint8Array([1, 2]))
     } finally {
       await rm(directory, { recursive: true, force: true })
     }
@@ -114,8 +107,8 @@ test.group('AttachmentManager', () => {
     await manager.createFromBase64('data:image/png;base64,AQID', { originalName: 'avatar' })
     await manager.createFromBase64('BAUG', { originalName: 'document.pdf' })
 
-    assert.deepEqual(inputs.map((input) => input.body), [new Uint8Array([1, 2, 3]), new Uint8Array([4, 5, 6])])
-    assert.deepEqual(inputs.map((input) => input.mimeType), ['image/png', 'application/pdf'])
+    assert.deepEqual(inputs.map(({ input }) => input.body), [new Uint8Array([1, 2, 3]), new Uint8Array([4, 5, 6])])
+    assert.deepEqual(inputs.map(({ input }) => input.mimeType), ['image/png', 'application/pdf'])
   })
 
   test('rejects malformed Base64 data', async ({ assert }) => {
@@ -147,8 +140,8 @@ test.group('AttachmentManager', () => {
     await manager.createFromUrl('https://example.test/images/cover.webp')
 
     assert.deepEqual(requests, ['https://example.test/images/cover.webp'])
-    assert.equal(inputs[0]?.originalName, 'cover.webp')
-    assert.equal(inputs[0]?.mimeType, 'image/webp')
+    assert.equal(inputs[0]?.input.originalName, 'cover.webp')
+    assert.equal(inputs[0]?.input.mimeType, 'image/webp')
   })
 
   test('creates attachments from Adonis multipart-file shaped values', async ({ assert }) => {
@@ -166,8 +159,8 @@ test.group('AttachmentManager', () => {
         subtype: 'png',
       })
 
-      assert.equal(inputs[0]?.originalName, 'profile.png')
-      assert.equal(inputs[0]?.mimeType, 'image/png')
+      assert.equal(inputs[0]?.input.originalName, 'profile.png')
+      assert.equal(inputs[0]?.input.mimeType, 'image/png')
     } finally {
       await rm(directory, { recursive: true, force: true })
     }

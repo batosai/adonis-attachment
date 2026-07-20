@@ -10,7 +10,8 @@ import { readFile, stat } from 'node:fs/promises'
 
 import type { Readable } from 'node:stream'
 
-import type { Attachment, CreateAttachmentInput } from '../core/attachment.js'
+import type { AttachmentDraft, CreateAttachmentInput } from '../core/attachment.js'
+import type { AttachmentPersistenceOptions } from '../core/attachment_options.js'
 import type { AttachmentService } from '../core/attachment_service.js'
 
 export type MultipartAttachmentFile = {
@@ -20,9 +21,10 @@ export type MultipartAttachmentFile = {
   subtype?: string
 }
 
-export type AttachmentSourceOptions = Omit<CreateAttachmentInput, 'body' | 'originalName' | 'mimeType'> & {
+export type AttachmentSourceOptions = AttachmentPersistenceOptions & {
   originalName?: string
   mimeType?: string
+  metadata?: CreateAttachmentInput['metadata']
   maxBytes?: number
 }
 
@@ -44,15 +46,15 @@ export type AttachmentManagerOptions = {
 }
 
 /**
- * Normalizes common input sources before delegating storage to AttachmentService.
- * It does not inspect media metadata; the media pipeline owns that concern.
+ * Normalizes common input sources into drafts. The file is written only when the
+ * caller invokes `draft.persist()` or an integration persists it automatically.
  */
 export class AttachmentManager {
-  readonly #attachments: Pick<AttachmentService, 'create'>
+  readonly #attachments: Pick<AttachmentService, 'createDraft'>
   readonly #maxBytes: number | undefined
   readonly #fetch: AttachmentSourceFetch
 
-  constructor(attachments: Pick<AttachmentService, 'create'>, options: AttachmentManagerOptions = {}) {
+  constructor(attachments: Pick<AttachmentService, 'createDraft'>, options: AttachmentManagerOptions = {}) {
     if (options.maxBytes !== undefined && (!Number.isSafeInteger(options.maxBytes) || options.maxBytes < 1)) {
       throw new Error('Attachment source maxBytes must be a positive integer')
     }
@@ -62,7 +64,7 @@ export class AttachmentManager {
     this.#fetch = options.fetch ?? globalThis.fetch
   }
 
-  createFromBuffer(input: Uint8Array, options: AttachmentSourceOptions = {}): Promise<Attachment> {
+  createFromBuffer(input: Uint8Array, options: AttachmentSourceOptions = {}): Promise<AttachmentDraft> {
     return this.#create(input, {
       originalName: options.originalName ?? 'attachment.bin',
       mimeType: options.mimeType ?? mimeTypeFromName(options.originalName),
@@ -70,7 +72,7 @@ export class AttachmentManager {
     })
   }
 
-  createFromBase64(input: string, options: AttachmentSourceOptions = {}): Promise<Attachment> {
+  createFromBase64(input: string, options: AttachmentSourceOptions = {}): Promise<AttachmentDraft> {
     const parsed = parseBase64(input)
 
     return this.#create(parsed.body, {
@@ -80,7 +82,7 @@ export class AttachmentManager {
     })
   }
 
-  async createFromPath(input: string, options: AttachmentSourceOptions = {}): Promise<Attachment> {
+  async createFromPath(input: string, options: AttachmentSourceOptions = {}): Promise<AttachmentDraft> {
     const file = await stat(input)
     this.#assertSize(file.size, options.maxBytes)
     const body = await readFile(input)
@@ -93,7 +95,7 @@ export class AttachmentManager {
     })
   }
 
-  async createFromStream(input: Readable, options: AttachmentSourceOptions = {}): Promise<Attachment> {
+  async createFromStream(input: Readable, options: AttachmentSourceOptions = {}): Promise<AttachmentDraft> {
     const chunks: Uint8Array[] = []
     let size = 0
 
@@ -112,7 +114,7 @@ export class AttachmentManager {
     })
   }
 
-  async createFromUrl(input: URL | string, options: AttachmentSourceOptions = {}): Promise<Attachment> {
+  async createFromUrl(input: URL | string, options: AttachmentSourceOptions = {}): Promise<AttachmentDraft> {
     const response = await this.#fetch(input)
 
     if (!response.ok) {
@@ -137,7 +139,7 @@ export class AttachmentManager {
     })
   }
 
-  createFromFile(input: MultipartAttachmentFile, options: AttachmentSourceOptions = {}): Promise<Attachment> {
+  createFromFile(input: MultipartAttachmentFile, options: AttachmentSourceOptions = {}): Promise<AttachmentDraft> {
     if (!input.tmpPath) {
       throw new AttachmentSourceError('Multipart attachment file has no temporary path')
     }
@@ -152,24 +154,22 @@ export class AttachmentManager {
   createFromFiles(
     inputs: readonly MultipartAttachmentFile[],
     options: AttachmentSourceOptions = {}
-  ): Promise<Attachment[]> {
+  ): Promise<AttachmentDraft[]> {
     return Promise.all(inputs.map((input) => this.createFromFile(input, options)))
   }
 
   async #create(
     body: Uint8Array,
     input: { originalName: string; mimeType: string; options: AttachmentSourceOptions }
-  ): Promise<Attachment> {
+  ): Promise<AttachmentDraft> {
     this.#assertSize(body.byteLength, input.options.maxBytes)
 
-    return this.#attachments.create({
+    return this.#attachments.createDraft({
       body,
       originalName: input.originalName,
       mimeType: input.mimeType,
-      ...(input.options.disk ? { disk: input.options.disk } : {}),
-      ...(input.options.folder ? { folder: input.options.folder } : {}),
       ...(input.options.metadata ? { metadata: input.options.metadata } : {}),
-    })
+    }, toPersistenceOptions(input.options))
   }
 
   #assertSize(size: number, override: number | undefined): void {
@@ -187,6 +187,17 @@ export class AttachmentManager {
     if (maxBytes !== undefined && size > maxBytes) {
       throw new AttachmentSourceError(`Attachment source exceeds the ${maxBytes}-byte limit`)
     }
+  }
+}
+
+function toPersistenceOptions(options: AttachmentSourceOptions): AttachmentPersistenceOptions {
+  return {
+    ...(options.disk !== undefined ? { disk: options.disk } : {}),
+    ...(options.folder !== undefined ? { folder: options.folder } : {}),
+    ...(options.rename !== undefined ? { rename: options.rename } : {}),
+    ...(options.meta !== undefined ? { meta: options.meta } : {}),
+    ...(options.preComputeUrl !== undefined ? { preComputeUrl: options.preComputeUrl } : {}),
+    ...(options.variants !== undefined ? { variants: options.variants } : {}),
   }
 }
 

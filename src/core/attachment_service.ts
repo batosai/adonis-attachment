@@ -48,14 +48,21 @@ export class AttachmentService {
     this.#defaults = options.defaults ?? {}
   }
 
-  createDraft(input: CreateAttachmentInput): AttachmentDraft {
-    const options = {
+  createDraft(
+    input: CreateAttachmentInput,
+    options: AttachmentPersistenceOptions = {}
+  ): AttachmentDraft {
+    const draftOptions = {
       ...(input.disk !== undefined ? { disk: input.disk } : {}),
       ...(input.folder !== undefined ? { folder: input.folder } : {}),
+      ...options,
     }
-    const provisional = this.#factory.create(input)
+    const provisional = this.#factory.create(input, {
+      ...(typeof draftOptions.disk === 'string' ? { disk: draftOptions.disk } : {}),
+      ...(typeof draftOptions.folder === 'string' ? { folder: draftOptions.folder } : {}),
+    })
 
-    return new AttachmentDraft(input, provisional, options, (draft, request) =>
+    return new AttachmentDraft(input, provisional, draftOptions, (draft, request) =>
       this.#persistDraft(draft, request)
     )
   }

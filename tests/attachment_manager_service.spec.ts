@@ -10,12 +10,13 @@ import { setApp } from '@adonisjs/core/services/app'
 import type { ApplicationService } from '@adonisjs/core/types'
 
 import { attachmentManager } from '../index.js'
+import { AttachmentDraft } from '../src/core/attachment.js'
 import { AttachmentManager } from '../src/sources/attachment_manager.js'
 
 test.group('attachmentManager service', () => {
   test('resolves the typed manager lazily from the Adonis container', async ({ assert }) => {
     const manager = new AttachmentManager({
-      async create(input) {
+      createDraft(input) {
         return {
           id: 'attachment-id',
           disk: input.disk ?? 'fs',
@@ -25,8 +26,8 @@ test.group('attachmentManager service', () => {
           size: input.body.byteLength,
           extname: '.txt',
           mimeType: input.mimeType ?? 'application/octet-stream',
-          metadata: input.metadata ?? {},
-        }
+          isPersisted: false,
+        } as AttachmentDraft
       },
     })
 

@@ -293,4 +293,160 @@ test.group('LucidAttachmentLifecycleService', () => {
     assert.deepEqual(removedRows, ['attachment-id'])
     assert.sameDeepMembers(removedFiles, ['attachment-id', 'variant-id'])
   })
+
+  test('persists a collection item before inserting its polymorphic row', async ({ assert }) => {
+    const events: string[] = []
+    const item = makeRow(attachment)
+    const service = new LucidAttachmentLifecycleService(
+      {
+        async create() {
+          events.push('write')
+          return attachment
+        },
+        async remove() {},
+      },
+      {
+        async createOriginal() {
+          return item
+        },
+        async findOriginal() {
+          return null
+        },
+        async listVariants() {
+          return []
+        },
+        async releaseOwner() {},
+        async restoreOwner() {},
+        async remove() {},
+        async createCollectionItem() {
+          events.push('persist')
+          return item
+        },
+        async findCollectionItem() {
+          return null
+        },
+        async listCollection() {
+          return []
+        },
+        async moveCollectionItem() {
+          return []
+        },
+        async removeCollectionItem() {},
+      }
+    )
+
+    await service.add({ type: 'users', id: '42', field: 'avatars' }, {
+      body: new Uint8Array(),
+      originalName: 'profile.jpg',
+    })
+
+    assert.deepEqual(events, ['write', 'persist'])
+  })
+
+  test('removes a collection file when its database insertion fails', async ({ assert }) => {
+    const removed: Attachment[] = []
+    const service = new LucidAttachmentLifecycleService(
+      {
+        async create() {
+          return attachment
+        },
+        async remove(value) {
+          removed.push(value)
+        },
+      },
+      {
+        async createOriginal() {
+          return makeRow(attachment)
+        },
+        async findOriginal() {
+          return null
+        },
+        async listVariants() {
+          return []
+        },
+        async releaseOwner() {},
+        async restoreOwner() {},
+        async remove() {},
+        async createCollectionItem() {
+          throw new Error('database unavailable')
+        },
+        async findCollectionItem() {
+          return null
+        },
+        async listCollection() {
+          return []
+        },
+        async moveCollectionItem() {
+          return []
+        },
+        async removeCollectionItem() {},
+      }
+    )
+
+    await assert.rejects(
+      () =>
+        service.add({ type: 'users', id: '42', field: 'avatars' }, {
+          body: new Uint8Array(),
+          originalName: 'profile.jpg',
+        }),
+      'database unavailable'
+    )
+
+    assert.deepEqual(removed, [attachment])
+  })
+
+  test('removes a collection item and its persisted variants', async ({ assert }) => {
+    const removedRows: string[] = []
+    const removedFiles: string[] = []
+    const item = makeRow(attachment)
+    const variant = makeRow({ ...attachment, id: 'variant-id', path: 'users/42/thumbnail.webp' })
+    const service = new LucidAttachmentLifecycleService(
+      {
+        async create() {
+          return attachment
+        },
+        async remove(value) {
+          removedFiles.push(value.id)
+        },
+      },
+      {
+        async createOriginal() {
+          return item
+        },
+        async findOriginal() {
+          return null
+        },
+        async listVariants() {
+          return [variant]
+        },
+        async releaseOwner() {},
+        async restoreOwner() {},
+        async remove() {},
+        async createCollectionItem() {
+          return item
+        },
+        async findCollectionItem() {
+          return item
+        },
+        async listCollection() {
+          return [item]
+        },
+        async moveCollectionItem() {
+          return [item]
+        },
+        async removeCollectionItem(_owner, row) {
+          removedRows.push(row.id)
+        },
+      }
+    )
+
+    const removed = await service.removeCollectionItem(
+      { type: 'users', id: '42', field: 'avatars' },
+      attachment.id
+    )
+
+    assert.isTrue(removed)
+    assert.deepEqual(removedRows, ['attachment-id'])
+    assert.sameDeepMembers(removedFiles, ['attachment-id', 'variant-id'])
+  })
 })

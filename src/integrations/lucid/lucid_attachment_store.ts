@@ -29,6 +29,33 @@ export class LucidAttachmentStore {
       attachableId: owner.id,
       field: owner.field,
       ownerKey: createAttachmentOwnerKey(owner),
+      position: null,
+      parentId: null,
+      variantKey: null,
+      metadata: attachment.metadata ?? null,
+    })
+
+    markAttachmentPersisted(attachment)
+    return row
+  }
+
+  async createCollectionItem(
+    owner: AttachmentOwner,
+    attachment: Attachment,
+    position?: number
+  ): Promise<AttachmentModel> {
+    const items = await this.listCollection(owner)
+    const target = normalizePosition(position, items.length)
+
+    await this.#shiftCollection(items, target, 1)
+
+    const row = await this.#model.create({
+      ...attachment,
+      attachableType: owner.type,
+      attachableId: owner.id,
+      field: owner.field,
+      ownerKey: null,
+      position: target,
       parentId: null,
       variantKey: null,
       metadata: attachment.metadata ?? null,
@@ -49,6 +76,7 @@ export class LucidAttachmentStore {
       attachableId: original.attachableId,
       field: original.field,
       ownerKey: null,
+      position: null,
       parentId: original.id,
       variantKey: key,
       metadata: attachment.metadata ?? null,
@@ -78,8 +106,62 @@ export class LucidAttachmentStore {
       .where('attachable_type', owner.type)
       .where('attachable_id', owner.id)
       .where('field', owner.field)
+      .whereNotNull('owner_key')
       .whereNull('parent_id')
       .first()
+  }
+
+  listCollection(owner: AttachmentOwner): Promise<AttachmentModel[]> {
+    return this.#model
+      .query()
+      .where('attachable_type', owner.type)
+      .where('attachable_id', owner.id)
+      .where('field', owner.field)
+      .whereNull('owner_key')
+      .whereNull('parent_id')
+      .orderBy('position', 'asc')
+  }
+
+  findCollectionItem(owner: AttachmentOwner, id: string): Promise<AttachmentModel | null> {
+    return this.#model
+      .query()
+      .where('id', id)
+      .where('attachable_type', owner.type)
+      .where('attachable_id', owner.id)
+      .where('field', owner.field)
+      .whereNull('owner_key')
+      .whereNull('parent_id')
+      .first()
+  }
+
+  async removeCollectionItem(owner: AttachmentOwner, item: AttachmentModel): Promise<void> {
+    await this.remove(item)
+    await this.#normalizeCollection(owner)
+  }
+
+  async moveCollectionItem(
+    owner: AttachmentOwner,
+    id: string,
+    position: number
+  ): Promise<AttachmentModel[]> {
+    const items = await this.listCollection(owner)
+    const source = items.findIndex((item) => item.id === id)
+
+    if (source === -1) {
+      throw new Error(`Attachment "${id}" does not belong to this collection`)
+    }
+
+    const target = normalizePosition(position, items.length - 1)
+
+    if (source === target) {
+      return items
+    }
+
+    const [item] = items.splice(source, 1)
+    items.splice(target, 0, item!)
+    await this.#reorderCollection(items)
+
+    return items
   }
 
   findById(id: string): Promise<AttachmentModel | null> {
@@ -106,4 +188,49 @@ export class LucidAttachmentStore {
   async remove(original: AttachmentModel): Promise<void> {
     await original.delete()
   }
+
+  async #normalizeCollection(owner: AttachmentOwner): Promise<void> {
+    await this.#reorderCollection(await this.listCollection(owner))
+  }
+
+  async #shiftCollection(
+    items: readonly AttachmentModel[],
+    from: number,
+    amount: number
+  ): Promise<void> {
+    for (const item of [...items].reverse()) {
+      if ((item.position ?? 0) < from) {
+        continue
+      }
+
+      item.position = (item.position ?? 0) + amount
+      await item.save()
+    }
+  }
+
+  async #reorderCollection(items: readonly AttachmentModel[]): Promise<void> {
+    const offset = items.length + 1
+
+    for (const item of items) {
+      item.position = (item.position ?? 0) + offset
+      await item.save()
+    }
+
+    for (const [position, item] of items.entries()) {
+      item.position = position
+      await item.save()
+    }
+  }
+}
+
+function normalizePosition(position: number | undefined, maximum: number): number {
+  if (position === undefined) {
+    return maximum
+  }
+
+  if (!Number.isSafeInteger(position) || position < 0) {
+    throw new Error('Attachment collection positions must be non-negative integers')
+  }
+
+  return Math.min(position, maximum)
 }

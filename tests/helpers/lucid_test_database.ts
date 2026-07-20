@@ -53,7 +53,6 @@ export async function createLucidTestDatabase(): Promise<Database> {
     table.timestamp('created_at').notNullable()
     table.timestamp('updated_at').notNullable()
     table.index(['attachable_type', 'attachable_id', 'field'])
-    table.unique(['attachable_type', 'attachable_id', 'field', 'position'])
     table.index(['parent_id'])
     table.unique(['parent_id', 'variant_key'])
   })

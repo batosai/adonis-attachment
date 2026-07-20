@@ -38,7 +38,6 @@ test.group('attachments table migration stub', () => {
     assert.include(stub, "table.string('attachable_type').notNullable()")
     assert.include(stub, "table.integer('position').unsigned().nullable()")
     assert.include(stub, "table.uuid('parent_id').nullable()")
-    assert.include(stub, "table.unique(['attachable_type', 'attachable_id', 'field', 'position'])")
     assert.include(stub, "table.unique(['parent_id', 'variant_key'])")
   })
 

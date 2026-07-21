@@ -7,7 +7,13 @@
 
 import { test } from '@japa/runner'
 
-import { AdonisAttachmentQueue } from '../index.js'
+import {
+  AdonisAttachmentQueue,
+  AttachmentJobProcessor,
+  type Attachment,
+  type AttachmentJob,
+  type VariantGenerationRequest,
+} from '../index.js'
 
 test.group('AdonisAttachmentQueue', () => {
   test('dispatches an attachment job to the configured queue', async ({ assert }) => {
@@ -55,5 +61,61 @@ test.group('AdonisAttachmentQueue', () => {
     await queue.enqueue({ type: 'generate-variants', attachmentId: 'attachment-id' })
 
     assert.deepEqual(calls, ['run'])
+  })
+
+  test('preserves the serialized payload through an external worker', async ({ assert }) => {
+    const attachment: Attachment = {
+      id: 'attachment-id',
+      disk: 'public',
+      name: 'attachment-id.jpg',
+      originalName: 'avatar.jpg',
+      path: 'users/42/attachment-id.jpg',
+      size: 3,
+      extname: 'jpg',
+      mimeType: 'image/jpeg',
+    }
+    const generated: VariantGenerationRequest[] = []
+    const processor = new AttachmentJobProcessor({
+      attachments: {
+        async findById(id) {
+          return id === attachment.id ? attachment : null
+        },
+      },
+      variants: {
+        async generate(request) {
+          generated.push(request)
+        },
+      },
+    })
+    let payload: AttachmentJob | undefined
+    const queue = new AdonisAttachmentQueue({
+      queue: 'attachments',
+      job: {
+        dispatch(job) {
+          payload = JSON.parse(JSON.stringify(job)) as AttachmentJob
+          return {
+            toQueue() {
+              return this
+            },
+            async run() {
+              await processor.process(payload!)
+            },
+          }
+        },
+      },
+    })
+
+    await queue.enqueue({
+      type: 'generate-variants',
+      attachmentId: attachment.id,
+      variantKeys: ['thumbnail'],
+    })
+
+    assert.deepEqual(payload, {
+      type: 'generate-variants',
+      attachmentId: attachment.id,
+      variantKeys: ['thumbnail'],
+    })
+    assert.deepEqual(generated, [{ attachment, variantKeys: ['thumbnail'] }])
   })
 })

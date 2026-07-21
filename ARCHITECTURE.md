@@ -45,6 +45,8 @@ Le sous-chemin `@jrmc/adonis-attachment/media/binaries` expose un `CommandRunner
 
 `AttachmentJobProcessor` peut aussi recevoir une factory de generateur asynchrone. Elle est resolue et memorisee au premier job, ce qui permet de construire un generateur dependant du service `jrmc.attachment` sans cycle au boot.
 
+La queue externe ne transporte que le job serialisable `{ type, attachmentId, variantKeys? }`. Le worker recharge ensuite l'attachment dans son repository avant de lancer le generateur, ce qui evite de transporter des chemins, des octets ou un modele Lucid dans le message.
+
 ## Modele Lucid cible
 
 Le mode table dediee separe le blob du fichier et son rattachement. La table `attachments` contient les blobs. La table `attachment_links` contient la relation polymorphe avec les modeles applicatifs. Un variant est un blob dont `parent_id` designe le blob original.

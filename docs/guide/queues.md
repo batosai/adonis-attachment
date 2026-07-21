@@ -86,6 +86,9 @@ export default class GenerateAttachmentVariants extends Job<AttachmentJob> {
 ```
 
 This keeps the package independent of how and where your workers are deployed.
+The payload contains only `type`, `attachmentId`, and optional `variantKeys`, so it is safe
+to serialize through a remote queue; the worker always reloads the attachment before work
+begins.
 
 ## The flow at a glance
 

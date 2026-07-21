@@ -71,6 +71,10 @@
       "types": "./build/src/media/binaries.d.ts",
       "default": "./build/src/media/binaries.js"
     },
+    "./converters/converter": {
+      "types": "./build/src/converters/converter.d.ts",
+      "default": "./build/src/converters/converter.js"
+    },
     "./lucid": {
       "types": "./build/src/integrations/lucid/index.d.ts",
       "default": "./build/src/integrations/lucid/index.js"
@@ -94,6 +98,10 @@
     "./commands/make/attachment_v5_migration": {
       "types": "./build/commands/make/attachment_v5_migration.d.ts",
       "default": "./build/commands/make/attachment_v5_migration.js"
+    },
+    "./commands/make/converter": {
+      "types": "./build/commands/make/converter.d.ts",
+      "default": "./build/commands/make/converter.js"
     }
   },
   "scripts": {

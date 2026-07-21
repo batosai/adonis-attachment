@@ -1,0 +1,18 @@
+{{#var entity = generators.createEntity(name)}}
+{{#var className = string(entity.name).removeSuffix('converter').pascalCase().suffix('Converter').toString()}}
+{{#var fileName = string(entity.name).snakeCase().suffix('_converter').ext('.ts').toString()}}
+{{{ exports({ to: app.makePath('app/converters', entity.path, fileName) }) }}}
+
+import Converter, {
+  type ConverterAttributes,
+} from '@jrmc/adonis-attachment'
+
+export default class {{ className }} extends Converter {
+  async handle({ attachment, body }: ConverterAttributes) {
+    return {
+      body,
+      fileName: attachment.name,
+      mimeType: attachment.mimeType,
+    }
+  }
+}

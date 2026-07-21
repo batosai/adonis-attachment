@@ -223,6 +223,42 @@ test.group('defineConfig', () => {
     assert.equal(resolved.metadataExtractors, extractors)
   })
 
+  test('wraps named v5-style converter declarations in a lazy registry', async ({ assert }) => {
+    const storage: AttachmentStorage = {
+      async write() {},
+      async read() {
+        return new Uint8Array()
+      },
+      async remove() {},
+    }
+    let imports = 0
+    const resolved = await defineConfig({
+      defaultDisk: 'public',
+      storage,
+      converters: {
+        thumbnail: {
+          width: 320,
+          converter: async () => {
+            imports += 1
+            return {
+              default: {
+                key: 'ignored',
+                async convert() {
+                  return undefined
+                },
+              },
+            }
+          },
+        },
+      },
+    }).resolver({} as never)
+
+    assert.equal(imports, 0)
+    assert.deepEqual(await resolved.converters?.keys(), ['thumbnail'])
+    assert.equal((await resolved.converters?.get('thumbnail'))?.key, 'thumbnail')
+    assert.equal(imports, 1)
+  })
+
   test('derives Lucid link table names from one configured blob table', async ({ assert }) => {
     const storage: AttachmentStorage = {
       async write() {},

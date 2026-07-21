@@ -35,7 +35,7 @@ La documentation contient un flux de persistence personnalisee avec un `Attachme
 
 Un adaptateur `@adonisjs/queue` devra implementer le meme contrat. Le job Adonis appelle `AttachmentJobProcessor.process(this.payload)` dans sa methode `execute`. Cette limite permet de garder les jobs Adonis dans l'application, ou ils peuvent etre auto-decouverts et injectes par le conteneur.
 
-Les converters v6 implementent `VariantConverter`. Ils recoivent l'attachment et ses octets, puis retournent les octets et les metadonnees du variant. `VariantGenerationService` ecrit les fichiers generes et peut etre utilise directement comme `VariantGenerator` par le processeur de jobs.
+Les converters peuvent etre declares dans `config/attachment.ts` sous une cle de variant, avec un import dynamique et des options de style v5. `ConfiguredVariantConverterRegistry` ne charge la classe qu'au premier job pour cette cle. La commande `make:converter` genere une classe qui etend `Converter` et implemente `handle({ attachment, body, options })`. Les objets `VariantConverter` restent acceptes directement par `VariantGenerationService`. Les deux formes retournent les octets et les metadonnees du variant, ou `undefined` pour ignorer le fichier. `VariantGenerationService` ecrit les fichiers generes et peut etre utilise directement comme `VariantGenerator` par le processeur de jobs.
 
 Les extracteurs de metadata implementent `MediaMetadataExtractor`. Ils sont independants des bibliotheques de traitement et peuvent filtrer leurs entrees avec `supports()`. Le noyau les execute apres la resolution du nom et du disque, avant l'ecriture. Les metadata explicites de l'appelant restent prioritaires sur les valeurs extraites.
 

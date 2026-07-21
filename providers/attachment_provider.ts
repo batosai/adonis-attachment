@@ -64,6 +64,20 @@ export default class AttachmentProvider {
 
       return new AttachmentManager(attachments, config?.sources)
     })
+
+    this.app.container.singleton('jrmc.attachment.converters', async () => {
+      const attachmentConfig = this.app.config.get('attachment')
+      const config = await configProvider.resolve<ResolvedAttachmentConfig>(
+        this.app,
+        attachmentConfig
+      )
+
+      if (!config?.converters) {
+        throw new Error('Attachment converters require a converters entry in config/attachment.ts')
+      }
+
+      return config.converters
+    })
   }
 
   async boot(): Promise<void> {

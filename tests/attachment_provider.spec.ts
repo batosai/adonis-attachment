@@ -109,4 +109,46 @@ test.group('AttachmentProvider', (group) => {
     assert.equal(AttachmentModel.table, 'media_attachments')
     assert.equal(AttachmentLinkModel.table, 'media_attachment_links')
   })
+
+  test('registers the configured converter registry', async ({ assert }) => {
+    const bindings = new Map<string, () => Promise<unknown>>()
+    let imports = 0
+    const config = defineConfig({
+      defaultDisk: 'public',
+      storage,
+      converters: {
+        thumbnail: {
+          converter: async () => {
+            imports += 1
+            return {
+              default: {
+                key: 'ignored',
+                async convert() {
+                  return undefined
+                },
+              },
+            }
+          },
+        },
+      },
+    })
+    const app = {
+      config: { get: () => config },
+      container: {
+        singleton(binding: string, factory: () => Promise<unknown>) {
+          bindings.set(binding, factory)
+        },
+      },
+    }
+    const provider = new AttachmentProvider(app as never)
+
+    provider.register()
+    const factory = bindings.get('jrmc.attachment.converters')
+    const registry = await factory?.() as { keys(): Promise<readonly string[]>; get(key: string): Promise<unknown> }
+
+    assert.deepEqual(await registry.keys(), ['thumbnail'])
+    assert.equal(imports, 0)
+    assert.isDefined(await registry.get('thumbnail'))
+    assert.equal(imports, 1)
+  })
 })

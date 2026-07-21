@@ -1,13 +1,16 @@
 import type { AttachmentService } from "./src/core/attachment_service.js";
 import type { AttachmentRepository } from "./src/core/attachment_repository.js";
 import type { AttachmentManager } from "./src/sources/attachment_manager.js";
+import type { VariantConverterRegistry } from "./src/converters/configured_variant_converter_registry.js";
 
 import attachmentManager from "./services/main.js";
+import attachmentConverters from "./services/converters.js";
 
 declare module "@adonisjs/core/types" {
   export interface ContainerBindings {
     "jrmc.attachment": AttachmentService;
     "jrmc.attachment.manager": AttachmentManager;
+    "jrmc.attachment.converters": VariantConverterRegistry;
     "jrmc.attachment.repository": AttachmentRepository;
   }
 }
@@ -15,10 +18,12 @@ declare module "@adonisjs/core/types" {
 export * from "./src/core/index.js";
 export { configure } from "./configure.js";
 export { attachmentManager };
+export { attachmentConverters };
 export {
   defineConfig,
   type AttachmentIntegrationsConfig,
   type AttachmentMediaConfig,
+  type AttachmentConvertersConfig,
   type AttachmentConfig,
   type LucidAttachmentConfig,
   type ResolvedAttachmentConfig,

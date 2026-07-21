@@ -5,10 +5,53 @@ generated from the bytes of an original attachment. The package handles the plum
 (reading the original, storing the result, persisting the row); **you provide the
 transformation**.
 
-## Write a converter
+## Declare converters
 
-A converter has a `key` and a `convert()` method. It receives the original's bytes and
-returns the generated file. Use any image library you like (Sharp, Jimp, ...):
+Declare converters in `config/attachment.ts`, using the same named, lazy-import format as
+v5. The configuration key is the variant key, and the remaining properties are passed to
+the converter instance as `options`.
+
+```ts
+export default defineConfig({
+  storage: LocalFileStorage.fromApp,
+  converters: {
+    thumbnail: {
+      converter: () => import('#converters/thumbnail_converter'),
+      width: 320,
+      format: 'webp',
+    },
+  },
+})
+```
+
+Generate the class with:
+
+```sh
+node ace make:converter thumbnail
+```
+
+The generated converter receives the original attachment, its bytes, and the configured
+options. It returns the generated file, or `undefined` when this source should not produce
+that variant.
+
+```ts
+import Converter, { type ConverterAttributes } from '@jrmc/adonis-attachment'
+
+export default class ThumbnailConverter extends Converter {
+  async handle({ attachment, body, options }: ConverterAttributes) {
+    return {
+      body,
+      fileName: `thumbnail-${String(options.width)}.webp`,
+      mimeType: 'image/webp',
+    }
+  }
+}
+```
+
+### Direct object converters
+
+You can also provide a `VariantConverter` object directly to `VariantGenerationService`.
+It receives the original's bytes and returns the generated file:
 
 ### Sharp adapter
 
@@ -86,11 +129,11 @@ binary locations or to integrate your own process runner.
 it produces `Attachment` values but doesn't record them anywhere.
 
 ```ts
-import { VariantGenerationService } from '@jrmc/adonis-attachment'
+import { VariantGenerationService, attachmentConverters } from '@jrmc/adonis-attachment'
 
 const generator = new VariantGenerationService({
   attachments: attachmentService, // the jrmc.attachment service
-  converters: [thumbnail],
+  converters: attachmentConverters,
 })
 ```
 

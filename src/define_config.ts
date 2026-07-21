@@ -21,6 +21,11 @@ import type { AttachmentStorage } from './core/storage.js'
 import type { AttachmentManagerOptions } from './sources/attachment_manager.js'
 import type { AttachmentPersistenceOptions } from './core/attachment_options.js'
 import type { MediaMetadataExtractor } from './media/media_metadata.js'
+import {
+  ConfiguredVariantConverterRegistry,
+  type ConverterConfigMap,
+  type VariantConverterRegistry,
+} from './converters/configured_variant_converter_registry.js'
 
 type Integration<T> = T | ((app: ApplicationService) => T | Promise<T>)
 
@@ -45,6 +50,9 @@ export type AttachmentMediaConfig = {
   metadata?: Integration<readonly MediaMetadataExtractor[]>
 }
 
+/** v5-style named converter declarations, resolved lazily when a job needs one. */
+export type AttachmentConvertersConfig = ConverterConfigMap
+
 export type AttachmentConfig = {
   /** Overrides the storage default. Falls back to `fs` when no adapter provides one. */
   defaultDisk?: string
@@ -59,6 +67,7 @@ export type AttachmentConfig = {
   route?: AttachmentRouteConfig
   integrations?: AttachmentIntegrationsConfig
   media?: AttachmentMediaConfig
+  converters?: AttachmentConvertersConfig
   queueConcurrency?: number
   createId?: () => string
 }
@@ -71,6 +80,7 @@ export type ResolvedAttachmentConfig = AttachmentServiceOptions & {
   integrations?: {
     lucid?: AttachmentTableNames
   }
+  converters?: VariantConverterRegistry
 }
 
 /**
@@ -108,6 +118,9 @@ export function defineConfig(config: AttachmentConfig): ConfigProvider<ResolvedA
       ...(config.defaults ? { defaults: config.defaults } : {}),
       ...(config.sources ? { sources: config.sources } : {}),
       ...(metadataExtractors ? { metadataExtractors } : {}),
+      ...(config.converters
+        ? { converters: new ConfiguredVariantConverterRegistry(config.converters) }
+        : {}),
       ...(config.integrations?.lucid
         ? {
             integrations: {

@@ -32,6 +32,7 @@ an **async factory** - it's resolved lazily on the first job, avoiding a boot-ti
 import {
   AttachmentJobProcessor,
   VariantGenerationService,
+  attachmentConverters,
 } from '@jrmc/adonis-attachment'
 import {
   LucidAttachmentRepository,
@@ -46,7 +47,7 @@ const processor = new AttachmentJobProcessor({
 
     return new LucidVariantGenerationService({
       attachments,
-      generator: new VariantGenerationService({ attachments, converters }),
+      generator: new VariantGenerationService({ attachments, converters: attachmentConverters }),
       store: new LucidAttachmentStore(),
     })
   },

@@ -20,11 +20,13 @@ test('imports every published package entry point', async ({ assert }) => {
     '@jrmc/adonis-attachment/adapters/local-file',
     '@jrmc/adonis-attachment/media/sharp',
     '@jrmc/adonis-attachment/media/binaries',
+    '@jrmc/adonis-attachment/converters/converter',
     '@jrmc/adonis-attachment/lucid',
     '@jrmc/adonis-attachment/attachment_provider',
     '@jrmc/adonis-attachment/configure',
     '@jrmc/adonis-attachment/commands/make/attachments_table',
     '@jrmc/adonis-attachment/commands/make/attachment_v5_migration',
+    '@jrmc/adonis-attachment/commands/make/converter',
   ]
 
   const modules = await Promise.all(entryPoints.map((entryPoint) => import(entryPoint)))

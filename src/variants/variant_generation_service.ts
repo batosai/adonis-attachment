@@ -9,6 +9,7 @@ import type { Attachment, CreateAttachmentInput } from '../core/attachment.js'
 import type { AttachmentService } from '../core/attachment_service.js'
 import type { VariantGenerationRequest, VariantGenerator } from '../core/attachment_job_processor.js'
 import type { VariantConverter } from './variant_converter.js'
+import type { VariantConverterRegistry } from '../converters/configured_variant_converter_registry.js'
 
 export type GeneratedVariant = {
   key: string
@@ -17,16 +18,21 @@ export type GeneratedVariant = {
 
 export type VariantGenerationServiceOptions = {
   attachments: Pick<AttachmentService, 'create' | 'read'>
-  converters: readonly VariantConverter[]
+  converters: readonly VariantConverter[] | VariantConverterRegistry
 }
 
 export class VariantGenerationService implements VariantGenerator {
   readonly #attachments: Pick<AttachmentService, 'create' | 'read'>
-  readonly #converters: Map<string, VariantConverter>
+  readonly #converters: Map<string, VariantConverter> | undefined
+  readonly #registry: VariantConverterRegistry | undefined
 
   constructor(options: VariantGenerationServiceOptions) {
     this.#attachments = options.attachments
-    this.#converters = new Map(options.converters.map((converter) => [converter.key, converter]))
+    if ('get' in options.converters) {
+      this.#registry = options.converters
+    } else {
+      this.#converters = new Map(options.converters.map((converter) => [converter.key, converter]))
+    }
   }
 
   async generate(request: VariantGenerationRequest): Promise<void> {
@@ -35,17 +41,21 @@ export class VariantGenerationService implements VariantGenerator {
 
   async generateAll(request: VariantGenerationRequest): Promise<GeneratedVariant[]> {
     const source = await this.#attachments.read(request.attachment)
-    const keys = request.variantKeys ?? [...this.#converters.keys()]
+    const keys = request.variantKeys ?? await this.#keys()
 
-    return Promise.all(
+    const generated = await Promise.all(
       keys.map(async (key) => {
-        const converter = this.#converters.get(key)
+        const converter = await this.#getConverter(key)
 
         if (!converter) {
           throw new UnknownVariantConverterError(key)
         }
 
         const output = await converter.convert({ attachment: request.attachment, body: source })
+
+        if (!output) {
+          return undefined
+        }
         const input: CreateAttachmentInput = {
           body: output.body,
           originalName: output.fileName,
@@ -58,6 +68,16 @@ export class VariantGenerationService implements VariantGenerator {
         return { key, attachment: await this.#attachments.create(input) }
       })
     )
+
+    return generated.filter((variant): variant is GeneratedVariant => variant !== undefined)
+  }
+
+  #keys(): Promise<readonly string[]> {
+    return this.#registry?.keys() ?? Promise.resolve([...this.#converters!.keys()])
+  }
+
+  #getConverter(key: string): Promise<VariantConverter | undefined> {
+    return this.#registry?.get(key) ?? Promise.resolve(this.#converters!.get(key))
   }
 }
 

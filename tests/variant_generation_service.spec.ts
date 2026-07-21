@@ -87,4 +87,31 @@ test.group('VariantGenerationService', () => {
       UnknownVariantConverterError
     )
   })
+
+  test('ignores a converter that intentionally returns no variant', async ({ assert }) => {
+    const service = new VariantGenerationService({
+      attachments: {
+        async read() {
+          return new Uint8Array()
+        },
+        async create() {
+          assert.fail('No file should be written')
+          return sourceAttachment
+        },
+      },
+      converters: [
+        {
+          key: 'thumbnail',
+          async convert() {
+            return undefined
+          },
+        },
+      ],
+    })
+
+    assert.deepEqual(
+      await service.generateAll({ attachment: sourceAttachment, variantKeys: ['thumbnail'] }),
+      []
+    )
+  })
 })

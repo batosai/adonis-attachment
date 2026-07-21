@@ -25,6 +25,20 @@ export {
 } from './attachment_options.js'
 export { AttachmentService, type AttachmentServiceOptions } from './attachment_service.js'
 export {
+  default as Converter,
+  type ConverterAttributes,
+  type ConverterOptions,
+} from '../converters/converter.js'
+export {
+  ConfiguredVariantConverterRegistry,
+  InvalidConverterModuleError,
+  type ConverterConfig,
+  type ConverterConfigMap,
+  type ConverterConstructor,
+  type ConverterModule,
+  type VariantConverterRegistry,
+} from '../converters/configured_variant_converter_registry.js'
+export {
   MediaMetadataService,
   type MediaMetadataExtractor,
   type MediaMetadataInput,

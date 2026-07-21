@@ -22,5 +22,5 @@ export type VariantConversionOutput = {
 
 export interface VariantConverter {
   key: string
-  convert(input: VariantConversionInput): Promise<VariantConversionOutput>
+  convert(input: VariantConversionInput): Promise<VariantConversionOutput | undefined>
 }

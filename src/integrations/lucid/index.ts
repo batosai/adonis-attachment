@@ -50,7 +50,9 @@ export {
   type LegacyVariant,
   type MigrateLegacyAttachmentOptions,
   type MigrateLegacyAttachmentColumnOptions,
-  type MigratedAttachmentRow,
+  type MigratedAttachmentBlob,
+  type MigratedAttachmentLink,
+  type MigratedAttachmentRows,
 } from "./migrate_legacy_attachment.js";
 export {
   migrateLegacyAttachmentRecords,

@@ -8,7 +8,7 @@ Version 6 is a breaking release. Attachments are no longer persisted as nested J
 4. Run the script in a staging copy of the database, validate its output, then run it in production.
 5. Deploy code that reads from the new persistence layer before removing the legacy JSON columns.
 
-The script uses `migrateLegacyAttachmentRecords`, which writes rows in batches of 100 by default. It preserves file paths, disk names, metadata, and the relationship between an original and its variants. It does not move files in storage.
+The script uses `migrateLegacyAttachmentRecords`, which writes blob and link rows in batches of 100 by default. Each batch is inserted in one transaction by the generated script. It preserves file paths, disk names, metadata, and the relationship between an original and its variants. It does not move files in storage.
 
 The package cannot infer the legacy model, JSON column, or polymorphic owner from an application. The generated script deliberately leaves that mapping to the application instead of guessing it. Use `--disk=s3` or `--folder=database/scripts` to change its defaults.
 
@@ -31,13 +31,13 @@ await user.save();
 
 Legacy attachments containing variants must migrate to the polymorphic table instead: the v6 column mode intentionally represents one file only.
 
-## Attachment table upgrade
+## Attachment links table
 
-The current `make:attachments-table` stub includes the nullable `position` column used by `@attachmentsRelation()` collections. Projects that generated the table from an earlier v6 alpha can add it with a normal Lucid migration:
+The current `make:attachments-table` stub creates `attachments` for blobs and `attachment_links` for polymorphic ownership. The nullable `position` column used by `@attachmentsRelation()` collections belongs to `attachment_links`:
 
 ```ts
 export default class AddAttachmentPosition extends BaseSchema {
-  protected tableName = "attachments";
+  protected tableName = "attachment_links";
 
   async up() {
     this.schema.alterTable(this.tableName, (table) => {
@@ -53,4 +53,6 @@ export default class AddAttachmentPosition extends BaseSchema {
 }
 ```
 
-Existing singular attachment rows keep `position = NULL`. New collection rows are assigned contiguous zero-based positions by the relation manager.
+Existing singular links keep `position = NULL`. New collection links are assigned contiguous zero-based positions by the relation manager.
+
+The prior v6 alpha used one `attachments` table for both blobs and links. It is intentionally not a stable schema. Before adopting this alpha, create the new schema and migrate each existing original into one blob plus one link, then move its variants to blobs with `parent_id` pointing to the migrated original. The package’s v5 migration command targets the current two-table schema.

@@ -7,12 +7,12 @@
 
 import { test } from '@japa/runner'
 
-import { migrateLegacyAttachmentRecords, type MigratedAttachmentRow } from '../src/integrations/lucid/index.js'
+import { migrateLegacyAttachmentRecords, type MigratedAttachmentRows } from '../src/integrations/lucid/index.js'
 
 test.group('migrateLegacyAttachmentRecords', () => {
   test('migrates values in batches and reports skipped records', async ({ assert }) => {
-    const ids = ['original-1', 'variant-1', 'original-2']
-    const batches: MigratedAttachmentRow[][] = []
+    const ids = ['original-1', 'variant-1', 'link-1', 'original-2', 'link-2']
+    const batches: MigratedAttachmentRows[] = []
     const result = await migrateLegacyAttachmentRecords({
       records: [
         {
@@ -49,15 +49,19 @@ test.group('migrateLegacyAttachmentRecords', () => {
       batchSize: 2,
       writer: {
         async insert(rows) {
-          batches.push([...rows])
+          batches.push(rows)
         },
       },
     })
 
     assert.deepEqual(result, { attachments: 2, variants: 1, skipped: 1 })
     assert.deepEqual(
-      batches.map((batch) => batch.map((row) => row.id)),
+      batches.map((batch) => batch.blobs.map((row) => row.id)),
       [['original-1', 'variant-1'], ['original-2']]
+    )
+    assert.deepEqual(
+      batches.map((batch) => batch.links.map((row) => [row.id, row.attachmentId])),
+      [[['link-1', 'original-1']], [['link-2', 'original-2']]]
     )
   })
 

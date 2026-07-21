@@ -17,7 +17,7 @@ test.group("migrateLegacyAttachment", () => {
   test("converts an original attachment and its variants to polymorphic rows", ({
     assert,
   }) => {
-    const ids = ["original-id", "thumbnail-id"];
+    const ids = ["original-id", "thumbnail-id", "link-id"];
     const rows = migrateLegacyAttachment(
       {
         name: "avatar.jpg",
@@ -46,17 +46,10 @@ test.group("migrateLegacyAttachment", () => {
       },
     );
 
-    assert.deepEqual(rows, [
-      {
+    assert.deepEqual(rows, {
+      blobs: [
+        {
         id: "original-id",
-        attachableType: "users",
-        attachableId: "42",
-        field: "avatar",
-        ownerKey: createAttachmentOwnerKey({
-          type: "users",
-          id: "42",
-          field: "avatar",
-        }),
         parentId: null,
         variantKey: null,
         disk: "s3",
@@ -67,13 +60,9 @@ test.group("migrateLegacyAttachment", () => {
         extname: "jpg",
         size: 42,
         metadata: { width: 800 },
-      },
-      {
+        },
+        {
         id: "thumbnail-id",
-        attachableType: "users",
-        attachableId: "42",
-        field: "avatar",
-        ownerKey: null,
         parentId: "original-id",
         variantKey: "thumbnail",
         disk: "public",
@@ -84,8 +73,24 @@ test.group("migrateLegacyAttachment", () => {
         extname: "webp",
         size: 12,
         metadata: null,
-      },
-    ]);
+        },
+      ],
+      links: [
+        {
+          id: "link-id",
+          attachableType: "users",
+          attachableId: "42",
+          field: "avatar",
+          ownerKey: createAttachmentOwnerKey({
+            type: "users",
+            id: "42",
+            field: "avatar",
+          }),
+          position: null,
+          attachmentId: "original-id",
+        },
+      ],
+    });
   });
 
   test("accepts a serialized v5 document", ({ assert }) => {
@@ -98,8 +103,8 @@ test.group("migrateLegacyAttachment", () => {
       },
     );
 
-    assert.equal(rows[0]?.disk, "public");
-    assert.equal(rows[0]?.originalName, "report.pdf");
+    assert.equal(rows.blobs[0]?.disk, "public");
+    assert.equal(rows.blobs[0]?.originalName, "report.pdf");
   });
 
   test("rejects malformed serialized documents", ({ assert }) => {

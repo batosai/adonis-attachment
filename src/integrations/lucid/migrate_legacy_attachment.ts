@@ -36,12 +36,8 @@ import type { Attachment } from "../../core/attachment.js";
 
 export type { AttachmentOwner } from "./attachment_owner.js";
 
-export type MigratedAttachmentRow = {
+export type MigratedAttachmentBlob = {
   id: string;
-  attachableType: string;
-  attachableId: string;
-  field: string;
-  ownerKey: string | null;
   parentId: string | null;
   variantKey: string | null;
   disk: string;
@@ -52,6 +48,21 @@ export type MigratedAttachmentRow = {
   extname: string;
   size: number;
   metadata: Record<string, unknown> | null;
+};
+
+export type MigratedAttachmentLink = {
+  id: string;
+  attachableType: string;
+  attachableId: string;
+  field: string;
+  ownerKey: string | null;
+  position: number | null;
+  attachmentId: string;
+};
+
+export type MigratedAttachmentRows = {
+  blobs: MigratedAttachmentBlob[];
+  links: MigratedAttachmentLink[];
 };
 
 export type MigrateLegacyAttachmentOptions = {
@@ -66,43 +77,52 @@ export type MigrateLegacyAttachmentColumnOptions = Omit<
 >;
 
 /**
- * Converts one v5 JSON attachment document into rows for the polymorphic table.
+ * Converts one v5 JSON attachment document into blob and polymorphic-link rows.
  * Callers can run it from an Ace command, another ORM migration, or a one-off script.
  */
 export function migrateLegacyAttachment(
   value: LegacyAttachment | string,
   options: MigrateLegacyAttachmentOptions,
-): MigratedAttachmentRow[] {
+): MigratedAttachmentRows {
   const attachment =
     typeof value === "string" ? parseLegacyAttachment(value) : value;
   const id = options.createId();
   const originalName = attachment.originalName ?? attachment.name;
-  const original = toRow({
+  const original = toBlob({
     id,
     attachment,
-    owner: options.owner,
-    ownerKey: createAttachmentOwnerKey(options.owner),
     parentId: null,
     variantKey: null,
     originalName,
     defaultDisk: options.defaultDisk,
   });
 
-  return [
-    original,
-    ...(attachment.variants ?? []).map((variant) =>
-      toRow({
+  return {
+    blobs: [
+      original,
+      ...(attachment.variants ?? []).map((variant) =>
+        toBlob({
+          id: options.createId(),
+          attachment: variant,
+          parentId: id,
+          variantKey: variant.key,
+          originalName,
+          defaultDisk: options.defaultDisk,
+        })
+      ),
+    ],
+    links: [
+      {
         id: options.createId(),
-        attachment: variant,
-        owner: options.owner,
-        ownerKey: null,
-        parentId: id,
-        variantKey: variant.key,
-        originalName,
-        defaultDisk: options.defaultDisk,
-      }),
-    ),
-  ];
+        attachableType: options.owner.type,
+        attachableId: options.owner.id,
+        field: options.owner.field,
+        ownerKey: createAttachmentOwnerKey(options.owner),
+        position: null,
+        attachmentId: id,
+      },
+    ],
+  };
 }
 
 /**
@@ -145,11 +165,9 @@ function parseLegacyAttachment(value: string): LegacyAttachment {
   }
 }
 
-function toRow({
+function toBlob({
   id,
   attachment,
-  owner,
-  ownerKey,
   parentId,
   variantKey,
   originalName,
@@ -157,19 +175,13 @@ function toRow({
 }: {
   id: string;
   attachment: Omit<LegacyAttachment, "variants">;
-  owner: AttachmentOwner;
-  ownerKey: string | null;
   parentId: string | null;
   variantKey: string | null;
   originalName: string;
   defaultDisk: string;
-}): MigratedAttachmentRow {
+}): MigratedAttachmentBlob {
   return {
     id,
-    attachableType: owner.type,
-    attachableId: owner.id,
-    field: owner.field,
-    ownerKey,
     parentId,
     variantKey,
     disk: attachment.disk ?? defaultDisk,

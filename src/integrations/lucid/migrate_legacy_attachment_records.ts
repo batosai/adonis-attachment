@@ -9,7 +9,7 @@ import type { AttachmentOwner } from './attachment_owner.js'
 import {
   migrateLegacyAttachment,
   type LegacyAttachment,
-  type MigratedAttachmentRow,
+  type MigratedAttachmentRows,
 } from './migrate_legacy_attachment.js'
 
 export type LegacyAttachmentMigrationRecord = {
@@ -18,7 +18,7 @@ export type LegacyAttachmentMigrationRecord = {
 }
 
 export type LegacyAttachmentMigrationWriter = {
-  insert(rows: readonly MigratedAttachmentRow[]): Promise<void>
+  insert(rows: MigratedAttachmentRows): Promise<void>
 }
 
 export type MigrateLegacyAttachmentRecordsOptions = {
@@ -54,7 +54,7 @@ export async function migrateLegacyAttachmentRecords(
     variants: 0,
     skipped: 0,
   }
-  let batch: MigratedAttachmentRow[] = []
+  let batch: MigratedAttachmentRows = { blobs: [], links: [] }
 
   for await (const record of options.records) {
     if (record.value === null || record.value === undefined) {
@@ -69,16 +69,17 @@ export async function migrateLegacyAttachmentRecords(
     })
 
     result.attachments += 1
-    result.variants += rows.length - 1
-    batch.push(...rows)
+    result.variants += rows.blobs.length - 1
+    batch.blobs.push(...rows.blobs)
+    batch.links.push(...rows.links)
 
-    if (batch.length >= batchSize) {
+    if (batch.blobs.length >= batchSize) {
       await options.writer.insert(batch)
-      batch = []
+      batch = { blobs: [], links: [] }
     }
   }
 
-  if (batch.length > 0) {
+  if (batch.blobs.length > 0) {
     await options.writer.insert(batch)
   }
 

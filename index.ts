@@ -70,7 +70,9 @@ export {
   type LegacyAttachment,
   type LegacyVariant,
   type MigrateLegacyAttachmentColumnOptions,
-  type MigratedAttachmentRow,
+  type MigratedAttachmentBlob,
+  type MigratedAttachmentLink,
+  type MigratedAttachmentRows,
 } from "./src/integrations/lucid/migrate_legacy_attachment.js";
 export { createAttachmentOwnerKey } from "./src/integrations/lucid/attachment_owner.js";
 export { createAttachmentsTableStubState } from "./src/integrations/lucid/attachments_table_stub.js";

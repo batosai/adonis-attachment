@@ -18,7 +18,7 @@ An `Attachment` is a plain immutable value describing a stored file:
 
 `AttachmentManager` creates an in-memory draft from buffers, multipart files, paths, URLs, streams, and Base64 sources. Calling `persist()` turns it into the stored `Attachment` value shown above.
 
-Your application chooses how that value is persisted. The Lucid integration provides a polymorphic `attachments` table for projects that want database-backed ownership and variants.
+Your application chooses how that value is persisted. The Lucid integration provides `attachments` blobs and polymorphic `attachment_links` for projects that want database-backed ownership and variants.
 
 Projects using another ORM or a custom data store can persist the same value directly; see [Custom Persistence](/guide/custom-persistence).
 

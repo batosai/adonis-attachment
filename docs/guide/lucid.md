@@ -1,6 +1,6 @@
 # Lucid
 
-Lucid is optional. When enabled, attachments and variants are stored in one polymorphic table. A variant references its original attachment through `parent_id`.
+Lucid is optional. When enabled, file blobs are stored in `attachments`, while polymorphic owner links are stored in `attachment_links`. A variant is a blob whose `parent_id` references its original blob.
 
 ## JSON single attachment column
 
@@ -43,7 +43,7 @@ The decorator persists a draft automatically during `save()`, after resolving it
 
 ## Polymorphic table relations
 
-`@attachmentRelation()` exposes one attachment through a model property backed by the `attachments` table. Unlike `@attachment()`, the property is not a JSON column and the parent model must already be persisted.
+`@attachmentRelation()` exposes one attachment through a model property backed by the `attachment_links` table. Unlike `@attachment()`, the property is not a JSON column and the parent model must already be persisted.
 
 ```ts
 import {
@@ -76,7 +76,7 @@ await user.avatar.attach(draft);
 
 The singular relation provides these commands:
 
-- `get()` returns the persisted `AttachmentModel` or `null`.
+- `get()` returns the persisted `AttachmentLinkModel` or `null`. Its `attachment` property is the blob and `toAttachment()` returns the core file value.
 - `attach(draft)` creates the first attachment and throws when one is already attached. This prevents an accidental replacement.
 - `set(draft)` and `replace(draft)` create an attachment when empty or replace the current one. The previous file is removed only after the replacement row exists.
 - `detach()` removes the original, its variants, and their files.
@@ -91,7 +91,7 @@ declare avatar: AttachmentRelation;
 
 ### Ordered collections
 
-`@attachmentsRelation()` exposes several attachments for one model property. The generated table stores each item with a nullable `owner_key` and a `position`; the singular relation uses `owner_key`, while collection rows leave it empty.
+`@attachmentsRelation()` exposes several attachments for one model property. The generated `attachment_links` table stores each item with a nullable `owner_key` and a `position`; the singular relation uses `owner_key`, while collection rows leave it empty.
 
 ```ts
 import {
@@ -138,7 +138,9 @@ node ace make:attachments-table
 
 Use `--table=media_attachments` or `--folder=database/migrations` to customize the generated file.
 
-`AttachmentModel` maps the default table and can be extended by the application. It keeps application-assigned UUIDs, serializes `metadata`, and automatically maintains `created_at` and `updated_at`, matching the generated migration. The table enforces one singular original per `{ type, id, field }` owner. `LucidAttachmentStore` creates singular, collection, and variant rows; `LucidAttachmentRepository` lets a queued worker resolve an attachment by id.
+`AttachmentModel` maps the default blob table and can be extended by the application. It keeps application-assigned UUIDs, serializes `metadata`, and automatically maintains `created_at` and `updated_at`. `AttachmentLinkModel` maps the polymorphic owner table. It enforces one singular link per `{ type, id, field }` owner and carries collection positions. `LucidAttachmentStore` creates blobs, links, and variants; `LucidAttachmentRepository` resolves a blob by id for queued workers and the read route.
+
+Deleting a model with relation decorators removes all of its links automatically. A blob, its variants, and their files are purged only after its last link is removed, so the model supports a future shared-blob workflow safely.
 
 Read an owner field together with its generated variants through the same store:
 
@@ -157,7 +159,7 @@ if (attachment) {
 
 ## Attachment lifecycle
 
-`LucidAttachmentLifecycleService` coordinates storage and persistence. It accepts either a source input or an `AttachmentDraft`, writes the file first, then creates its polymorphic row. If the database operation fails, it removes the new file as compensation.
+`LucidAttachmentLifecycleService` coordinates storage and persistence. It accepts either a source input or an `AttachmentDraft`, writes the file first, then creates its blob and polymorphic link. If a database operation fails, it removes the new file as compensation.
 
 ```ts
 import {

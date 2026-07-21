@@ -18,6 +18,7 @@ export function renderLegacyAttachmentMigrationScript(
 
 import {
   AttachmentModel,
+  AttachmentLinkModel,
   migrateLegacyAttachmentRecords,
   type LegacyAttachmentMigrationRecord,
 } from '@jrmc/adonis-attachment/lucid'
@@ -28,7 +29,12 @@ async function main(): Promise<void> {
     defaultDisk: '${defaultDisk}',
     createId: randomUUID,
     writer: {
-      insert: (rows) => AttachmentModel.createMany(rows),
+      async insert(rows) {
+        await AttachmentModel.transaction(async (trx) => {
+          await AttachmentModel.createMany(rows.blobs, { client: trx })
+          await AttachmentLinkModel.createMany(rows.links, { client: trx })
+        })
+      },
     },
   })
 

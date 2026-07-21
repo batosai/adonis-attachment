@@ -39,31 +39,25 @@ Les converters v6 implementent `VariantConverter`. Ils recoivent l'attachment et
 
 ## Modele Lucid cible
 
-Le mode table dediee utilise une seule table `attachments`. Un variant est un attachment dont `parent_id` designe l'attachment original. Cela evite de reintroduire un document JSON imbrique.
+Le mode table dediee separe le blob du fichier et son rattachement. La table `attachments` contient les blobs. La table `attachment_links` contient la relation polymorphe avec les modeles applicatifs. Un variant est un blob dont `parent_id` designe le blob original.
 
-| Colonne                                         | Role                                                          |
-| ----------------------------------------------- | ------------------------------------------------------------- |
-| `id`                                            | identifiant stable de l'attachment                            |
-| `attachable_type`, `attachable_id`              | relation polymorphe du fichier original                       |
-| `field`                                         | nom logique de l'attribut, par exemple `avatar`               |
-| `owner_key`                                     | hash interne unique pour une relation singuliere, `NULL` pour une collection |
-| `position`                                      | ordre zero-based des elements d'une collection, `NULL` sinon  |
-| `parent_id`                                     | `NULL` pour l'original, sinon attachment parent du variant    |
-| `variant_key`                                   | cle du variant, `NULL` pour l'original                        |
-| `disk`, `path`, `name`                          | localisation du fichier                                       |
-| `original_name`, `mime_type`, `extname`, `size` | metadonnees de fichier                                        |
-| `metadata`                                      | metadonnees extensibles non structurelles                     |
-| `created_at`, `updated_at`                      | audit                                                         |
+| Table | Colonnes | Role |
+| --- | --- | --- |
+| `attachments` | `id`, `disk`, `path`, `name`, `original_name`, `mime_type`, `extname`, `size`, `metadata` | blob immutable et metadonnees du fichier |
+| `attachments` | `parent_id`, `variant_key` | lien et cle unique des variants d'un blob original |
+| `attachment_links` | `id`, `attachment_id` | lien applicatif vers un blob |
+| `attachment_links` | `attachable_type`, `attachable_id`, `field` | owner polymorphe et nom logique, par exemple `avatar` |
+| `attachment_links` | `owner_key`, `position` | unicite d'une relation singuliere ou ordre d'une collection |
 
-Contraintes a prevoir dans la migration Lucid : unicite de `owner_key` pour les originaux, index sur `(attachable_type, attachable_id, field)`, index sur `parent_id`, et unicite de `(parent_id, variant_key)` lorsque `parent_id` est defini.
+Contraintes a prevoir dans la migration Lucid : unicite de `attachment_links.owner_key` pour les relations singulieres, index sur `(attachable_type, attachable_id, field)` et `attachment_id`, index sur `attachments.parent_id`, et unicite de `(parent_id, variant_key)` lorsque `parent_id` est defini.
 
 La commande Ace `make:attachments-table` rend le stub package `stubs/migrations/attachments_table.stub` dans `database/migrations` par defaut et accepte `--table` et `--folder`.
 
 `migrateLegacyAttachment()` convertit un document JSON v5 (original et variants) en lignes de cette table. Les variants reutilisent l'`original_name` du fichier parent, car ce champ represente le nom envoye par le client et non le nom produit par le converter.
 
-Le sous-chemin `@jrmc/adonis-attachment/lucid` expose `AttachmentModel`, `LucidAttachmentRepository` et `LucidAttachmentStore`. Le repository donne au worker un acces type aux fichiers, et le store persiste originaux, collections et variants dans la meme table sans introduire Lucid dans le noyau. Quand une relation est appelee depuis un modele place dans une transaction Lucid, le store utilise le meme client SQL.
+Le sous-chemin `@jrmc/adonis-attachment/lucid` expose `AttachmentModel`, `AttachmentLinkModel`, `LucidAttachmentRepository` et `LucidAttachmentStore`. Le repository donne au worker un acces type aux blobs, et le store persiste liens, collections et variants sans introduire Lucid dans le noyau. Quand une relation est appelee depuis un modele place dans une transaction Lucid, le store utilise le meme client SQL.
 
-Deux decorateurs de relation completent le decorateur JSON `@attachment()`. `@attachmentRelation()` expose une relation singuliere sur le modele avec `get`, `attach`, `set`, `replace`, `detach`, `variants` et `regenerateVariants`. `attach` est strict et refuse de remplacer une valeur existante; `set` et `replace` effectuent la creation ou le remplacement. `@attachmentsRelation()` expose une collection ordonnee avec `all`, `add`, `remove`, `clear`, `replaceAll` et `move`. Les deux relations exigent un modele Lucid deja persiste et passent le modele au contexte de persistence pour resoudre les options de decorateur. En transaction, les nouveaux fichiers sont retires sur rollback et les suppressions de fichiers sont repoussees au commit.
+Deux decorateurs de relation completent le decorateur JSON `@attachment()`. `@attachmentRelation()` expose une relation singuliere sur le modele avec `get`, `attach`, `set`, `replace`, `detach`, `variants` et `regenerateVariants`. `attach` est strict et refuse de remplacer une valeur existante; `set` et `replace` effectuent la creation ou le remplacement. `@attachmentsRelation()` expose une collection ordonnee avec `all`, `add`, `remove`, `clear`, `replaceAll` et `move`. Les deux relations exigent un modele Lucid deja persiste et passent le modele au contexte de persistence pour resoudre les options de decorateur. En transaction, les nouveaux fichiers sont retires sur rollback et les suppressions de fichiers sont repoussees au commit. La suppression du modele parent retire ses liens; le store ne purge un blob et ses variants que si aucun lien ne le reference encore.
 
 `LucidAttachmentLifecycleService` orchestre l'ecriture du fichier et la persistence Lucid. Lors d'un remplacement, il transfere temporairement la cle d'owner avant d'inserer le nouvel original, puis la restaure si l'insertion echoue. Il supprime un nouveau fichier si la persistence echoue. Les suppressions de fichiers qui suivent une suppression de ligne restent compensables par un job de nettoyage, car le stockage externe ne partage pas la transaction SQL.
 

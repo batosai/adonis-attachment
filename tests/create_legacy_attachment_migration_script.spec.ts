@@ -28,6 +28,7 @@ test.group('createLegacyAttachmentMigrationScript', () => {
       const contents = await readFile(filePath, 'utf8')
       assert.include(contents, "defaultDisk: 's3'")
       assert.include(contents, 'migrateLegacyAttachmentRecords')
+      assert.include(contents, 'AttachmentLinkModel.createMany(rows.links')
     } finally {
       await rm(directory, { recursive: true, force: true })
     }

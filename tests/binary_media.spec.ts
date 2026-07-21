@@ -15,6 +15,8 @@ import {
   createFfprobeMetadataExtractor,
   createPdfInfoMetadataExtractor,
   createPdfThumbnailConverter,
+  CommandTimeoutError,
+  NodeCommandRunner,
   type CommandExecution,
   type CommandRunner,
 } from '../src/media/binaries.js'
@@ -123,5 +125,14 @@ test.group('Binary media adapters', () => {
       }
     )
     assert.equal(runner.executions[0]?.command, 'pdfinfo')
+  })
+
+  test('aborts timed-out commands in the Node runner', async ({ assert }) => {
+    const runner = new NodeCommandRunner()
+
+    await assert.rejects(
+      () => runner.run({ command: process.execPath, args: ['-e', 'setTimeout(() => {}, 1000)'], timeout: 10 }),
+      CommandTimeoutError
+    )
   })
 })

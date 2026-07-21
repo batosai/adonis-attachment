@@ -18,6 +18,7 @@ export type CommandExecution = {
   command: string
   args: readonly string[]
   cwd?: string
+  timeout?: number
 }
 
 export type CommandResult = {
@@ -33,25 +34,56 @@ export interface CommandRunner {
 export class NodeCommandRunner implements CommandRunner {
   run(execution: CommandExecution): Promise<CommandResult> {
     return new Promise((resolve, reject) => {
+      const controller = new AbortController()
+      const timeout = execution.timeout === undefined
+        ? undefined
+        : setTimeout(() => controller.abort(), execution.timeout)
       const child = spawn(execution.command, execution.args, {
         ...(execution.cwd ? { cwd: execution.cwd } : {}),
+        signal: controller.signal,
         stdio: ['ignore', 'pipe', 'pipe'],
       })
       const stdout: Uint8Array[] = []
       const stderr: Uint8Array[] = []
+      let settled = false
 
-      child.stdout.on('data', (chunk: Uint8Array) => stdout.push(chunk))
-      child.stderr.on('data', (chunk: Uint8Array) => stderr.push(chunk))
-      child.once('error', reject)
-      child.once('close', (code) => {
-        const result = { stdout: Buffer.concat(stdout), stderr: Buffer.concat(stderr) }
-
-        if (code === 0) {
-          resolve(result)
+      const finish = (callback: () => void) => {
+        if (settled) {
           return
         }
 
-        reject(new CommandExecutionError(execution, code, Buffer.from(result.stderr).toString()))
+        settled = true
+        if (timeout) {
+          clearTimeout(timeout)
+        }
+        callback()
+      }
+
+      child.stdout.on('data', (chunk: Uint8Array) => stdout.push(chunk))
+      child.stderr.on('data', (chunk: Uint8Array) => stderr.push(chunk))
+      child.once('error', (error) => finish(() => {
+        if (controller.signal.aborted && execution.timeout !== undefined) {
+          reject(new CommandTimeoutError(execution))
+          return
+        }
+
+        reject(error)
+      }))
+      child.once('close', (code) => {
+        const result = { stdout: Buffer.concat(stdout), stderr: Buffer.concat(stderr) }
+
+        finish(() => {
+          if (controller.signal.aborted && execution.timeout !== undefined) {
+            reject(new CommandTimeoutError(execution))
+            return
+          }
+          if (code === 0) {
+            resolve(result)
+            return
+          }
+
+          reject(new CommandExecutionError(execution, code, Buffer.from(result.stderr).toString()))
+        })
       })
     })
   }
@@ -66,14 +98,23 @@ export class CommandExecutionError extends Error {
   }
 }
 
+export class CommandTimeoutError extends Error {
+  constructor(execution: CommandExecution) {
+    super(`Command "${execution.command}" exceeded its ${execution.timeout}ms timeout`)
+    this.name = 'CommandTimeoutError'
+  }
+}
+
 export type FfprobeMetadataExtractorOptions = {
   runner?: CommandRunner
   command?: string
+  timeout?: number
 }
 
 export type PdfInfoMetadataExtractorOptions = {
   runner?: CommandRunner
   command?: string
+  timeout?: number
 }
 
 /** Extracts the v5 PDF dimensions, page count, version, and creation date through pdfinfo. */
@@ -89,7 +130,11 @@ export function createPdfInfoMetadataExtractor(
     },
     async extract({ attachment, body }) {
       return withTemporarySource(attachment.name, body, async (source) => {
-        const result = await runner.run({ command, args: [source] })
+        const result = await runner.run({
+          command,
+          args: [source],
+          ...(options.timeout !== undefined ? { timeout: options.timeout } : {}),
+        })
         return mapPdfInfoMetadata(Buffer.from(result.stdout).toString())
       })
     },
@@ -112,6 +157,7 @@ export function createFfprobeMetadataExtractor(
         const result = await runner.run({
           command,
           args: ['-v', 'error', '-show_format', '-show_streams', '-of', 'json', source],
+          ...(options.timeout !== undefined ? { timeout: options.timeout } : {}),
         })
 
         return mapFfprobeMetadata(JSON.parse(Buffer.from(result.stdout).toString()) as FfprobeResult)
@@ -129,6 +175,7 @@ export type FfmpegThumbnailConverterOptions = {
   height?: number
   format?: 'jpeg' | 'png' | 'webp'
   folder?: string
+  timeout?: number
 }
 
 /** Creates a video-frame thumbnail converter backed by ffmpeg. */
@@ -153,7 +200,7 @@ export function createFfmpegThumbnailConverter(
       args.push('-vf', `scale=${options.width ?? -1}:${options.height ?? -1}`)
     }
     args.push(output)
-    await runner.run({ command, args })
+    await runner.run({ command, args, ...(options.timeout !== undefined ? { timeout: options.timeout } : {}) })
 
     return { output, format }
   })
@@ -166,6 +213,7 @@ export type PdfThumbnailConverterOptions = {
   width?: number
   page?: number
   folder?: string
+  timeout?: number
 }
 
 /** Renders the first PDF page to a PNG thumbnail with Poppler's pdftoppm. */
@@ -183,7 +231,7 @@ export function createPdfThumbnailConverter(options: PdfThumbnailConverterOption
     }
 
     args.push(source, outputBase)
-    await runner.run({ command, args })
+    await runner.run({ command, args, ...(options.timeout !== undefined ? { timeout: options.timeout } : {}) })
 
     return { output: `${outputBase}.png`, format: 'png' }
   })
@@ -209,6 +257,7 @@ export function createDocumentThumbnailConverter(
     await runner.run({
       command: officeCommand,
       args: ['--headless', '--convert-to', 'pdf', '--outdir', directory, source],
+      ...(options.timeout !== undefined ? { timeout: options.timeout } : {}),
     })
 
     const args = ['-f', String(options.page ?? 1), '-singlefile', '-png']
@@ -216,7 +265,7 @@ export function createDocumentThumbnailConverter(
       args.push('-scale-to-x', String(options.width), '-scale-to-y', '-1')
     }
     args.push(converted, outputBase)
-    await runner.run({ command: pdfCommand, args })
+    await runner.run({ command: pdfCommand, args, ...(options.timeout !== undefined ? { timeout: options.timeout } : {}) })
 
     return { output: `${outputBase}.png`, format: 'png' }
   })

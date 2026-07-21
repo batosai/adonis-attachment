@@ -19,6 +19,7 @@ export type AutodetectConverterOptions = ConverterOptions & {
   ffmpegCommand?: string
   pdftoppmCommand?: string
   officeCommand?: string
+  timeout?: number
 }
 
 /**
@@ -41,6 +42,7 @@ export default class AutodetectConverter extends Converter {
         ...(options.format ? { format: options.format } : {}),
         autoOrient: options.autoOrient ?? true,
         ...(options.folder ? { folder: options.folder } : {}),
+        ...(options.timeout !== undefined ? { timeout: options.timeout } : {}),
       }).convert({ attachment, body })
     }
 
@@ -56,6 +58,7 @@ export default class AutodetectConverter extends Converter {
         ...(resize.height !== undefined ? { height: resize.height } : {}),
         ...(format ? { format } : {}),
         ...(options.folder ? { folder: options.folder } : {}),
+        ...(options.timeout !== undefined ? { timeout: options.timeout } : {}),
       }).convert({ attachment, body })
     }
 
@@ -67,6 +70,7 @@ export default class AutodetectConverter extends Converter {
         ...(resize.width !== undefined ? { width: resize.width } : {}),
         ...(options.startPage !== undefined ? { page: options.startPage } : {}),
         ...(options.folder ? { folder: options.folder } : {}),
+        ...(options.timeout !== undefined ? { timeout: options.timeout } : {}),
       }).convert({ attachment, body })
     }
 

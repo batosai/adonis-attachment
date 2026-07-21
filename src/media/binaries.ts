@@ -11,6 +11,7 @@ import { basename, extname, join } from 'node:path'
 import { spawn } from 'node:child_process'
 
 import type { MediaMetadataExtractor } from './media_metadata.js'
+import type { AttachmentMetadata } from './media_metadata.js'
 import type { VariantConverter } from '../variants/variant_converter.js'
 
 export type CommandExecution = {
@@ -253,15 +254,18 @@ type FfprobeResult = {
   }>
 }
 
-function mapFfprobeMetadata(result: FfprobeResult): Record<string, unknown> | undefined {
+function mapFfprobeMetadata(result: FfprobeResult): AttachmentMetadata | undefined {
   const video = result.streams?.find((stream) => stream.codec_type === 'video')
   const audio = result.streams?.find((stream) => stream.codec_type === 'audio')
+  const duration = numberValue(result.format?.duration)
+  const bitRate = numberValue(result.format?.bit_rate)
   const metadata = {
-    ...(numberValue(result.format?.duration) !== undefined ? { duration: numberValue(result.format?.duration) } : {}),
-    ...(numberValue(result.format?.bit_rate) !== undefined ? { bitRate: numberValue(result.format?.bit_rate) } : {}),
+    ...(duration !== undefined ? { duration } : {}),
+    ...(bitRate !== undefined ? { bitRate } : {}),
     ...(result.format?.format_name ? { format: result.format.format_name } : {}),
-    ...(video?.width !== undefined ? { width: video.width } : {}),
-    ...(video?.height !== undefined ? { height: video.height } : {}),
+    ...(video?.width !== undefined && video.height !== undefined
+      ? { dimension: { width: video.width, height: video.height } }
+      : {}),
     ...(video?.codec_name ? { videoCodec: video.codec_name } : {}),
     ...(audio?.codec_name ? { audioCodec: audio.codec_name } : {}),
   }

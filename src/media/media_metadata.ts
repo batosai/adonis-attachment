@@ -7,6 +7,36 @@
 
 import type { Attachment } from '../core/attachment.js'
 
+/** Stable metadata shape preserved from v5, with room for application-specific fields. */
+export type AttachmentMetadata = {
+  orientation?: {
+    value: number
+    description?: string
+  }
+  date?: string
+  host?: string
+  gps?: {
+    latitude?: number
+    longitude?: number
+    altitude?: number
+  }
+  dimension?: {
+    width: number
+    height: number
+  }
+  duration?: number
+  videoCodec?: string
+  audioCodec?: string
+  pages?: number
+  version?: string
+  bitRate?: number
+  format?: string
+  density?: number
+  hasAlpha?: boolean
+  pageHeight?: number
+  [key: string]: unknown
+}
+
 export type MediaMetadataInput = {
   attachment: Attachment
   body: Uint8Array
@@ -18,7 +48,7 @@ export type MediaMetadataInput = {
  */
 export interface MediaMetadataExtractor {
   supports?(input: Pick<MediaMetadataInput, 'attachment'>): boolean | Promise<boolean>
-  extract(input: MediaMetadataInput): Promise<Record<string, unknown> | undefined>
+  extract(input: MediaMetadataInput): Promise<AttachmentMetadata | undefined>
 }
 
 /** Runs matching metadata extractors in declaration order. */
@@ -29,8 +59,8 @@ export class MediaMetadataService {
     this.#extractors = extractors
   }
 
-  async extract(input: MediaMetadataInput): Promise<Record<string, unknown> | undefined> {
-    let metadata: Record<string, unknown> | undefined
+  async extract(input: MediaMetadataInput): Promise<AttachmentMetadata | undefined> {
+    let metadata: AttachmentMetadata | undefined
 
     for (const extractor of this.#extractors) {
       if (extractor.supports && !(await extractor.supports({ attachment: input.attachment }))) {

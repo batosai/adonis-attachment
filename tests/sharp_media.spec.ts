@@ -46,7 +46,7 @@ test.group('Sharp media adapters', () => {
     assert.isFalse(await extractor.supports!({ attachment: { ...attachment, mimeType: 'application/pdf' } }))
     assert.deepEqual(
       await extractor.extract({ attachment, body: new Uint8Array([1, 2, 3]) }),
-      { width: 800, height: 600, format: 'png', hasAlpha: true }
+      { dimension: { width: 800, height: 600 }, format: 'png', hasAlpha: true }
     )
   })
 

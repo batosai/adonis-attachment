@@ -12,6 +12,7 @@ import type {
   AttachmentPersistenceContext,
   AttachmentPersistenceOptions,
 } from './attachment_options.js'
+import type { AttachmentMetadata } from '../media/media_metadata.js'
 
 export type Attachment = Readonly<{
   id: string
@@ -22,7 +23,7 @@ export type Attachment = Readonly<{
   size: number
   extname: string
   mimeType: string
-  metadata?: Record<string, unknown> | undefined
+  metadata?: AttachmentMetadata | undefined
 }>
 
 export type AttachmentPersistRequest<Model = any> = {
@@ -41,7 +42,7 @@ export type CreateAttachmentInput = {
   mimeType?: string
   disk?: string
   folder?: string
-  metadata?: Record<string, unknown>
+  metadata?: AttachmentMetadata
 }
 
 /**
@@ -57,7 +58,7 @@ export class AttachmentDraft implements Attachment {
   size: number
   extname: string
   mimeType: string
-  metadata?: Record<string, unknown> | undefined
+  metadata?: AttachmentMetadata | undefined
 
   readonly #options: AttachmentPersistenceOptions
   #source: CreateAttachmentInput | undefined

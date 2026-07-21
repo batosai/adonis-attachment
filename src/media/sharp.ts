@@ -5,7 +5,7 @@
  * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
  */
 
-import type { MediaMetadataExtractor } from './media_metadata.js'
+import type { AttachmentMetadata, MediaMetadataExtractor } from './media_metadata.js'
 import type { VariantConverter, VariantConversionInput } from '../variants/variant_converter.js'
 import {
   normalizeSharpFormat,
@@ -97,10 +97,18 @@ export function createSharpVariantConverter(options: SharpVariantOptions): Varia
   }
 }
 
-function compactMetadata(metadata: SharpMetadata): Record<string, unknown> | undefined {
-  const compact = Object.fromEntries(
-    Object.entries(metadata).filter(([, value]) => value !== undefined)
-  )
+function compactMetadata(metadata: SharpMetadata): AttachmentMetadata | undefined {
+  const compact: AttachmentMetadata = {
+    ...(metadata.width !== undefined && metadata.height !== undefined
+      ? { dimension: { width: metadata.width, height: metadata.height } }
+      : {}),
+    ...(metadata.format !== undefined ? { format: metadata.format } : {}),
+    ...(metadata.density !== undefined ? { density: metadata.density } : {}),
+    ...(metadata.hasAlpha !== undefined ? { hasAlpha: metadata.hasAlpha } : {}),
+    ...(metadata.pages !== undefined ? { pages: metadata.pages } : {}),
+    ...(metadata.pageHeight !== undefined ? { pageHeight: metadata.pageHeight } : {}),
+    ...(metadata.orientation !== undefined ? { orientation: { value: metadata.orientation } } : {}),
+  }
 
   return Object.keys(compact).length > 0 ? compact : undefined
 }

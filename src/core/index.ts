@@ -44,6 +44,7 @@ export {
 } from '../converters/configured_variant_converter_registry.js'
 export {
   MediaMetadataService,
+  type AttachmentMetadata,
   type MediaMetadataExtractor,
   type MediaMetadataInput,
 } from '../media/media_metadata.js'

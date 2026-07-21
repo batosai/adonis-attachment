@@ -69,8 +69,7 @@ test.group('Binary media adapters', () => {
       duration: 12.5,
       bitRate: 450000,
       format: 'mov,mp4,m4a,3gp,3g2,mj2',
-      width: 1920,
-      height: 1080,
+      dimension: { width: 1920, height: 1080 },
       videoCodec: 'h264',
       audioCodec: 'aac',
     })

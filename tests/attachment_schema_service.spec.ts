@@ -36,4 +36,15 @@ test.group('AttachmentSchemaService', (group) => {
     assert.isFalse(await database.connection().schema.hasTable('media_attachments'))
     assert.isFalse(await database.connection().schema.hasTable('media_attachments_links'))
   })
+
+  test('uses the AttachmentLinkModel default table name', async ({ assert }) => {
+    const service = new AttachmentSchemaService(database.connection().getWriteClient())
+
+    await service.dropTables()
+    await service.createTables()
+
+    assert.isTrue(await database.connection().schema.hasTable('attachments'))
+    assert.isTrue(await database.connection().schema.hasTable('attachment_links'))
+    assert.isFalse(await database.connection().schema.hasTable('attachments_links'))
+  })
 })

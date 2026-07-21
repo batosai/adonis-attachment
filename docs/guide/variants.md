@@ -10,6 +10,27 @@ transformation**.
 A converter has a `key` and a `convert()` method. It receives the original's bytes and
 returns the generated file. Use any image library you like (Sharp, Jimp, ...):
 
+### Sharp adapter
+
+Install `sharp`, then use the package adapter to define common resize-and-format variants:
+
+```ts
+import sharp from 'sharp'
+import { createSharpVariantConverter } from '@jrmc/adonis-attachment/media/sharp'
+
+const thumbnail = createSharpVariantConverter({
+  key: 'thumbnail',
+  sharp,
+  width: 200,
+  height: 200,
+  resize: { fit: 'cover' },
+  format: 'webp',
+  folder: 'variants',
+})
+```
+
+### Custom converter
+
 ```ts
 import type { VariantConverter } from '@jrmc/adonis-attachment'
 import sharp from 'sharp'

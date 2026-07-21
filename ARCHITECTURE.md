@@ -39,6 +39,8 @@ Les converters v6 implementent `VariantConverter`. Ils recoivent l'attachment et
 
 Les extracteurs de metadata implementent `MediaMetadataExtractor`. Ils sont independants des bibliotheques de traitement et peuvent filtrer leurs entrees avec `supports()`. Le noyau les execute apres la resolution du nom et du disque, avant l'ecriture. Les metadata explicites de l'appelant restent prioritaires sur les valeurs extraites.
 
+Le sous-chemin optionnel `@jrmc/adonis-attachment/media/sharp` fournit un extracteur de metadata d'image et une fabrique de `VariantConverter`. Il recoit la factory Sharp de l'application, ce qui conserve Sharp hors du graphe de dependances du noyau.
+
 `AttachmentJobProcessor` peut aussi recevoir une factory de generateur asynchrone. Elle est resolue et memorisee au premier job, ce qui permet de construire un generateur dependant du service `jrmc.attachment` sans cycle au boot.
 
 ## Modele Lucid cible

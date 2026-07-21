@@ -93,6 +93,16 @@ export default defineConfig({
 })
 ```
 
+For image files, install `sharp` and use the optional adapter instead of writing the
+extractor yourself:
+
+```ts
+import sharp from 'sharp'
+import { createSharpMetadataExtractor } from '@jrmc/adonis-attachment/media/sharp'
+
+media: { metadata: [createSharpMetadataExtractor(sharp)] }
+```
+
 ## Source limits
 
 `sources` configures the [attachment manager](/guide/creating-attachments). The package

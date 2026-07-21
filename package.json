@@ -63,6 +63,10 @@
       "types": "./build/src/adapters/local_file_storage.d.ts",
       "default": "./build/src/adapters/local_file_storage.js"
     },
+    "./media/sharp": {
+      "types": "./build/src/media/sharp.d.ts",
+      "default": "./build/src/media/sharp.js"
+    },
     "./lucid": {
       "types": "./build/src/integrations/lucid/index.d.ts",
       "default": "./build/src/integrations/lucid/index.js"
@@ -125,7 +129,8 @@
     "@adonisjs/core": "^7.0.0",
     "@adonisjs/drive": "^4.0.0",
     "@adonisjs/lucid": "^22.0.0",
-    "@adonisjs/queue": "^0.6.0"
+    "@adonisjs/queue": "^0.6.0",
+    "sharp": "^0.34.0"
   },
   "peerDependenciesMeta": {
     "@adonisjs/drive": {
@@ -135,6 +140,9 @@
       "optional": true
     },
     "@adonisjs/queue": {
+      "optional": true
+    },
+    "sharp": {
       "optional": true
     }
   },

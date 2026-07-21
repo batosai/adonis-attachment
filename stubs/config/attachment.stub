@@ -6,6 +6,7 @@ import {
   LocalFileStorage,
   type InferConverters,
 } from '@jrmc/adonis-attachment'
+import { createV5CompatibleMetadataExtractors } from '@jrmc/adonis-attachment/media/metadata'
 
 /**
  * Attachments are stored locally by default. Lucid, Drive, external queues,
@@ -13,6 +14,9 @@ import {
  */
 const attachmentConfig = defineConfig({
   storage: LocalFileStorage.fromApp,
+  media: {
+    metadata: createV5CompatibleMetadataExtractors(),
+  },
   // converters: {
   //   thumbnail: {
   //     width: 320,

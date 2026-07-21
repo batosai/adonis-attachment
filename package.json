@@ -71,6 +71,10 @@
       "types": "./build/src/media/exif.d.ts",
       "default": "./build/src/media/exif.js"
     },
+    "./media/metadata": {
+      "types": "./build/src/media/v5_metadata.d.ts",
+      "default": "./build/src/media/v5_metadata.js"
+    },
     "./media/binaries": {
       "types": "./build/src/media/binaries.d.ts",
       "default": "./build/src/media/binaries.js"
@@ -150,6 +154,7 @@
     "@adonisjs/drive": "^4.0.0",
     "@adonisjs/lucid": "^22.0.0",
     "@adonisjs/queue": "^0.6.0",
+    "exifreader": "^4.41.3",
     "sharp": "^0.34.0"
   },
   "peerDependenciesMeta": {
@@ -163,6 +168,9 @@
       "optional": true
     },
     "sharp": {
+      "optional": true
+    },
+    "exifreader": {
       "optional": true
     }
   },

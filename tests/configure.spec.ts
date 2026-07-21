@@ -40,6 +40,10 @@ test.group('configure', () => {
       await readFile(join(stubsRoot, 'config/attachment.stub'), 'utf8'),
       'storage: LocalFileStorage.fromApp'
     )
+    assert.include(
+      await readFile(join(stubsRoot, 'config/attachment.stub'), 'utf8'),
+      'createV5CompatibleMetadataExtractors()'
+    )
     assert.notInclude(await readFile(join(stubsRoot, 'config/attachment.stub'), 'utf8'), 'maxBytes')
   })
 })

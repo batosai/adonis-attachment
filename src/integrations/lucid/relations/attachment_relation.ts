@@ -12,14 +12,14 @@ import type {
   Attachment,
   AttachmentDraft,
   CreateAttachmentInput,
-} from "../../core/attachment.js";
-import type { AttachmentPersistenceOptions } from "../../core/attachment_options.js";
-import type { AttachmentService } from "../../core/attachment_service.js";
+} from "../../../core/attachment.js";
+import type { AttachmentPersistenceOptions } from "../../../core/attachment_options.js";
+import type { AttachmentService } from "../../../core/attachment_service.js";
 import type { AttachmentOwner } from "./attachment_owner.js";
-import { AttachmentLinkModel } from "./attachment_link_model.js";
-import { AttachmentModel } from "./attachment_model.js";
-import { LucidAttachmentLifecycleService } from "./lucid_attachment_lifecycle_service.js";
-import { LucidAttachmentStore } from "./lucid_attachment_store.js";
+import { AttachmentLinkModel } from "../models/attachment_link_model.js";
+import { AttachmentModel } from "../models/attachment_model.js";
+import { LucidAttachmentLifecycleService } from "../persistence/lucid_attachment_lifecycle_service.js";
+import { LucidAttachmentStore } from "../persistence/lucid_attachment_store.js";
 
 type AttachmentRelationInput = CreateAttachmentInput | AttachmentDraft;
 

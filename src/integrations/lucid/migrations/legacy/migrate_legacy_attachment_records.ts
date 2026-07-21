@@ -5,7 +5,7 @@
  * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
  */
 
-import type { AttachmentOwner } from './attachment_owner.js'
+import type { AttachmentOwner } from '../../relations/attachment_owner.js'
 import {
   migrateLegacyAttachment,
   type LegacyAttachment,

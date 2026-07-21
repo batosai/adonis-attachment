@@ -8,11 +8,11 @@
 import { test } from '@japa/runner'
 
 import type { Attachment } from '../src/core/attachment.js'
-import type { AttachmentModel } from '../src/integrations/lucid/attachment_model.js'
+import type { AttachmentModel } from '../src/integrations/lucid/models/attachment_model.js'
 import {
   LucidVariantGenerationService,
   PersistedAttachmentNotFoundError,
-} from '../src/integrations/lucid/lucid_variant_generation_service.js'
+} from '../src/integrations/lucid/persistence/lucid_variant_generation_service.js'
 
 const original: Attachment = {
   id: 'original-id', disk: 'public', path: 'users/42/avatar.jpg', name: 'avatar.jpg',

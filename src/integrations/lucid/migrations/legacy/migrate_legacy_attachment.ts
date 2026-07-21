@@ -31,10 +31,10 @@ export type LegacyVariant = {
 import {
   createAttachmentOwnerKey,
   type AttachmentOwner,
-} from "./attachment_owner.js";
-import type { Attachment } from "../../core/attachment.js";
+} from "../../relations/attachment_owner.js";
+import type { Attachment } from "../../../../core/attachment.js";
 
-export type { AttachmentOwner } from "./attachment_owner.js";
+export type { AttachmentOwner } from "../../relations/attachment_owner.js";
 
 export type MigratedAttachmentBlob = {
   id: string;

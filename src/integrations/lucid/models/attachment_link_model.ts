@@ -9,7 +9,7 @@ import { BaseModel, belongsTo, column } from '@adonisjs/lucid/orm'
 import type { BelongsTo } from '@adonisjs/lucid/types/relations'
 import type { DateTime } from 'luxon'
 
-import type { Attachment } from '../../core/attachment.js'
+import type { Attachment } from '../../../core/attachment.js'
 import { AttachmentModel } from './attachment_model.js'
 
 /**

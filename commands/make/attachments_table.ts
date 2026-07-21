@@ -9,7 +9,7 @@ import { BaseCommand } from '@adonisjs/core/ace'
 import { configProvider } from '@adonisjs/core'
 
 import { stubsRoot } from '../../stubs/main.js'
-import { createAttachmentsTableStubState } from '../../src/integrations/lucid/attachments_table_stub.js'
+import { createAttachmentsTableStubState } from '../../src/integrations/lucid/schema/attachments_table_stub.js'
 
 import type { ResolvedAttachmentConfig } from '../../src/define_config.js'
 

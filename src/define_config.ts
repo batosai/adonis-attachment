@@ -10,7 +10,7 @@ import { MemoryAttachmentQueue } from './queues/memory_queue.js'
 import {
   resolveAttachmentTableNames,
   type AttachmentTableNames,
-} from './integrations/lucid/attachment_table_names.js'
+} from './integrations/lucid/schema/attachment_table_names.js'
 
 import type { ApplicationService, ConfigProvider } from '@adonisjs/core/types'
 import type { AttachmentServiceOptions } from './core/attachment_service.js'

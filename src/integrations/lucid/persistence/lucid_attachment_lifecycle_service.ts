@@ -10,12 +10,12 @@ import {
   type Attachment,
   type AttachmentDraft,
   type CreateAttachmentInput,
-} from '../../core/attachment.js'
-import type { AttachmentService } from '../../core/attachment_service.js'
-import type { AttachmentPersistenceOptions } from '../../core/attachment_options.js'
-import type { AttachmentOwner } from './attachment_owner.js'
-import { AttachmentLinkModel } from './attachment_link_model.js'
-import { AttachmentModel } from './attachment_model.js'
+} from '../../../core/attachment.js'
+import type { AttachmentService } from '../../../core/attachment_service.js'
+import type { AttachmentPersistenceOptions } from '../../../core/attachment_options.js'
+import type { AttachmentOwner } from '../relations/attachment_owner.js'
+import { AttachmentLinkModel } from '../models/attachment_link_model.js'
+import { AttachmentModel } from '../models/attachment_model.js'
 import { LucidAttachmentStore } from './lucid_attachment_store.js'
 
 export type AttachmentFileService = Pick<AttachmentService, 'create' | 'remove'> &

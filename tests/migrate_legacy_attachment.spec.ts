@@ -11,7 +11,7 @@ import {
   migrateLegacyAttachment,
   migrateLegacyAttachmentColumn,
 } from "../index.js";
-import { createAttachmentOwnerKey } from "../src/integrations/lucid/attachment_owner.js";
+import { createAttachmentOwnerKey } from "../src/integrations/lucid/relations/attachment_owner.js";
 
 test.group("migrateLegacyAttachment", () => {
   test("converts an original attachment and its variants to polymorphic rows", ({

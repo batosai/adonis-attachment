@@ -6,7 +6,7 @@ import { test } from '@japa/runner'
 import MakeAttachmentsTable from '../commands/make/attachments_table.js'
 import { defineConfig } from '../src/define_config.js'
 import { stubsRoot } from '../stubs/main.js'
-import { createAttachmentsTableStubState } from '../src/integrations/lucid/attachments_table_stub.js'
+import { createAttachmentsTableStubState } from '../src/integrations/lucid/schema/attachments_table_stub.js'
 
 test.group('attachments table migration stub', () => {
   test('prepares a timestamped destination and template state', ({ assert }) => {

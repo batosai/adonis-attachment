@@ -9,9 +9,9 @@ import { test } from '@japa/runner'
 
 import type { Attachment } from '../src/core/attachment.js'
 import { AttachmentService } from '../src/core/attachment_service.js'
-import { AttachmentLinkModel } from '../src/integrations/lucid/attachment_link_model.js'
-import { AttachmentModel } from '../src/integrations/lucid/attachment_model.js'
-import { LucidAttachmentLifecycleService } from '../src/integrations/lucid/lucid_attachment_lifecycle_service.js'
+import { AttachmentLinkModel } from '../src/integrations/lucid/models/attachment_link_model.js'
+import { AttachmentModel } from '../src/integrations/lucid/models/attachment_model.js'
+import { LucidAttachmentLifecycleService } from '../src/integrations/lucid/persistence/lucid_attachment_lifecycle_service.js'
 
 const attachment: Attachment = {
   id: 'attachment-id',

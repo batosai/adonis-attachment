@@ -8,7 +8,7 @@
 import { BaseModel, column } from '@adonisjs/lucid/orm'
 import type { DateTime } from 'luxon'
 
-import type { Attachment } from '../../core/attachment.js'
+import type { Attachment } from '../../../core/attachment.js'
 
 /**
  * Default Lucid model for a stored attachment blob.

@@ -9,9 +9,9 @@ import { test } from '@japa/runner'
 
 import { defineConfig, type AttachmentRepository, type AttachmentStorage } from '../index.js'
 import AttachmentProvider from '../providers/attachment_provider.js'
-import { AttachmentLinkModel } from '../src/integrations/lucid/attachment_link_model.js'
-import { AttachmentModel } from '../src/integrations/lucid/attachment_model.js'
-import { configureLucidAttachmentTables } from '../src/integrations/lucid/configure_lucid_attachment_tables.js'
+import { AttachmentLinkModel } from '../src/integrations/lucid/models/attachment_link_model.js'
+import { AttachmentModel } from '../src/integrations/lucid/models/attachment_model.js'
+import { configureLucidAttachmentTables } from '../src/integrations/lucid/schema/configure_lucid_attachment_tables.js'
 
 const storage: AttachmentStorage = {
   async write() {},

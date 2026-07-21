@@ -9,11 +9,11 @@ import { randomUUID } from 'node:crypto'
 
 import type { TransactionClientContract } from '@adonisjs/lucid/types/database'
 
-import type { Attachment } from '../../core/attachment.js'
-import { markAttachmentPersisted } from '../../core/attachment_state.js'
-import { createAttachmentOwnerKey, type AttachmentOwner } from './attachment_owner.js'
-import { AttachmentLinkModel } from './attachment_link_model.js'
-import { AttachmentModel } from './attachment_model.js'
+import type { Attachment } from '../../../core/attachment.js'
+import { markAttachmentPersisted } from '../../../core/attachment_state.js'
+import { createAttachmentOwnerKey, type AttachmentOwner } from '../relations/attachment_owner.js'
+import { AttachmentLinkModel } from '../models/attachment_link_model.js'
+import { AttachmentModel } from '../models/attachment_model.js'
 
 export type LucidAttachmentWithVariants = {
   original: AttachmentLinkModel

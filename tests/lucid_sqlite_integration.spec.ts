@@ -9,11 +9,11 @@ import type { Database } from '@adonisjs/lucid/database'
 import { test } from '@japa/runner'
 
 import type { Attachment } from '../src/core/attachment.js'
-import { AttachmentLinkModel } from '../src/integrations/lucid/attachment_link_model.js'
-import { AttachmentModel } from '../src/integrations/lucid/attachment_model.js'
-import { LucidAttachmentLifecycleService } from '../src/integrations/lucid/lucid_attachment_lifecycle_service.js'
-import { LucidAttachmentRepository } from '../src/integrations/lucid/lucid_attachment_repository.js'
-import { LucidAttachmentStore } from '../src/integrations/lucid/lucid_attachment_store.js'
+import { AttachmentLinkModel } from '../src/integrations/lucid/models/attachment_link_model.js'
+import { AttachmentModel } from '../src/integrations/lucid/models/attachment_model.js'
+import { LucidAttachmentLifecycleService } from '../src/integrations/lucid/persistence/lucid_attachment_lifecycle_service.js'
+import { LucidAttachmentRepository } from '../src/integrations/lucid/persistence/lucid_attachment_repository.js'
+import { LucidAttachmentStore } from '../src/integrations/lucid/persistence/lucid_attachment_store.js'
 import { createLucidTestDatabase } from './helpers/lucid_test_database.js'
 
 const owner = { type: 'users', id: '42', field: 'avatar' }

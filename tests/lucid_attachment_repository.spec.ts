@@ -7,8 +7,8 @@
 
 import { test } from '@japa/runner'
 
-import { LucidAttachmentRepository } from '../src/integrations/lucid/lucid_attachment_repository.js'
-import { AttachmentModel } from '../src/integrations/lucid/attachment_model.js'
+import { LucidAttachmentRepository } from '../src/integrations/lucid/persistence/lucid_attachment_repository.js'
+import { AttachmentModel } from '../src/integrations/lucid/models/attachment_model.js'
 
 test.group('LucidAttachmentRepository', () => {
   test('maps the configured Lucid model to a core attachment', async ({ assert }) => {

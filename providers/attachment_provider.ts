@@ -99,6 +99,6 @@ async function applyLucidConfig(config: ResolvedAttachmentConfig): Promise<void>
   }
 
   const { configureLucidAttachmentTables } =
-    await import('../src/integrations/lucid/configure_lucid_attachment_tables.js')
+    await import('../src/integrations/lucid/schema/configure_lucid_attachment_tables.js')
   configureLucidAttachmentTables(lucid.tableName)
 }

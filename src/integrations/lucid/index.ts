@@ -5,55 +5,55 @@
  * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
  */
 
-export { AttachmentModel } from "./attachment_model.js";
-export { AttachmentLinkModel } from "./attachment_link_model.js";
+export { AttachmentModel } from "./models/attachment_model.js";
+export { AttachmentLinkModel } from "./models/attachment_link_model.js";
 export {
   configureLucidAttachmentTables,
-} from "./configure_lucid_attachment_tables.js";
+} from "./schema/configure_lucid_attachment_tables.js";
 export {
   resolveAttachmentTableNames,
   type AttachmentTableNames,
-} from "./attachment_table_names.js";
+} from "./schema/attachment_table_names.js";
 export {
   AttachmentSchemaService,
   type AttachmentSchemaServiceOptions,
-} from "./attachment_schema_service.js";
+} from "./schema/attachment_schema_service.js";
 export {
   attachment,
   type LucidAttachmentOptions,
-} from "./attachment_column.js";
+} from "./column/attachment_column.js";
 export {
   attachmentRelation,
   attachmentsRelation,
   AttachmentRelation,
   AttachmentCollectionRelation,
   type AttachmentRelationOptions,
-} from "./attachment_relation.js";
-export { LucidAttachmentRepository } from "./lucid_attachment_repository.js";
+} from "./relations/attachment_relation.js";
+export { LucidAttachmentRepository } from "./persistence/lucid_attachment_repository.js";
 export {
   LucidAttachmentStore,
   type LucidAttachmentWithVariants,
   type LucidAttachmentStoreOptions,
-} from "./lucid_attachment_store.js";
+} from "./persistence/lucid_attachment_store.js";
 export {
   LucidAttachmentLifecycleService,
   type AttachmentFileService,
   type LucidAttachmentPersistence,
-} from "./lucid_attachment_lifecycle_service.js";
+} from "./persistence/lucid_attachment_lifecycle_service.js";
 export {
   LucidVariantGenerationService,
   PersistedAttachmentNotFoundError,
   type LucidVariantGenerationServiceOptions,
-} from "./lucid_variant_generation_service.js";
+} from "./persistence/lucid_variant_generation_service.js";
 export {
   createAttachmentOwnerKey,
   type AttachmentOwner,
-} from "./attachment_owner.js";
+} from "./relations/attachment_owner.js";
 export {
   createAttachmentsTableStubState,
   type AttachmentsTableStubOptions,
   type AttachmentsTableStubState,
-} from "./attachments_table_stub.js";
+} from "./schema/attachments_table_stub.js";
 export {
   migrateLegacyAttachment,
   migrateLegacyAttachmentColumn,
@@ -64,19 +64,19 @@ export {
   type MigratedAttachmentBlob,
   type MigratedAttachmentLink,
   type MigratedAttachmentRows,
-} from "./migrate_legacy_attachment.js";
+} from "./migrations/legacy/migrate_legacy_attachment.js";
 export {
   migrateLegacyAttachmentRecords,
   type LegacyAttachmentMigrationRecord,
   type LegacyAttachmentMigrationResult,
   type LegacyAttachmentMigrationWriter,
   type MigrateLegacyAttachmentRecordsOptions,
-} from "./migrate_legacy_attachment_records.js";
+} from "./migrations/legacy/migrate_legacy_attachment_records.js";
 export {
   createLegacyAttachmentMigrationScript,
   type CreateLegacyAttachmentMigrationScriptOptions,
-} from "./create_legacy_attachment_migration_script.js";
+} from "./migrations/legacy/create_legacy_attachment_migration_script.js";
 export {
   renderLegacyAttachmentMigrationScript,
   type RenderLegacyAttachmentMigrationScriptOptions,
-} from "./render_legacy_attachment_migration_script.js";
+} from "./migrations/legacy/render_legacy_attachment_migration_script.js";

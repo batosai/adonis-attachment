@@ -5,8 +5,8 @@
  * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
  */
 
-import { AttachmentLinkModel } from './attachment_link_model.js'
-import { AttachmentModel } from './attachment_model.js'
+import { AttachmentLinkModel } from '../models/attachment_link_model.js'
+import { AttachmentModel } from '../models/attachment_model.js'
 import { resolveAttachmentTableNames, type AttachmentTableNames } from './attachment_table_names.js'
 
 /**

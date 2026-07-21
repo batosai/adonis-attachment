@@ -8,10 +8,10 @@
 import app from '@adonisjs/core/services/app'
 import type { LucidModel, LucidRow } from '@adonisjs/lucid/types/model'
 
-import { isAttachmentDraft, type Attachment } from '../../core/attachment.js'
-import { isAttachmentPending, markAttachmentPersisted } from '../../core/attachment_state.js'
-import type { AttachmentPersistenceOptions } from '../../core/attachment_options.js'
-import type { AttachmentService } from '../../core/attachment_service.js'
+import { isAttachmentDraft, type Attachment } from '../../../core/attachment.js'
+import { isAttachmentPending, markAttachmentPersisted } from '../../../core/attachment_state.js'
+import type { AttachmentPersistenceOptions } from '../../../core/attachment_options.js'
+import type { AttachmentService } from '../../../core/attachment_service.js'
 
 type AttachmentColumnRow = LucidRow & {
   $attributes: Record<string, unknown>

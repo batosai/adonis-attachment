@@ -7,7 +7,7 @@
 
 import { BaseCommand } from '@adonisjs/core/ace'
 
-import { createLegacyAttachmentMigrationScript } from '../../src/integrations/lucid/create_legacy_attachment_migration_script.js'
+import { createLegacyAttachmentMigrationScript } from '../../src/integrations/lucid/migrations/legacy/create_legacy_attachment_migration_script.js'
 
 export default class MakeAttachmentV5Migration extends BaseCommand {
   static commandName = 'make:attachment-v5-migration'

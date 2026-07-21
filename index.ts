@@ -30,14 +30,14 @@ export {
 export {
   attachment,
   type LucidAttachmentOptions,
-} from "./src/integrations/lucid/attachment_column.js";
+} from "./src/integrations/lucid/column/attachment_column.js";
 export {
   attachmentRelation,
   attachmentsRelation,
   AttachmentRelation,
   AttachmentCollectionRelation,
   type AttachmentRelationOptions,
-} from "./src/integrations/lucid/attachment_relation.js";
+} from "./src/integrations/lucid/relations/attachment_relation.js";
 export {
   VariantGenerationService,
   UnknownVariantConverterError,
@@ -75,6 +75,6 @@ export {
   type MigratedAttachmentBlob,
   type MigratedAttachmentLink,
   type MigratedAttachmentRows,
-} from "./src/integrations/lucid/migrate_legacy_attachment.js";
-export { createAttachmentOwnerKey } from "./src/integrations/lucid/attachment_owner.js";
-export { createAttachmentsTableStubState } from "./src/integrations/lucid/attachments_table_stub.js";
+} from "./src/integrations/lucid/migrations/legacy/migrate_legacy_attachment.js";
+export { createAttachmentOwnerKey } from "./src/integrations/lucid/relations/attachment_owner.js";
+export { createAttachmentsTableStubState } from "./src/integrations/lucid/schema/attachments_table_stub.js";

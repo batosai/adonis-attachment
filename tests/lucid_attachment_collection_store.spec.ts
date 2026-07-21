@@ -2,7 +2,7 @@ import type { Database } from '@adonisjs/lucid/database'
 import { test } from '@japa/runner'
 
 import type { Attachment } from '../src/core/attachment.js'
-import { LucidAttachmentStore } from '../src/integrations/lucid/lucid_attachment_store.js'
+import { LucidAttachmentStore } from '../src/integrations/lucid/persistence/lucid_attachment_store.js'
 import { createLucidTestDatabase } from './helpers/lucid_test_database.js'
 
 const owner = { type: 'users', id: 'user-1', field: 'avatars' }

@@ -7,7 +7,7 @@
 
 import { test } from '@japa/runner'
 
-import { AttachmentSchemaService } from '../src/integrations/lucid/attachment_schema_service.js'
+import { AttachmentSchemaService } from '../src/integrations/lucid/schema/attachment_schema_service.js'
 import { createLucidTestDatabase } from './helpers/lucid_test_database.js'
 
 test.group('AttachmentSchemaService', (group) => {

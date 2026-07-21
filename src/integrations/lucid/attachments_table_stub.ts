@@ -16,7 +16,6 @@ export type AttachmentsTableStubOptions = {
 export type AttachmentsTableStubState = {
   destination: string
   tableName: string
-  linksTableName: string
   className: string
 }
 
@@ -37,7 +36,6 @@ export function createAttachmentsTableStubState(
   return {
     destination: join(options.directory, `${timestamp}_create_${tableName}_table.ts`),
     tableName,
-    linksTableName: `${tableName}_links`,
     className: toPascalCase(tableName),
   }
 }

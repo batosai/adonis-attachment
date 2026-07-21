@@ -139,7 +139,24 @@ node ace make:attachments-table
 
 Use `--table=media_attachments` or `--folder=database/migrations` to customize the generated file.
 
-`AttachmentModel` maps the default blob table and can be extended by the application. It keeps application-assigned UUIDs, serializes `metadata`, and automatically maintains `created_at` and `updated_at`. `AttachmentLinkModel` maps the polymorphic owner table. It enforces one singular link per `{ type, id, field }` owner and carries collection positions. `LucidAttachmentStore` creates blobs, links, and variants; `LucidAttachmentRepository` resolves a blob by id for queued workers and the read route.
+The generated migration delegates the table definitions to `AttachmentSchemaService`. This keeps application migrations stable when the package evolves the attachment schema:
+
+```ts
+import { BaseSchema } from "@adonisjs/lucid/schema";
+import { AttachmentSchemaService } from "@jrmc/adonis-attachment/lucid";
+
+export default class CreateAttachments extends BaseSchema {
+  async up() {
+    await new AttachmentSchemaService(this.db.getWriteClient()).createTables();
+  }
+
+  async down() {
+    await new AttachmentSchemaService(this.db.getWriteClient()).dropTables();
+  }
+}
+```
+
+`AttachmentModel` maps the default blob table and can be extended by the application. It keeps application-assigned UUIDs, serializes `metadata`, and automatically maintains `created_at` and `updated_at`. `AttachmentLinkModel` maps the polymorphic owner table. It enforces one singular link per `{ type, id, field }` owner and carries collection positions. `LucidAttachmentStore` creates blobs, links, and variants; `LucidAttachmentRepository` resolves a blob by id for queued workers and the read route. `AttachmentSchemaService` owns the versioned definitions of both tables.
 
 Deleting a model with relation decorators removes all of its links automatically. A blob, its variants, and their files are purged only after its last link is removed, so the model supports a future shared-blob workflow safely.
 

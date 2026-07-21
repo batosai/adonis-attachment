@@ -29,6 +29,7 @@ La documentation contient un flux de persistence personnalisee avec un `Attachme
 - `defineConfig` : resout le stockage et la queue au boot Adonis, en direct ou depuis le conteneur applicatif. Sans queue externe, il utilise `MemoryAttachmentQueue`.
 - `configure` : enregistre le provider et la commande `make:attachments-table` dans l'application Adonis.
 - `AttachmentRepository` : lit un attachment pour un worker, sans imposer de mecanisme de persistence.
+- `AttachmentSchemaService` : definit et fait evoluer les tables Lucid `attachments` et `attachment_links` sans dupliquer leur structure dans les migrations applicatives.
 - `AttachmentJobProcessor` : resout un job puis appelle le generateur de variants configure.
 
 Un adaptateur `@adonisjs/queue` devra implementer le meme contrat. Le job Adonis appelle `AttachmentJobProcessor.process(this.payload)` dans sa methode `execute`. Cette limite permet de garder les jobs Adonis dans l'application, ou ils peuvent etre auto-decouverts et injectes par le conteneur.

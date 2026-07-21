@@ -8,6 +8,10 @@
 export { AttachmentModel } from "./attachment_model.js";
 export { AttachmentLinkModel } from "./attachment_link_model.js";
 export {
+  AttachmentSchemaService,
+  type AttachmentSchemaServiceOptions,
+} from "./attachment_schema_service.js";
+export {
   attachment,
   type LucidAttachmentOptions,
 } from "./attachment_column.js";

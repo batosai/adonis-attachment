@@ -2,7 +2,7 @@
 
 Version 6 is a breaking release. Attachments are no longer persisted as nested JSON in the parent model by default.
 
-1. Generate and run the polymorphic attachments migration with `node ace make:attachments-table`.
+1. Generate and run the attachment schema migration with `node ace make:attachments-table`. It delegates the blob and link definitions to `AttachmentSchemaService` from the package.
 2. Generate an application-specific data migration script with `node ace make:attachment-v5-migration`.
 3. Complete `legacyAttachmentRecords` in the generated `database/scripts` file: it must yield each legacy JSON value and its `{ type, id, field }` owner.
 4. Run the script in a staging copy of the database, validate its output, then run it in production.

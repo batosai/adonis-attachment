@@ -18,7 +18,6 @@ test.group('attachments table migration stub', () => {
     assert.deepEqual(state, {
       destination: '/app/database/migrations/1700000000000_create_media_attachments_table.ts',
       tableName: 'media_attachments',
-      linksTableName: 'media_attachments_links',
       className: 'MediaAttachments',
     })
   })
@@ -30,18 +29,16 @@ test.group('attachments table migration stub', () => {
     )
   })
 
-  test('contains blob and polymorphic-link schemas', async ({ assert }) => {
+  test('delegates blob and polymorphic-link schemas to the package service', async ({ assert }) => {
     const stub = await readFile(join(stubsRoot, 'migrations/attachments_table.stub'), 'utf8')
 
     assert.include(stub, 'exports({ to: destination })')
     assert.include(stub, 'Create{{ className }}Table')
     assert.include(stub, "protected tableName = '{{ tableName }}'")
-    assert.include(stub, "this.schema.createTable('{{ linksTableName }}'")
-    assert.include(stub, "table.string('attachable_type').notNullable()")
-    assert.include(stub, "table.uuid('attachment_id').notNullable()")
-    assert.include(stub, "table.integer('position').unsigned().nullable()")
-    assert.include(stub, "table.uuid('parent_id').nullable()")
-    assert.include(stub, "table.unique(['parent_id', 'variant_key'])")
+    assert.include(stub, "import { AttachmentSchemaService } from '@jrmc/adonis-attachment/lucid'")
+    assert.include(stub, 'new AttachmentSchemaService(this.db.getWriteClient()')
+    assert.include(stub, 'createTables()')
+    assert.include(stub, 'dropTables()')
   })
 
   test('uses the package stub from the Ace command', async ({ assert }) => {

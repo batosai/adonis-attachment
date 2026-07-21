@@ -67,6 +67,10 @@
       "types": "./build/src/media/sharp.d.ts",
       "default": "./build/src/media/sharp.js"
     },
+    "./media/exif": {
+      "types": "./build/src/media/exif.d.ts",
+      "default": "./build/src/media/exif.js"
+    },
     "./media/binaries": {
       "types": "./build/src/media/binaries.d.ts",
       "default": "./build/src/media/binaries.js"

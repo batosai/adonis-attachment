@@ -71,6 +71,31 @@ export type FfprobeMetadataExtractorOptions = {
   command?: string
 }
 
+export type PdfInfoMetadataExtractorOptions = {
+  runner?: CommandRunner
+  command?: string
+}
+
+/** Extracts the v5 PDF dimensions, page count, version, and creation date through pdfinfo. */
+export function createPdfInfoMetadataExtractor(
+  options: PdfInfoMetadataExtractorOptions = {}
+): MediaMetadataExtractor {
+  const runner = options.runner ?? new NodeCommandRunner()
+  const command = options.command ?? 'pdfinfo'
+
+  return {
+    supports({ attachment }) {
+      return attachment.mimeType === 'application/pdf'
+    },
+    async extract({ attachment, body }) {
+      return withTemporarySource(attachment.name, body, async (source) => {
+        const result = await runner.run({ command, args: [source] })
+        return mapPdfInfoMetadata(Buffer.from(result.stdout).toString())
+      })
+    },
+  }
+}
+
 /** Extracts duration, codecs and video dimensions through ffprobe. */
 export function createFfprobeMetadataExtractor(
   options: FfprobeMetadataExtractorOptions = {}
@@ -280,6 +305,59 @@ function numberValue(value: string | undefined): number | undefined {
 
   const number = Number(value)
   return Number.isFinite(number) ? number : undefined
+}
+
+function mapPdfInfoMetadata(stdout: string): AttachmentMetadata | undefined {
+  const values = Object.fromEntries(
+    stdout.split('\n').flatMap((line) => {
+      const separator = line.indexOf(':')
+      if (separator < 1) {
+        return []
+      }
+
+      return [[line.slice(0, separator).trim().toLowerCase(), line.slice(separator + 1).trim()]]
+    })
+  ) as Record<string, string>
+  const pageSize = values['page size']?.match(/(\d+(?:\.\d+)?)\s*x\s*(\d+(?:\.\d+)?)/i)
+  const pages = integerValue(values.pages)
+  const date = pdfDate(values.creationdate)
+  const metadata: AttachmentMetadata = {
+    ...(pageSize ? { dimension: { width: Number.parseInt(pageSize[1]!, 10), height: Number.parseInt(pageSize[2]!, 10) } } : {}),
+    ...(pages !== undefined ? { pages } : {}),
+    ...(values['pdf version'] ? { version: values['pdf version'] } : {}),
+    ...(date ? { date } : {}),
+  }
+
+  return Object.keys(metadata).length > 0 ? metadata : undefined
+}
+
+function integerValue(value: string | undefined): number | undefined {
+  if (!value) {
+    return undefined
+  }
+
+  const number = Number.parseInt(value, 10)
+  return Number.isFinite(number) ? number : undefined
+}
+
+function pdfDate(value: string | undefined): string | undefined {
+  if (!value) {
+    return undefined
+  }
+
+  const parsed = Date.parse(value)
+  if (Number.isFinite(parsed)) {
+    return new Date(parsed).toISOString()
+  }
+
+  const parts = value.match(/^D:(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})/)
+  if (!parts) {
+    return undefined
+  }
+
+  return new Date(Date.UTC(
+    Number(parts[1]), Number(parts[2]) - 1, Number(parts[3]), Number(parts[4]), Number(parts[5]), Number(parts[6])
+  )).toISOString()
 }
 
 function mimeTypeForFormat(format: 'jpeg' | 'png' | 'webp'): string {

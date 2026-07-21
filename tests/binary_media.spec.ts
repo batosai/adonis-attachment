@@ -13,6 +13,7 @@ import {
   createDocumentThumbnailConverter,
   createFfmpegThumbnailConverter,
   createFfprobeMetadataExtractor,
+  createPdfInfoMetadataExtractor,
   createPdfThumbnailConverter,
   type CommandExecution,
   type CommandRunner,
@@ -100,5 +101,27 @@ test.group('Binary media adapters', () => {
     ])
     assert.include(runner.executions[0]?.args ?? [], '-ss')
     assert.include(runner.executions[0]?.args ?? [], 'scale=320:-1')
+  })
+
+  test('extracts v5-compatible PDF metadata through pdfinfo', async ({ assert }) => {
+    const runner = new FakeRunner()
+    runner.stdout = Buffer.from([
+      'Pages:          4',
+      'Page size:      612 x 792 pts (letter)',
+      'PDF version:    1.7',
+      'CreationDate:   Wed Jan 15 18:51:34 2020 UTC',
+    ].join('\n'))
+    const extractor = createPdfInfoMetadataExtractor({ runner })
+
+    assert.deepEqual(
+      await extractor.extract({ attachment: { ...video, mimeType: 'application/pdf', name: 'report.pdf' }, body: new Uint8Array([1]) }),
+      {
+        dimension: { width: 612, height: 792 },
+        pages: 4,
+        version: '1.7',
+        date: '2020-01-15T18:51:34.000Z',
+      }
+    )
+    assert.equal(runner.executions[0]?.command, 'pdfinfo')
   })
 })

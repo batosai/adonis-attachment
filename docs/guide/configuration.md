@@ -110,6 +110,43 @@ profile invokes `ffprobe` for audio/video and `pdfinfo` for PDFs only when `meta
 effective for that attachment. Both binaries can be selected with their `command` option;
 set `exif`, `ffprobe`, or `pdfinfo` to `false` to disable an extractor.
 
+### Performance policy
+
+Metadata runs synchronously by default, preserving the v5 behavior: `persist()` waits for
+the extraction. Set command timeouts for external binaries to prevent a stalled process from
+holding a request indefinitely:
+
+```ts
+media: {
+  metadata: createV5CompatibleMetadataExtractors({
+    ffprobe: { timeout: 5_000 },
+    pdfinfo: { timeout: 5_000 },
+  }),
+}
+```
+
+For video or PDF-heavy applications, defer extraction to the queue after the attachment row
+is committed. Lucid configures its metadata persister automatically; another ORM must provide
+`metadataPersister` with a `persistMetadata(attachment, metadata)` method.
+
+```ts
+media: {
+  metadata: createV5CompatibleMetadataExtractors(),
+  metadataPolicy: {
+    mode: 'deferred',
+    variants: false,
+  },
+}
+```
+
+`variants` defaults to `true` for v5 compatibility. Set it to `false` when thumbnails do not
+need their own metadata. In deferred mode, configure the metadata processor shown in
+[Background processing](/guide/queues) so workers handle `extract-metadata` jobs.
+
+With custom persistence or a legacy JSON column, call
+`attachmentService.scheduleMetadataExtraction(attachment)` only after the record that owns the
+attachment has committed. This prevents a worker from updating a record that does not exist yet.
+
 ```ts
 import { defineConfig, LocalFileStorage, type MediaMetadataExtractor } from '@jrmc/adonis-attachment'
 

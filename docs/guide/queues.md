@@ -42,6 +42,12 @@ import {
 
 const processor = new AttachmentJobProcessor({
   attachments: new LucidAttachmentRepository(),
+  metadata: {
+    async extractAndPersistMetadata(attachment) {
+      const attachments = await app.container.make('jrmc.attachment')
+      await attachments.extractAndPersistMetadata(attachment)
+    },
+  },
   async variants() {
     const attachments = await app.container.make('jrmc.attachment')
 
@@ -86,10 +92,9 @@ export default class GenerateAttachmentVariants extends Job<AttachmentJob> {
 }
 ```
 
-This keeps the package independent of how and where your workers are deployed.
-The payload contains only `type`, `attachmentId`, and optional `variantKeys`, so it is safe
-to serialize through a remote queue; the worker always reloads the attachment before work
-begins.
+This keeps the package independent of how and where your workers are deployed. Variant jobs
+contain an id and optional keys; metadata jobs also contain the serializable attachment target
+but never its file bytes. The worker reads the stored file before extracting metadata.
 
 ## The flow at a glance
 
@@ -101,6 +106,7 @@ graph LR
   P --> REPO["repository.findById(original)"]
   P --> GEN["variant generator, converters"]
   GEN --> ST["store variant files + rows"]
+  P --> META["metadata extractor + persister"]
 ```
 
 **Next:** [Storing with Lucid](/guide/lucid).

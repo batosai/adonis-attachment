@@ -128,6 +128,12 @@ export function defineConfig<const KnownConverters extends ConverterConfigMap = 
     const resolvedMetadataPersister = metadataPersister
       ?? await resolveLucidMetadataPersister(config.media?.metadataPolicy?.mode, config.integrations?.lucid)
 
+    if (config.media?.metadataPolicy?.mode === 'deferred' && !resolvedMetadataPersister) {
+      throw new Error(
+        'Deferred metadata extraction requires media.metadataPersister or integrations.lucid'
+      )
+    }
+
     return {
       defaultDisk: config.defaultDisk ?? storage.defaultDisk ?? 'fs',
       storage,

@@ -223,6 +223,29 @@ test.group('defineConfig', () => {
     assert.equal(resolved.metadataExtractors, extractors)
   })
 
+  test('requires a metadata persister for deferred extraction outside Lucid', async ({ assert }) => {
+    const storage: AttachmentStorage = {
+      async write() {},
+      async read() {
+        return new Uint8Array()
+      },
+      async remove() {},
+    }
+
+    await assert.rejects(
+      () =>
+        defineConfig({
+          defaultDisk: 'public',
+          storage,
+          media: {
+            metadata: [],
+            metadataPolicy: { mode: 'deferred' },
+          },
+        }).resolver({} as never),
+      'Deferred metadata extraction requires media.metadataPersister or integrations.lucid'
+    )
+  })
+
   test('wraps named v5-style converter declarations in a lazy registry', async ({ assert }) => {
     const storage: AttachmentStorage = {
       async write() {},

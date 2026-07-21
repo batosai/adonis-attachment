@@ -16,6 +16,7 @@ const attachmentConfig = defineConfig({
   storage: LocalFileStorage.fromApp,
   media: {
     metadata: createV5CompatibleMetadataExtractors(),
+    // metadataPolicy: { mode: 'deferred', variants: false },
   },
   // converters: {
   //   thumbnail: {

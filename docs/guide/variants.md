@@ -206,8 +206,9 @@ const documentThumbnail = createDocumentThumbnailConverter({ key: 'thumbnail', w
 // requires LibreOffice and pdftoppm
 ```
 
-Pass `{ runner, command }` (and `{ officeCommand }` for office documents) to select custom
-binary locations or to integrate your own process runner.
+Pass `{ runner, command, timeout }` (and `{ officeCommand }` for office documents) to select
+custom binary locations, enforce a maximum execution time, or integrate your own process
+runner.
 
 ## Generate them
 

@@ -74,6 +74,24 @@ export class LucidAttachmentStore {
     }
   }
 
+  async createOriginalLink(owner: AttachmentOwner, attachmentId: string): Promise<AttachmentLinkModel> {
+    const blob = await this.#findBlobOrFail(attachmentId)
+    return this.#createLink(owner, blob, { ownerKey: createAttachmentOwnerKey(owner) })
+  }
+
+  async createCollectionLink(
+    owner: AttachmentOwner,
+    attachmentId: string,
+    position?: number
+  ): Promise<AttachmentLinkModel> {
+    const items = await this.listCollection(owner)
+    const target = normalizePosition(position, items.length)
+    const blob = await this.#findBlobOrFail(attachmentId)
+
+    await this.#shiftCollection(items, target, 1)
+    return this.#createLink(owner, blob, { position: target })
+  }
+
   createVariant(
     original: AttachmentModel,
     key: string,
@@ -217,6 +235,16 @@ export class LucidAttachmentStore {
     )
 
     markAttachmentPersisted(attachment)
+    return blob
+  }
+
+  async #findBlobOrFail(id: string): Promise<AttachmentModel> {
+    const blob = await this.findById(id)
+
+    if (!blob) {
+      throw new Error(`Attachment blob "${id}" does not exist`)
+    }
+
     return blob
   }
 

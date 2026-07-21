@@ -78,6 +78,7 @@ The singular relation provides these commands:
 
 - `get()` returns the persisted `AttachmentLinkModel` or `null`. Its `attachment` property is the blob and `toAttachment()` returns the core file value.
 - `attach(draft)` creates the first attachment and throws when one is already attached. This prevents an accidental replacement.
+- `attachExisting(blobId)` creates a link to an already persisted blob without copying its file.
 - `set(draft)` and `replace(draft)` create an attachment when empty or replace the current one. The previous file is removed only after the replacement row exists.
 - `detach()` removes the original, its variants, and their files.
 - `variants()` returns persisted variant rows. `regenerateVariants(keys?)` enqueues generation and returns `false` when no original is attached.
@@ -124,7 +125,7 @@ await post.gallery.add(second, 0);
 await post.gallery.move(second.id, 0);
 ```
 
-Collection commands are `all()`, `add(draft, position?)`, `remove(id)`, `clear()`, `replaceAll(drafts)`, and `move(id, position)`. `add` appends by default; positions are zero-based and normalized after a remove or move. `remove` returns `false` when the id is not part of this model collection.
+Collection commands are `all()`, `add(draft, position?)`, `addExisting(blobId, position?)`, `remove(id)`, `clear()`, `replaceAll(drafts)`, and `move(id, position)`. `add` appends by default; positions are zero-based and normalized after a remove or move. `remove` returns `false` when the id is not part of this model collection. The `id` handled by `move` and `remove` is the link id returned by `add`, while `attachmentId` identifies the reusable blob.
 
 Both relation decorators receive the same persistence options as `@attachment()`. Per setting, the priority is: options passed to `attachmentManager.createFrom*`, then the relation decorator, then `defaults` in `config/attachment.ts`. Relation folder and rename callbacks receive `{ model, field, originalName }` at persistence time.
 

@@ -38,6 +38,8 @@ export type LucidAttachmentPersistence = Pick<
       | 'listCollection'
       | 'moveCollectionItem'
       | 'removeCollectionItem'
+      | 'createOriginalLink'
+      | 'createCollectionLink'
     >
   >
 
@@ -149,6 +151,18 @@ export class LucidAttachmentLifecycleService {
       await this.#removeStoredFile(attachment)
       throw error
     }
+  }
+
+  attachExisting(owner: AttachmentOwner, attachmentId: string): Promise<AttachmentLinkModel> {
+    return this.#linkStore().createOriginalLink(owner, attachmentId)
+  }
+
+  addExisting(
+    owner: AttachmentOwner,
+    attachmentId: string,
+    position?: number
+  ): Promise<AttachmentLinkModel> {
+    return this.#linkStore().createCollectionLink(owner, attachmentId, position)
   }
 
   listCollection(owner: AttachmentOwner): Promise<AttachmentLinkModel[]> {
@@ -269,6 +283,20 @@ export class LucidAttachmentLifecycleService {
         | 'moveCollectionItem'
         | 'removeCollectionItem'
       >
+    >
+  }
+
+  #linkStore(): Required<
+    Pick<LucidAttachmentStore, 'createOriginalLink' | 'createCollectionLink'>
+  > {
+    const store = this.#store
+
+    if (!store.createOriginalLink || !store.createCollectionLink) {
+      throw new Error('Lucid attachment link operations require a link-capable store')
+    }
+
+    return store as Required<
+      Pick<LucidAttachmentStore, 'createOriginalLink' | 'createCollectionLink'>
     >
   }
 

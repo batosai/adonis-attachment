@@ -307,4 +307,25 @@ test.group("Lucid attachment relations", (group) => {
       gallery.toAttachment().path,
     ]);
   });
+
+  test("keeps a shared blob until its last owner link is deleted", async ({ assert }) => {
+    const firstUser = await createUser("user-1");
+    const secondUser = await createUser("user-2");
+    const firstLink = await firstUser.avatar.attach(createDraft("shared.txt"));
+    const secondLink = await secondUser.avatar.attachExisting(firstLink.attachmentId);
+    removed = [];
+
+    assert.notEqual(firstLink.id, secondLink.id);
+    assert.equal(firstLink.attachmentId, secondLink.attachmentId);
+
+    await firstUser.delete();
+
+    assert.isNotNull(await AttachmentModel.find(firstLink.attachmentId));
+    assert.deepEqual(removed, []);
+
+    await secondUser.delete();
+
+    assert.isNull(await AttachmentModel.find(firstLink.attachmentId));
+    assert.deepEqual(removed, [firstLink.toAttachment().path]);
+  });
 });

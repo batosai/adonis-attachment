@@ -105,6 +105,19 @@ export class AttachmentRelation {
     return lifecycle.attach(owner, input, this.#definition.options);
   }
 
+  async attachExisting(attachmentId: string): Promise<AttachmentLinkModel> {
+    const owner = this.#owner();
+    const lifecycle = await this.#lifecycle();
+
+    if (await lifecycle.get(owner)) {
+      throw new Error(
+        `Attachment relation "${owner.field}" already has an attachment; use replace() or set()`,
+      );
+    }
+
+    return lifecycle.attachExisting(owner, attachmentId);
+  }
+
   set(input: AttachmentRelationInput): Promise<AttachmentLinkModel> {
     return this.replace(input);
   }
@@ -179,6 +192,14 @@ export class AttachmentCollectionRelation {
       position,
       this.#definition.options,
     );
+  }
+
+  async addExisting(
+    attachmentId: string,
+    position?: number,
+  ): Promise<AttachmentLinkModel> {
+    const lifecycle = await this.#lifecycle();
+    return lifecycle.addExisting(this.#owner(), attachmentId, position);
   }
 
   async remove(id: string): Promise<boolean> {

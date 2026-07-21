@@ -39,6 +39,10 @@ batches (100 per transaction by default). It preserves file paths, disk names, m
 and the relationship between an original and its variants. It does not move files in
 storage; only database rows change.
 
+The v5 `meta` object is copied unchanged to the v6 `metadata` column for both originals and
+variants. Configure `createV5CompatibleMetadataExtractors()` for newly uploaded files when
+you want to keep the same EXIF, video, and PDF metadata shape after migration.
+
 ## Keeping a single JSON column
 
 If a field only ever holds **one file with no variants**, you can keep the v5-style JSON
@@ -60,4 +64,3 @@ await user.save()
 
 Values that contain variants must move to the relation tables - the column mode represents
 one file only.
-

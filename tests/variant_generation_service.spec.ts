@@ -8,6 +8,7 @@
 import { test } from '@japa/runner'
 
 import type { Attachment, AttachmentPersistRequest } from '../src/core/attachment.js'
+import { AttachmentService } from '../src/core/attachment_service.js'
 import { UnknownVariantConverterError, VariantGenerationService } from '../index.js'
 
 const sourceAttachment: Attachment = {
@@ -119,6 +120,43 @@ test.group('VariantGenerationService', () => {
     await service.generateAll({ attachment: sourceAttachment, variantKeys: ['thumbnail'], meta: true })
 
     assert.isTrue(requestedMeta)
+  })
+
+  test('extracts metadata for generated variants through the attachment service', async ({ assert }) => {
+    const writes: Uint8Array[] = []
+    const attachments = new AttachmentService({
+      storage: {
+        async write(input) {
+          writes.push(input.body)
+        },
+        async read() {
+          return new Uint8Array([1])
+        },
+        async remove() {},
+      },
+      queue: { async enqueue() {} },
+      defaultDisk: 'public',
+      createId: () => 'thumbnail-id',
+      metadataExtractors: [{
+        async extract() {
+          return { dimension: { width: 320, height: 180 } }
+        },
+      }],
+    })
+    const service = new VariantGenerationService({
+      attachments,
+      converters: [{
+        key: 'thumbnail',
+        async convert() {
+          return { body: new Uint8Array([2]), fileName: 'thumbnail.png', mimeType: 'image/png' }
+        },
+      }],
+    })
+
+    const variants = await service.generateAll({ attachment: sourceAttachment, variantKeys: ['thumbnail'], meta: true })
+
+    assert.deepEqual(variants[0]?.attachment.metadata, { dimension: { width: 320, height: 180 } })
+    assert.deepEqual(writes, [new Uint8Array([2])])
   })
 
   test('ignores a converter that intentionally returns no variant', async ({ assert }) => {

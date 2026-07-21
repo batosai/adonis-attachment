@@ -13,6 +13,14 @@ import {
 } from "../src/integrations/lucid/index.js";
 import { createAttachmentOwnerKey } from "../src/integrations/lucid/relations/attachment_owner.js";
 
+const legacyMetadata = {
+  date: "2010:01:15 18:51:34",
+  host: "Adobe Photoshop",
+  dimension: { width: 800, height: 600 },
+  orientation: { value: 1, description: "top-left" },
+  gps: { latitude: 48.862725, longitude: 2.287592, altitude: 35 },
+};
+
 test.group("migrateLegacyAttachment", () => {
   test("converts an original attachment and its variants to polymorphic rows", ({
     assert,
@@ -27,7 +35,7 @@ test.group("migrateLegacyAttachment", () => {
         mimeType: "image/jpeg",
         disk: "s3",
         path: "users/42/avatar.jpg",
-        meta: { width: 800 },
+        meta: legacyMetadata,
         variants: [
           {
             key: "thumbnail",
@@ -59,7 +67,7 @@ test.group("migrateLegacyAttachment", () => {
         mimeType: "image/jpeg",
         extname: "jpg",
         size: 42,
-        metadata: { width: 800 },
+        metadata: legacyMetadata,
         },
         {
         id: "thumbnail-id",
@@ -129,7 +137,7 @@ test.group("migrateLegacyAttachment", () => {
         size: 42,
         extname: "jpg",
         mimeType: "image/jpeg",
-        meta: { width: 800 },
+        meta: legacyMetadata,
       },
       { defaultDisk: "public", createId: () => "attachment-id" },
     );
@@ -143,7 +151,7 @@ test.group("migrateLegacyAttachment", () => {
       mimeType: "image/jpeg",
       extname: "jpg",
       size: 42,
-      metadata: { width: 800 },
+      metadata: legacyMetadata,
     });
   });
 

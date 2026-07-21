@@ -25,6 +25,11 @@ export {
 } from './attachment_options.js'
 export { AttachmentService, type AttachmentServiceOptions } from './attachment_service.js'
 export {
+  MediaMetadataService,
+  type MediaMetadataExtractor,
+  type MediaMetadataInput,
+} from '../media/media_metadata.js'
+export {
   AttachmentJobProcessor,
   AttachmentNotFoundError,
   type AttachmentJobProcessorOptions,

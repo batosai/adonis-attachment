@@ -22,6 +22,7 @@ import {
 } from './attachment_options.js'
 import type { AttachmentQueue } from './queue.js'
 import type { AttachmentStorage } from './storage.js'
+import { MediaMetadataService, type MediaMetadataExtractor } from '../media/media_metadata.js'
 
 export type AttachmentServiceOptions = {
   storage: AttachmentStorage
@@ -29,6 +30,7 @@ export type AttachmentServiceOptions = {
   defaultDisk: string
   createId?: () => string
   defaults?: AttachmentPersistenceOptions
+  metadataExtractors?: readonly MediaMetadataExtractor[]
 }
 
 /**
@@ -40,12 +42,16 @@ export class AttachmentService {
   readonly #queue: AttachmentQueue
   readonly #factory: AttachmentFactory
   readonly #defaults: AttachmentPersistenceOptions
+  readonly #metadata: MediaMetadataService | undefined
 
   constructor(options: AttachmentServiceOptions) {
     this.#storage = options.storage
     this.#queue = options.queue
     this.#factory = new AttachmentFactory(options)
     this.#defaults = options.defaults ?? {}
+    this.#metadata = options.metadataExtractors
+      ? new MediaMetadataService(options.metadataExtractors)
+      : undefined
   }
 
   createDraft(
@@ -87,12 +93,23 @@ export class AttachmentService {
     )
     const folder = await resolveFolder(options.folder, context)
     const name = await resolveName(options.rename, context)
-    const attachment = this.#factory.create(source, {
+    let attachment = this.#factory.create(source, {
       id: draft.id,
       ...(options.disk ? { disk: options.disk } : {}),
       ...(folder ? { folder } : {}),
       ...(name ? { name } : {}),
     })
+
+    if (options.meta && this.#metadata) {
+      const metadata = await this.#metadata.extract({ attachment, body: source.body })
+
+      if (metadata) {
+        attachment = {
+          ...attachment,
+          metadata: { ...metadata, ...(source.metadata ?? {}) },
+        }
+      }
+    }
 
     await this.#storage.write({
       disk: attachment.disk,

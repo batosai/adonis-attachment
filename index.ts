@@ -18,6 +18,7 @@ export { attachmentManager };
 export {
   defineConfig,
   type AttachmentIntegrationsConfig,
+  type AttachmentMediaConfig,
   type AttachmentConfig,
   type LucidAttachmentConfig,
   type ResolvedAttachmentConfig,

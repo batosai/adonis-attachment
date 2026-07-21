@@ -64,6 +64,9 @@ Every method accepts, where relevant: `disk`, `folder`, `rename`, `meta`, `preCo
 `variants`, `metadata`, `mimeType`, and `originalName`. These take precedence over decorator
 and configuration defaults (see the [precedence rules](/guide/configuration#default-persistence-options)).
 
+Set `meta: true` to run the metadata extractors configured by your application. Explicit
+`metadata` is retained and overrides an extracted key with the same name.
+
 ```ts
 await attachmentManager.createFromFile(request.file('avatar')!, {
   disk: 's3',

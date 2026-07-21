@@ -124,6 +124,41 @@ test('keeps drafts in memory until persist resolves their contextual options', a
   }])
 })
 
+test('extracts configured metadata only when meta is enabled', async ({ assert }) => {
+  const storage = new FakeStorage()
+  const service = new AttachmentService({
+    storage,
+    queue: new FakeQueue(),
+    defaultDisk: 'public',
+    createId: () => 'attachment-id',
+    metadataExtractors: [
+      {
+        supports({ attachment }) {
+          return attachment.mimeType === 'image/png'
+        },
+        async extract({ body }) {
+          return { width: 800, bytes: body.byteLength }
+        },
+      },
+    ],
+  })
+
+  const extracted = await service
+    .createDraft({
+      body: new Uint8Array([1, 2, 3]),
+      originalName: 'avatar.png',
+      mimeType: 'image/png',
+      metadata: { width: 640, source: 'upload' },
+    }, { meta: true })
+    .persist()
+  const skipped = await service
+    .createDraft({ body: new Uint8Array([1]), originalName: 'document.pdf' })
+    .persist()
+
+  assert.deepEqual(extracted.metadata, { width: 640, bytes: 3, source: 'upload' })
+  assert.isUndefined(skipped.metadata)
+})
+
 test('persists a draft only once when called concurrently', async ({ assert }) => {
   const storage = new FakeStorage()
   const service = new AttachmentService({

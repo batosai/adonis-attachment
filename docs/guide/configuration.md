@@ -66,9 +66,32 @@ export default defineConfig({
 })
 ```
 
-Available options: `disk`, `folder`, `rename`, `meta`, `preComputeUrl`, `variants`. Today
-`disk`, `folder`, and `rename` affect `persist()`; the others are reserved for the upcoming
-media pipeline.
+Available options: `disk`, `folder`, `rename`, `meta`, `preComputeUrl`, `variants`.
+`meta` activates the configured metadata extractors during `persist()`. `preComputeUrl`
+and automatic variant scheduling remain reserved for the media pipeline.
+
+## Media metadata
+
+Register extractors once under `media.metadata`, then enable them per attachment with
+`meta: true`. Extractors receive the finalized attachment information and the source bytes.
+Their results are merged in declaration order; metadata supplied by the application wins on
+key conflicts.
+
+```ts
+import { defineConfig, LocalFileStorage, type MediaMetadataExtractor } from '@jrmc/adonis-attachment'
+
+const imageMetadata: MediaMetadataExtractor = {
+  supports: ({ attachment }) => attachment.mimeType.startsWith('image/'),
+  async extract({ body }) {
+    return { sourceBytes: body.byteLength }
+  },
+}
+
+export default defineConfig({
+  storage: LocalFileStorage.fromApp,
+  media: { metadata: [imageMetadata] },
+})
+```
 
 ## Source limits
 

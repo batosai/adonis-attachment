@@ -25,6 +25,7 @@ La documentation contient un flux de persistence personnalisee avec un `Attachme
 - `AttachmentQueue` : recoit des travaux serialisables. Le premier est `generate-variants`.
 - `MemoryAttachmentQueue` : implementation par defaut, executee dans le processus avec une concurrence configuree.
 - `AttachmentService` : facade de persistance, suppression et planification des variants.
+- `MediaMetadataService` : execute les extracteurs techniques configures lors de `persist()` lorsque l'option `meta` est activee.
 - `AttachmentManager` : normalise buffer, Base64, fichier multipart, chemin, URL et stream en drafts avant leur persistance par le service.
 - `defineConfig` : resout le stockage et la queue au boot Adonis, en direct ou depuis le conteneur applicatif. Sans queue externe, il utilise `MemoryAttachmentQueue`.
 - `configure` : enregistre le provider et la commande `make:attachments-table` dans l'application Adonis.
@@ -35,6 +36,8 @@ La documentation contient un flux de persistence personnalisee avec un `Attachme
 Un adaptateur `@adonisjs/queue` devra implementer le meme contrat. Le job Adonis appelle `AttachmentJobProcessor.process(this.payload)` dans sa methode `execute`. Cette limite permet de garder les jobs Adonis dans l'application, ou ils peuvent etre auto-decouverts et injectes par le conteneur.
 
 Les converters v6 implementent `VariantConverter`. Ils recoivent l'attachment et ses octets, puis retournent les octets et les metadonnees du variant. `VariantGenerationService` ecrit les fichiers generes et peut etre utilise directement comme `VariantGenerator` par le processeur de jobs.
+
+Les extracteurs de metadata implementent `MediaMetadataExtractor`. Ils sont independants des bibliotheques de traitement et peuvent filtrer leurs entrees avec `supports()`. Le noyau les execute apres la resolution du nom et du disque, avant l'ecriture. Les metadata explicites de l'appelant restent prioritaires sur les valeurs extraites.
 
 `AttachmentJobProcessor` peut aussi recevoir une factory de generateur asynchrone. Elle est resolue et memorisee au premier job, ce qui permet de construire un generateur dependant du service `jrmc.attachment` sans cycle au boot.
 

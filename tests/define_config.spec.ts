@@ -198,6 +198,31 @@ test.group('defineConfig', () => {
     assert.equal(resolved.defaults, defaults)
   })
 
+  test('resolves media metadata extractors at application boot', async ({ assert }) => {
+    const storage: AttachmentStorage = {
+      async write() {},
+      async read() {
+        return new Uint8Array()
+      },
+      async remove() {},
+    }
+    const extractors = [{ async extract() { return { width: 800 } } }]
+    const app = { marker: 'application' }
+
+    const resolved = await defineConfig({
+      defaultDisk: 'public',
+      storage,
+      media: {
+        metadata(resolvedApp) {
+          assert.equal(resolvedApp, app)
+          return extractors
+        },
+      },
+    }).resolver(app as never)
+
+    assert.equal(resolved.metadataExtractors, extractors)
+  })
+
   test('derives Lucid link table names from one configured blob table', async ({ assert }) => {
     const storage: AttachmentStorage = {
       async write() {},

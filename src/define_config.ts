@@ -20,6 +20,7 @@ import type { AttachmentJobHandler, AttachmentQueue } from './core/queue.js'
 import type { AttachmentStorage } from './core/storage.js'
 import type { AttachmentManagerOptions } from './sources/attachment_manager.js'
 import type { AttachmentPersistenceOptions } from './core/attachment_options.js'
+import type { MediaMetadataExtractor } from './media/media_metadata.js'
 
 type Integration<T> = T | ((app: ApplicationService) => T | Promise<T>)
 
@@ -39,6 +40,11 @@ export type AttachmentIntegrationsConfig = {
   lucid?: LucidAttachmentConfig
 }
 
+export type AttachmentMediaConfig = {
+  /** Extracts technical metadata when a persistence option enables `meta`. */
+  metadata?: Integration<readonly MediaMetadataExtractor[]>
+}
+
 export type AttachmentConfig = {
   /** Overrides the storage default. Falls back to `fs` when no adapter provides one. */
   defaultDisk?: string
@@ -52,6 +58,7 @@ export type AttachmentConfig = {
   sources?: AttachmentManagerOptions
   route?: AttachmentRouteConfig
   integrations?: AttachmentIntegrationsConfig
+  media?: AttachmentMediaConfig
   queueConcurrency?: number
   createId?: () => string
 }
@@ -86,6 +93,10 @@ export function defineConfig(config: AttachmentConfig): ConfigProvider<ResolvedA
           ...(config.queueConcurrency ? { concurrency: config.queueConcurrency } : {}),
         })
 
+    const metadataExtractors = config.media?.metadata
+      ? await resolveIntegration(config.media.metadata, app)
+      : undefined
+
     return {
       defaultDisk: config.defaultDisk ?? storage.defaultDisk ?? 'fs',
       storage,
@@ -96,6 +107,7 @@ export function defineConfig(config: AttachmentConfig): ConfigProvider<ResolvedA
         : {}),
       ...(config.defaults ? { defaults: config.defaults } : {}),
       ...(config.sources ? { sources: config.sources } : {}),
+      ...(metadataExtractors ? { metadataExtractors } : {}),
       ...(config.integrations?.lucid
         ? {
             integrations: {

@@ -7,6 +7,10 @@
 
 import { configProvider } from '@adonisjs/core'
 import { MemoryAttachmentQueue } from './queues/memory_queue.js'
+import {
+  resolveAttachmentTableNames,
+  type AttachmentTableNames,
+} from './integrations/lucid/attachment_table_names.js'
 
 import type { ApplicationService, ConfigProvider } from '@adonisjs/core/types'
 import type { AttachmentServiceOptions } from './core/attachment_service.js'
@@ -25,6 +29,11 @@ export type ResolvedAttachmentRouteConfig = {
   path: string
 }
 
+export type LucidAttachmentConfig = {
+  /** Blob table name. The link table is derived as `${singular(tableName)}_links`. */
+  tableName?: string
+}
+
 export type AttachmentConfig = {
   /** Overrides the storage default. Falls back to `fs` when no adapter provides one. */
   defaultDisk?: string
@@ -37,6 +46,8 @@ export type AttachmentConfig = {
   defaults?: AttachmentPersistenceOptions
   sources?: AttachmentManagerOptions
   route?: AttachmentRouteConfig
+  /** Optional configuration for the Lucid persistence integration. */
+  lucid?: LucidAttachmentConfig
   queueConcurrency?: number
   createId?: () => string
 }
@@ -46,6 +57,7 @@ export type ResolvedAttachmentConfig = AttachmentServiceOptions & {
   defaults?: AttachmentPersistenceOptions
   sources?: AttachmentManagerOptions
   route: ResolvedAttachmentRouteConfig | false
+  lucid?: AttachmentTableNames
 }
 
 /**
@@ -78,6 +90,7 @@ export function defineConfig(config: AttachmentConfig): ConfigProvider<ResolvedA
         : {}),
       ...(config.defaults ? { defaults: config.defaults } : {}),
       ...(config.sources ? { sources: config.sources } : {}),
+      ...(config.lucid ? { lucid: resolveAttachmentTableNames(config.lucid.tableName) } : {}),
       ...(config.createId ? { createId: config.createId } : {}),
     }
   })

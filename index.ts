@@ -18,6 +18,7 @@ export { attachmentManager };
 export {
   defineConfig,
   type AttachmentConfig,
+  type LucidAttachmentConfig,
   type ResolvedAttachmentConfig,
 } from "./src/define_config.js";
 export { AdonisDriveStorage } from "./src/adapters/adonis_drive_storage.js";

@@ -4,6 +4,7 @@ import { join } from 'node:path'
 import { test } from '@japa/runner'
 
 import MakeAttachmentsTable from '../commands/make/attachments_table.js'
+import { defineConfig } from '../src/define_config.js'
 import { stubsRoot } from '../stubs/main.js'
 import { createAttachmentsTableStubState } from '../src/integrations/lucid/attachments_table_stub.js'
 
@@ -76,5 +77,42 @@ test.group('attachments table migration stub', () => {
     assert.equal(stub.state.className, 'MediaAttachments')
     assert.match(String(stub.state.destination), /^\/app\/database\/migrations\/\d+_create_media_attachments_table\.ts$/)
     assert.match(message, /^Created \/app\/database\/migrations\//)
+  })
+
+  test('uses the configured Lucid table when the command has no --table flag', async ({
+    assert,
+  }) => {
+    const generated: Array<{ state: Record<string, unknown> }> = []
+
+    await MakeAttachmentsTable.prototype.run.call({
+      parsed: { flags: {} },
+      app: {
+        makePath: (path: string) => `/app/${path}`,
+        config: {
+          get() {
+            return defineConfig({
+              storage: {
+                async write() {},
+                async read() {
+                  return new Uint8Array()
+                },
+                async remove() {},
+              },
+              lucid: { tableName: 'media_attachments' },
+            })
+          },
+        },
+      },
+      async createCodemods() {
+        return {
+          async makeUsingStub(_root: string, _path: string, state: Record<string, unknown>) {
+            generated.push({ state })
+          },
+        }
+      },
+      logger: { success() {} },
+    } as never)
+
+    assert.equal(generated[0]?.state.tableName, 'media_attachments')
   })
 })

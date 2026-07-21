@@ -40,6 +40,17 @@ export default defineConfig({
 });
 ```
 
+`lucid.tableName` changes the blob table used by the Lucid integration. The polymorphic link table is always derived from it with Adonis `string.singular`: `attachments` uses `attachment_links`, while `media_attachments` uses `media_attachment_links`. Use the same setting before generating the migration and at runtime.
+
+```ts
+export default defineConfig({
+  storage: LocalFileStorage.fromApp,
+  lucid: {
+    tableName: "media_attachments",
+  },
+});
+```
+
 For in-process variant generation, pass an `AttachmentJobProcessor` as `processor`. The default memory queue delegates every job to it. The processor may resolve its variant generator lazily when that generator depends on `jrmc.attachment`; see [Queues](/guide/queues).
 
 To enable the built-in `GET /attachments/:id` route, provide an `AttachmentRepository` as `repository`. Set `route: false` to disable it or `route: { prefix: '/media' }` to move it. See [Routes](/guide/routes) for its response behavior and access-control considerations.

@@ -6,10 +6,10 @@
  */
 
 import type { Knex } from 'knex'
+import { resolveAttachmentTableNames } from './attachment_table_names.js'
 
 export type AttachmentSchemaServiceOptions = {
   tableName?: string
-  linksTableName?: string
 }
 
 /**
@@ -22,10 +22,9 @@ export class AttachmentSchemaService {
 
   constructor(connection: Knex, options: AttachmentSchemaServiceOptions = {}) {
     this.#connection = connection
-    this.#tableName = options.tableName ?? 'attachments'
-    this.#linksTableName =
-      options.linksTableName ??
-      (this.#tableName === 'attachments' ? 'attachment_links' : `${this.#tableName}_links`)
+    const tables = resolveAttachmentTableNames(options.tableName)
+    this.#tableName = tables.tableName
+    this.#linksTableName = tables.linksTableName
   }
 
   createTables(): Promise<void> {

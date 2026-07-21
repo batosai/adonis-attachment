@@ -8,6 +8,13 @@
 export { AttachmentModel } from "./attachment_model.js";
 export { AttachmentLinkModel } from "./attachment_link_model.js";
 export {
+  configureLucidAttachmentTables,
+} from "./configure_lucid_attachment_tables.js";
+export {
+  resolveAttachmentTableNames,
+  type AttachmentTableNames,
+} from "./attachment_table_names.js";
+export {
   AttachmentSchemaService,
   type AttachmentSchemaServiceOptions,
 } from "./attachment_schema_service.js";

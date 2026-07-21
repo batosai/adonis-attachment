@@ -198,6 +198,27 @@ test.group('defineConfig', () => {
     assert.equal(resolved.defaults, defaults)
   })
 
+  test('derives Lucid link table names from one configured blob table', async ({ assert }) => {
+    const storage: AttachmentStorage = {
+      async write() {},
+      async read() {
+        return new Uint8Array()
+      },
+      async remove() {},
+    }
+
+    const resolved = await defineConfig({
+      defaultDisk: 'public',
+      storage,
+      lucid: { tableName: 'media_attachments' },
+    }).resolver({} as never)
+
+    assert.deepEqual(resolved.lucid, {
+      tableName: 'media_attachments',
+      linksTableName: 'media_attachment_links',
+    })
+  })
+
   test('rejects invalid route prefixes', async ({ assert }) => {
     const storage: AttachmentStorage = {
       async write() {},

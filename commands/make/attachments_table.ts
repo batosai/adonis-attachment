@@ -6,9 +6,12 @@
  */
 
 import { BaseCommand } from '@adonisjs/core/ace'
+import { configProvider } from '@adonisjs/core'
 
 import { stubsRoot } from '../../stubs/main.js'
 import { createAttachmentsTableStubState } from '../../src/integrations/lucid/attachments_table_stub.js'
+
+import type { ResolvedAttachmentConfig } from '../../src/define_config.js'
 
 export default class MakeAttachmentsTable extends BaseCommand {
   static commandName = 'make:attachments-table'
@@ -20,7 +23,7 @@ export default class MakeAttachmentsTable extends BaseCommand {
 
   async run(): Promise<void> {
     const flags = this.parsed.flags as { table?: string; folder?: string }
-    const tableName = flags.table ?? 'attachments'
+    const tableName = flags.table ?? (await configuredTableName(this.app))
     const folder = flags.folder ?? 'database/migrations'
     const state = createAttachmentsTableStubState({
       directory: this.app.makePath(folder),
@@ -31,4 +34,11 @@ export default class MakeAttachmentsTable extends BaseCommand {
     await codemods.makeUsingStub(stubsRoot, 'migrations/attachments_table.stub', state)
     this.logger.success(`Created ${state.destination}`)
   }
+}
+
+async function configuredTableName(app: BaseCommand['app']): Promise<string> {
+  const attachmentConfig = app.config.get('attachment')
+  const config = await configProvider.resolve<ResolvedAttachmentConfig>(app, attachmentConfig)
+
+  return config?.lucid?.tableName ?? 'attachments'
 }

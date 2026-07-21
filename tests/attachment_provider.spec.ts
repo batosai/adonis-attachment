@@ -9,6 +9,9 @@ import { test } from '@japa/runner'
 
 import { defineConfig, type AttachmentRepository, type AttachmentStorage } from '../index.js'
 import AttachmentProvider from '../providers/attachment_provider.js'
+import { AttachmentLinkModel } from '../src/integrations/lucid/attachment_link_model.js'
+import { AttachmentModel } from '../src/integrations/lucid/attachment_model.js'
+import { configureLucidAttachmentTables } from '../src/integrations/lucid/configure_lucid_attachment_tables.js'
 
 const storage: AttachmentStorage = {
   async write() {},
@@ -24,7 +27,11 @@ const repository: AttachmentRepository = {
   },
 }
 
-test.group('AttachmentProvider', () => {
+test.group('AttachmentProvider', (group) => {
+  group.each.teardown(() => {
+    configureLucidAttachmentTables()
+  })
+
   test('registers the configured read route when persistence is available', async ({ assert }) => {
     const routes: string[] = []
     const provider = new AttachmentProvider({
@@ -75,5 +82,29 @@ test.group('AttachmentProvider', () => {
 
       await provider.boot()
     }
+  })
+
+  test('applies configured Lucid table names during application boot', async ({ assert }) => {
+    const provider = new AttachmentProvider({
+      config: {
+        get() {
+          return defineConfig({
+            defaultDisk: 'public',
+            storage,
+            lucid: { tableName: 'media_attachments' },
+          })
+        },
+      },
+      container: {
+        async make() {
+          assert.fail('The router must not be resolved')
+        },
+      },
+    } as never)
+
+    await provider.boot()
+
+    assert.equal(AttachmentModel.table, 'media_attachments')
+    assert.equal(AttachmentLinkModel.table, 'media_attachment_links')
   })
 })

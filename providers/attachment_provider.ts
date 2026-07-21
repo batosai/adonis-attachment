@@ -30,6 +30,8 @@ export default class AttachmentProvider {
         )
       }
 
+      await applyLucidConfig(config)
+
       return new AttachmentService(config)
     })
 
@@ -44,6 +46,8 @@ export default class AttachmentProvider {
         throw new Error('Attachment routes require a repository in config/attachment.ts')
       }
 
+      await applyLucidConfig(config)
+
       return config.repository
     })
 
@@ -53,6 +57,9 @@ export default class AttachmentProvider {
         this.app,
         attachmentConfig
       )
+      if (config) {
+        await applyLucidConfig(config)
+      }
       const attachments = await this.app.container.make('jrmc.attachment')
 
       return new AttachmentManager(attachments, config?.sources)
@@ -61,7 +68,14 @@ export default class AttachmentProvider {
 
   async boot(): Promise<void> {
     const attachmentConfig = this.app.config.get('attachment')
-    const config = await configProvider.resolve<ResolvedAttachmentConfig>(this.app, attachmentConfig)
+    const config = await configProvider.resolve<ResolvedAttachmentConfig>(
+      this.app,
+      attachmentConfig
+    )
+
+    if (config) {
+      await applyLucidConfig(config)
+    }
 
     if (!config || config.route === false || !config.repository) {
       return
@@ -75,4 +89,14 @@ export default class AttachmentProvider {
       return new AttachmentsController(attachments, repository).handle(context)
     })
   }
+}
+
+async function applyLucidConfig(config: ResolvedAttachmentConfig): Promise<void> {
+  if (!config.lucid) {
+    return
+  }
+
+  const { configureLucidAttachmentTables } =
+    await import('../src/integrations/lucid/configure_lucid_attachment_tables.js')
+  configureLucidAttachmentTables(config.lucid.tableName)
 }

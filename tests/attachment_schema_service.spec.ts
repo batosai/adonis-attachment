@@ -29,12 +29,12 @@ test.group('AttachmentSchemaService', (group) => {
     await service.createTables()
 
     assert.isTrue(await database.connection().schema.hasTable('media_attachments'))
-    assert.isTrue(await database.connection().schema.hasTable('media_attachments_links'))
+    assert.isTrue(await database.connection().schema.hasTable('media_attachment_links'))
 
     await service.dropTables()
 
     assert.isFalse(await database.connection().schema.hasTable('media_attachments'))
-    assert.isFalse(await database.connection().schema.hasTable('media_attachments_links'))
+    assert.isFalse(await database.connection().schema.hasTable('media_attachment_links'))
   })
 
   test('uses the AttachmentLinkModel default table name', async ({ assert }) => {

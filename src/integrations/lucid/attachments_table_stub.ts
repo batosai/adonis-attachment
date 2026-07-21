@@ -6,6 +6,7 @@
  */
 
 import { join } from 'node:path'
+import { resolveAttachmentTableNames } from './attachment_table_names.js'
 
 export type AttachmentsTableStubOptions = {
   directory: string
@@ -25,11 +26,7 @@ export type AttachmentsTableStubState = {
 export function createAttachmentsTableStubState(
   options: AttachmentsTableStubOptions
 ): AttachmentsTableStubState {
-  const tableName = options.tableName ?? 'attachments'
-
-  if (!/^[a-z][a-z0-9_]*$/.test(tableName)) {
-    throw new Error('Lucid attachment table names must be snake_case identifiers')
-  }
+  const { tableName } = resolveAttachmentTableNames(options.tableName)
 
   const timestamp = options.timestamp ?? Date.now()
 

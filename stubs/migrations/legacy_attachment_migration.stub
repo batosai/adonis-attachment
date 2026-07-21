@@ -1,20 +1,7 @@
-/**
- * @jrmc/adonis-attachment
- *
- * @license MIT
- * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
- */
-
-export type RenderLegacyAttachmentMigrationScriptOptions = {
-  defaultDisk?: string
-}
-
-export function renderLegacyAttachmentMigrationScript(
-  options: RenderLegacyAttachmentMigrationScriptOptions = {}
-): string {
-  const defaultDisk = options.defaultDisk ?? 'public'
-
-  return `import { randomUUID } from 'node:crypto'
+{{{
+  exports({ to: destination })
+}}}
+import { randomUUID } from 'node:crypto'
 
 import {
   AttachmentModel,
@@ -26,7 +13,7 @@ import {
 async function main(): Promise<void> {
   const result = await migrateLegacyAttachmentRecords({
     records: legacyAttachmentRecords(),
-    defaultDisk: '${defaultDisk}',
+    defaultDisk: '{{ defaultDisk }}',
     createId: randomUUID,
     writer: {
       async insert(rows) {
@@ -39,7 +26,7 @@ async function main(): Promise<void> {
   })
 
   console.info(
-    \`Migrated \${result.attachments} attachments and \${result.variants} variants; skipped \${result.skipped} empty values.\`
+    `Migrated ${result.attachments} attachments and ${result.variants} variants; skipped ${result.skipped} empty values.`
   )
 }
 
@@ -50,5 +37,3 @@ async function* legacyAttachmentRecords(): AsyncGenerator<LegacyAttachmentMigrat
 }
 
 void main()
-`
-}

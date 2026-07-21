@@ -7,7 +7,8 @@
 
 import { BaseCommand } from '@adonisjs/core/ace'
 
-import { createLegacyAttachmentMigrationScript } from '../../src/integrations/lucid/migrations/legacy/create_legacy_attachment_migration_script.js'
+import { stubsRoot } from '../../stubs/main.js'
+import { createLegacyAttachmentMigrationStubState } from '../../src/integrations/lucid/migrations/legacy/legacy_attachment_migration_stub.js'
 
 export default class MakeAttachmentV5Migration extends BaseCommand {
   static commandName = 'make:attachment-v5-migration'
@@ -20,11 +21,13 @@ export default class MakeAttachmentV5Migration extends BaseCommand {
   async run(): Promise<void> {
     const flags = this.parsed.flags as { folder?: string; disk?: string }
     const folder = flags.folder ?? 'database/scripts'
-    const filePath = await createLegacyAttachmentMigrationScript({
+    const state = createLegacyAttachmentMigrationStubState({
       directory: this.app.makePath(folder),
       ...(flags.disk ? { defaultDisk: flags.disk } : {}),
     })
+    const codemods = await this.createCodemods()
 
-    this.logger.success(`Created ${filePath}`)
+    await codemods.makeUsingStub(stubsRoot, 'migrations/legacy_attachment_migration.stub', state)
+    this.logger.success(`Created ${state.destination}`)
   }
 }

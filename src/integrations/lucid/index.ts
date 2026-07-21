@@ -73,10 +73,7 @@ export {
   type MigrateLegacyAttachmentRecordsOptions,
 } from "./migrations/legacy/migrate_legacy_attachment_records.js";
 export {
-  createLegacyAttachmentMigrationScript,
-  type CreateLegacyAttachmentMigrationScriptOptions,
-} from "./migrations/legacy/create_legacy_attachment_migration_script.js";
-export {
-  renderLegacyAttachmentMigrationScript,
-  type RenderLegacyAttachmentMigrationScriptOptions,
-} from "./migrations/legacy/render_legacy_attachment_migration_script.js";
+  createLegacyAttachmentMigrationStubState,
+  type LegacyAttachmentMigrationStubOptions,
+  type LegacyAttachmentMigrationStubState,
+} from "./migrations/legacy/legacy_attachment_migration_stub.js";

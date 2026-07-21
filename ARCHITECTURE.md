@@ -64,7 +64,7 @@ Deux decorateurs de relation completent le decorateur JSON `@attachment()`. `@at
 
 `LucidAttachmentLifecycleService` orchestre l'ecriture du fichier et la persistence Lucid. Lors d'un remplacement, il transfere temporairement la cle d'owner avant d'inserer le nouvel original, puis la restaure si l'insertion echoue. Il supprime un nouveau fichier si la persistence echoue. Les suppressions de fichiers qui suivent une suppression de ligne restent compensables par un job de nettoyage, car le stockage externe ne partage pas la transaction SQL.
 
-La commande Ace `make:attachment-v5-migration` genere un script de migration de donnees. Le script utilise `migrateLegacyAttachmentRecords()` pour inserer les lignes par lots. Il laisse l'iteration du modele legacy et le mapping `{ type, id, field }` a l'application, car ces informations ne peuvent pas etre deduites de maniere fiable par le package.
+La commande Ace `make:attachment-v5-migration` rend le stub package `stubs/migrations/legacy_attachment_migration.stub` pour generer un script de migration de donnees. Le script utilise `migrateLegacyAttachmentRecords()` pour inserer les lignes par lots. Il laisse l'iteration du modele legacy et le mapping `{ type, id, field }` a l'application, car ces informations ne peuvent pas etre deduites de maniere fiable par le package.
 
 ## Route de lecture
 

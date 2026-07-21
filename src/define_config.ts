@@ -125,6 +125,8 @@ export function defineConfig<const KnownConverters extends ConverterConfigMap = 
     const metadataPersister = config.media?.metadataPersister
       ? await resolveIntegration(config.media.metadataPersister, app)
       : undefined
+    const resolvedMetadataPersister = metadataPersister
+      ?? await resolveLucidMetadataPersister(config.media?.metadataPolicy?.mode, config.integrations?.lucid)
 
     return {
       defaultDisk: config.defaultDisk ?? storage.defaultDisk ?? 'fs',
@@ -138,7 +140,8 @@ export function defineConfig<const KnownConverters extends ConverterConfigMap = 
       ...(config.sources ? { sources: config.sources } : {}),
       ...(metadataExtractors ? { metadataExtractors } : {}),
       ...(config.media?.metadataPolicy?.mode ? { metadataMode: config.media.metadataPolicy.mode } : {}),
-      ...(metadataPersister ? { metadataPersister } : {}),
+      ...(config.media?.metadataPolicy?.variants !== undefined ? { metadataVariants: config.media.metadataPolicy.variants } : {}),
+      ...(resolvedMetadataPersister ? { metadataPersister: resolvedMetadataPersister } : {}),
       ...(config.converters
         ? { converters: new ConfiguredVariantConverterRegistry(config.converters) }
         : {}),
@@ -152,6 +155,19 @@ export function defineConfig<const KnownConverters extends ConverterConfigMap = 
       ...(config.createId ? { createId: config.createId } : {}),
     }
   })
+}
+
+async function resolveLucidMetadataPersister(
+  mode: AttachmentMetadataMode | undefined,
+  lucid: LucidAttachmentConfig | undefined
+): Promise<AttachmentMetadataPersister | undefined> {
+  if (mode !== 'deferred' || !lucid) {
+    return undefined
+  }
+
+  const { LucidAttachmentMetadataPersister } =
+    await import('./integrations/lucid/persistence/lucid_attachment_metadata_persister.js')
+  return new LucidAttachmentMetadataPersister()
 }
 
 function resolveRoute(route: AttachmentRouteConfig | undefined): ResolvedAttachmentRouteConfig | false {

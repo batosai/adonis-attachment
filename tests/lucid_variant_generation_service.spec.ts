@@ -52,6 +52,26 @@ test.group('LucidVariantGenerationService', () => {
     assert.deepEqual(removed, ['variant-id'])
   })
 
+  test('schedules metadata after a deferred variant is persisted', async ({ assert }) => {
+    const scheduled: string[] = []
+    const service = new LucidVariantGenerationService({
+      generator: { async generateAll() { return [{ key: 'thumbnail', attachment: variant }] } },
+      attachments: {
+        async remove() {},
+        getMetadataMode() { return 'deferred' },
+        async scheduleMetadataExtraction(attachment) { scheduled.push(attachment.id) },
+      },
+      store: {
+        async findById() { return { id: original.id } as AttachmentModel },
+        async createVariant() { return {} as AttachmentModel },
+      },
+    })
+
+    await service.generate({ attachment: original, meta: true })
+
+    assert.deepEqual(scheduled, ['variant-id'])
+  })
+
   test('fails when the original is no longer persisted', async ({ assert }) => {
     const service = new LucidVariantGenerationService({
       generator: { async generateAll() { return [] } },

@@ -9,6 +9,7 @@ import { BaseModel, column } from '@adonisjs/lucid/orm'
 import type { DateTime } from 'luxon'
 
 import type { Attachment } from '../../../core/attachment.js'
+import type { AttachmentMetadata } from '../../../media/media_metadata.js'
 
 /**
  * Default Lucid model for a stored attachment blob.
@@ -49,18 +50,18 @@ export class AttachmentModel extends BaseModel {
   declare size: number
 
   @column({
-    prepare(value: Record<string, unknown> | null) {
+    prepare(value: AttachmentMetadata | null) {
       return value === null ? null : JSON.stringify(value)
     },
     consume(value: unknown) {
       if (value === null || value === undefined || typeof value !== 'string') {
-        return value as Record<string, unknown> | null
+        return value as AttachmentMetadata | null
       }
 
-      return JSON.parse(value) as Record<string, unknown>
+      return JSON.parse(value) as AttachmentMetadata
     },
   })
-  declare metadata: Record<string, unknown> | null
+  declare metadata: AttachmentMetadata | null
 
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime

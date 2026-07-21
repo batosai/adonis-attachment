@@ -117,6 +117,33 @@ test.group('LucidAttachmentLifecycleService', () => {
     assert.deepEqual(events, ['write', 'link'])
   })
 
+  test('schedules deferred metadata after the attachment blob exists', async ({ assert }) => {
+    const jobs: string[] = []
+    const attachments = new AttachmentService({
+      defaultDisk: 'fs',
+      createId: () => attachment.id,
+      queue: {
+        async enqueue(job) {
+          jobs.push(`${job.type}:${job.attachmentId}`)
+        },
+      },
+      storage: {
+        async write() {},
+        async read() { return new Uint8Array() },
+        async remove() {},
+      },
+      metadataMode: 'deferred',
+      metadataExtractors: [{ async extract() { return {} } }],
+      metadataPersister: { async persistMetadata() {} },
+    })
+    const draft = attachments.createDraft({ body: new Uint8Array([1]), originalName: 'profile.jpg' })
+    const service = new LucidAttachmentLifecycleService(attachments, makeStore())
+
+    await service.attach({ type: 'users', id: '42', field: 'avatar' }, draft, { meta: true })
+
+    assert.deepEqual(jobs, ['extract-metadata:attachment-id'])
+  })
+
   test('removes a new file when blob or link persistence fails', async ({ assert }) => {
     const removed: Attachment[] = []
     const service = new LucidAttachmentLifecycleService(

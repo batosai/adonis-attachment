@@ -35,6 +35,7 @@ export type AttachmentServiceOptions = {
   metadataExtractors?: readonly MediaMetadataExtractor[]
   metadataMode?: AttachmentMetadataMode
   metadataPersister?: AttachmentMetadataPersister
+  metadataVariants?: boolean
 }
 
 export type AttachmentMetadataMode = 'sync' | 'deferred'
@@ -51,6 +52,7 @@ export class AttachmentService {
   readonly #metadata: MediaMetadataService | undefined
   readonly #metadataMode: AttachmentMetadataMode
   readonly #metadataPersister: AttachmentMetadataPersister | undefined
+  readonly #metadataVariants: boolean
 
   constructor(options: AttachmentServiceOptions) {
     this.#storage = options.storage
@@ -62,6 +64,7 @@ export class AttachmentService {
       : undefined
     this.#metadataMode = options.metadataMode ?? 'sync'
     this.#metadataPersister = options.metadataPersister
+    this.#metadataVariants = options.metadataVariants ?? true
   }
 
   createDraft(
@@ -190,11 +193,13 @@ export class AttachmentService {
     draft: AttachmentDraft | undefined,
     options?: AttachmentPersistenceOptions
   ): boolean | undefined {
-    return resolveAttachmentPersistenceOptions(
+    return this.#metadataVariants
+      ? resolveAttachmentPersistenceOptions(
       this.#defaults,
       options,
       draft?.options
-    ).meta
+        ).meta
+      : undefined
   }
 
   /** Resolves the configured strategy when metadata is enabled for a persistence operation. */

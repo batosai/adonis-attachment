@@ -212,6 +212,18 @@ test('resolves configured variant keys from manager, decorator, then defaults', 
   assert.deepEqual(service.getVariantKeys(plainDraft), ['config'])
 })
 
+test('can disable metadata extraction for generated variants independently', ({ assert }) => {
+  const service = new AttachmentService({
+    storage: new FakeStorage(),
+    queue: new FakeQueue(),
+    defaultDisk: 'public',
+    metadataVariants: false,
+  })
+  const draft = service.createDraft({ body: new Uint8Array(), originalName: 'avatar.jpg' })
+
+  assert.isUndefined(service.getVariantMetadataEnabled(draft, { meta: true }))
+})
+
 test('reads an attachment from the configured storage', async ({ assert }) => {
   const storage = new FakeStorage()
   const queue = new FakeQueue()

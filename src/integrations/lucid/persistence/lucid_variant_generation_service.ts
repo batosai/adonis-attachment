@@ -13,13 +13,13 @@ import { LucidAttachmentStore } from './lucid_attachment_store.js'
 
 export type LucidVariantGenerationServiceOptions = {
   generator: Pick<VariantGenerationService, 'generateAll'>
-  attachments: Pick<AttachmentService, 'remove'>
+  attachments: Pick<AttachmentService, 'remove'> & Partial<Pick<AttachmentService, 'getMetadataMode' | 'scheduleMetadataExtraction'>>
   store: Pick<LucidAttachmentStore, 'findById' | 'createVariant'>
 }
 
 export class LucidVariantGenerationService implements VariantGenerator {
   readonly #generator: Pick<VariantGenerationService, 'generateAll'>
-  readonly #attachments: Pick<AttachmentService, 'remove'>
+  readonly #attachments: Pick<AttachmentService, 'remove'> & Partial<Pick<AttachmentService, 'getMetadataMode' | 'scheduleMetadataExtraction'>>
   readonly #store: Pick<LucidAttachmentStore, 'findById' | 'createVariant'>
 
   constructor(options: LucidVariantGenerationServiceOptions) {
@@ -37,13 +37,19 @@ export class LucidVariantGenerationService implements VariantGenerator {
 
     const variants = await this.#generator.generateAll(request)
     for (const variant of variants) {
-      await this.#persist(original, variant)
+      await this.#persist(original, variant, request.meta)
     }
   }
 
-  async #persist(original: AttachmentModel, variant: GeneratedVariant): Promise<void> {
+  async #persist(original: AttachmentModel, variant: GeneratedVariant, meta: boolean | undefined): Promise<void> {
     try {
       await this.#store.createVariant(original, variant.key, variant.attachment)
+      if (this.#attachments.getMetadataMode?.(
+        undefined,
+        meta !== undefined ? { meta } : undefined
+      ) === 'deferred') {
+        await this.#attachments.scheduleMetadataExtraction?.(variant.attachment)
+      }
     } catch (error) {
       await this.#attachments.remove(variant.attachment)
       throw error

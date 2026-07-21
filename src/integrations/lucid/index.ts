@@ -30,6 +30,7 @@ export {
   type AttachmentRelationOptions,
 } from "./relations/attachment_relation.js";
 export { LucidAttachmentRepository } from "./persistence/lucid_attachment_repository.js";
+export { LucidAttachmentMetadataPersister } from "./persistence/lucid_attachment_metadata_persister.js";
 export {
   LucidAttachmentStore,
   type LucidAttachmentWithVariants,

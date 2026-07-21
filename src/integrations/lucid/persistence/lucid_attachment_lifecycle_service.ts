@@ -19,7 +19,7 @@ import { AttachmentModel } from '../models/attachment_model.js'
 import { LucidAttachmentStore } from './lucid_attachment_store.js'
 
 export type AttachmentFileService = Pick<AttachmentService, 'create' | 'remove'> &
-  Partial<Pick<AttachmentService, 'createDraft' | 'getVariantKeys' | 'getVariantMetadataEnabled' | 'scheduleVariantGeneration'>>
+  Partial<Pick<AttachmentService, 'createDraft' | 'getVariantKeys' | 'getVariantMetadataEnabled' | 'getMetadataMode' | 'scheduleMetadataExtraction' | 'scheduleVariantGeneration'>>
 export type LucidAttachmentPersistence = Pick<
   LucidAttachmentStore,
   | 'createOriginal'
@@ -74,6 +74,7 @@ export class LucidAttachmentLifecycleService {
     }
 
     await this.#scheduleVariants(owner, persisted, options)
+    await this.#scheduleMetadata(owner, persisted, options)
     return original
   }
 
@@ -112,6 +113,7 @@ export class LucidAttachmentLifecycleService {
 
     this.#removeOnRollback(owner, [current.toAttachment()])
     await this.#scheduleVariants(owner, persisted, options)
+    await this.#scheduleMetadata(owner, persisted, options)
 
     return current
   }
@@ -148,6 +150,7 @@ export class LucidAttachmentLifecycleService {
   ): Promise<AttachmentLinkModel> {
     const created = await this.#add(owner, input, position, options)
     await this.#scheduleVariants(owner, created.persisted, options)
+    await this.#scheduleMetadata(owner, created.persisted, options)
 
     return created.item
   }
@@ -230,6 +233,7 @@ export class LucidAttachmentLifecycleService {
 
     for (const item of created) {
       await this.#scheduleVariants(owner, item.persisted, options)
+      await this.#scheduleMetadata(owner, item.persisted, options)
     }
 
     return this.#collectionStore().listCollection(owner)
@@ -377,6 +381,21 @@ export class LucidAttachmentLifecycleService {
     const meta = this.#attachments.getVariantMetadataEnabled?.(persisted.draft, options)
 
     await this.#afterCommit(owner, () => this.#attachments.scheduleVariantGeneration!(persisted.attachment, keys, meta))
+  }
+
+  async #scheduleMetadata(
+    owner: AttachmentOwner,
+    persisted: PersistedAttachment,
+    options: AttachmentPersistenceOptions<any> | undefined
+  ): Promise<void> {
+    if (!persisted.draft || !this.#attachments.getMetadataMode || !this.#attachments.scheduleMetadataExtraction) {
+      return
+    }
+    if (this.#attachments.getMetadataMode(persisted.draft, options) !== 'deferred') {
+      return
+    }
+
+    await this.#afterCommit(owner, () => this.#attachments.scheduleMetadataExtraction!(persisted.attachment))
   }
 }
 

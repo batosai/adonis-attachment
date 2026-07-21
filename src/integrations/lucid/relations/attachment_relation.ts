@@ -30,6 +30,9 @@ type AttachmentRelationRow = LucidRow & {
     table?: string;
     name: string;
     boot(): void;
+    prototype: AttachmentRelationRow & {
+      save(): Promise<unknown>;
+    };
     after(
       event: "delete",
       callback: (row: AttachmentRelationRow) => void | Promise<void>,
@@ -45,6 +48,20 @@ type RelationDefinition = {
   options: AttachmentRelationOptions<any>;
 };
 
+type PendingSingularOperation =
+  | { type: "attach"; input: AttachmentRelationInput }
+  | { type: "attachExisting"; attachmentId: string }
+  | { type: "replace"; input: AttachmentRelationInput }
+  | { type: "detach" };
+
+type PendingCollectionOperation =
+  | { type: "add"; input: AttachmentRelationInput; position?: number }
+  | { type: "addExisting"; attachmentId: string; position?: number }
+  | { type: "remove"; id: string }
+  | { type: "clear" }
+  | { type: "replaceAll"; inputs: readonly AttachmentRelationInput[] }
+  | { type: "move"; id: string; position: number };
+
 export type AttachmentRelationOptions<Model = any> =
   AttachmentPersistenceOptions<Model> & {
     type?: string;
@@ -59,6 +76,7 @@ const relationInstances = new WeakMap<
   Map<string, AttachmentRelation | AttachmentCollectionRelation>
 >();
 const deleteHooks = new WeakSet<object>();
+const saveHooks = new WeakSet<object>();
 
 /**
  * Declares one attachment persisted in the polymorphic attachments table.
@@ -81,6 +99,7 @@ export function attachmentsRelation<Model = LucidRow>(
 export class AttachmentRelation {
   readonly #row: AttachmentRelationRow;
   readonly #definition: RelationDefinition;
+  #pending: PendingSingularOperation | undefined;
 
   constructor(row: AttachmentRelationRow, definition: RelationDefinition) {
     this.#row = row;
@@ -92,44 +111,81 @@ export class AttachmentRelation {
     return lifecycle.get(this.#owner());
   }
 
-  async attach(input: AttachmentRelationInput): Promise<AttachmentLinkModel> {
-    const owner = this.#owner();
-    const lifecycle = await this.#lifecycle();
+  get hasPending(): boolean {
+    return this.#pending !== undefined;
+  }
 
-    if (await lifecycle.get(owner)) {
+  attach(input: AttachmentRelationInput): void {
+    if (this.#pending && this.#pending.type !== "detach") {
       throw new Error(
-        `Attachment relation "${owner.field}" already has an attachment; use replace() or set()`,
+        `Attachment relation "${this.#definition.field}" already has a pending attachment; use replace() or set()`,
       );
     }
 
-    return lifecycle.attach(owner, input, this.#definition.options);
+    this.#pending = { type: "attach", input };
   }
 
-  async attachExisting(attachmentId: string): Promise<AttachmentLinkModel> {
-    const owner = this.#owner();
-    const lifecycle = await this.#lifecycle();
-
-    if (await lifecycle.get(owner)) {
+  attachExisting(attachmentId: string): void {
+    if (this.#pending && this.#pending.type !== "detach") {
       throw new Error(
-        `Attachment relation "${owner.field}" already has an attachment; use replace() or set()`,
+        `Attachment relation "${this.#definition.field}" already has a pending attachment; use replace() or set()`,
       );
     }
 
-    return lifecycle.attachExisting(owner, attachmentId);
+    this.#pending = { type: "attachExisting", attachmentId };
   }
 
-  set(input: AttachmentRelationInput): Promise<AttachmentLinkModel> {
-    return this.replace(input);
+  set(input: AttachmentRelationInput): void {
+    this.replace(input);
   }
 
-  async replace(input: AttachmentRelationInput): Promise<AttachmentLinkModel> {
+  replace(input: AttachmentRelationInput): void {
+    this.#pending = { type: "replace", input };
+  }
+
+  detach(): void {
+    this.#pending = { type: "detach" };
+  }
+
+  async persist(): Promise<AttachmentLinkModel | null> {
+    const pending = this.#pending;
+
+    if (!pending) {
+      return this.get();
+    }
+
+    const owner = this.#owner();
     const lifecycle = await this.#lifecycle();
-    return lifecycle.replace(this.#owner(), input, this.#definition.options);
-  }
+    let result: AttachmentLinkModel | null;
 
-  async detach(): Promise<void> {
-    const lifecycle = await this.#lifecycle();
-    await lifecycle.detach(this.#owner());
+    switch (pending.type) {
+      case "attach":
+        if (await lifecycle.get(owner)) {
+          throw new Error(
+            `Attachment relation "${owner.field}" already has an attachment; use replace() or set()`,
+          );
+        }
+        result = await lifecycle.attach(owner, pending.input, this.#definition.options);
+        break;
+      case "attachExisting":
+        if (await lifecycle.get(owner)) {
+          throw new Error(
+            `Attachment relation "${owner.field}" already has an attachment; use replace() or set()`,
+          );
+        }
+        result = await lifecycle.attachExisting(owner, pending.attachmentId);
+        break;
+      case "replace":
+        result = await lifecycle.replace(owner, pending.input, this.#definition.options);
+        break;
+      case "detach":
+        await lifecycle.detach(owner);
+        result = null;
+        break;
+    }
+
+    this.#pending = undefined;
+    return result;
   }
 
   async variants(): Promise<AttachmentModel[]> {
@@ -170,6 +226,7 @@ export class AttachmentRelation {
 export class AttachmentCollectionRelation {
   readonly #row: AttachmentRelationRow;
   readonly #definition: RelationDefinition;
+  #pending: PendingCollectionOperation[] = [];
 
   constructor(row: AttachmentRelationRow, definition: RelationDefinition) {
     this.#row = row;
@@ -181,51 +238,82 @@ export class AttachmentCollectionRelation {
     return lifecycle.listCollection(this.#owner());
   }
 
-  async add(
+  get hasPending(): boolean {
+    return this.#pending.length > 0;
+  }
+
+  add(
     input: AttachmentRelationInput,
     position?: number,
-  ): Promise<AttachmentLinkModel> {
-    const lifecycle = await this.#lifecycle();
-    return lifecycle.add(
-      this.#owner(),
-      input,
-      position,
-      this.#definition.options,
-    );
+  ): void {
+    this.#pending.push({ type: "add", input, ...(position !== undefined ? { position } : {}) });
   }
 
-  async addExisting(
+  addExisting(
     attachmentId: string,
     position?: number,
-  ): Promise<AttachmentLinkModel> {
-    const lifecycle = await this.#lifecycle();
-    return lifecycle.addExisting(this.#owner(), attachmentId, position);
+  ): void {
+    this.#pending.push({
+      type: "addExisting",
+      attachmentId,
+      ...(position !== undefined ? { position } : {}),
+    });
   }
 
-  async remove(id: string): Promise<boolean> {
-    const lifecycle = await this.#lifecycle();
-    return lifecycle.removeCollectionItem(this.#owner(), id);
+  remove(id: string): void {
+    this.#pending.push({ type: "remove", id });
   }
 
-  async clear(): Promise<void> {
-    const lifecycle = await this.#lifecycle();
-    await lifecycle.clearCollection(this.#owner());
+  clear(): void {
+    this.#pending = [{ type: "clear" }];
   }
 
-  async replaceAll(
+  replaceAll(
     inputs: readonly AttachmentRelationInput[],
-  ): Promise<AttachmentLinkModel[]> {
-    const lifecycle = await this.#lifecycle();
-    return lifecycle.replaceCollection(
-      this.#owner(),
-      inputs,
-      this.#definition.options,
-    );
+  ): void {
+    this.#pending = [{ type: "replaceAll", inputs }];
   }
 
-  async move(id: string, position: number): Promise<AttachmentLinkModel[]> {
+  move(id: string, position: number): void {
+    this.#pending.push({ type: "move", id, position });
+  }
+
+  async persist(): Promise<AttachmentLinkModel[]> {
+    if (this.#pending.length === 0) {
+      return this.all();
+    }
+
     const lifecycle = await this.#lifecycle();
-    return lifecycle.moveCollectionItem(this.#owner(), id, position);
+    const owner = this.#owner();
+
+    while (this.#pending.length > 0) {
+      const operation = this.#pending[0]!;
+
+      switch (operation.type) {
+        case "add":
+          await lifecycle.add(owner, operation.input, operation.position, this.#definition.options);
+          break;
+        case "addExisting":
+          await lifecycle.addExisting(owner, operation.attachmentId, operation.position);
+          break;
+        case "remove":
+          await lifecycle.removeCollectionItem(owner, operation.id);
+          break;
+        case "clear":
+          await lifecycle.clearCollection(owner);
+          break;
+        case "replaceAll":
+          await lifecycle.replaceCollection(owner, operation.inputs, this.#definition.options);
+          break;
+        case "move":
+          await lifecycle.moveCollectionItem(owner, operation.id, operation.position);
+          break;
+      }
+
+      this.#pending.shift();
+    }
+
+    return lifecycle.listCollection(owner);
   }
 
   async #lifecycle(): Promise<LucidAttachmentLifecycleService> {
@@ -278,6 +366,11 @@ function defineRelation<Model>(
           await lifecycle.purgeOwner(createOwner(row, definition, true));
         }
       });
+    }
+
+    if (!saveHooks.has(Model)) {
+      saveHooks.add(Model);
+      wrapSave(Model);
     }
 
     Object.defineProperty(target, propertyKey, {
@@ -335,4 +428,20 @@ function createOwner(
 
 async function resolveAttachmentService(): Promise<AttachmentService> {
   return (await app.container.make("jrmc.attachment")) as AttachmentService;
+}
+
+function wrapSave(Model: AttachmentRelationRow["constructor"]): void {
+  const save = Model.prototype.save;
+
+  Model.prototype.save = (async function saveWithAttachmentRelations(this: AttachmentRelationRow) {
+    const result = await save.call(this);
+
+    for (const relation of relationInstances.get(this)?.values() ?? []) {
+      if (relation.hasPending) {
+        await relation.persist();
+      }
+    }
+
+    return result;
+  }) as typeof Model.prototype.save;
 }

@@ -74,6 +74,16 @@ async function createUser(id = "user-1"): Promise<RelationUser> {
   return user;
 }
 
+async function getAvatarOrFail(user: RelationUser) {
+  const avatar = await user.avatar.get();
+
+  if (!avatar) {
+    throw new Error("Expected a persisted avatar link");
+  }
+
+  return avatar;
+}
+
 test.group("Lucid attachment relations", (group) => {
   group.setup(async () => {
     database = await createLucidTestDatabase();
@@ -131,13 +141,18 @@ test.group("Lucid attachment relations", (group) => {
     await database.manager.closeAll();
   });
 
-  test("attaches, replaces, reads, schedules variants, and detaches a singular relation", async ({
+  test("stages singular changes until the Lucid model is saved", async ({
     assert,
   }) => {
-    const user = await createUser();
+    const user = new RelationUser();
+    user.id = "user-1";
+    user.name = "user-1";
     const first = createDraft("first.txt");
 
-    const original = await user.avatar.attach(first);
+    user.avatar.attach(first);
+    assert.isFalse(first.isPersisted);
+    await user.save();
+    const original = await getAvatarOrFail(user);
 
     assert.isTrue(first.isPersisted);
     assert.equal(original.attachableType, "relation_users");
@@ -147,8 +162,9 @@ test.group("Lucid attachment relations", (group) => {
     assert.equal(first.path, "avatars/user-1/first.txt");
     assert.equal((await user.avatar.get())?.id, original.id);
 
+    user.avatar.attach(createDraft("duplicate.txt"));
     await assert.rejects(
-      () => user.avatar.attach(createDraft("duplicate.txt")),
+      () => user.save(),
       /already has an attachment/,
     );
 
@@ -156,7 +172,9 @@ test.group("Lucid attachment relations", (group) => {
       disk: "manager",
       folder: "imports",
     });
-    const current = await user.avatar.set(replacement);
+    user.avatar.set(replacement);
+    await user.save();
+    const current = await getAvatarOrFail(user);
     await new LucidAttachmentStore().createVariant(current.attachment, "thumbnail", {
       id: "variant-id",
       disk: "manager",
@@ -176,7 +194,8 @@ test.group("Lucid attachment relations", (group) => {
     assert.isTrue(await user.avatar.regenerateVariants(["thumbnail"]));
     assert.deepEqual(queued, [current.attachmentId]);
 
-    await user.avatar.detach();
+    user.avatar.detach();
+    await user.save();
 
     assert.isNull(await user.avatar.get());
     assert.sameDeepMembers(removed, [
@@ -190,40 +209,63 @@ test.group("Lucid attachment relations", (group) => {
     ]);
   });
 
-  test("manages an ordered attachment collection from its Lucid model", async ({
+  test("stages ordered collection changes until the Lucid model is saved", async ({
     assert,
   }) => {
     const user = await createUser();
-    const first = await user.gallery.add(createDraft("first.txt"));
-    const second = await user.gallery.add(createDraft("second.txt"));
-    const before = await user.gallery.add(createDraft("before.txt"), 0);
+    user.gallery.add(createDraft("first.txt"));
+    user.gallery.add(createDraft("second.txt"));
+    user.gallery.add(createDraft("before.txt"), 0);
+    await user.save();
+    const [before, first, second] = await user.gallery.all();
+
+    if (!before || !first || !second) {
+      throw new Error("Expected persisted gallery links");
+    }
 
     assert.deepEqual(
       (await user.gallery.all()).map((item) => item.id),
       [before.id, first.id, second.id],
     );
 
-    await user.gallery.move(second.id, 0);
+    user.gallery.move(second.id, 0);
+    await user.save();
     assert.deepEqual(
       (await user.gallery.all()).map((item) => item.id),
       [second.id, before.id, first.id],
     );
 
-    assert.isTrue(await user.gallery.remove(before.id));
-    assert.isFalse(await user.gallery.remove("missing-id"));
+    user.gallery.remove(before.id);
+    user.gallery.remove("missing-id");
+    await user.save();
 
-    const replacement = await user.gallery.replaceAll([
+    user.gallery.replaceAll([
       createDraft("replacement-1.txt"),
       createDraft("replacement-2.txt"),
     ]);
+    await user.save();
+    const replacement = await user.gallery.all();
     assert.deepEqual(
       replacement.map((item) => item.position),
       [0, 1],
     );
 
-    await user.gallery.clear();
+    user.gallery.clear();
+    await user.save();
     assert.deepEqual(await user.gallery.all(), []);
     assert.equal(removed.length, 5);
+  });
+
+  test("can flush a staged relation explicitly for a persisted owner", async ({ assert }) => {
+    const user = await createUser();
+    const draft = createDraft("immediate.txt");
+
+    user.avatar.set(draft);
+    const avatar = await user.avatar.persist();
+
+    assert.isNotNull(avatar);
+    assert.isTrue(draft.isPersisted);
+    assert.equal((await user.avatar.get())?.id, avatar?.id);
   });
 
   test("requires the Lucid owner to be persisted", async ({ assert }) => {
@@ -250,7 +292,8 @@ test.group("Lucid attachment relations", (group) => {
             .firstOrFail();
           transactionalUser.useTransaction(trx);
 
-          await transactionalUser.avatar.attach(draft);
+          transactionalUser.avatar.attach(draft);
+          await transactionalUser.save();
           assert.isNotNull(await transactionalUser.avatar.get());
 
           throw new Error("Rollback requested");
@@ -265,7 +308,8 @@ test.group("Lucid attachment relations", (group) => {
   test("defers file deletion until an owner transaction commits", async ({ assert }) => {
     const user = await createUser();
     const draft = createDraft("avatar.txt");
-    await user.avatar.attach(draft);
+    user.avatar.attach(draft);
+    await user.save();
     removed = [];
 
     await assert.rejects(
@@ -276,7 +320,8 @@ test.group("Lucid attachment relations", (group) => {
             .firstOrFail();
           transactionalUser.useTransaction(trx);
 
-          await transactionalUser.avatar.detach();
+          transactionalUser.avatar.detach();
+          await transactionalUser.save();
           assert.isNull(await transactionalUser.avatar.get());
 
           throw new Error("Rollback requested");
@@ -292,8 +337,15 @@ test.group("Lucid attachment relations", (group) => {
     assert,
   }) => {
     const user = await createUser();
-    const avatar = await user.avatar.attach(createDraft("avatar.txt"));
-    const gallery = await user.gallery.add(createDraft("gallery.txt"));
+    user.avatar.attach(createDraft("avatar.txt"));
+    user.gallery.add(createDraft("gallery.txt"));
+    await user.save();
+    const avatar = await getAvatarOrFail(user);
+    const [gallery] = await user.gallery.all();
+
+    if (!gallery) {
+      throw new Error("Expected a persisted gallery link");
+    }
     removed = [];
 
     await user.delete();
@@ -311,8 +363,12 @@ test.group("Lucid attachment relations", (group) => {
   test("keeps a shared blob until its last owner link is deleted", async ({ assert }) => {
     const firstUser = await createUser("user-1");
     const secondUser = await createUser("user-2");
-    const firstLink = await firstUser.avatar.attach(createDraft("shared.txt"));
-    const secondLink = await secondUser.avatar.attachExisting(firstLink.attachmentId);
+    firstUser.avatar.attach(createDraft("shared.txt"));
+    await firstUser.save();
+    const firstLink = await getAvatarOrFail(firstUser);
+    secondUser.avatar.attachExisting(firstLink.attachmentId);
+    await secondUser.save();
+    const secondLink = await getAvatarOrFail(secondUser);
     removed = [];
 
     assert.notEqual(firstLink.id, secondLink.id);

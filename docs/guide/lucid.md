@@ -43,7 +43,7 @@ The decorator persists a draft automatically during `save()`, after resolving it
 
 ## Polymorphic table relations
 
-`@attachmentRelation()` exposes one attachment through a model property backed by the `attachment_links` table. Unlike `@attachment()`, the property is not a JSON column and the parent model must already be persisted.
+`@attachmentRelation()` exposes one attachment through a model property backed by the `attachment_links` table. Unlike `@attachment()`, the property is not a JSON column. Its mutations are staged on the model, then persisted after `save()` succeeds; this also allows an attachment to be prepared before the model is created.
 
 ```ts
 import {
@@ -71,16 +71,20 @@ const draft = await attachmentManager.createFromBase64(base64, {
   mimeType: "image/png",
 });
 
-await user.avatar.attach(draft);
+user.avatar.attach(draft);
+await user.save();
 ```
+
+`attach`, `attachExisting`, `set`, `replace`, and `detach` stage one singular mutation. `save()` flushes it after the model is saved. Call `await user.avatar.persist()` to flush a staged relation immediately; this requires an already persisted owner.
 
 The singular relation provides these commands:
 
 - `get()` returns the persisted `AttachmentLinkModel` or `null`. Its `attachment` property is the blob and `toAttachment()` returns the core file value.
-- `attach(draft)` creates the first attachment and throws when one is already attached. This prevents an accidental replacement.
-- `attachExisting(blobId)` creates a link to an already persisted blob without copying its file.
-- `set(draft)` and `replace(draft)` create an attachment when empty or replace the current one. The previous file is removed only after the replacement row exists.
-- `detach()` removes the original, its variants, and their files.
+- `attach(draft)` stages the first attachment and throws on `save()` when one is already attached. This prevents an accidental replacement.
+- `attachExisting(blobId)` stages a link to an already persisted blob without copying its file.
+- `set(draft)` and `replace(draft)` stage an attachment when empty or a replacement for the current one. The previous file is removed only after the replacement row exists.
+- `detach()` stages removal of the original, its variants, and their files.
+- `persist()` flushes the staged singular mutation and returns the resulting `AttachmentLinkModel`, or `null` after a detach.
 - `variants()` returns persisted variant rows. `regenerateVariants(keys?)` enqueues generation and returns `false` when no original is attached.
 
 The polymorphic type defaults to the Lucid model `static table`. Set `type` in the decorator when an application needs a stable custom type instead:
@@ -120,16 +124,22 @@ const second = await attachmentManager.createFromFile(request.file("image"), {
   originalName: "second.jpg",
 });
 
-await post.gallery.add(first);
-await post.gallery.add(second, 0);
-await post.gallery.move(second.id, 0);
+post.gallery.add(first);
+post.gallery.add(second, 0);
+await post.save();
+
+const [second] = await post.gallery.all();
+if (second) {
+  post.gallery.move(second.id, 0);
+  await post.save();
+}
 ```
 
-Collection commands are `all()`, `add(draft, position?)`, `addExisting(blobId, position?)`, `remove(id)`, `clear()`, `replaceAll(drafts)`, and `move(id, position)`. `add` appends by default; positions are zero-based and normalized after a remove or move. `remove` returns `false` when the id is not part of this model collection. The `id` handled by `move` and `remove` is the link id returned by `add`, while `attachmentId` identifies the reusable blob.
+Collection mutations are also staged until `save()` or an explicit `await post.gallery.persist()`. Collection commands are `all()`, `add(draft, position?)`, `addExisting(blobId, position?)`, `remove(id)`, `clear()`, `replaceAll(drafts)`, `move(id, position)`, and `persist()`. `add` appends by default; positions are zero-based and normalized after a remove or move. The `id` handled by `move` and `remove` is the persisted link id returned by `all()`, while `attachmentId` identifies the reusable blob.
 
 Both relation decorators receive the same persistence options as `@attachment()`. Per setting, the priority is: options passed to `attachmentManager.createFrom*`, then the relation decorator, then `defaults` in `config/attachment.ts`. Relation folder and rename callbacks receive `{ model, field, originalName }` at persistence time.
 
-When the model uses a Lucid transaction, relation commands use the same transaction for attachment rows. Files newly written by `attach`, `set`, `replace`, or `add` are removed on rollback. File removals caused by `detach`, `replace`, `remove`, `clear`, or `replaceAll` are deferred until commit, so a rollback retains the previous files.
+When the model uses a Lucid transaction, staged relation mutations use the same transaction for attachment rows. Files newly written by `attach`, `set`, `replace`, or `add` are removed on rollback. File removals caused by `detach`, `replace`, `remove`, `clear`, or `replaceAll` are deferred until commit, so a rollback retains the previous files.
 
 Create the migration:
 

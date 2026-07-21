@@ -43,10 +43,17 @@ options. It returns the generated file, or `undefined` when this source should n
 that variant.
 
 ```ts
-import Converter, { type ConverterAttributes } from '@jrmc/adonis-attachment'
+import Converter, {
+  type ConverterAttributes,
+  type ConverterOptions,
+} from '@jrmc/adonis-attachment'
 
-export default class ThumbnailConverter extends Converter {
-  async handle({ attachment, body, options }: ConverterAttributes) {
+type ThumbnailOptions = ConverterOptions & {
+  width: number
+}
+
+export default class ThumbnailConverter extends Converter<ThumbnailOptions> {
+  async handle({ body, options }: ConverterAttributes<ThumbnailOptions>) {
     return {
       body,
       fileName: `thumbnail-${String(options.width)}.webp`,
@@ -73,6 +80,59 @@ For image inputs, `format` retains the v5 declaration format: use `jpeg`, `jpg`,
 `gif`, `webp`, `avif`, `heif`, `tiff`, or `raw`; formats with Sharp encoder options use
 `{ format, options }`. The `resize` object also accepts Sharp's `background`, `kernel`,
 `withoutEnlargement`, `withoutReduction`, and `fastShrinkOnLoad` settings.
+
+The image autodetect converter applies `autoOrient: true` unless it is explicitly disabled.
+Video thumbnails support only `jpeg`, `png`, and `webp`; PDF and Office thumbnails are
+always generated as PNG.
+
+| Image format | Typed encoder options |
+| --- | --- |
+| `jpeg`, `jpg` | `quality`, `progressive`, `chromaSubsampling`, `mozjpeg`, and JPEG optimization settings |
+| `png` | `quality`, `compressionLevel`, `palette`, `effort`, `colours`/`colors`, and `dither` |
+| `gif` | `reuse`, `progressive`, palette settings, `loop`, and `delay` |
+| `webp` | `quality`, `alphaQuality`, `lossless`, `nearLossless`, `effort`, `loop`, and `delay` |
+| `avif`, `heif` | `quality`, `lossless`, `effort`, `chromaSubsampling`, and `bitdepth` |
+| `tiff`, `raw` | Use the string form; no package-specific encoder options are declared |
+
+The complete meaning of each encoder option follows the [Sharp output API](https://sharp.pixelplumbing.com/api-output/).
+
+### Typed custom options
+
+An application converter can define and consume its own options. Use `Converter<Options>`
+inside the converter, and `ConverterConfig<Options>` to validate its configuration:
+
+```ts
+import Converter, {
+  type ConverterAttributes,
+  type ConverterConfig,
+  type ConverterOptions,
+} from '@jrmc/adonis-attachment'
+
+type WatermarkOptions = ConverterOptions & {
+  label: string
+  opacity?: number
+}
+
+export default class WatermarkConverter extends Converter<WatermarkOptions> {
+  async handle({ body, options }: ConverterAttributes<WatermarkOptions>) {
+    return {
+      body,
+      fileName: `${options.label}.png`,
+      mimeType: 'image/png',
+    }
+  }
+}
+
+export const watermark = {
+  converter: () => import('#converters/watermark_converter'),
+  label: 'My application',
+  options: { opacity: 0.5 },
+} satisfies ConverterConfig<WatermarkOptions>
+```
+
+Declare it in the package configuration with `converters: { watermark }`. Direct properties
+and the optional `options` object are merged; properties inside `options` override direct
+properties with the same name.
 
 ### Direct object converters
 

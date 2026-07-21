@@ -88,7 +88,7 @@ class WatermarkConverter extends Converter<WatermarkOptions> {
 const watermarkConfig = {
   converter: async () => ({ default: WatermarkConverter }),
   label: 'logo',
-  opacity: 0.5,
+  options: { opacity: 0.5 },
 } satisfies ConverterConfig<WatermarkOptions>
 
 void validVariants

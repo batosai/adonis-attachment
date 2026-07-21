@@ -17,7 +17,7 @@ export type ConverterConfig<Options extends ConverterOptions = ConverterOptions>
   /** Defaults to AutodetectConverter when omitted. */
   converter?: () => Promise<ConverterModule>
   /** Optional nested options are merged after the direct v5-style options. */
-  options?: Options
+  options?: Partial<Options>
 }
 export type ConverterConfigMap = Record<string, ConverterConfig>
 

@@ -14,6 +14,7 @@ import {
 import type { AttachmentService } from '../../core/attachment_service.js'
 import type { AttachmentPersistenceOptions } from '../../core/attachment_options.js'
 import type { AttachmentOwner } from './attachment_owner.js'
+import { AttachmentLinkModel } from './attachment_link_model.js'
 import { AttachmentModel } from './attachment_model.js'
 import { LucidAttachmentStore } from './lucid_attachment_store.js'
 
@@ -21,7 +22,13 @@ export type AttachmentFileService = Pick<AttachmentService, 'create' | 'remove'>
   Partial<Pick<AttachmentService, 'createDraft'>>
 export type LucidAttachmentPersistence = Pick<
   LucidAttachmentStore,
-  'createOriginal' | 'findOriginal' | 'listVariants' | 'releaseOwner' | 'restoreOwner' | 'remove'
+  | 'createOriginal'
+  | 'findOriginal'
+  | 'listVariants'
+  | 'releaseOwner'
+  | 'restoreOwner'
+  | 'remove'
+  | 'listOwnerLinks'
 > &
   Partial<
     Pick<
@@ -43,7 +50,7 @@ export class LucidAttachmentLifecycleService {
     this.#store = store
   }
 
-  get(owner: AttachmentOwner): Promise<AttachmentModel | null> {
+  get(owner: AttachmentOwner): Promise<AttachmentLinkModel | null> {
     return this.#store.findOriginal(owner)
   }
 
@@ -51,7 +58,7 @@ export class LucidAttachmentLifecycleService {
     owner: AttachmentOwner,
     input: CreateAttachmentInput | AttachmentDraft,
     options?: AttachmentPersistenceOptions<any>
-  ): Promise<AttachmentModel> {
+  ): Promise<AttachmentLinkModel> {
     const attachment = await this.#persist(owner, input, options)
 
     try {
@@ -68,17 +75,15 @@ export class LucidAttachmentLifecycleService {
     owner: AttachmentOwner,
     input: CreateAttachmentInput | AttachmentDraft,
     options?: AttachmentPersistenceOptions<any>
-  ): Promise<AttachmentModel> {
+  ): Promise<AttachmentLinkModel> {
     const previous = await this.#store.findOriginal(owner)
 
     if (!previous) {
       return this.attach(owner, input, options)
     }
 
-    const previousVariants = await this.#store.listVariants(previous.id)
-
     const attachment = await this.#persist(owner, input, options)
-    let current: AttachmentModel
+    let current: AttachmentLinkModel
 
     try {
       await this.#store.releaseOwner(previous)
@@ -90,7 +95,8 @@ export class LucidAttachmentLifecycleService {
     }
 
     try {
-      await this.#store.remove(previous)
+      const removed = await this.#store.remove(previous)
+      await this.#removeOnCommit(owner, removed.map((item) => item.toAttachment()))
     } catch (error) {
       await this.#store.remove(current).catch(() => undefined)
       await this.#store.restoreOwner(previous).catch(() => undefined)
@@ -98,10 +104,6 @@ export class LucidAttachmentLifecycleService {
       throw error
     }
 
-    await this.#removeOnCommit(owner, [
-      previous.toAttachment(),
-      ...previousVariants.map((variant) => variant.toAttachment()),
-    ])
     this.#removeOnRollback(owner, [current.toAttachment()])
 
     return current
@@ -114,19 +116,21 @@ export class LucidAttachmentLifecycleService {
       return
     }
 
-    const variants = await this.#store.listVariants(original.id)
-    await this.#store.remove(original)
-
-    await this.#removeOnCommit(owner, [
-      original.toAttachment(),
-      ...variants.map((variant) => variant.toAttachment()),
-    ])
+    const removed = await this.#store.remove(original)
+    await this.#removeOnCommit(owner, removed.map((item) => item.toAttachment()))
   }
 
   async listVariants(owner: AttachmentOwner): Promise<AttachmentModel[]> {
     const original = await this.#store.findOriginal(owner)
 
-    return original ? this.#store.listVariants(original.id) : []
+    return original ? this.#store.listVariants(original.attachmentId) : []
+  }
+
+  async purgeOwner(owner: AttachmentOwner): Promise<void> {
+    for (const link of await this.#store.listOwnerLinks(owner)) {
+      const removed = await this.#store.remove(link)
+      await this.#removeOnCommit(owner, removed.map((attachment) => attachment.toAttachment()))
+    }
   }
 
   async add(
@@ -134,7 +138,7 @@ export class LucidAttachmentLifecycleService {
     input: CreateAttachmentInput | AttachmentDraft,
     position?: number,
     options?: AttachmentPersistenceOptions<any>
-  ): Promise<AttachmentModel> {
+  ): Promise<AttachmentLinkModel> {
     const attachment = await this.#persist(owner, input, options)
 
     try {
@@ -147,7 +151,7 @@ export class LucidAttachmentLifecycleService {
     }
   }
 
-  listCollection(owner: AttachmentOwner): Promise<AttachmentModel[]> {
+  listCollection(owner: AttachmentOwner): Promise<AttachmentLinkModel[]> {
     return this.#collectionStore().listCollection(owner)
   }
 
@@ -172,9 +176,9 @@ export class LucidAttachmentLifecycleService {
     owner: AttachmentOwner,
     inputs: readonly (CreateAttachmentInput | AttachmentDraft)[],
     options?: AttachmentPersistenceOptions<any>
-  ): Promise<AttachmentModel[]> {
+  ): Promise<AttachmentLinkModel[]> {
     const previous = await this.#collectionStore().listCollection(owner)
-    const created: AttachmentModel[] = []
+    const created: AttachmentLinkModel[] = []
 
     try {
       for (const input of inputs) {
@@ -192,7 +196,11 @@ export class LucidAttachmentLifecycleService {
     return this.#collectionStore().listCollection(owner)
   }
 
-  moveCollectionItem(owner: AttachmentOwner, id: string, position: number): Promise<AttachmentModel[]> {
+  moveCollectionItem(
+    owner: AttachmentOwner,
+    id: string,
+    position: number
+  ): Promise<AttachmentLinkModel[]> {
     return this.#collectionStore().moveCollectionItem(owner, id, position)
   }
 
@@ -225,14 +233,9 @@ export class LucidAttachmentLifecycleService {
     )
   }
 
-  async #detachCollectionItem(owner: AttachmentOwner, item: AttachmentModel): Promise<void> {
-    const variants = await this.#store.listVariants(item.id)
-    await this.#collectionStore().removeCollectionItem(owner, item)
-
-    await this.#removeOnCommit(owner, [
-      item.toAttachment(),
-      ...variants.map((variant) => variant.toAttachment()),
-    ])
+  async #detachCollectionItem(owner: AttachmentOwner, item: AttachmentLinkModel): Promise<void> {
+    const removed = await this.#collectionStore().removeCollectionItem(owner, item)
+    await this.#removeOnCommit(owner, removed.map((attachment) => attachment.toAttachment()))
   }
 
   #collectionStore(): Required<

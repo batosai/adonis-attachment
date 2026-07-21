@@ -5,103 +5,89 @@
  * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
  */
 
-import type { Attachment } from '../../core/attachment.js'
+import { randomUUID } from 'node:crypto'
+
 import type { TransactionClientContract } from '@adonisjs/lucid/types/database'
+
+import type { Attachment } from '../../core/attachment.js'
 import { markAttachmentPersisted } from '../../core/attachment_state.js'
 import { createAttachmentOwnerKey, type AttachmentOwner } from './attachment_owner.js'
+import { AttachmentLinkModel } from './attachment_link_model.js'
 import { AttachmentModel } from './attachment_model.js'
 
 export type LucidAttachmentWithVariants = {
-  original: AttachmentModel
+  original: AttachmentLinkModel
   variants: AttachmentModel[]
 }
 
 export type LucidAttachmentStoreOptions = {
   client?: TransactionClientContract
+  linkModel?: typeof AttachmentLinkModel
+  createLinkId?: () => string
 }
 
+/**
+ * Persists immutable file blobs separately from their polymorphic owner links.
+ */
 export class LucidAttachmentStore {
-  readonly #model: typeof AttachmentModel
+  readonly #blobModel: typeof AttachmentModel
+  readonly #linkModel: typeof AttachmentLinkModel
   readonly #client: TransactionClientContract | undefined
+  readonly #createLinkId: () => string
 
   constructor(
-    model: typeof AttachmentModel = AttachmentModel,
+    blobModel: typeof AttachmentModel = AttachmentModel,
     options: LucidAttachmentStoreOptions = {}
   ) {
-    this.#model = model
+    this.#blobModel = blobModel
+    this.#linkModel = options.linkModel ?? AttachmentLinkModel
     this.#client = options.client
+    this.#createLinkId = options.createLinkId ?? randomUUID
   }
 
-  async createOriginal(owner: AttachmentOwner, attachment: Attachment): Promise<AttachmentModel> {
-    const row = await this.#model.create({
-      ...attachment,
-      attachableType: owner.type,
-      attachableId: owner.id,
-      field: owner.field,
-      ownerKey: createAttachmentOwnerKey(owner),
-      position: null,
-      parentId: null,
-      variantKey: null,
-      metadata: attachment.metadata ?? null,
-    }, this.#client ? { client: this.#client } : undefined)
+  async createOriginal(owner: AttachmentOwner, attachment: Attachment): Promise<AttachmentLinkModel> {
+    const blob = await this.#createBlob(attachment)
 
-    markAttachmentPersisted(attachment)
-    return row
+    try {
+      return await this.#createLink(owner, blob, { ownerKey: createAttachmentOwnerKey(owner) })
+    } catch (error) {
+      await blob.delete().catch(() => undefined)
+      throw error
+    }
   }
 
   async createCollectionItem(
     owner: AttachmentOwner,
     attachment: Attachment,
     position?: number
-  ): Promise<AttachmentModel> {
+  ): Promise<AttachmentLinkModel> {
     const items = await this.listCollection(owner)
     const target = normalizePosition(position, items.length)
+    const blob = await this.#createBlob(attachment)
 
-    await this.#shiftCollection(items, target, 1)
-
-    const row = await this.#model.create({
-      ...attachment,
-      attachableType: owner.type,
-      attachableId: owner.id,
-      field: owner.field,
-      ownerKey: null,
-      position: target,
-      parentId: null,
-      variantKey: null,
-      metadata: attachment.metadata ?? null,
-    }, this.#client ? { client: this.#client } : undefined)
-
-    markAttachmentPersisted(attachment)
-    return row
+    try {
+      await this.#shiftCollection(items, target, 1)
+      return await this.#createLink(owner, blob, { position: target })
+    } catch (error) {
+      await blob.delete().catch(() => undefined)
+      throw error
+    }
   }
 
-  async createVariant(
+  createVariant(
     original: AttachmentModel,
     key: string,
     attachment: Attachment
   ): Promise<AttachmentModel> {
-    const row = await this.#model.create({
-      ...attachment,
-      attachableType: original.attachableType,
-      attachableId: original.attachableId,
-      field: original.field,
-      ownerKey: null,
-      position: null,
-      parentId: original.id,
-      variantKey: key,
-      metadata: attachment.metadata ?? null,
-    }, this.#client ? { client: this.#client } : undefined)
-
-    markAttachmentPersisted(attachment)
-    return row
+    return this.#createBlob(attachment, { parentId: original.id, variantKey: key })
   }
 
-  async releaseOwner(original: AttachmentModel): Promise<void> {
+  async releaseOwner(original: AttachmentLinkModel): Promise<void> {
     original.ownerKey = null
     await original.save()
   }
 
-  async restoreOwner(original: AttachmentModel): Promise<void> {
+  async restoreOwner(original: AttachmentLinkModel): Promise<void> {
     original.ownerKey = createAttachmentOwnerKey({
       type: original.attachableType,
       id: original.attachableId,
@@ -110,52 +96,53 @@ export class LucidAttachmentStore {
     await original.save()
   }
 
-  findOriginal(owner: AttachmentOwner): Promise<AttachmentModel | null> {
-    return this.#query()
+  findOriginal(owner: AttachmentOwner): Promise<AttachmentLinkModel | null> {
+    return this.#linkQuery()
       .where('attachable_type', owner.type)
       .where('attachable_id', owner.id)
       .where('field', owner.field)
       .whereNotNull('owner_key')
-      .whereNull('parent_id')
       .first()
   }
 
-  listCollection(owner: AttachmentOwner): Promise<AttachmentModel[]> {
-    return this.#query()
+  listCollection(owner: AttachmentOwner): Promise<AttachmentLinkModel[]> {
+    return this.#linkQuery()
       .where('attachable_type', owner.type)
       .where('attachable_id', owner.id)
       .where('field', owner.field)
       .whereNull('owner_key')
-      .whereNull('parent_id')
       .orderBy('position', 'asc')
   }
 
-  findCollectionItem(owner: AttachmentOwner, id: string): Promise<AttachmentModel | null> {
-    return this.#query()
+  findCollectionItem(owner: AttachmentOwner, id: string): Promise<AttachmentLinkModel | null> {
+    return this.#linkQuery()
       .where('id', id)
       .where('attachable_type', owner.type)
       .where('attachable_id', owner.id)
       .where('field', owner.field)
       .whereNull('owner_key')
-      .whereNull('parent_id')
       .first()
   }
 
-  async removeCollectionItem(owner: AttachmentOwner, item: AttachmentModel): Promise<void> {
-    await this.remove(item)
+  async removeCollectionItem(
+    owner: AttachmentOwner,
+    item: AttachmentLinkModel
+  ): Promise<AttachmentModel[]> {
+    const removed = await this.remove(item)
     await this.#normalizeCollection(owner)
+    return removed
   }
 
   async moveCollectionItem(
     owner: AttachmentOwner,
     id: string,
     position: number
-  ): Promise<AttachmentModel[]> {
+  ): Promise<AttachmentLinkModel[]> {
     const items = await this.listCollection(owner)
     const source = items.findIndex((item) => item.id === id)
 
     if (source === -1) {
-      throw new Error(`Attachment "${id}" does not belong to this collection`)
+      throw new Error(`Attachment link "${id}" does not belong to this collection`)
     }
 
     const target = normalizePosition(position, items.length - 1)
@@ -172,7 +159,7 @@ export class LucidAttachmentStore {
   }
 
   findById(id: string): Promise<AttachmentModel | null> {
-    return this.#query().where('id', id).first()
+    return this.#blobQuery().where('id', id).first()
   }
 
   async findByOwner(owner: AttachmentOwner): Promise<LucidAttachmentWithVariants | null> {
@@ -184,28 +171,92 @@ export class LucidAttachmentStore {
 
     return {
       original,
-      variants: await this.listVariants(original.id),
+      variants: await this.listVariants(original.attachmentId),
     }
   }
 
   listVariants(originalId: string): Promise<AttachmentModel[]> {
-    return this.#query().where('parent_id', originalId)
+    return this.#blobQuery().where('parent_id', originalId)
   }
 
-  async remove(original: AttachmentModel): Promise<void> {
-    await original.delete()
+  /**
+   * Deletes a link and returns blobs that became unreferenced and were removed.
+   */
+  async remove(link: AttachmentLinkModel): Promise<AttachmentModel[]> {
+    const attachment = link.attachment ?? (await this.findById(link.attachmentId))
+    await link.delete()
+
+    if (!attachment || (await this.#linkQuery().where('attachment_id', attachment.id).first())) {
+      return []
+    }
+
+    const variants = await this.listVariants(attachment.id)
+    await attachment.delete()
+
+    return [attachment, ...variants]
+  }
+
+  listOwnerLinks(owner: AttachmentOwner): Promise<AttachmentLinkModel[]> {
+    return this.#linkQuery()
+      .where('attachable_type', owner.type)
+      .where('attachable_id', owner.id)
+  }
+
+  async #createBlob(
+    attachment: Attachment,
+    options: { parentId?: string; variantKey?: string } = {}
+  ): Promise<AttachmentModel> {
+    const blob = await this.#blobModel.create(
+      {
+        ...attachment,
+        parentId: options.parentId ?? null,
+        variantKey: options.variantKey ?? null,
+        metadata: attachment.metadata ?? null,
+      },
+      this.#client ? { client: this.#client } : undefined
+    )
+
+    markAttachmentPersisted(attachment)
+    return blob
+  }
+
+  async #createLink(
+    owner: AttachmentOwner,
+    attachment: AttachmentModel,
+    options: { ownerKey?: string; position?: number } = {}
+  ): Promise<AttachmentLinkModel> {
+    const link = await this.#linkModel.create(
+      {
+        id: this.#createLinkId(),
+        attachableType: owner.type,
+        attachableId: owner.id,
+        field: owner.field,
+        ownerKey: options.ownerKey ?? null,
+        position: options.position ?? null,
+        attachmentId: attachment.id,
+      },
+      this.#client ? { client: this.#client } : undefined
+    )
+
+    return this.#linkQuery().where('id', link.id).firstOrFail()
   }
 
   async #normalizeCollection(owner: AttachmentOwner): Promise<void> {
     await this.#reorderCollection(await this.listCollection(owner))
   }
 
-  #query() {
-    return this.#model.query(this.#client ? { client: this.#client } : undefined)
+  #blobQuery() {
+    return this.#blobModel.query(this.#client ? { client: this.#client } : undefined)
+  }
+
+  #linkQuery() {
+    return this.#linkModel
+      .query(this.#client ? { client: this.#client } : undefined)
+      .preload('attachment')
   }
 
   async #shiftCollection(
-    items: readonly AttachmentModel[],
+    items: readonly AttachmentLinkModel[],
     from: number,
     amount: number
   ): Promise<void> {
@@ -219,7 +270,7 @@ export class LucidAttachmentStore {
     }
   }
 
-  async #reorderCollection(items: readonly AttachmentModel[]): Promise<void> {
+  async #reorderCollection(items: readonly AttachmentLinkModel[]): Promise<void> {
     const offset = items.length + 1
 
     for (const item of items) {

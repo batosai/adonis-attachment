@@ -6,6 +6,7 @@
  */
 
 export { AttachmentModel } from "./attachment_model.js";
+export { AttachmentLinkModel } from "./attachment_link_model.js";
 export {
   attachment,
   type LucidAttachmentOptions,

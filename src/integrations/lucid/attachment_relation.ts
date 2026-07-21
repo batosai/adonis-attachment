@@ -16,6 +16,7 @@ import type {
 import type { AttachmentPersistenceOptions } from "../../core/attachment_options.js";
 import type { AttachmentService } from "../../core/attachment_service.js";
 import type { AttachmentOwner } from "./attachment_owner.js";
+import { AttachmentLinkModel } from "./attachment_link_model.js";
 import { AttachmentModel } from "./attachment_model.js";
 import { LucidAttachmentLifecycleService } from "./lucid_attachment_lifecycle_service.js";
 import { LucidAttachmentStore } from "./lucid_attachment_store.js";
@@ -25,7 +26,15 @@ type AttachmentRelationInput = CreateAttachmentInput | AttachmentDraft;
 type AttachmentRelationRow = LucidRow & {
   $isPersisted: boolean;
   $primaryKeyValue: string | number | null | undefined;
-  constructor: { table?: string; name: string; boot(): void };
+  constructor: {
+    table?: string;
+    name: string;
+    boot(): void;
+    after(
+      event: "delete",
+      callback: (row: AttachmentRelationRow) => void | Promise<void>,
+    ): void;
+  };
 };
 
 type RelationKind = "one" | "many";
@@ -49,6 +58,7 @@ const relationInstances = new WeakMap<
   object,
   Map<string, AttachmentRelation | AttachmentCollectionRelation>
 >();
+const deleteHooks = new WeakSet<object>();
 
 /**
  * Declares one attachment persisted in the polymorphic attachments table.
@@ -77,12 +87,12 @@ export class AttachmentRelation {
     this.#definition = definition;
   }
 
-  async get(): Promise<AttachmentModel | null> {
+  async get(): Promise<AttachmentLinkModel | null> {
     const lifecycle = await this.#lifecycle();
     return lifecycle.get(this.#owner());
   }
 
-  async attach(input: AttachmentRelationInput): Promise<AttachmentModel> {
+  async attach(input: AttachmentRelationInput): Promise<AttachmentLinkModel> {
     const owner = this.#owner();
     const lifecycle = await this.#lifecycle();
 
@@ -95,11 +105,11 @@ export class AttachmentRelation {
     return lifecycle.attach(owner, input, this.#definition.options);
   }
 
-  set(input: AttachmentRelationInput): Promise<AttachmentModel> {
+  set(input: AttachmentRelationInput): Promise<AttachmentLinkModel> {
     return this.replace(input);
   }
 
-  async replace(input: AttachmentRelationInput): Promise<AttachmentModel> {
+  async replace(input: AttachmentRelationInput): Promise<AttachmentLinkModel> {
     const lifecycle = await this.#lifecycle();
     return lifecycle.replace(this.#owner(), input, this.#definition.options);
   }
@@ -153,7 +163,7 @@ export class AttachmentCollectionRelation {
     this.#definition = definition;
   }
 
-  async all(): Promise<AttachmentModel[]> {
+  async all(): Promise<AttachmentLinkModel[]> {
     const lifecycle = await this.#lifecycle();
     return lifecycle.listCollection(this.#owner());
   }
@@ -161,7 +171,7 @@ export class AttachmentCollectionRelation {
   async add(
     input: AttachmentRelationInput,
     position?: number,
-  ): Promise<AttachmentModel> {
+  ): Promise<AttachmentLinkModel> {
     const lifecycle = await this.#lifecycle();
     return lifecycle.add(
       this.#owner(),
@@ -183,7 +193,7 @@ export class AttachmentCollectionRelation {
 
   async replaceAll(
     inputs: readonly AttachmentRelationInput[],
-  ): Promise<AttachmentModel[]> {
+  ): Promise<AttachmentLinkModel[]> {
     const lifecycle = await this.#lifecycle();
     return lifecycle.replaceCollection(
       this.#owner(),
@@ -192,7 +202,7 @@ export class AttachmentCollectionRelation {
     );
   }
 
-  async move(id: string, position: number): Promise<AttachmentModel[]> {
+  async move(id: string, position: number): Promise<AttachmentLinkModel[]> {
     const lifecycle = await this.#lifecycle();
     return lifecycle.moveCollectionItem(this.#owner(), id, position);
   }
@@ -233,6 +243,22 @@ function defineRelation<Model>(
     definitions.set(field, { kind, field, options });
     relationDefinitions.set(Model, definitions);
 
+    if (!deleteHooks.has(Model)) {
+      deleteHooks.add(Model);
+      Model.after("delete", async (row) => {
+        for (const definition of relationDefinitions.get(Model)?.values() ?? []) {
+          const lifecycle = new LucidAttachmentLifecycleService(
+            await resolveAttachmentService(),
+            new LucidAttachmentStore(
+              AttachmentModel,
+              row.$trx ? { client: row.$trx } : {},
+            ),
+          );
+          await lifecycle.purgeOwner(createOwner(row, definition, true));
+        }
+      });
+    }
+
     Object.defineProperty(target, propertyKey, {
       configurable: true,
       enumerable: false,
@@ -260,9 +286,10 @@ function defineRelation<Model>(
 function createOwner(
   row: AttachmentRelationRow,
   definition: RelationDefinition,
+  allowDeleted = false,
 ): AttachmentOwner<AttachmentRelationRow> {
   if (
-    !row.$isPersisted ||
+    (!allowDeleted && !row.$isPersisted) ||
     row.$primaryKeyValue === null ||
     row.$primaryKeyValue === undefined
   ) {

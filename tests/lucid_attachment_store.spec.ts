@@ -5,11 +5,13 @@
  * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
  */
 
+import type { Database } from '@adonisjs/lucid/database'
 import { test } from '@japa/runner'
 
+import { AttachmentLinkModel } from '../src/integrations/lucid/attachment_link_model.js'
 import { AttachmentModel } from '../src/integrations/lucid/attachment_model.js'
-import { createAttachmentOwnerKey } from '../src/integrations/lucid/attachment_owner.js'
 import { LucidAttachmentStore } from '../src/integrations/lucid/lucid_attachment_store.js'
+import { createLucidTestDatabase } from './helpers/lucid_test_database.js'
 
 const attachment = {
   id: 'attachment-id',
@@ -22,61 +24,35 @@ const attachment = {
   size: 42,
 } as const
 
-test.group('LucidAttachmentStore', () => {
-  test('creates an original polymorphic attachment row', async ({ assert }) => {
-    const created: Record<string, unknown>[] = []
-    const store = new LucidAttachmentStore({
-      async create(attributes: Record<string, unknown>) {
-        created.push(attributes)
-        return attributes
-      },
-    } as unknown as typeof AttachmentModel)
+let database: Database
 
-    await store.createOriginal({ type: 'users', id: '42', field: 'avatar' }, attachment)
-
-    assert.deepEqual(created, [
-      {
-        ...attachment,
-        attachableType: 'users',
-        attachableId: '42',
-        field: 'avatar',
-        ownerKey: createAttachmentOwnerKey({ type: 'users', id: '42', field: 'avatar' }),
-        position: null,
-        parentId: null,
-        variantKey: null,
-        metadata: null,
-      },
-    ])
+test.group('LucidAttachmentStore', (group) => {
+  group.setup(async () => {
+    database = await createLucidTestDatabase()
   })
 
-  test('creates a variant linked to its original attachment', async ({ assert }) => {
-    const created: Record<string, unknown>[] = []
-    const store = new LucidAttachmentStore({
-      async create(attributes: Record<string, unknown>) {
-        created.push(attributes)
-        return attributes
-      },
-    } as unknown as typeof AttachmentModel)
-    const original = {
-      id: 'original-id',
-      attachableType: 'users',
-      attachableId: '42',
-      field: 'avatar',
-    } as AttachmentModel
+  group.each.setup(async () => {
+    await database.from('attachment_links').delete()
+    await database.from('attachments').delete()
+  })
 
-    await store.createVariant(original, 'thumbnail', { ...attachment, id: 'variant-id' })
+  group.teardown(async () => {
+    await database.manager.closeAll()
+  })
 
-    assert.deepEqual(created[0], {
-      ...attachment,
-      id: 'variant-id',
-      attachableType: 'users',
-      attachableId: '42',
-      field: 'avatar',
-      ownerKey: null,
-      position: null,
-      parentId: 'original-id',
-      variantKey: 'thumbnail',
-      metadata: null,
-    })
+  test('stores a blob separately from its singular polymorphic link', async ({ assert }) => {
+    const original = await new LucidAttachmentStore().createOriginal(
+      { type: 'users', id: '42', field: 'avatar' },
+      attachment
+    )
+
+    const blob = await AttachmentModel.findOrFail(attachment.id)
+    const link = await AttachmentLinkModel.findOrFail(original.id)
+
+    assert.equal(link.attachmentId, blob.id)
+    assert.equal(link.attachableType, 'users')
+    assert.equal(link.attachableId, '42')
+    assert.equal(link.field, 'avatar')
+    assert.equal(original.toAttachment().path, attachment.path)
   })
 })

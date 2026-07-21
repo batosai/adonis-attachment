@@ -11,7 +11,7 @@ import type { DateTime } from 'luxon'
 import type { Attachment } from '../../core/attachment.js'
 
 /**
- * Default Lucid model for the polymorphic attachments table.
+ * Default Lucid model for a stored attachment blob.
  * Applications may extend this model to add their own scopes and serialization rules.
  */
 export class AttachmentModel extends BaseModel {
@@ -20,21 +20,6 @@ export class AttachmentModel extends BaseModel {
 
   @column({ isPrimary: true })
   declare id: string
-
-  @column()
-  declare attachableType: string
-
-  @column()
-  declare attachableId: string
-
-  @column()
-  declare field: string
-
-  @column({ serializeAs: null })
-  declare ownerKey: string | null
-
-  @column()
-  declare position: number | null
 
   @column()
   declare parentId: string | null

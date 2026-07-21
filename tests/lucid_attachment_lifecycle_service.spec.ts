@@ -9,6 +9,7 @@ import { test } from '@japa/runner'
 
 import type { Attachment } from '../src/core/attachment.js'
 import { AttachmentService } from '../src/core/attachment_service.js'
+import { AttachmentLinkModel } from '../src/integrations/lucid/attachment_link_model.js'
 import { AttachmentModel } from '../src/integrations/lucid/attachment_model.js'
 import { LucidAttachmentLifecycleService } from '../src/integrations/lucid/lucid_attachment_lifecycle_service.js'
 
@@ -23,21 +24,71 @@ const attachment: Attachment = {
   size: 42,
 }
 
-function makeRow(value: Attachment, id = value.id): AttachmentModel {
+function makeBlob(value: Attachment): AttachmentModel {
   return {
-    id,
+    id: value.id,
     toAttachment() {
       return value
     },
   } as AttachmentModel
 }
 
+function makeLink(value: Attachment, id = `link-${value.id}`): AttachmentLinkModel {
+  const blob = makeBlob(value)
+
+  return {
+    id,
+    attachmentId: value.id,
+    attachment: blob,
+    toAttachment() {
+      return value
+    },
+  } as AttachmentLinkModel
+}
+
+function makeStore(overrides: Partial<Record<string, unknown>> = {}) {
+  const link = makeLink(attachment)
+
+  return {
+    async createOriginal() {
+      return link
+    },
+    async findOriginal() {
+      return null
+    },
+    async listVariants() {
+      return [] as AttachmentModel[]
+    },
+    async releaseOwner() {},
+    async restoreOwner() {},
+    async remove() {
+      return [] as AttachmentModel[]
+    },
+    async createCollectionItem() {
+      return link
+    },
+    async findCollectionItem() {
+      return null
+    },
+    async listCollection() {
+      return [] as AttachmentLinkModel[]
+    },
+    async moveCollectionItem() {
+      return [] as AttachmentLinkModel[]
+    },
+    async removeCollectionItem() {
+      return [] as AttachmentModel[]
+    },
+    ...overrides,
+  } as never
+}
+
 test.group('LucidAttachmentLifecycleService', () => {
-  test('persists a manager draft before inserting its polymorphic row', async ({ assert }) => {
+  test('persists a manager draft before creating its polymorphic link', async ({ assert }) => {
     const events: string[] = []
     const attachments = new AttachmentService({
       defaultDisk: 'fs',
-      createId: () => 'attachment-id',
+      createId: () => attachment.id,
       queue: { async enqueue() {} },
       storage: {
         async write() {
@@ -49,72 +100,24 @@ test.group('LucidAttachmentLifecycleService', () => {
         async remove() {},
       },
     })
-    const draft = attachments.createDraft({
-      body: new Uint8Array([1]),
-      originalName: 'profile.jpg',
-    })
+    const draft = attachments.createDraft({ body: new Uint8Array([1]), originalName: 'profile.jpg' })
     const service = new LucidAttachmentLifecycleService(
       attachments,
-      {
+      makeStore({
         async createOriginal() {
-          events.push('persist')
-          return {} as AttachmentModel
+          events.push('link')
+          return makeLink(attachment)
         },
-        async findOriginal() {
-          return null
-        },
-        async listVariants() {
-          return []
-        },
-        async releaseOwner() {},
-        async restoreOwner() {},
-        async remove() {},
-      }
+      })
     )
 
-    assert.isFalse(draft.isPersisted)
     await service.attach({ type: 'users', id: '42', field: 'avatar' }, draft)
 
     assert.isTrue(draft.isPersisted)
-    assert.deepEqual(events, ['write', 'persist'])
+    assert.deepEqual(events, ['write', 'link'])
   })
 
-  test('persists the file before creating its polymorphic row', async ({ assert }) => {
-    const events: string[] = []
-    const service = new LucidAttachmentLifecycleService(
-      {
-        async create() {
-          events.push('write')
-          return attachment
-        },
-        async remove() {},
-      },
-      {
-        async createOriginal() {
-          events.push('persist')
-          return {} as AttachmentModel
-        },
-        async findOriginal() {
-          return null
-        },
-        async listVariants() {
-          return []
-        },
-        async releaseOwner() {},
-        async restoreOwner() {},
-        async remove() {},
-      }
-    )
-
-    await service.attach({ type: 'users', id: '42', field: 'avatar' }, {
-      body: new Uint8Array(),
-      originalName: 'profile.jpg',
-    })
-
-    assert.deepEqual(events, ['write', 'persist'])
-  })
-
-  test('removes a new file when database persistence fails', async ({ assert }) => {
+  test('removes a new file when blob or link persistence fails', async ({ assert }) => {
     const removed: Attachment[] = []
     const service = new LucidAttachmentLifecycleService(
       {
@@ -125,20 +128,11 @@ test.group('LucidAttachmentLifecycleService', () => {
           removed.push(value)
         },
       },
-      {
+      makeStore({
         async createOriginal() {
           throw new Error('database unavailable')
         },
-        async findOriginal() {
-          return null
-        },
-        async listVariants() {
-          return []
-        },
-        async releaseOwner() {},
-        async restoreOwner() {},
-        async remove() {},
-      }
+      })
     )
 
     await assert.rejects(
@@ -153,300 +147,116 @@ test.group('LucidAttachmentLifecycleService', () => {
     assert.deepEqual(removed, [attachment])
   })
 
-  test('replaces the persisted row before removing the previous file', async ({ assert }) => {
+  test('replaces a link before purging its unreferenced blob', async ({ assert }) => {
     const events: string[] = []
     const previousAttachment = { ...attachment, id: 'previous-id', path: 'users/42/previous.jpg' }
     const currentAttachment = { ...attachment, id: 'current-id', path: 'users/42/current.jpg' }
-    const previous = makeRow(previousAttachment)
-    const current = makeRow(currentAttachment)
+    const previous = makeLink(previousAttachment)
+    const current = makeLink(currentAttachment)
     const service = new LucidAttachmentLifecycleService(
       {
         async create() {
-          events.push('write-current')
+          events.push('write')
           return currentAttachment
         },
         async remove(value) {
           events.push(`remove-file:${value.id}`)
         },
       },
-      {
+      makeStore({
         async createOriginal() {
-          events.push('persist-current')
+          events.push('create-link')
           return current
         },
         async findOriginal() {
           return previous
         },
-        async listVariants() {
-          return []
-        },
         async releaseOwner() {
-          events.push('release-previous')
+          events.push('release-link')
         },
-        async restoreOwner() {},
-        async remove(row) {
-          events.push(`remove-row:${row.id}`)
+        async remove() {
+          events.push('remove-link')
+          return [makeBlob(previousAttachment)]
         },
-      }
+      })
     )
 
-    const row = await service.replace({ type: 'users', id: '42', field: 'avatar' }, {
+    await service.replace({ type: 'users', id: '42', field: 'avatar' }, {
       body: new Uint8Array(),
       originalName: 'profile.jpg',
     })
 
-    assert.equal(row, current)
     assert.deepEqual(events, [
-      'write-current',
-      'release-previous',
-      'persist-current',
-      'remove-row:previous-id',
+      'write',
+      'release-link',
+      'create-link',
+      'remove-link',
       'remove-file:previous-id',
     ])
   })
 
-  test('restores the previous owner when replacement persistence fails', async ({ assert }) => {
-    const events: string[] = []
-    const previous = makeRow(attachment, 'previous-id')
-    const currentAttachment = { ...attachment, id: 'current-id', path: 'users/42/current.jpg' }
-    const service = new LucidAttachmentLifecycleService(
-      {
-        async create() {
-          events.push('write-current')
-          return currentAttachment
-        },
-        async remove(value) {
-          events.push(`remove-file:${value.id}`)
-        },
-      },
-      {
-        async createOriginal() {
-          throw new Error('database unavailable')
-        },
-        async findOriginal() {
-          return previous
-        },
-        async listVariants() {
-          return []
-        },
-        async releaseOwner() {
-          events.push('release-previous')
-        },
-        async restoreOwner() {
-          events.push('restore-previous')
-        },
-        async remove() {},
-      }
-    )
-
-    await assert.rejects(
-      () =>
-        service.replace({ type: 'users', id: '42', field: 'avatar' }, {
-          body: new Uint8Array(),
-          originalName: 'profile.jpg',
-        }),
-      'database unavailable'
-    )
-
-    assert.deepEqual(events, [
-      'write-current',
-      'release-previous',
-      'restore-previous',
-      'remove-file:current-id',
-    ])
-  })
-
-  test('detaches the original and every persisted variant', async ({ assert }) => {
-    const removedRows: string[] = []
-    const removedFiles: string[] = []
-    const original = makeRow(attachment)
-    const variant = makeRow({ ...attachment, id: 'variant-id', path: 'users/42/thumbnail.webp' })
+  test('only removes files for blobs that became unreferenced', async ({ assert }) => {
+    const removed: string[] = []
     const service = new LucidAttachmentLifecycleService(
       {
         async create() {
           return attachment
         },
         async remove(value) {
-          removedFiles.push(value.id)
+          removed.push(value.id)
         },
       },
-      {
-        async createOriginal() {
-          return original
-        },
+      makeStore({
         async findOriginal() {
-          return original
+          return makeLink(attachment)
         },
-        async listVariants() {
-          return [variant]
+        async remove() {
+          return []
         },
-        async releaseOwner() {},
-        async restoreOwner() {},
-        async remove(row) {
-          removedRows.push(row.id)
-        },
-      }
+      })
     )
 
     await service.detach({ type: 'users', id: '42', field: 'avatar' })
 
-    assert.deepEqual(removedRows, ['attachment-id'])
-    assert.sameDeepMembers(removedFiles, ['attachment-id', 'variant-id'])
+    assert.deepEqual(removed, [])
   })
 
-  test('persists a collection item before inserting its polymorphic row', async ({ assert }) => {
-    const events: string[] = []
-    const item = makeRow(attachment)
-    const service = new LucidAttachmentLifecycleService(
-      {
-        async create() {
-          events.push('write')
-          return attachment
-        },
-        async remove() {},
-      },
-      {
-        async createOriginal() {
-          return item
-        },
-        async findOriginal() {
-          return null
-        },
-        async listVariants() {
-          return []
-        },
-        async releaseOwner() {},
-        async restoreOwner() {},
-        async remove() {},
-        async createCollectionItem() {
-          events.push('persist')
-          return item
-        },
-        async findCollectionItem() {
-          return null
-        },
-        async listCollection() {
-          return []
-        },
-        async moveCollectionItem() {
-          return []
-        },
-        async removeCollectionItem() {},
-      }
-    )
-
-    await service.add({ type: 'users', id: '42', field: 'avatars' }, {
-      body: new Uint8Array(),
-      originalName: 'profile.jpg',
-    })
-
-    assert.deepEqual(events, ['write', 'persist'])
-  })
-
-  test('removes a collection file when its database insertion fails', async ({ assert }) => {
-    const removed: Attachment[] = []
+  test('adds and removes ordered collection links', async ({ assert }) => {
+    const item = makeLink(attachment)
+    const removed: string[] = []
     const service = new LucidAttachmentLifecycleService(
       {
         async create() {
           return attachment
         },
         async remove(value) {
-          removed.push(value)
+          removed.push(value.id)
         },
       },
-      {
-        async createOriginal() {
-          return makeRow(attachment)
-        },
-        async findOriginal() {
-          return null
-        },
-        async listVariants() {
-          return []
-        },
-        async releaseOwner() {},
-        async restoreOwner() {},
-        async remove() {},
-        async createCollectionItem() {
-          throw new Error('database unavailable')
-        },
-        async findCollectionItem() {
-          return null
-        },
-        async listCollection() {
-          return []
-        },
-        async moveCollectionItem() {
-          return []
-        },
-        async removeCollectionItem() {},
-      }
-    )
-
-    await assert.rejects(
-      () =>
-        service.add({ type: 'users', id: '42', field: 'avatars' }, {
-          body: new Uint8Array(),
-          originalName: 'profile.jpg',
-        }),
-      'database unavailable'
-    )
-
-    assert.deepEqual(removed, [attachment])
-  })
-
-  test('removes a collection item and its persisted variants', async ({ assert }) => {
-    const removedRows: string[] = []
-    const removedFiles: string[] = []
-    const item = makeRow(attachment)
-    const variant = makeRow({ ...attachment, id: 'variant-id', path: 'users/42/thumbnail.webp' })
-    const service = new LucidAttachmentLifecycleService(
-      {
-        async create() {
-          return attachment
-        },
-        async remove(value) {
-          removedFiles.push(value.id)
-        },
-      },
-      {
-        async createOriginal() {
-          return item
-        },
-        async findOriginal() {
-          return null
-        },
-        async listVariants() {
-          return [variant]
-        },
-        async releaseOwner() {},
-        async restoreOwner() {},
-        async remove() {},
+      makeStore({
         async createCollectionItem() {
           return item
         },
         async findCollectionItem() {
           return item
         },
-        async listCollection() {
-          return [item]
+        async removeCollectionItem() {
+          return [makeBlob(attachment)]
         },
-        async moveCollectionItem() {
-          return [item]
-        },
-        async removeCollectionItem(_owner, row) {
-          removedRows.push(row.id)
-        },
-      }
+      })
     )
 
-    const removed = await service.removeCollectionItem(
-      { type: 'users', id: '42', field: 'avatars' },
-      attachment.id
+    const added = await service.add(
+      { type: 'users', id: '42', field: 'gallery' },
+      { body: new Uint8Array(), originalName: 'profile.jpg' }
+    )
+    const didRemove = await service.removeCollectionItem(
+      { type: 'users', id: '42', field: 'gallery' },
+      added.id
     )
 
-    assert.isTrue(removed)
-    assert.deepEqual(removedRows, ['attachment-id'])
-    assert.sameDeepMembers(removedFiles, ['attachment-id', 'variant-id'])
+    assert.equal(added.id, item.id)
+    assert.isTrue(didRemove)
+    assert.deepEqual(removed, [attachment.id])
   })
 })

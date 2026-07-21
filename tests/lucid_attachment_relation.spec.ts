@@ -157,7 +157,7 @@ test.group("Lucid attachment relations", (group) => {
       folder: "imports",
     });
     const current = await user.avatar.set(replacement);
-    await new LucidAttachmentStore().createVariant(current, "thumbnail", {
+    await new LucidAttachmentStore().createVariant(current.attachment, "thumbnail", {
       id: "variant-id",
       disk: "manager",
       path: "imports/thumbnail.txt",
@@ -174,14 +174,14 @@ test.group("Lucid attachment relations", (group) => {
       ["variant-id"],
     );
     assert.isTrue(await user.avatar.regenerateVariants(["thumbnail"]));
-    assert.deepEqual(queued, [current.id]);
+    assert.deepEqual(queued, [current.attachmentId]);
 
     await user.avatar.detach();
 
     assert.isNull(await user.avatar.get());
     assert.sameDeepMembers(removed, [
-      first.path,
-      replacement.path,
+      first.toAttachment().path,
+      replacement.toAttachment().path,
       "imports/thumbnail.txt",
     ]);
     assert.deepEqual(writes, [
@@ -284,7 +284,27 @@ test.group("Lucid attachment relations", (group) => {
       /Rollback requested/,
     );
 
-    assert.equal((await user.avatar.get())?.id, draft.id);
+    assert.equal((await user.avatar.get())?.attachmentId, draft.id);
     assert.deepEqual(removed, []);
+  });
+
+  test("purges relation links and unreferenced blobs when the owner is deleted", async ({
+    assert,
+  }) => {
+    const user = await createUser();
+    const avatar = await user.avatar.attach(createDraft("avatar.txt"));
+    const gallery = await user.gallery.add(createDraft("gallery.txt"));
+    removed = [];
+
+    await user.delete();
+
+    assert.isNull(await user.avatar.get());
+    assert.deepEqual(await user.gallery.all(), []);
+    assert.isNull(await AttachmentModel.find(avatar.attachmentId));
+    assert.isNull(await AttachmentModel.find(gallery.attachmentId));
+    assert.sameDeepMembers(removed, [
+      avatar.toAttachment().path,
+      gallery.toAttachment().path,
+    ]);
   });
 });

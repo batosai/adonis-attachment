@@ -9,6 +9,7 @@ import type { Database } from '@adonisjs/lucid/database'
 import { test } from '@japa/runner'
 
 import type { Attachment } from '../src/core/attachment.js'
+import { AttachmentLinkModel } from '../src/integrations/lucid/attachment_link_model.js'
 import { AttachmentModel } from '../src/integrations/lucid/attachment_model.js'
 import { LucidAttachmentLifecycleService } from '../src/integrations/lucid/lucid_attachment_lifecycle_service.js'
 import { LucidAttachmentRepository } from '../src/integrations/lucid/lucid_attachment_repository.js'
@@ -38,6 +39,7 @@ test.group('Lucid SQLite integration', (group) => {
   })
 
   group.each.setup(async () => {
+    await database.from('attachment_links').delete()
     await database.from('attachments').delete()
   })
 
@@ -52,21 +54,22 @@ test.group('Lucid SQLite integration', (group) => {
       makeAttachment('original-id', 'users/42/avatar.jpg', { width: 800 })
     )
     const variant = await store.createVariant(
-      original,
+      original.attachment,
       'thumbnail',
       makeAttachment('variant-id', 'users/42/thumbnail.jpg')
     )
 
-    const reloaded = await AttachmentModel.findOrFail(original.id)
+    const reloaded = await AttachmentModel.findOrFail(original.attachmentId)
+    const link = await AttachmentLinkModel.findOrFail(original.id)
     const persisted = await store.findByOwner(owner)
 
-    assert.equal(reloaded.attachableType, 'users')
-    assert.equal(reloaded.attachableId, '42')
-    assert.equal(reloaded.field, 'avatar')
+    assert.equal(link.attachableType, 'users')
+    assert.equal(link.attachableId, '42')
+    assert.equal(link.field, 'avatar')
     assert.deepEqual(reloaded.metadata, { width: 800 })
     assert.isNotNull(reloaded.createdAt)
     assert.isNotNull(reloaded.updatedAt)
-    assert.equal(variant.parentId, original.id)
+    assert.equal(variant.parentId, original.attachmentId)
     assert.equal(variant.variantKey, 'thumbnail')
     assert.equal(persisted?.original.id, original.id)
     assert.deepEqual(persisted?.variants.map((row) => row.id), ['variant-id'])
@@ -92,7 +95,7 @@ test.group('Lucid SQLite integration', (group) => {
     const store = new LucidAttachmentStore()
     const original = await store.createOriginal(owner, makeAttachment('original-id', 'users/42/avatar.jpg'))
     await store.createVariant(
-      original,
+      original.attachment,
       'thumbnail',
       makeAttachment('first-variant-id', 'users/42/thumbnail.jpg')
     )
@@ -100,7 +103,7 @@ test.group('Lucid SQLite integration', (group) => {
     await assert.rejects(
       () =>
         store.createVariant(
-          original,
+          original.attachment,
           'thumbnail',
           makeAttachment('second-variant-id', 'users/42/thumbnail-2.jpg')
         ),
@@ -135,20 +138,22 @@ test.group('Lucid SQLite integration', (group) => {
       originalName: 'profile.jpg',
     })
     await new LucidAttachmentStore().createVariant(
-      replacement,
+      replacement.attachment,
       'thumbnail',
       makeAttachment('variant-id', 'users/42/thumbnail.jpg')
     )
 
     const repository = new LucidAttachmentRepository()
-    assert.equal((await repository.findById(replacement.id))?.path, 'users/42/second.jpg')
-    assert.isNull(await AttachmentModel.find(first.id))
-    assert.deepEqual(removed, [first.id])
+    assert.equal((await repository.findById(replacement.attachmentId))?.path, 'users/42/second.jpg')
+    assert.isNull(await AttachmentLinkModel.find(first.id))
+    assert.isNull(await AttachmentModel.find(first.attachmentId))
+    assert.deepEqual(removed, [first.attachmentId])
 
     await lifecycle.detach(owner)
 
-    assert.isNull(await AttachmentModel.find(replacement.id))
+    assert.isNull(await AttachmentLinkModel.find(replacement.id))
+    assert.isNull(await AttachmentModel.find(replacement.attachmentId))
     assert.isNull(await AttachmentModel.find('variant-id'))
-    assert.sameDeepMembers(removed, [first.id, replacement.id, 'variant-id'])
+    assert.sameDeepMembers(removed, [first.attachmentId, replacement.attachmentId, 'variant-id'])
   })
 })

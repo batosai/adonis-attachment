@@ -27,6 +27,7 @@ test.group('Lucid attachment collection store', (group) => {
   })
 
   group.each.setup(async () => {
+    await database.from('attachment_links').delete()
     await database.from('attachments').delete()
   })
 
@@ -41,7 +42,7 @@ test.group('Lucid attachment collection store', (group) => {
     const second = await store.createCollectionItem(owner, makeAttachment('second'), 1)
 
     assert.deepEqual(
-      (await store.listCollection(owner)).map((item) => [item.id, item.position]),
+      (await store.listCollection(owner)).map((item) => [item.attachmentId, item.position]),
       [
         ['first', 0],
         ['second', 1],
@@ -53,7 +54,7 @@ test.group('Lucid attachment collection store', (group) => {
     await store.moveCollectionItem(owner, third.id, 0)
 
     assert.deepEqual(
-      (await store.listCollection(owner)).map((item) => [item.id, item.position]),
+      (await store.listCollection(owner)).map((item) => [item.attachmentId, item.position]),
       [
         ['third', 0],
         ['first', 1],
@@ -64,7 +65,7 @@ test.group('Lucid attachment collection store', (group) => {
     await store.removeCollectionItem(owner, first)
 
     assert.deepEqual(
-      (await store.listCollection(owner)).map((item) => [item.id, item.position]),
+      (await store.listCollection(owner)).map((item) => [item.attachmentId, item.position]),
       [
         ['third', 0],
         ['second', 1],

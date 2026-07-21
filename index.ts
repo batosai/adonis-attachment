@@ -6,6 +6,13 @@ import type { VariantConverterRegistry } from "./src/converters/configured_varia
 import attachmentManager from "./services/main.js";
 import attachmentConverters from "./services/converters.js";
 
+/** Augment this interface with `InferConverters<typeof attachmentConfig>` for typed variant keys. */
+export interface AttachmentVariants {}
+
+export type AttachmentVariantKey = [keyof AttachmentVariants] extends [never]
+  ? string
+  : Extract<keyof AttachmentVariants, string>;
+
 declare module "@adonisjs/core/types" {
   export interface ContainerBindings {
     "jrmc.attachment": AttachmentService;
@@ -25,6 +32,7 @@ export {
   type AttachmentMediaConfig,
   type AttachmentConvertersConfig,
   type AttachmentConfig,
+  type InferConverters,
   type LucidAttachmentConfig,
   type ResolvedAttachmentConfig,
 } from "./src/define_config.js";

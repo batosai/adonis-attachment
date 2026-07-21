@@ -1,3 +1,5 @@
+import type { AttachmentVariantKey } from '../../index.js'
+
 export type AttachmentPersistenceContext<Model = unknown> = {
   model?: Model
   field?: string
@@ -21,7 +23,7 @@ export type AttachmentPersistenceOptions<Model = unknown> = {
   rename?: AttachmentRename<Model> | null
   meta?: boolean | null
   preComputeUrl?: boolean | null
-  variants?: readonly string[] | null
+  variants?: readonly AttachmentVariantKey[] | null
 }
 
 export type ResolvedAttachmentPersistenceOptions<Model = unknown> = {
@@ -30,7 +32,7 @@ export type ResolvedAttachmentPersistenceOptions<Model = unknown> = {
   rename?: AttachmentRename<Model>
   meta?: boolean
   preComputeUrl?: boolean
-  variants?: readonly string[]
+  variants?: readonly AttachmentVariantKey[]
 }
 
 /**

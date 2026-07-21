@@ -53,7 +53,7 @@ export type AttachmentMediaConfig = {
 /** v5-style named converter declarations, resolved lazily when a job needs one. */
 export type AttachmentConvertersConfig = ConverterConfigMap
 
-export type AttachmentConfig = {
+export type AttachmentConfig<KnownConverters extends ConverterConfigMap = ConverterConfigMap> = {
   /** Overrides the storage default. Falls back to `fs` when no adapter provides one. */
   defaultDisk?: string
   storage: Integration<AttachmentStorage>
@@ -67,12 +67,12 @@ export type AttachmentConfig = {
   route?: AttachmentRouteConfig
   integrations?: AttachmentIntegrationsConfig
   media?: AttachmentMediaConfig
-  converters?: AttachmentConvertersConfig
+  converters?: KnownConverters
   queueConcurrency?: number
   createId?: () => string
 }
 
-export type ResolvedAttachmentConfig = AttachmentServiceOptions & {
+export type ResolvedAttachmentConfig<KnownConverters extends ConverterConfigMap = ConverterConfigMap> = AttachmentServiceOptions & {
   repository?: AttachmentRepository
   defaults?: AttachmentPersistenceOptions
   sources?: AttachmentManagerOptions
@@ -80,13 +80,22 @@ export type ResolvedAttachmentConfig = AttachmentServiceOptions & {
   integrations?: {
     lucid?: AttachmentTableNames
   }
-  converters?: VariantConverterRegistry
+  converters?: VariantConverterRegistry<Extract<keyof KnownConverters, string>>
 }
+
+/** Extracts the converter map from a config returned by `defineConfig`. */
+export type InferConverters<Config> = Config extends ConfigProvider<
+  ResolvedAttachmentConfig<infer KnownConverters>
+>
+  ? KnownConverters
+  : never
 
 /**
  * Defers resolution of optional Adonis integrations until application boot.
  */
-export function defineConfig(config: AttachmentConfig): ConfigProvider<ResolvedAttachmentConfig> {
+export function defineConfig<const KnownConverters extends ConverterConfigMap = {}>(
+  config: AttachmentConfig<KnownConverters>
+): ConfigProvider<ResolvedAttachmentConfig<KnownConverters>> {
   return configProvider.create(async (app) => {
     const storage = await resolveIntegration(config.storage, app)
     const processor = config.processor

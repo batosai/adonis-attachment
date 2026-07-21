@@ -23,6 +23,7 @@ import {
 import type { AttachmentQueue } from './queue.js'
 import type { AttachmentStorage } from './storage.js'
 import { MediaMetadataService, type MediaMetadataExtractor } from '../media/media_metadata.js'
+import type { AttachmentVariantKey } from '../../index.js'
 
 export type AttachmentServiceOptions = {
   storage: AttachmentStorage
@@ -132,7 +133,7 @@ export class AttachmentService {
 
   scheduleVariantGeneration(
     attachment: Attachment,
-    variantKeys?: readonly string[]
+    variantKeys?: readonly AttachmentVariantKey[]
   ): Promise<void> {
     return this.#queue.enqueue({
       type: 'generate-variants',
@@ -145,7 +146,7 @@ export class AttachmentService {
   getVariantKeys(
     draft: AttachmentDraft,
     options?: AttachmentPersistenceOptions
-  ): readonly string[] | undefined {
+  ): readonly AttachmentVariantKey[] | undefined {
     return resolveAttachmentPersistenceOptions(this.#defaults, options, draft.options).variants
   }
 }

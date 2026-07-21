@@ -191,7 +191,7 @@ test.group('defineConfig', () => {
       },
       async remove() {},
     }
-    const defaults = { folder: 'attachments', variants: ['thumbnail'] }
+    const defaults = { folder: 'attachments', variants: ['thumbnail'] as const }
 
     const resolved = await defineConfig({ defaultDisk: 'public', storage, defaults }).resolver({} as never)
 

@@ -7,6 +7,7 @@
 
 import app from "@adonisjs/core/services/app";
 import type { LucidRow } from "@adonisjs/lucid/types/model";
+import type { AttachmentVariantKey } from "../../../../index.js";
 
 import type {
   Attachment,
@@ -193,7 +194,7 @@ export class AttachmentRelation {
     return lifecycle.listVariants(this.#owner());
   }
 
-  async regenerateVariants(variantKeys?: readonly string[]): Promise<boolean> {
+  async regenerateVariants(variantKeys?: readonly AttachmentVariantKey[]): Promise<boolean> {
     const attachment = await this.get();
 
     if (!attachment) {

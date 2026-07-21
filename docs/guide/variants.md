@@ -13,7 +13,9 @@ the converter instance as `options`. When `converter` is omitted, the package us
 `AutodetectConverter` by default.
 
 ```ts
-export default defineConfig({
+import { defineConfig, LocalFileStorage, type InferConverters } from '@jrmc/adonis-attachment'
+
+const attachmentConfig = defineConfig({
   storage: LocalFileStorage.fromApp,
   converters: {
     thumbnail: {
@@ -22,6 +24,12 @@ export default defineConfig({
     },
   },
 })
+
+export default attachmentConfig
+
+declare module '@jrmc/adonis-attachment' {
+  interface AttachmentVariants extends InferConverters<typeof attachmentConfig> {}
+}
 ```
 
 Generate the class with:
@@ -58,6 +66,8 @@ The default converter selects the implementation from the source MIME type:
 | Office documents | LibreOffice, then Poppler | `libreoffice` and `pdftoppm` executables |
 
 Set `converter: () => import('#converters/...')` to override this behavior for one key.
+The module augmentation also types variant keys in `variants`, `createFrom*` options, and
+`regenerateVariants()`. A key not present in this configuration becomes a TypeScript error.
 
 ### Direct object converters
 

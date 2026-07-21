@@ -21,22 +21,24 @@ export type ConverterConfig = ConverterOptions & {
 }
 export type ConverterConfigMap = Record<string, ConverterConfig>
 
-export interface VariantConverterRegistry {
-  keys(): Promise<readonly string[]>
+export interface VariantConverterRegistry<Key extends string = string> {
+  keys(): Promise<readonly Key[]>
   get(key: string): Promise<VariantConverter | undefined>
 }
 
 /** Lazily imports and instantiates the converters declared in package configuration. */
-export class ConfiguredVariantConverterRegistry implements VariantConverterRegistry {
-  readonly #config: ConverterConfigMap
+export class ConfiguredVariantConverterRegistry<
+  Config extends ConverterConfigMap = ConverterConfigMap,
+> implements VariantConverterRegistry<Extract<keyof Config, string>> {
+  readonly #config: Config
   readonly #converters = new Map<string, Promise<VariantConverter>>()
 
-  constructor(config: ConverterConfigMap) {
+  constructor(config: Config) {
     this.#config = config
   }
 
-  async keys(): Promise<readonly string[]> {
-    return Object.keys(this.#config)
+  async keys(): Promise<readonly Extract<keyof Config, string>[]> {
+    return Object.keys(this.#config) as Extract<keyof Config, string>[]
   }
 
   get(key: string): Promise<VariantConverter | undefined> {

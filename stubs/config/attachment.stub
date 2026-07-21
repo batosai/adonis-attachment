@@ -1,13 +1,17 @@
 {{{
   exports({ to: app.configPath('attachment.ts') })
 }}}
-import { defineConfig, LocalFileStorage } from '@jrmc/adonis-attachment'
+import {
+  defineConfig,
+  LocalFileStorage,
+  type InferConverters,
+} from '@jrmc/adonis-attachment'
 
 /**
  * Attachments are stored locally by default. Lucid, Drive, external queues,
  * custom storage, and read routes can be added as the application needs them.
  */
-export default defineConfig({
+const attachmentConfig = defineConfig({
   storage: LocalFileStorage.fromApp,
   // converters: {
   //   thumbnail: {
@@ -16,3 +20,9 @@ export default defineConfig({
   //   },
   // },
 })
+
+export default attachmentConfig
+
+declare module '@jrmc/adonis-attachment' {
+  interface AttachmentVariants extends InferConverters<typeof attachmentConfig> {}
+}

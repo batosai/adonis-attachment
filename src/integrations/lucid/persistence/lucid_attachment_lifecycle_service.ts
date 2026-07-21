@@ -19,7 +19,7 @@ import { AttachmentModel } from '../models/attachment_model.js'
 import { LucidAttachmentStore } from './lucid_attachment_store.js'
 
 export type AttachmentFileService = Pick<AttachmentService, 'create' | 'remove'> &
-  Partial<Pick<AttachmentService, 'createDraft'>>
+  Partial<Pick<AttachmentService, 'createDraft' | 'getVariantKeys' | 'scheduleVariantGeneration'>>
 export type LucidAttachmentPersistence = Pick<
   LucidAttachmentStore,
   | 'createOriginal'
@@ -61,16 +61,20 @@ export class LucidAttachmentLifecycleService {
     input: CreateAttachmentInput | AttachmentDraft,
     options?: AttachmentPersistenceOptions<any>
   ): Promise<AttachmentLinkModel> {
-    const attachment = await this.#persist(owner, input, options)
+    const persisted = await this.#persist(owner, input, options)
+
+    let original: AttachmentLinkModel
 
     try {
-      const original = await this.#store.createOriginal(owner, attachment)
-      this.#removeOnRollback(owner, [attachment])
-      return original
+      original = await this.#store.createOriginal(owner, persisted.attachment)
+      this.#removeOnRollback(owner, [persisted.attachment])
     } catch (error) {
-      await this.#removeStoredFile(attachment)
+      await this.#removeStoredFile(persisted.attachment)
       throw error
     }
+
+    await this.#scheduleVariants(owner, persisted, options)
+    return original
   }
 
   async replace(
@@ -84,15 +88,15 @@ export class LucidAttachmentLifecycleService {
       return this.attach(owner, input, options)
     }
 
-    const attachment = await this.#persist(owner, input, options)
+    const persisted = await this.#persist(owner, input, options)
     let current: AttachmentLinkModel
 
     try {
       await this.#store.releaseOwner(previous)
-      current = await this.#store.createOriginal(owner, attachment)
+      current = await this.#store.createOriginal(owner, persisted.attachment)
     } catch (error) {
       await this.#store.restoreOwner(previous).catch(() => undefined)
-      await this.#removeStoredFile(attachment)
+      await this.#removeStoredFile(persisted.attachment)
       throw error
     }
 
@@ -107,6 +111,7 @@ export class LucidAttachmentLifecycleService {
     }
 
     this.#removeOnRollback(owner, [current.toAttachment()])
+    await this.#scheduleVariants(owner, persisted, options)
 
     return current
   }
@@ -141,14 +146,30 @@ export class LucidAttachmentLifecycleService {
     position?: number,
     options?: AttachmentPersistenceOptions<any>
   ): Promise<AttachmentLinkModel> {
-    const attachment = await this.#persist(owner, input, options)
+    const created = await this.#add(owner, input, position, options)
+    await this.#scheduleVariants(owner, created.persisted, options)
+
+    return created.item
+  }
+
+  async #add(
+    owner: AttachmentOwner,
+    input: CreateAttachmentInput | AttachmentDraft,
+    position: number | undefined,
+    options: AttachmentPersistenceOptions<any> | undefined
+  ): Promise<{ item: AttachmentLinkModel; persisted: PersistedAttachment }> {
+    const persisted = await this.#persist(owner, input, options)
 
     try {
-      const item = await this.#collectionStore().createCollectionItem(owner, attachment, position)
-      this.#removeOnRollback(owner, [attachment])
-      return item
+      const item = await this.#collectionStore().createCollectionItem(
+        owner,
+        persisted.attachment,
+        position
+      )
+      this.#removeOnRollback(owner, [persisted.attachment])
+      return { item, persisted }
     } catch (error) {
-      await this.#removeStoredFile(attachment)
+      await this.#removeStoredFile(persisted.attachment)
       throw error
     }
   }
@@ -192,19 +213,23 @@ export class LucidAttachmentLifecycleService {
     options?: AttachmentPersistenceOptions<any>
   ): Promise<AttachmentLinkModel[]> {
     const previous = await this.#collectionStore().listCollection(owner)
-    const created: AttachmentLinkModel[] = []
+    const created: Array<{ item: AttachmentLinkModel; persisted: PersistedAttachment }> = []
 
     try {
       for (const input of inputs) {
-        created.push(await this.add(owner, input, undefined, options))
+        created.push(await this.#add(owner, input, undefined, options))
       }
     } catch (error) {
-      await Promise.all(created.map((item) => this.#detachCollectionItem(owner, item)))
+      await Promise.all(created.map(({ item }) => this.#detachCollectionItem(owner, item)))
       throw error
     }
 
     for (const item of previous) {
       await this.#detachCollectionItem(owner, item)
+    }
+
+    for (const item of created) {
+      await this.#scheduleVariants(owner, item.persisted, options)
     }
 
     return this.#collectionStore().listCollection(owner)
@@ -223,14 +248,7 @@ export class LucidAttachmentLifecycleService {
   }
 
   async #removeOnCommit(owner: AttachmentOwner, attachments: readonly Attachment[]): Promise<void> {
-    const transaction = getOwnerTransaction(owner)
-
-    if (transaction) {
-      transaction.after('commit', () => this.#removeStoredFiles(attachments))
-      return
-    }
-
-    await this.#removeStoredFiles(attachments)
+    await this.#afterCommit(owner, () => this.#removeStoredFiles(attachments))
   }
 
   #removeOnRollback(owner: AttachmentOwner, attachments: readonly Attachment[]): void {
@@ -245,6 +263,17 @@ export class LucidAttachmentLifecycleService {
     return Promise.all(attachments.map((attachment) => this.#removeStoredFile(attachment))).then(
       () => undefined
     )
+  }
+
+  async #afterCommit(owner: AttachmentOwner, callback: () => Promise<void>): Promise<void> {
+    const transaction = getOwnerTransaction(owner)
+
+    if (transaction) {
+      transaction.after('commit', callback)
+      return
+    }
+
+    await callback()
   }
 
   async #detachCollectionItem(owner: AttachmentOwner, item: AttachmentLinkModel): Promise<void> {
@@ -304,25 +333,54 @@ export class LucidAttachmentLifecycleService {
     owner: AttachmentOwner,
     input: CreateAttachmentInput | AttachmentDraft,
     options?: AttachmentPersistenceOptions<any>
-  ): Promise<Attachment> {
+  ): Promise<PersistedAttachment> {
     if (isAttachmentDraft(input)) {
-      return input.persist({
-        ...(options ? { options } : {}),
-        context: { model: owner.model, field: owner.field },
-      })
+      return {
+        draft: input,
+        attachment: await input.persist({
+          ...(options ? { options } : {}),
+          context: { model: owner.model, field: owner.field },
+        }),
+      }
     }
 
     if (this.#attachments.createDraft) {
-      return this.#attachments
-        .createDraft(input)
-        .persist({
+      const draft = this.#attachments.createDraft(input)
+
+      return {
+        draft,
+        attachment: await draft.persist({
           ...(options ? { options } : {}),
           context: { model: owner.model, field: owner.field },
-        })
+        }),
+      }
     }
 
-    return this.#attachments.create(input)
+    return { attachment: await this.#attachments.create(input) }
   }
+
+  async #scheduleVariants(
+    owner: AttachmentOwner,
+    persisted: PersistedAttachment,
+    options: AttachmentPersistenceOptions<any> | undefined
+  ): Promise<void> {
+    if (!persisted.draft || !this.#attachments.getVariantKeys || !this.#attachments.scheduleVariantGeneration) {
+      return
+    }
+
+    const keys = this.#attachments.getVariantKeys(persisted.draft, options)
+
+    if (!keys?.length) {
+      return
+    }
+
+    await this.#afterCommit(owner, () => this.#attachments.scheduleVariantGeneration!(persisted.attachment, keys))
+  }
+}
+
+type PersistedAttachment = {
+  attachment: Attachment
+  draft?: AttachmentDraft
 }
 
 function getOwnerTransaction(owner: AttachmentOwner): {

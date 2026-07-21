@@ -47,6 +47,8 @@ Le sous-chemin `@jrmc/adonis-attachment/media/binaries` expose un `CommandRunner
 
 La queue externe ne transporte que le job serialisable `{ type, attachmentId, variantKeys? }`. Le worker recharge ensuite l'attachment dans son repository avant de lancer le generateur, ce qui evite de transporter des chemins, des octets ou un modele Lucid dans le message.
 
+Pour les relations Lucid, l'option `variants` est resolue selon la priorite manager, decorateur, configuration. Une fois le blob et son lien ecrits, les cles sont planifiees immediatement hors transaction ou apres le commit d'une transaction. Les variants ne sont donc jamais envoyes a un worker pour un owner qui vient d'etre rollback.
+
 ## Modele Lucid cible
 
 Le mode table dediee separe le blob du fichier et son rattachement. La table `attachments` contient les blobs. La table `attachment_links` contient la relation polymorphe avec les modeles applicatifs. Un variant est un blob dont `parent_id` designe le blob original.

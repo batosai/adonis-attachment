@@ -17,6 +17,7 @@ import {
   type AttachmentRelation,
 } from "../src/integrations/lucid/index.js";
 import { AttachmentService } from "../src/core/attachment_service.js";
+import type { AttachmentJob } from "../src/core/queue.js";
 import { AttachmentModel } from "../src/integrations/lucid/models/attachment_model.js";
 import { LucidAttachmentStore } from "../src/integrations/lucid/persistence/lucid_attachment_store.js";
 import { createLucidTestDatabase } from "./helpers/lucid_test_database.js";
@@ -323,6 +324,54 @@ test.group("Lucid attachment relations", (group) => {
 
     assert.isNull(await user.avatar.get());
     assert.deepEqual(removed, [draft.path]);
+  });
+
+  test("schedules configured variants only after a relation transaction commits", async ({
+    assert,
+  }) => {
+    const scheduled: AttachmentJob[] = [];
+    attachments = new AttachmentService({
+      defaultDisk: "fs",
+      defaults: { variants: ["config"] },
+      createId: () => `attachment-${++nextId}`,
+      queue: {
+        async enqueue(job) {
+          scheduled.push(job);
+        },
+      },
+      storage: {
+        async write(input) {
+          writes.push({ disk: input.disk, path: input.path });
+        },
+        async read() {
+          return new Uint8Array();
+        },
+        async remove(location) {
+          removed.push(location.path);
+        },
+      },
+    });
+    const user = await createUser();
+    const draft = createDraft("automatic.txt", { variants: ["manager"] });
+
+    await database.transaction(async (trx) => {
+      const transactionalUser = await RelationUser.query({ client: trx })
+        .where("id", user.id)
+        .firstOrFail();
+      transactionalUser.useTransaction(trx);
+      transactionalUser.avatar.attach(draft);
+      await transactionalUser.save();
+
+      assert.deepEqual(scheduled, []);
+    });
+
+    assert.deepEqual(scheduled, [
+      {
+        type: "generate-variants",
+        attachmentId: draft.id,
+        variantKeys: ["manager"],
+      },
+    ]);
   });
 
   test("defers file deletion until an owner transaction commits", async ({ assert }) => {

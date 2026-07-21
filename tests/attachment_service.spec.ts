@@ -193,6 +193,24 @@ test('schedules variant generation without requiring a database or Lucid', async
   ])
 })
 
+test('resolves configured variant keys from manager, decorator, then defaults', async ({ assert }) => {
+  const service = new AttachmentService({
+    storage: new FakeStorage(),
+    queue: new FakeQueue(),
+    defaultDisk: 'public',
+    defaults: { variants: ['config'] },
+  })
+  const managerDraft = service.createDraft(
+    { body: new Uint8Array(), originalName: 'avatar.jpg' },
+    { variants: ['manager'] }
+  )
+  const plainDraft = service.createDraft({ body: new Uint8Array(), originalName: 'avatar.jpg' })
+
+  assert.deepEqual(service.getVariantKeys(managerDraft, { variants: ['decorator'] }), ['manager'])
+  assert.deepEqual(service.getVariantKeys(plainDraft, { variants: ['decorator'] }), ['decorator'])
+  assert.deepEqual(service.getVariantKeys(plainDraft), ['config'])
+})
+
 test('reads an attachment from the configured storage', async ({ assert }) => {
   const storage = new FakeStorage()
   const queue = new FakeQueue()

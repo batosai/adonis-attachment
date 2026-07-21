@@ -109,7 +109,19 @@ const variants = new LucidVariantGenerationService({
 
 ## Trigger generation
 
-From a Lucid relation, after the original is saved:
+With a Lucid relation, list variant keys in the decorator or in `defaults` to enqueue them
+automatically after the blob and link are committed. Per-call manager options take priority
+over decorator and configuration options:
+
+```ts
+@attachmentRelation({ variants: ['thumbnail'] })
+declare avatar: AttachmentRelation
+
+user.avatar.set(draft)
+await user.save() // enqueues "thumbnail" after a successful commit
+```
+
+You can also trigger selected variants manually after the original is saved:
 
 ```ts
 user.avatar.set(draft)

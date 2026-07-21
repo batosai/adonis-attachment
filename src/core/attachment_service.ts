@@ -140,6 +140,14 @@ export class AttachmentService {
       ...(variantKeys ? { variantKeys } : {}),
     })
   }
+
+  /** Resolves automatic variant keys with manager options taking precedence. */
+  getVariantKeys(
+    draft: AttachmentDraft,
+    options?: AttachmentPersistenceOptions
+  ): readonly string[] | undefined {
+    return resolveAttachmentPersistenceOptions(this.#defaults, options, draft.options).variants
+  }
 }
 
 async function resolveFolder(

@@ -68,7 +68,9 @@ export default defineConfig({
 
 Available options: `disk`, `folder`, `rename`, `meta`, `preComputeUrl`, `variants`.
 `meta` activates the configured metadata extractors during `persist()`. `preComputeUrl`
-and automatic variant scheduling remain reserved for the media pipeline.
+remains reserved for the media pipeline. With Lucid relations, `variants` schedules the
+listed keys after the blob and its link are committed. It is resolved with the same
+priority as the other persistence options.
 
 ## Media metadata
 

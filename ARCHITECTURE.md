@@ -41,6 +41,8 @@ Les extracteurs de metadata implementent `MediaMetadataExtractor`. Ils sont inde
 
 Le sous-chemin optionnel `@jrmc/adonis-attachment/media/sharp` fournit un extracteur de metadata d'image et une fabrique de `VariantConverter`. Il recoit la factory Sharp de l'application, ce qui conserve Sharp hors du graphe de dependances du noyau.
 
+Le sous-chemin `@jrmc/adonis-attachment/media/binaries` expose un `CommandRunner` injectable, sa mise en oeuvre Node sans shell et des adaptateurs `ffprobe`, `ffmpeg`, Poppler et LibreOffice. Chaque conversion utilise un repertoire temporaire isole puis le supprime, ce qui laisse les executables et leur emplacement sous le controle de l'application.
+
 `AttachmentJobProcessor` peut aussi recevoir une factory de generateur asynchrone. Elle est resolue et memorisee au premier job, ce qui permet de construire un generateur dependant du service `jrmc.attachment` sans cycle au boot.
 
 ## Modele Lucid cible

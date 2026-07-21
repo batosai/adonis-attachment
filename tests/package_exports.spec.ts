@@ -19,6 +19,7 @@ test('imports every published package entry point', async ({ assert }) => {
     '@jrmc/adonis-attachment/adapters/adonis-drive',
     '@jrmc/adonis-attachment/adapters/local-file',
     '@jrmc/adonis-attachment/media/sharp',
+    '@jrmc/adonis-attachment/media/binaries',
     '@jrmc/adonis-attachment/lucid',
     '@jrmc/adonis-attachment/attachment_provider',
     '@jrmc/adonis-attachment/configure',

@@ -67,6 +67,10 @@
       "types": "./build/src/media/sharp.d.ts",
       "default": "./build/src/media/sharp.js"
     },
+    "./media/binaries": {
+      "types": "./build/src/media/binaries.d.ts",
+      "default": "./build/src/media/binaries.js"
+    },
     "./lucid": {
       "types": "./build/src/integrations/lucid/index.d.ts",
       "default": "./build/src/integrations/lucid/index.js"

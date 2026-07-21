@@ -103,6 +103,10 @@ import { createSharpMetadataExtractor } from '@jrmc/adonis-attachment/media/shar
 media: { metadata: [createSharpMetadataExtractor(sharp)] }
 ```
 
+For audio and video, `createFfprobeMetadataExtractor()` from
+`@jrmc/adonis-attachment/media/binaries` reads duration, codecs and video dimensions. It
+requires the `ffprobe` executable to be available to the application process.
+
 ## Source limits
 
 `sources` configures the [attachment manager](/guide/creating-attachments). The package

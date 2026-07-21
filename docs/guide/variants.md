@@ -50,6 +50,36 @@ const thumbnail: VariantConverter = {
 }
 ```
 
+### External binaries
+
+The optional binary adapters run executables through an injectable `CommandRunner`, without
+using a shell. They create a private temporary directory for each conversion and remove it
+afterwards. The default runner executes the command available on `PATH`.
+
+```ts
+import {
+  createDocumentThumbnailConverter,
+  createFfmpegThumbnailConverter,
+  createPdfThumbnailConverter,
+} from '@jrmc/adonis-attachment/media/binaries'
+
+const videoThumbnail = createFfmpegThumbnailConverter({
+  key: 'thumbnail',
+  time: 1,
+  width: 320,
+  format: 'webp',
+}) // requires ffmpeg
+
+const pdfThumbnail = createPdfThumbnailConverter({ key: 'thumbnail', width: 320 })
+// requires pdftoppm (Poppler)
+
+const documentThumbnail = createDocumentThumbnailConverter({ key: 'thumbnail', width: 320 })
+// requires LibreOffice and pdftoppm
+```
+
+Pass `{ runner, command }` (and `{ officeCommand }` for office documents) to select custom
+binary locations or to integrate your own process runner.
+
 ## Generate them
 
 `VariantGenerationService` reads the original and writes each generated file. On its own,

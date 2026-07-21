@@ -1,220 +1,225 @@
-# Lucid
+# Storing with Lucid
 
-Lucid is optional. When enabled, file blobs are stored in `attachments`, while polymorphic owner links are stored in `attachment_links`. A variant is a blob whose `parent_id` references its original blob.
+The Lucid integration is optional, but it's the most convenient way to tie files to your
+records. It offers **two modes** - pick per field:
 
-## JSON single attachment column
+| Mode | Storage | Best for |
+| --- | --- | --- |
+| **Relation** (`@attachmentRelation` / `@attachmentsRelation`) | `attachments` + `attachment_links` tables | Ownership, collections, variants, blob reuse |
+| **JSON column** (`@attachment`) | one JSON column on your model | A single file, simplest possible setup |
 
-For a single attachment, an application may keep a JSON column on its Lucid model. The `@attachment()` decorator preserves the v5 assignment workflow while tracking file cleanup.
+## Set up the tables (relation mode)
 
-Declare the column as JSON in its migration:
-
-```ts
-table.json("avatar").nullable();
+```sh
+node ace make:attachments-table
+node ace migration:run
 ```
 
+This creates two tables (see [Core concepts](/guide/concepts#the-blob-vs-link-split-lucid)):
+
+- **`attachments`** - the blobs (file data). Holds originals *and* variants
+  (`parent_id` / `variant_key`).
+- **`attachment_links`** - the polymorphic links (`attachable_type`, `attachable_id`,
+  `field`, `owner_key`, `position`, `attachment_id`).
+
+## Single attachment - `@attachmentRelation`
+
 ```ts
-import {
-  attachment,
-  attachmentManager,
-  type Attachment,
-} from "@jrmc/adonis-attachment";
-import { BaseModel, column } from "@adonisjs/lucid/orm";
+import { BaseModel, column } from '@adonisjs/lucid/orm'
+import { attachmentRelation, type AttachmentRelation } from '@jrmc/adonis-attachment'
 
 export default class User extends BaseModel {
   @column({ isPrimary: true })
-  declare id: string;
-
-  @attachment({
-    folder: ({ model }) => `users/${model?.id}`,
-  })
-  declare avatar: Attachment | null;
-}
-
-const attachment = await attachmentManager.createFromBase64(base64, {
-  originalName: "avatar.png",
-  mimeType: "image/png",
-});
-
-user.avatar = attachment;
-await user.save();
-```
-
-The decorator persists a draft automatically during `save()`, after resolving its own options and the model context. Do not call `persist()` manually for this workflow. It serializes the persisted value as JSON. When a save fails, it removes a newly created attachment; when a replacement succeeds, it removes the former file. Deleting the model also removes its attachment. This mode supports one attachment per column. Use the polymorphic table for collections, persisted variants, queues, and the built-in read route.
-
-## Polymorphic table relations
-
-`@attachmentRelation()` exposes one attachment through a model property backed by the `attachment_links` table. Unlike `@attachment()`, the property is not a JSON column. Its mutations are staged on the model, then persisted after `save()` succeeds; this also allows an attachment to be prepared before the model is created.
-
-```ts
-import {
-  attachmentManager,
-  attachmentRelation,
-  type AttachmentRelation,
-} from "@jrmc/adonis-attachment";
-import { BaseModel, column } from "@adonisjs/lucid/orm";
-
-export default class User extends BaseModel {
-  static table = "users";
-
-  @column({ isPrimary: true })
-  declare id: string;
+  declare id: string
 
   @attachmentRelation({
     folder: ({ model }) => `users/${model?.id}/avatar`,
     rename: false,
   })
-  declare avatar: AttachmentRelation;
+  declare avatar: AttachmentRelation
 }
-
-const draft = await attachmentManager.createFromBase64(base64, {
-  originalName: "avatar.png",
-  mimeType: "image/png",
-});
-
-user.avatar.attach(draft);
-await user.save();
 ```
 
-`attach`, `attachExisting`, `set`, `replace`, and `detach` stage one singular mutation. `save()` flushes it after the model is saved. Call `await user.avatar.persist()` to flush a staged relation immediately; this requires an already persisted owner.
+`avatar` is a relation accessor, not a column. Its **mutations are staged** and applied
+when you `save()` the model (or when you call `await avatar.persist()`). Reads stay async.
 
-The singular relation provides these commands:
-
-- `get()` returns the persisted `AttachmentLinkModel` or `null`. Its `attachment` property is the blob and `toAttachment()` returns the core file value.
-- `attach(draft)` stages the first attachment and throws on `save()` when one is already attached. This prevents an accidental replacement.
-- `attachExisting(blobId)` stages a link to an already persisted blob without copying its file.
-- `set(draft)` and `replace(draft)` stage an attachment when empty or a replacement for the current one. The previous file is removed only after the replacement row exists.
-- `detach()` stages removal of the original, its variants, and their files.
-- `persist()` flushes the staged singular mutation and returns the resulting `AttachmentLinkModel`, or `null` after a detach.
-- `variants()` returns persisted variant rows. `regenerateVariants(keys?)` enqueues generation and returns `false` when no original is attached.
-
-The polymorphic type defaults to the Lucid model `static table`. Set `type` in the decorator when an application needs a stable custom type instead:
+| Method | Does |
+| --- | --- |
+| `get()` | Reads the linked `AttachmentLinkModel` (blob preloaded) or `null`. Async. |
+| `attach(draft)` | Stages the first attachment. Throws on flush if one already exists. |
+| `set(draft)` / `replace(draft)` | Stages an attachment, or a replacement of the current one. |
+| `attachExisting(id)` | Stages a link to an **existing blob** (reuse, no new file). |
+| `detach()` | Stages removal of the original, its variants, and their files. |
+| `persist()` | Flushes the staged mutation now and returns the link (or `null` after detach). Async. |
+| `variants()` | Reads the persisted variants of the current original. Async. |
+| `regenerateVariants(keys?)` | Enqueues variant generation. Returns `false` if nothing is attached. |
 
 ```ts
-@attachmentRelation({ type: "user" })
-declare avatar: AttachmentRelation;
+const draft = await attachmentManager.createFromFile(request.file('avatar')!)
+
+user.avatar.set(draft) // stage the change
+await user.save()      // flush: file written, blob + link rows created
+
+// Read it back, then stage a removal
+const link = await user.avatar.get()
+user.avatar.detach()
+await user.save()
 ```
 
-### Ordered collections
+::: info Staged, then flushed
+Relation mutations are staged on the model and applied only after `save()` succeeds - so
+you can even stage an attachment before the record exists, and it is written once the
+insert completes. To flush without a full `save()`, call `await user.avatar.persist()`;
+that path does require an already persisted owner.
+:::
 
-`@attachmentsRelation()` exposes several attachments for one model property. The generated `attachment_links` table stores each item with a nullable `owner_key` and a `position`; the singular relation uses `owner_key`, while collection rows leave it empty.
+### Custom polymorphic type
+
+The link's `attachable_type` defaults to the model's `static table`. Pin a stable value if
+you rename tables:
 
 ```ts
-import {
-  attachmentsRelation,
-  type AttachmentCollectionRelation,
-} from "@jrmc/adonis-attachment";
+@attachmentRelation({ type: 'user' })
+declare avatar: AttachmentRelation
+```
+
+## Many attachments - `@attachmentsRelation`
+
+An **ordered** collection. Each item is a link row with a `position` and a `null`
+`owner_key`.
+
+```ts
+import { attachmentsRelation, type AttachmentCollectionRelation } from '@jrmc/adonis-attachment'
 
 export default class Post extends BaseModel {
-  static table = "posts";
-
   @column({ isPrimary: true })
-  declare id: string;
+  declare id: string
 
   @attachmentsRelation({
     folder: ({ model }) => `posts/${model?.id}/gallery`,
-    rename: false,
   })
-  declare gallery: AttachmentCollectionRelation;
-}
-
-const first = await attachmentManager.createFromFile(request.file("image"), {
-  originalName: "first.jpg",
-});
-const second = await attachmentManager.createFromFile(request.file("image"), {
-  originalName: "second.jpg",
-});
-
-post.gallery.add(first);
-post.gallery.add(second, 0);
-await post.save();
-
-const [second] = await post.gallery.all();
-if (second) {
-  post.gallery.move(second.id, 0);
-  await post.save();
+  declare gallery: AttachmentCollectionRelation
 }
 ```
 
-Collection mutations are also staged until `save()` or an explicit `await post.gallery.persist()`. Collection commands are `all()`, `add(draft, position?)`, `addExisting(blobId, position?)`, `remove(id)`, `clear()`, `replaceAll(drafts)`, `move(id, position)`, and `persist()`. `add` appends by default; positions are zero-based and normalized after a remove or move. The `id` handled by `move` and `remove` is the persisted link id returned by `all()`, while `attachmentId` identifies the reusable blob.
+Collection mutations are staged the same way, then applied on `save()` (or
+`await gallery.persist()`).
 
-Both relation decorators receive the same persistence options as `@attachment()`. Per setting, the priority is: options passed to `attachmentManager.createFrom*`, then the relation decorator, then `defaults` in `config/attachment.ts`. Relation folder and rename callbacks receive `{ model, field, originalName }` at persistence time.
-
-When the model uses a Lucid transaction, staged relation mutations use the same transaction for attachment rows. Files newly written by `attach`, `set`, `replace`, or `add` are removed on rollback. File removals caused by `detach`, `replace`, `remove`, `clear`, or `replaceAll` are deferred until commit, so a rollback retains the previous files.
-
-Create the migration:
-
-```sh
-node ace make:attachments-table
-```
-
-Set `integrations.lucid.tableName` in `config/attachment.ts` to customize the generated file and the runtime models. The link table is derived from the singular base table name: `media_attachments` becomes `media_attachment_links`. `--table=media_attachments` overrides this setting for one generated migration; `--folder=database/migrations` changes its destination.
-
-The generated migration delegates the table definitions to `AttachmentSchemaService`. This keeps application migrations stable when the package evolves the attachment schema:
+| Method | Does |
+| --- | --- |
+| `all()` | Reads items, ordered by position. Async. |
+| `add(draft, position?)` | Stages an append (or insert at `position`). |
+| `addExisting(id, position?)` | Stages adding an existing blob (reuse). |
+| `remove(id)` | Stages removal of one item; positions renormalize on flush. |
+| `move(id, position)` | Stages a reorder. |
+| `clear()` | Stages removal of all items. |
+| `replaceAll(drafts)` | Stages a full swap of the collection. |
+| `persist()` | Flushes staged operations now (requires a persisted owner). Async. |
 
 ```ts
-import { BaseSchema } from "@adonisjs/lucid/schema";
-import { AttachmentSchemaService } from "@jrmc/adonis-attachment/lucid";
+const a = await attachmentManager.createFromFile(request.file('image')!)
+const b = await attachmentManager.createFromFile(request.file('image')!)
 
-export default class CreateAttachments extends BaseSchema {
-  async up() {
-    await new AttachmentSchemaService(this.db.getWriteClient()).createTables();
-  }
+post.gallery.add(a)
+post.gallery.add(b, 0) // insert first
+await post.save()      // flush both
 
-  async down() {
-    await new AttachmentSchemaService(this.db.getWriteClient()).dropTables();
-  }
+// move takes the persisted link id from all()
+const [first] = await post.gallery.all()
+post.gallery.move(first.id, 0)
+await post.save()
+```
+
+The `id` used by `move` and `remove` is the persisted **link id** returned by `all()`,
+while `attachmentId` identifies the reusable blob.
+
+## Reusing a blob across records
+
+Because links point to blobs, you can attach the **same file** to several records without
+copying it - pass an existing blob id:
+
+```ts
+const link = await user.avatar.get()
+
+otherUser.avatar.attachExisting(link!.attachmentId)
+await otherUser.save()
+
+post.gallery.addExisting(link!.attachmentId)
+await post.save()
+```
+
+The blob's file is deleted only when its **last** link is removed. There is no automatic
+content-based deduplication - reuse is always explicit.
+
+## Transactions
+
+When your model runs inside a Lucid transaction, the staged mutations flushed on `save()`
+**join it** automatically:
+
+```ts
+await db.transaction(async (trx) => {
+  user.useTransaction(trx)
+  user.avatar.set(draft)
+  await user.save() // staged mutation flushes on the transaction's client
+  // if the transaction rolls back, the newly written file is removed too
+})
+```
+
+- Database rows are written on the transaction's client.
+- **New files** written by `attach`/`set`/`add` are removed on **rollback**.
+- **File deletions** from `detach`/`replace`/`remove`/`clear` are deferred until
+  **commit** - a rollback keeps the previous files intact.
+
+Deleting the owning record triggers an `after('delete')` hook that removes all of its
+links (and any blobs that become unreferenced).
+
+## Single JSON column - `@attachment`
+
+For the simplest case - one file, stored inline as JSON on your model's own table - use the
+column decorator. No `attachments`/`attachment_links` tables involved.
+
+```ts
+// migration: table.json('avatar').nullable()
+
+import { attachment, type Attachment } from '@jrmc/adonis-attachment'
+
+export default class User extends BaseModel {
+  @column({ isPrimary: true })
+  declare id: string
+
+  @attachment({ folder: ({ model }) => `users/${model?.id}` })
+  declare avatar: Attachment | null
 }
 ```
 
-`AttachmentModel` maps the default blob table and can be extended by the application. It keeps application-assigned UUIDs, serializes `metadata`, and automatically maintains `created_at` and `updated_at`. `AttachmentLinkModel` maps the polymorphic owner table. It enforces one singular link per `{ type, id, field }` owner and carries collection positions. `LucidAttachmentStore` creates blobs, links, and variants; `LucidAttachmentRepository` resolves a blob by id for queued workers and the read route. `AttachmentSchemaService` owns the versioned definitions of both tables.
-
-Deleting a model with relation decorators removes all of its links automatically. A blob, its variants, and their files are purged only after its last link is removed, so the model supports a future shared-blob workflow safely.
-
-Read an owner field together with its generated variants through the same store:
+Assign and save - the decorator persists the file during `save()`:
 
 ```ts
-const attachment = await new LucidAttachmentStore().findByOwner({
-  type: "users",
+user.avatar = await attachmentManager.createFromFile(request.file('avatar')!)
+await user.save()
+```
+
+It removes a new file if the save fails, removes the old file when a value is replaced, and
+removes the file when the row is deleted. It stores **one file per column** - for
+collections, variants, or the built-in read route, use relation mode.
+
+## Reading with variants
+
+Load an owner field together with its variants through the store:
+
+```ts
+import { LucidAttachmentStore } from '@jrmc/adonis-attachment/lucid'
+
+const found = await new LucidAttachmentStore().findByOwner({
+  type: 'users',
   id: user.id,
-  field: "avatar",
-});
+  field: 'avatar',
+})
 
-if (attachment) {
-  attachment.original.toAttachment();
-  attachment.variants.map((variant) => variant.toAttachment());
+if (found) {
+  found.original.toAttachment()
+  found.variants.map((v) => v.toAttachment())
 }
 ```
 
-## Attachment lifecycle
-
-`LucidAttachmentLifecycleService` coordinates storage and persistence. It accepts either a source input or an `AttachmentDraft`, writes the file first, then creates its blob and polymorphic link. If a database operation fails, it removes the new file as compensation.
-
-```ts
-import {
-  LucidAttachmentLifecycleService,
-  LucidAttachmentStore,
-} from "@jrmc/adonis-attachment/lucid";
-import { attachmentManager } from "@jrmc/adonis-attachment";
-import attachmentService from "#services/attachment_service";
-
-const lifecycle = new LucidAttachmentLifecycleService(
-  attachmentService,
-  new LucidAttachmentStore(),
-);
-
-const draft = await attachmentManager.createFromBuffer(fileBytes, {
-  originalName: "profile.jpg",
-  folder: `users/${user.id}`,
-});
-
-const avatar = await lifecycle.attach(
-  { type: "users", id: user.id, field: "avatar" },
-  draft,
-);
-
-await attachmentService.scheduleVariantGeneration(avatar.toAttachment(), [
-  "thumbnail",
-]);
-```
-
-Schedule variants after `attach` or `replace` returns, so a worker can resolve the persisted original. `replace` keeps the previous row until the replacement is persisted, transferring its internal owner key just before insertion. It restores that key when persistence fails. `detach` removes the original, its variants, and their files. External storage cannot participate in a SQL transaction, so applications should monitor failed file cleanup and retry it when necessary.
+**Next:** [Serving files](/guide/serving-files) · [Image variants](/guide/variants).

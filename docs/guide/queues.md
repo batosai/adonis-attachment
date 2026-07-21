@@ -1,14 +1,44 @@
-# Queues
+# Background processing
 
-`AttachmentService.scheduleVariantGeneration` emits a serializable `generate-variants` job. `MemoryAttachmentQueue` is used when no queue is configured.
+Generating variants can be slow, so the package runs it as a **job** off the request path.
+`AttachmentService.scheduleVariantGeneration` emits a serializable `generate-variants` job;
+a worker later resolves the original and runs your converters.
 
-For an external queue, implement `AttachmentQueue` and dispatch the payload to the chosen worker. The worker calls `AttachmentJobProcessor.process(job)` after resolving its repository and variant generator.
+You choose how that job runs. Start with the in-memory queue and graduate to a real worker
+when you need to.
 
-This keeps the package independent from worker deployment while allowing an Adonis queue job to delegate its `execute` method to the processor.
+## In-memory queue (default)
 
-`AttachmentJobProcessor` also accepts an asynchronous variant-generator factory. This resolves the generator on the first job and avoids a circular dependency when the generator itself needs `jrmc.attachment` from the Adonis container:
+If you configure nothing, `MemoryAttachmentQueue` runs jobs **in the same process**. Give
+it a `processor` and it will handle every job inline - great for development, tests, and
+simple deployments.
 
 ```ts
+import { defineConfig, LocalFileStorage } from '@jrmc/adonis-attachment'
+
+export default defineConfig({
+  storage: LocalFileStorage.fromApp,
+  processor: attachmentProcessor, // an AttachmentJobProcessor
+})
+```
+
+### Building the processor
+
+`AttachmentJobProcessor` needs a repository (to load the original) and a variant generator.
+Because the generator often needs `jrmc.attachment` from the container, you can pass it as
+an **async factory** - it's resolved lazily on the first job, avoiding a boot-time cycle:
+
+```ts
+import {
+  AttachmentJobProcessor,
+  VariantGenerationService,
+} from '@jrmc/adonis-attachment'
+import {
+  LucidAttachmentRepository,
+  LucidAttachmentStore,
+  LucidVariantGenerationService,
+} from '@jrmc/adonis-attachment/lucid'
+
 const processor = new AttachmentJobProcessor({
   attachments: new LucidAttachmentRepository(),
   async variants() {
@@ -23,32 +53,25 @@ const processor = new AttachmentJobProcessor({
 })
 ```
 
-## Memory queue
+## A real worker with `@adonisjs/queue`
 
-Pass `processor` to `defineConfig` to execute jobs in-process. This is the default queue implementation and is suitable for simple deployments or tests.
+For production, dispatch jobs to `@adonisjs/queue`. `AdonisAttachmentQueue` adapts your job
+class to the package's queue interface:
 
 ```ts
-import { defineConfig, LocalFileStorage } from '@jrmc/adonis-attachment'
+import { AdonisAttachmentQueue } from '@jrmc/adonis-attachment'
+import GenerateAttachmentVariants from '#jobs/generate_attachment_variants'
 
 export default defineConfig({
   storage: LocalFileStorage.fromApp,
-  processor: attachmentProcessor,
+  queue: new AdonisAttachmentQueue({
+    job: GenerateAttachmentVariants,
+    queue: 'attachments',
+  }),
 })
 ```
 
-`AdonisAttachmentQueue` adapts an application job class to `AttachmentQueue`:
-
-```ts
-import GenerateAttachmentVariants from '#jobs/generate_attachment_variants'
-import { AdonisAttachmentQueue } from '@jrmc/adonis-attachment'
-
-const queue = new AdonisAttachmentQueue({
-  job: GenerateAttachmentVariants,
-  queue: 'attachments',
-})
-```
-
-The application job owns dependency injection and delegates its payload to the processor:
+Your job owns dependency injection and simply forwards its payload to the processor:
 
 ```ts
 import { Job } from '@adonisjs/queue'
@@ -61,3 +84,19 @@ export default class GenerateAttachmentVariants extends Job<AttachmentJob> {
   }
 }
 ```
+
+This keeps the package independent of how and where your workers are deployed.
+
+## The flow at a glance
+
+```mermaid
+graph LR
+  R["relation.regenerateVariants()"] --> S["scheduleVariantGeneration()"]
+  S --> Q["Queue<br/>(memory or @adonisjs/queue)"]
+  Q --> P["AttachmentJobProcessor.process()"]
+  P --> REPO["repository.findById(original)"]
+  P --> GEN["variant generator, converters"]
+  GEN --> ST["store variant files + rows"]
+```
+
+**Next:** [Storing with Lucid](/guide/lucid).

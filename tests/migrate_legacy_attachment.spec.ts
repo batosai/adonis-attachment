@@ -10,7 +10,7 @@ import { test } from "@japa/runner";
 import {
   migrateLegacyAttachment,
   migrateLegacyAttachmentColumn,
-} from "../index.js";
+} from "../src/integrations/lucid/index.js";
 import { createAttachmentOwnerKey } from "../src/integrations/lucid/relations/attachment_owner.js";
 
 test.group("migrateLegacyAttachment", () => {

@@ -33,7 +33,7 @@ node ace migration:run
 ```ts
 // app/models/user.ts
 import { BaseModel, column } from '@adonisjs/lucid/orm'
-import { attachmentRelation, type AttachmentRelation } from '@jrmc/adonis-attachment'
+import { attachmentRelation, type AttachmentRelation } from '@jrmc/adonis-attachment/lucid'
 
 export default class User extends BaseModel {
   @column({ isPrimary: true })

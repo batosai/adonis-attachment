@@ -5,6 +5,9 @@
  * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
  */
 
+import { readFile } from 'node:fs/promises'
+import { join } from 'node:path'
+
 import { test } from '@japa/runner'
 
 test('imports every published package entry point', async ({ assert }) => {
@@ -27,10 +30,15 @@ test('imports every published package entry point', async ({ assert }) => {
   assert.lengthOf(modules, entryPoints.length)
 })
 
-test('exports the Ace configure hook from the package root', async ({ assert }) => {
+test('keeps Lucid exports out of the package root', async ({ assert }) => {
   const packageExports = await import('@jrmc/adonis-attachment')
+  const rootSource = await readFile(join(process.cwd(), 'build/index.js'), 'utf8')
+  const lucidExports = await import('@jrmc/adonis-attachment/lucid')
 
   assert.isFunction(packageExports.configure)
   assert.property(packageExports, 'attachmentManager')
-  assert.isFunction(packageExports.attachment)
+  assert.notProperty(packageExports, 'attachment')
+  assert.notInclude(rootSource, 'integrations/lucid')
+  assert.isFunction(lucidExports.attachment)
+  assert.isFunction(lucidExports.attachmentRelation)
 })

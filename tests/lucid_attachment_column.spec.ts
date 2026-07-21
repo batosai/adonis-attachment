@@ -10,7 +10,7 @@ import { BaseModel, column } from '@adonisjs/lucid/orm'
 import { setApp } from '@adonisjs/core/services/app'
 import { test } from '@japa/runner'
 
-import { attachment } from '../index.js'
+import { attachment } from '../src/integrations/lucid/index.js'
 import type { Attachment } from '../src/core/attachment.js'
 import { AttachmentService } from '../src/core/attachment_service.js'
 import { createLucidTestDatabase } from './helpers/lucid_test_database.js'

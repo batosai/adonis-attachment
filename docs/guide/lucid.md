@@ -26,7 +26,7 @@ This creates two tables (see [Core concepts](/guide/concepts#the-blob-vs-link-sp
 
 ```ts
 import { BaseModel, column } from '@adonisjs/lucid/orm'
-import { attachmentRelation, type AttachmentRelation } from '@jrmc/adonis-attachment'
+import { attachmentRelation, type AttachmentRelation } from '@jrmc/adonis-attachment/lucid'
 
 export default class User extends BaseModel {
   @column({ isPrimary: true })
@@ -89,7 +89,7 @@ An **ordered** collection. Each item is a link row with a `position` and a `null
 `owner_key`.
 
 ```ts
-import { attachmentsRelation, type AttachmentCollectionRelation } from '@jrmc/adonis-attachment'
+import { attachmentsRelation, type AttachmentCollectionRelation } from '@jrmc/adonis-attachment/lucid'
 
 export default class Post extends BaseModel {
   @column({ isPrimary: true })
@@ -181,7 +181,7 @@ column decorator. No `attachments`/`attachment_links` tables involved.
 ```ts
 // migration: table.json('avatar').nullable()
 
-import { attachment, type Attachment } from '@jrmc/adonis-attachment'
+import { attachment, type Attachment } from '@jrmc/adonis-attachment/lucid'
 
 export default class User extends BaseModel {
   @column({ isPrimary: true })

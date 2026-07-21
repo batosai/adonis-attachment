@@ -15,7 +15,7 @@ import {
   attachmentsRelation,
   type AttachmentCollectionRelation,
   type AttachmentRelation,
-} from "../index.js";
+} from "../src/integrations/lucid/index.js";
 import { AttachmentService } from "../src/core/attachment_service.js";
 import { AttachmentModel } from "../src/integrations/lucid/models/attachment_model.js";
 import { LucidAttachmentStore } from "../src/integrations/lucid/persistence/lucid_attachment_store.js";

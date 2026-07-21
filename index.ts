@@ -28,17 +28,6 @@ export {
   type LocalFileStorageOptions,
 } from "./src/adapters/local_file_storage.js";
 export {
-  attachment,
-  type LucidAttachmentOptions,
-} from "./src/integrations/lucid/column/attachment_column.js";
-export {
-  attachmentRelation,
-  attachmentsRelation,
-  AttachmentRelation,
-  AttachmentCollectionRelation,
-  type AttachmentRelationOptions,
-} from "./src/integrations/lucid/relations/attachment_relation.js";
-export {
   VariantGenerationService,
   UnknownVariantConverterError,
   type GeneratedVariant,
@@ -65,16 +54,3 @@ export {
   type AdonisAttachmentQueueOptions,
   type AdonisQueueDispatcher,
 } from "./src/queues/adonis_queue.js";
-export {
-  migrateLegacyAttachment,
-  migrateLegacyAttachmentColumn,
-  type AttachmentOwner,
-  type LegacyAttachment,
-  type LegacyVariant,
-  type MigrateLegacyAttachmentColumnOptions,
-  type MigratedAttachmentBlob,
-  type MigratedAttachmentLink,
-  type MigratedAttachmentRows,
-} from "./src/integrations/lucid/migrations/legacy/migrate_legacy_attachment.js";
-export { createAttachmentOwnerKey } from "./src/integrations/lucid/relations/attachment_owner.js";
-export { createAttachmentsTableStubState } from "./src/integrations/lucid/schema/attachments_table_stub.js";

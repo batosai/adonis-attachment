@@ -268,6 +268,26 @@ test.group("Lucid attachment relations", (group) => {
     assert.equal((await user.avatar.get())?.id, avatar?.id);
   });
 
+  test("keeps a staged relation available when the model save fails", async ({ assert }) => {
+    await createUser("existing-user");
+    const user = new RelationUser();
+    user.id = "retry-user";
+    user.name = "existing-user";
+    const draft = createDraft("retry.txt");
+
+    user.avatar.set(draft);
+    await assert.rejects(() => user.save());
+
+    assert.isFalse(draft.isPersisted);
+    assert.deepEqual(writes, []);
+
+    user.name = "retry-user";
+    await user.save();
+
+    assert.isTrue(draft.isPersisted);
+    assert.equal((await getAvatarOrFail(user)).attachmentId, draft.id);
+  });
+
   test("requires the Lucid owner to be persisted", async ({ assert }) => {
     const user = new RelationUser();
     user.id = "user-1";

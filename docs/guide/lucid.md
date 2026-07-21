@@ -70,7 +70,8 @@ await user.save()
 Relation mutations are staged on the model and applied only after `save()` succeeds - so
 you can even stage an attachment before the record exists, and it is written once the
 insert completes. To flush without a full `save()`, call `await user.avatar.persist()`;
-that path does require an already persisted owner.
+that path does require an already persisted owner. If `save()` fails, no file or relation
+row is written and the staged mutation remains available for a later retry.
 :::
 
 ### Custom polymorphic type

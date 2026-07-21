@@ -133,12 +133,14 @@ export class AttachmentService {
 
   scheduleVariantGeneration(
     attachment: Attachment,
-    variantKeys?: readonly AttachmentVariantKey[]
+    variantKeys?: readonly AttachmentVariantKey[],
+    meta?: boolean
   ): Promise<void> {
     return this.#queue.enqueue({
       type: 'generate-variants',
       attachmentId: attachment.id,
       ...(variantKeys ? { variantKeys } : {}),
+      ...(meta !== undefined ? { meta } : {}),
     })
   }
 
@@ -148,6 +150,18 @@ export class AttachmentService {
     options?: AttachmentPersistenceOptions
   ): readonly AttachmentVariantKey[] | undefined {
     return resolveAttachmentPersistenceOptions(this.#defaults, options, draft.options).variants
+  }
+
+  /** Resolves whether variants should run the configured metadata extractors. */
+  getVariantMetadataEnabled(
+    draft: AttachmentDraft | undefined,
+    options?: AttachmentPersistenceOptions
+  ): boolean | undefined {
+    return resolveAttachmentPersistenceOptions(
+      this.#defaults,
+      options,
+      draft?.options
+    ).meta
   }
 }
 

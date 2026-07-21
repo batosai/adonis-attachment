@@ -109,13 +109,15 @@ test.group('AdonisAttachmentQueue', () => {
       type: 'generate-variants',
       attachmentId: attachment.id,
       variantKeys: ['thumbnail'],
+      meta: true,
     })
 
     assert.deepEqual(payload, {
       type: 'generate-variants',
       attachmentId: attachment.id,
       variantKeys: ['thumbnail'],
+      meta: true,
     })
-    assert.deepEqual(generated, [{ attachment, variantKeys: ['thumbnail'] }])
+    assert.deepEqual(generated, [{ attachment, variantKeys: ['thumbnail'], meta: true }])
   })
 })

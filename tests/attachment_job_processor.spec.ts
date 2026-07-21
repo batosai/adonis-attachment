@@ -55,9 +55,10 @@ test.group('AttachmentJobProcessor', () => {
       type: 'generate-variants',
       attachmentId: 'attachment-id',
       variantKeys: ['thumbnail'],
+      meta: true,
     })
 
-    assert.deepEqual(variants.requests, [{ attachment, variantKeys: ['thumbnail'] }])
+    assert.deepEqual(variants.requests, [{ attachment, variantKeys: ['thumbnail'], meta: true }])
   })
 
   test('fails a job when its attachment no longer exists', async ({ assert }) => {

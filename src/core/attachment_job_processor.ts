@@ -12,6 +12,7 @@ import type { AttachmentRepository } from './attachment_repository.js'
 export type VariantGenerationRequest = {
   attachment: Attachment
   variantKeys?: readonly string[]
+  meta?: boolean
 }
 
 export interface VariantGenerator {
@@ -38,12 +39,16 @@ export class AttachmentJobProcessor {
   async process(job: AttachmentJob): Promise<void> {
     switch (job.type) {
       case 'generate-variants':
-        await this.#generateVariants(job.attachmentId, job.variantKeys)
+        await this.#generateVariants(job.attachmentId, job.variantKeys, job.meta)
         return
     }
   }
 
-  async #generateVariants(attachmentId: string, variantKeys?: readonly string[]): Promise<void> {
+  async #generateVariants(
+    attachmentId: string,
+    variantKeys?: readonly string[],
+    meta?: boolean
+  ): Promise<void> {
     const attachment = await this.#attachments.findById(attachmentId)
 
     if (!attachment) {
@@ -54,6 +59,7 @@ export class AttachmentJobProcessor {
     await variants.generate({
       attachment,
       ...(variantKeys ? { variantKeys } : {}),
+      ...(meta !== undefined ? { meta } : {}),
     })
   }
 

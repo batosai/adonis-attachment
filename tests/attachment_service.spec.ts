@@ -186,10 +186,10 @@ test('schedules variant generation without requiring a database or Lucid', async
   })
   const attachment = await service.create({ body: new Uint8Array(), originalName: 'report.pdf' })
 
-  await service.scheduleVariantGeneration(attachment, ['thumbnail'])
+  await service.scheduleVariantGeneration(attachment, ['thumbnail'], true)
 
   assert.deepEqual(queue.jobs, [
-    { type: 'generate-variants', attachmentId: 'attachment-id', variantKeys: ['thumbnail'] },
+    { type: 'generate-variants', attachmentId: 'attachment-id', variantKeys: ['thumbnail'], meta: true },
   ])
 })
 

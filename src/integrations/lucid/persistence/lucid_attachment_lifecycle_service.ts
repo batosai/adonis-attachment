@@ -19,7 +19,7 @@ import { AttachmentModel } from '../models/attachment_model.js'
 import { LucidAttachmentStore } from './lucid_attachment_store.js'
 
 export type AttachmentFileService = Pick<AttachmentService, 'create' | 'remove'> &
-  Partial<Pick<AttachmentService, 'createDraft' | 'getVariantKeys' | 'scheduleVariantGeneration'>>
+  Partial<Pick<AttachmentService, 'createDraft' | 'getVariantKeys' | 'getVariantMetadataEnabled' | 'scheduleVariantGeneration'>>
 export type LucidAttachmentPersistence = Pick<
   LucidAttachmentStore,
   | 'createOriginal'
@@ -374,7 +374,9 @@ export class LucidAttachmentLifecycleService {
       return
     }
 
-    await this.#afterCommit(owner, () => this.#attachments.scheduleVariantGeneration!(persisted.attachment, keys))
+    const meta = this.#attachments.getVariantMetadataEnabled?.(persisted.draft, options)
+
+    await this.#afterCommit(owner, () => this.#attachments.scheduleVariantGeneration!(persisted.attachment, keys, meta))
   }
 }
 

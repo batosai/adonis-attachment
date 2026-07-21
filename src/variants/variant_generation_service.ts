@@ -17,12 +17,12 @@ export type GeneratedVariant = {
 }
 
 export type VariantGenerationServiceOptions = {
-  attachments: Pick<AttachmentService, 'create' | 'read'>
+  attachments: Pick<AttachmentService, 'create' | 'read'> & Partial<Pick<AttachmentService, 'createDraft'>>
   converters: readonly VariantConverter[] | VariantConverterRegistry
 }
 
 export class VariantGenerationService implements VariantGenerator {
-  readonly #attachments: Pick<AttachmentService, 'create' | 'read'>
+  readonly #attachments: Pick<AttachmentService, 'create' | 'read'> & Partial<Pick<AttachmentService, 'createDraft'>>
   readonly #converters: Map<string, VariantConverter> | undefined
   readonly #registry: VariantConverterRegistry | undefined
 
@@ -65,7 +65,7 @@ export class VariantGenerationService implements VariantGenerator {
           disk: request.attachment.disk,
         }
 
-        return { key, attachment: await this.#attachments.create(input) }
+        return { key, attachment: await this.#persistVariant(input, request.meta) }
       })
     )
 
@@ -78,6 +78,14 @@ export class VariantGenerationService implements VariantGenerator {
 
   #getConverter(key: string): Promise<VariantConverter | undefined> {
     return this.#registry?.get(key) ?? Promise.resolve(this.#converters!.get(key))
+  }
+
+  #persistVariant(input: CreateAttachmentInput, meta: boolean | undefined): Promise<Attachment> {
+    if (meta && this.#attachments.createDraft) {
+      return this.#attachments.createDraft(input).persist({ options: { meta: true } })
+    }
+
+    return this.#attachments.create(input)
   }
 }
 

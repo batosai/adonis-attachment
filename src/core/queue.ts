@@ -9,6 +9,7 @@ export type GenerateVariantsJob = {
   type: 'generate-variants'
   attachmentId: string
   variantKeys?: readonly string[]
+  meta?: boolean
 }
 
 export type AttachmentJob = GenerateVariantsJob

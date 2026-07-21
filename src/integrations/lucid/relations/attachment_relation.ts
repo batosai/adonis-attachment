@@ -205,6 +205,7 @@ export class AttachmentRelation {
     await service.scheduleVariantGeneration(
       attachment.toAttachment(),
       variantKeys,
+      service.getVariantMetadataEnabled(undefined, this.#definition.options),
     );
     return true;
   }

@@ -7,7 +7,7 @@
 
 import { test } from '@japa/runner'
 
-import type { Attachment } from '../src/core/attachment.js'
+import type { Attachment, AttachmentPersistRequest } from '../src/core/attachment.js'
 import { UnknownVariantConverterError, VariantGenerationService } from '../index.js'
 
 const sourceAttachment: Attachment = {
@@ -86,6 +86,39 @@ test.group('VariantGenerationService', () => {
       () => service.generateAll({ attachment: sourceAttachment, variantKeys: ['thumbnail'] }),
       UnknownVariantConverterError
     )
+  })
+
+  test('persists generated variants through metadata-aware drafts when requested', async ({ assert }) => {
+    let requestedMeta: boolean | undefined
+    const service = new VariantGenerationService({
+      attachments: {
+        async read() {
+          return new Uint8Array([1])
+        },
+        async create() {
+          assert.fail('Metadata-aware variants must use a draft')
+          return sourceAttachment
+        },
+        createDraft() {
+          return {
+            async persist(request: AttachmentPersistRequest) {
+              requestedMeta = request?.options?.meta ?? undefined
+              return { ...sourceAttachment, id: 'thumbnail-id', name: 'thumbnail.png' }
+            },
+          } as never
+        },
+      },
+      converters: [{
+        key: 'thumbnail',
+        async convert() {
+          return { body: new Uint8Array([2]), fileName: 'thumbnail.png', mimeType: 'image/png' }
+        },
+      }],
+    })
+
+    await service.generateAll({ attachment: sourceAttachment, variantKeys: ['thumbnail'], meta: true })
+
+    assert.isTrue(requestedMeta)
   })
 
   test('ignores a converter that intentionally returns no variant', async ({ assert }) => {

@@ -75,6 +75,10 @@
       "types": "./build/src/converters/converter.d.ts",
       "default": "./build/src/converters/converter.js"
     },
+    "./converters/autodetect_converter": {
+      "types": "./build/src/converters/autodetect_converter.d.ts",
+      "default": "./build/src/converters/autodetect_converter.js"
+    },
     "./lucid": {
       "types": "./build/src/integrations/lucid/index.d.ts",
       "default": "./build/src/integrations/lucid/index.js"

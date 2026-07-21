@@ -9,14 +9,14 @@ transformation**.
 
 Declare converters in `config/attachment.ts`, using the same named, lazy-import format as
 v5. The configuration key is the variant key, and the remaining properties are passed to
-the converter instance as `options`.
+the converter instance as `options`. When `converter` is omitted, the package uses its
+`AutodetectConverter` by default.
 
 ```ts
 export default defineConfig({
   storage: LocalFileStorage.fromApp,
   converters: {
     thumbnail: {
-      converter: () => import('#converters/thumbnail_converter'),
       width: 320,
       format: 'webp',
     },
@@ -47,6 +47,17 @@ export default class ThumbnailConverter extends Converter {
   }
 }
 ```
+
+The default converter selects the implementation from the source MIME type:
+
+| Source | Default implementation | Requirement |
+| --- | --- | --- |
+| `image/*` | Sharp | `sharp` package |
+| `video/*` | ffmpeg frame thumbnail | `ffmpeg` executable |
+| `application/pdf` | Poppler thumbnail | `pdftoppm` executable |
+| Office documents | LibreOffice, then Poppler | `libreoffice` and `pdftoppm` executables |
+
+Set `converter: () => import('#converters/...')` to override this behavior for one key.
 
 ### Direct object converters
 

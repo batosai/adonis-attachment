@@ -21,6 +21,7 @@ test('imports every published package entry point', async ({ assert }) => {
     '@jrmc/adonis-attachment/media/sharp',
     '@jrmc/adonis-attachment/media/binaries',
     '@jrmc/adonis-attachment/converters/converter',
+    '@jrmc/adonis-attachment/converters/autodetect_converter',
     '@jrmc/adonis-attachment/lucid',
     '@jrmc/adonis-attachment/attachment_provider',
     '@jrmc/adonis-attachment/configure',

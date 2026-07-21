@@ -138,6 +138,7 @@ export type PdfThumbnailConverterOptions = {
   runner?: CommandRunner
   command?: string
   width?: number
+  page?: number
   folder?: string
 }
 
@@ -149,7 +150,7 @@ export function createPdfThumbnailConverter(options: PdfThumbnailConverterOption
   return createTemporaryThumbnailConverter(options.key, options.folder, async ({ attachment, body }, directory) => {
     const source = await writeSource(directory, attachment.name, body)
     const outputBase = join(directory, 'thumbnail')
-    const args = ['-f', '1', '-singlefile', '-png']
+    const args = ['-f', String(options.page ?? 1), '-singlefile', '-png']
 
     if (options.width !== undefined) {
       args.push('-scale-to-x', String(options.width), '-scale-to-y', '-1')
@@ -184,7 +185,7 @@ export function createDocumentThumbnailConverter(
       args: ['--headless', '--convert-to', 'pdf', '--outdir', directory, source],
     })
 
-    const args = ['-f', '1', '-singlefile', '-png']
+    const args = ['-f', String(options.page ?? 1), '-singlefile', '-png']
     if (options.width !== undefined) {
       args.push('-scale-to-x', String(options.width), '-scale-to-y', '-1')
     }

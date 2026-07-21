@@ -30,6 +30,10 @@ export {
   type ConverterOptions,
 } from '../converters/converter.js'
 export {
+  default as AutodetectConverter,
+  type AutodetectConverterOptions,
+} from '../converters/autodetect_converter.js'
+export {
   ConfiguredVariantConverterRegistry,
   InvalidConverterModuleError,
   type ConverterConfig,

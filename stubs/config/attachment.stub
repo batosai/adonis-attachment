@@ -11,7 +11,6 @@ export default defineConfig({
   storage: LocalFileStorage.fromApp,
   // converters: {
   //   thumbnail: {
-  //     converter: () => import('#converters/thumbnail_converter'),
   //     width: 320,
   //     format: 'webp',
   //   },

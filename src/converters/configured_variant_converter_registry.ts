@@ -6,6 +6,7 @@
  */
 
 import Converter, { type ConverterOptions } from './converter.js'
+import AutodetectConverter from './autodetect_converter.js'
 import type { VariantConverter } from '../variants/variant_converter.js'
 
 export type ConverterConstructor = new (options?: ConverterOptions) => Converter
@@ -13,7 +14,8 @@ export type ConverterModule = {
   default: ConverterConstructor | Converter | VariantConverter
 }
 export type ConverterConfig = ConverterOptions & {
-  converter: () => Promise<ConverterModule>
+  /** Defaults to AutodetectConverter when omitted. */
+  converter?: () => Promise<ConverterModule>
   /** Optional nested options are merged after the direct v5-style options. */
   options?: ConverterOptions
 }
@@ -54,6 +56,10 @@ export class ConfiguredVariantConverterRegistry implements VariantConverterRegis
   }
 
   async #load(key: string, config: ConverterConfig): Promise<VariantConverter> {
+    if (!config.converter) {
+      return asVariantConverter(key, new AutodetectConverter(resolveOptions(config)))
+    }
+
     const module = await config.converter()
     const implementation = module.default
 
@@ -69,12 +75,7 @@ export class ConfiguredVariantConverterRegistry implements VariantConverterRegis
       throw new InvalidConverterModuleError(key)
     }
 
-    return {
-      key,
-      convert(input) {
-        return converter.handle({ ...input, options: converter.options })
-      },
-    }
+    return asVariantConverter(key, converter)
   }
 }
 
@@ -87,6 +88,15 @@ export class InvalidConverterModuleError extends Error {
 
 function isVariantConverter(value: unknown): value is VariantConverter {
   return !!value && typeof value === 'object' && 'convert' in value && typeof value.convert === 'function'
+}
+
+function asVariantConverter(key: string, converter: Converter): VariantConverter {
+  return {
+    key,
+    convert(input) {
+      return converter.handle({ ...input, options: converter.options })
+    },
+  }
 }
 
 function resolveOptions(config: ConverterConfig): ConverterOptions {

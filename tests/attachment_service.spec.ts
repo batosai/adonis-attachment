@@ -9,6 +9,7 @@ import { test } from '@japa/runner'
 
 import {
   AttachmentService,
+  type Attachment,
   type AttachmentJob,
   type AttachmentStorage,
   type StorageLocation,
@@ -224,4 +225,30 @@ test('reads an attachment from the configured storage', async ({ assert }) => {
 
   assert.deepEqual(await service.read(attachment), new Uint8Array([1, 2, 3]))
   assert.deepEqual(storage.reads, [{ disk: 'public', path: 'attachment-id.pdf' }])
+})
+
+test('extracts deferred metadata through a configured persister', async ({ assert }) => {
+  const storage = new FakeStorage()
+  const queue = new FakeQueue()
+  const persisted: Array<{ attachment: Attachment; metadata: Record<string, unknown> }> = []
+  const service = new AttachmentService({
+    storage,
+    queue,
+    defaultDisk: 'public',
+    createId: () => 'attachment-id',
+    metadataMode: 'deferred',
+    metadataExtractors: [{ async extract() { return { dimension: { width: 320, height: 180 } } } }],
+    metadataPersister: {
+      async persistMetadata(attachment, metadata) {
+        persisted.push({ attachment, metadata })
+      },
+    },
+  })
+  const attachment = await service.createDraft({ body: new Uint8Array([1]), originalName: 'avatar.png' }, { meta: true }).persist()
+
+  assert.isUndefined(attachment.metadata)
+  await service.scheduleMetadataExtraction(attachment)
+  assert.deepEqual(queue.jobs, [{ type: 'extract-metadata', attachmentId: 'attachment-id', attachment }])
+  await service.extractAndPersistMetadata(attachment)
+  assert.deepEqual(persisted, [{ attachment, metadata: { dimension: { width: 320, height: 180 } } }])
 })

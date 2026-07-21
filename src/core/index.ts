@@ -23,7 +23,13 @@ export {
   type AttachmentRename,
   type ResolvedAttachmentPersistenceOptions,
 } from './attachment_options.js'
-export { AttachmentService, type AttachmentServiceOptions } from './attachment_service.js'
+export {
+  AttachmentService,
+  DeferredMetadataNotConfiguredError,
+  type AttachmentMetadataMode,
+  type AttachmentServiceOptions,
+} from './attachment_service.js'
+export { type AttachmentMetadataPersister } from './attachment_metadata_persister.js'
 export {
   default as Converter,
   type ConverterAttributes,
@@ -51,6 +57,8 @@ export {
 export {
   AttachmentJobProcessor,
   AttachmentNotFoundError,
+  DeferredMetadataProcessorNotConfiguredError,
+  type DeferredAttachmentMetadataProcessor,
   type AttachmentJobProcessorOptions,
   type VariantGenerationRequest,
   type VariantGenerator,

@@ -24,22 +24,35 @@ export type VariantGeneratorFactory = () => VariantGenerator | Promise<VariantGe
 export type AttachmentJobProcessorOptions = {
   attachments: AttachmentRepository
   variants: VariantGenerator | VariantGeneratorFactory
+  metadata?: DeferredAttachmentMetadataProcessor
+}
+
+export type DeferredAttachmentMetadataProcessor = {
+  extractAndPersistMetadata(attachment: Attachment): Promise<void>
 }
 
 export class AttachmentJobProcessor {
   readonly #attachments: AttachmentRepository
   readonly #variants: VariantGenerator | VariantGeneratorFactory
+  readonly #metadata: DeferredAttachmentMetadataProcessor | undefined
   #resolvedVariants: Promise<VariantGenerator> | undefined
 
   constructor(options: AttachmentJobProcessorOptions) {
     this.#attachments = options.attachments
     this.#variants = options.variants
+    this.#metadata = options.metadata
   }
 
   async process(job: AttachmentJob): Promise<void> {
     switch (job.type) {
       case 'generate-variants':
         await this.#generateVariants(job.attachmentId, job.variantKeys, job.meta)
+        return
+      case 'extract-metadata':
+        if (!this.#metadata) {
+          throw new DeferredMetadataProcessorNotConfiguredError()
+        }
+        await this.#metadata.extractAndPersistMetadata(job.attachment)
         return
     }
   }
@@ -77,5 +90,12 @@ export class AttachmentNotFoundError extends Error {
   constructor(attachmentId: string) {
     super(`Attachment "${attachmentId}" was not found`)
     this.name = 'AttachmentNotFoundError'
+  }
+}
+
+export class DeferredMetadataProcessorNotConfiguredError extends Error {
+  constructor() {
+    super('Attachment metadata jobs require a configured metadata processor')
+    this.name = 'DeferredMetadataProcessorNotConfiguredError'
   }
 }

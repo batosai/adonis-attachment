@@ -21,6 +21,7 @@ import {
   type AttachmentRename,
 } from './attachment_options.js'
 import type { AttachmentQueue } from './queue.js'
+import type { AttachmentMetadataPersister } from './attachment_metadata_persister.js'
 import type { AttachmentStorage } from './storage.js'
 import { MediaMetadataService, type MediaMetadataExtractor } from '../media/media_metadata.js'
 import type { AttachmentVariantKey } from '../../index.js'
@@ -32,7 +33,11 @@ export type AttachmentServiceOptions = {
   createId?: () => string
   defaults?: AttachmentPersistenceOptions
   metadataExtractors?: readonly MediaMetadataExtractor[]
+  metadataMode?: AttachmentMetadataMode
+  metadataPersister?: AttachmentMetadataPersister
 }
+
+export type AttachmentMetadataMode = 'sync' | 'deferred'
 
 /**
  * Creates files and delegates persistence to the configured storage backend.
@@ -44,6 +49,8 @@ export class AttachmentService {
   readonly #factory: AttachmentFactory
   readonly #defaults: AttachmentPersistenceOptions
   readonly #metadata: MediaMetadataService | undefined
+  readonly #metadataMode: AttachmentMetadataMode
+  readonly #metadataPersister: AttachmentMetadataPersister | undefined
 
   constructor(options: AttachmentServiceOptions) {
     this.#storage = options.storage
@@ -53,6 +60,8 @@ export class AttachmentService {
     this.#metadata = options.metadataExtractors
       ? new MediaMetadataService(options.metadataExtractors)
       : undefined
+    this.#metadataMode = options.metadataMode ?? 'sync'
+    this.#metadataPersister = options.metadataPersister
   }
 
   createDraft(
@@ -101,7 +110,7 @@ export class AttachmentService {
       ...(name ? { name } : {}),
     })
 
-    if (options.meta && this.#metadata) {
+    if (options.meta && this.#metadata && this.#metadataMode === 'sync') {
       const metadata = await this.#metadata.extract({ attachment, body: source.body })
 
       if (metadata) {
@@ -129,6 +138,30 @@ export class AttachmentService {
 
   read(attachment: Attachment): Promise<Uint8Array> {
     return this.#storage.read({ disk: attachment.disk, path: attachment.path })
+  }
+
+  scheduleMetadataExtraction(attachment: Attachment): Promise<void> {
+    if (!this.#metadata || !this.#metadataPersister) {
+      throw new DeferredMetadataNotConfiguredError()
+    }
+
+    return this.#queue.enqueue({ type: 'extract-metadata', attachmentId: attachment.id, attachment })
+  }
+
+  async extractAndPersistMetadata(attachment: Attachment): Promise<void> {
+    if (!this.#metadata || !this.#metadataPersister) {
+      throw new DeferredMetadataNotConfiguredError()
+    }
+
+    const extracted = await this.#metadata.extract({ attachment, body: await this.read(attachment) })
+    if (!extracted) {
+      return
+    }
+
+    await this.#metadataPersister.persistMetadata(attachment, {
+      ...extracted,
+      ...(attachment.metadata ?? {}),
+    })
   }
 
   scheduleVariantGeneration(
@@ -162,6 +195,23 @@ export class AttachmentService {
       options,
       draft?.options
     ).meta
+  }
+
+  /** Resolves the configured strategy when metadata is enabled for a persistence operation. */
+  getMetadataMode(
+    draft: AttachmentDraft | undefined,
+    options?: AttachmentPersistenceOptions
+  ): AttachmentMetadataMode | undefined {
+    return resolveAttachmentPersistenceOptions(this.#defaults, options, draft?.options).meta
+      ? this.#metadataMode
+      : undefined
+  }
+}
+
+export class DeferredMetadataNotConfiguredError extends Error {
+  constructor() {
+    super('Deferred metadata extraction requires configured extractors and a metadata persister')
+    this.name = 'DeferredMetadataNotConfiguredError'
   }
 }
 

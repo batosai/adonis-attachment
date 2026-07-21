@@ -14,6 +14,8 @@ import {
 
 import type { ApplicationService, ConfigProvider } from '@adonisjs/core/types'
 import type { AttachmentServiceOptions } from './core/attachment_service.js'
+import type { AttachmentMetadataMode } from './core/attachment_service.js'
+import type { AttachmentMetadataPersister } from './core/attachment_metadata_persister.js'
 import type { AttachmentJobProcessor } from './core/attachment_job_processor.js'
 import type { AttachmentRepository } from './core/attachment_repository.js'
 import type { AttachmentJobHandler, AttachmentQueue } from './core/queue.js'
@@ -48,6 +50,11 @@ export type AttachmentIntegrationsConfig = {
 export type AttachmentMediaConfig = {
   /** Extracts technical metadata when a persistence option enables `meta`. */
   metadata?: Integration<readonly MediaMetadataExtractor[]>
+  metadataPolicy?: {
+    mode?: AttachmentMetadataMode
+    variants?: boolean
+  }
+  metadataPersister?: Integration<AttachmentMetadataPersister>
 }
 
 /** v5-style named converter declarations, resolved lazily when a job needs one. */
@@ -115,6 +122,9 @@ export function defineConfig<const KnownConverters extends ConverterConfigMap = 
     const metadataExtractors = config.media?.metadata
       ? await resolveIntegration(config.media.metadata, app)
       : undefined
+    const metadataPersister = config.media?.metadataPersister
+      ? await resolveIntegration(config.media.metadataPersister, app)
+      : undefined
 
     return {
       defaultDisk: config.defaultDisk ?? storage.defaultDisk ?? 'fs',
@@ -127,6 +137,8 @@ export function defineConfig<const KnownConverters extends ConverterConfigMap = 
       ...(config.defaults ? { defaults: config.defaults } : {}),
       ...(config.sources ? { sources: config.sources } : {}),
       ...(metadataExtractors ? { metadataExtractors } : {}),
+      ...(config.media?.metadataPolicy?.mode ? { metadataMode: config.media.metadataPolicy.mode } : {}),
+      ...(metadataPersister ? { metadataPersister } : {}),
       ...(config.converters
         ? { converters: new ConfiguredVariantConverterRegistry(config.converters) }
         : {}),

@@ -10,6 +10,7 @@ import { test } from '@japa/runner'
 import {
   AttachmentJobProcessor,
   AttachmentNotFoundError,
+  DeferredMetadataProcessorNotConfiguredError,
   type Attachment,
   type AttachmentRepository,
   type VariantGenerationRequest,
@@ -108,5 +109,34 @@ test.group('AttachmentJobProcessor', () => {
 
     assert.equal(resolutions, 1)
     assert.deepEqual(requests, ['first-id', 'second-id'])
+  })
+
+  test('delegates deferred metadata jobs without resolving the repository', async ({ assert }) => {
+    const processed: Attachment[] = []
+    const processor = new AttachmentJobProcessor({
+      attachments: new FakeRepository(null),
+      variants: new FakeVariantGenerator(),
+      metadata: {
+        async extractAndPersistMetadata(value) {
+          processed.push(value)
+        },
+      },
+    })
+
+    await processor.process({ type: 'extract-metadata', attachmentId: attachment.id, attachment })
+
+    assert.deepEqual(processed, [attachment])
+  })
+
+  test('rejects deferred metadata jobs without a metadata processor', async ({ assert }) => {
+    const processor = new AttachmentJobProcessor({
+      attachments: new FakeRepository(attachment),
+      variants: new FakeVariantGenerator(),
+    })
+
+    await assert.rejects(
+      () => processor.process({ type: 'extract-metadata', attachmentId: attachment.id, attachment }),
+      DeferredMetadataProcessorNotConfiguredError
+    )
   })
 })

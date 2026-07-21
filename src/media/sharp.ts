@@ -7,6 +7,15 @@
 
 import type { MediaMetadataExtractor } from './media_metadata.js'
 import type { VariantConverter, VariantConversionInput } from '../variants/variant_converter.js'
+import {
+  normalizeSharpFormat,
+  type SharpFormat,
+  type SharpFormatOptions,
+  type SharpOutputFormat,
+  type SharpResizeOptions,
+} from '../converters/converter.js'
+
+export type { SharpFormat, SharpFormatOptions, SharpOutputFormat, SharpResizeOptions } from '../converters/converter.js'
 
 export type SharpMetadata = {
   width?: number
@@ -20,16 +29,11 @@ export type SharpMetadata = {
   orientation?: number
 }
 
-export type SharpResizeOptions = {
-  fit?: string
-  position?: string
-  withoutEnlargement?: boolean
-}
-
 export interface SharpImage {
   metadata(): Promise<SharpMetadata>
+  autoOrient?(): SharpImage
   resize(width?: number, height?: number, options?: SharpResizeOptions): SharpImage
-  toFormat(format: string): SharpImage
+  toFormat(format: string, options?: SharpFormatOptions): SharpImage
   toBuffer(): Promise<Uint8Array>
 }
 
@@ -41,7 +45,8 @@ export type SharpVariantOptions = {
   width?: number
   height?: number
   resize?: SharpResizeOptions
-  format?: 'avif' | 'jpeg' | 'png' | 'webp'
+  format?: SharpFormat
+  autoOrient?: boolean
   folder?: string
   transform?: (image: SharpImage, input: VariantConversionInput) => SharpImage | Promise<SharpImage>
 }
@@ -64,6 +69,9 @@ export function createSharpVariantConverter(options: SharpVariantOptions): Varia
     key: options.key,
     async convert(input) {
       let image = options.sharp(input.body)
+      if (options.autoOrient && image.autoOrient) {
+        image = image.autoOrient()
+      }
 
       if (options.transform) {
         image = await options.transform(image, input)
@@ -71,11 +79,12 @@ export function createSharpVariantConverter(options: SharpVariantOptions): Varia
         image = image.resize(options.width, options.height, options.resize)
       }
 
-      if (options.format) {
-        image = image.toFormat(options.format)
+      const outputFormat = options.format ? normalizeSharpFormat(options.format) : undefined
+      if (outputFormat) {
+        image = image.toFormat(outputFormat.format, outputFormat.options)
       }
 
-      const format = options.format ?? input.attachment.extname
+      const format = outputFormat?.format ?? input.attachment.extname
       const extension = format || 'bin'
 
       return {
@@ -100,7 +109,11 @@ function mimeTypeForFormat(format: string): string | undefined {
   switch (format) {
     case 'avif': return 'image/avif'
     case 'jpeg': return 'image/jpeg'
+    case 'gif': return 'image/gif'
+    case 'heif': return 'image/heif'
     case 'png': return 'image/png'
+    case 'raw': return 'application/octet-stream'
+    case 'tiff': return 'image/tiff'
     case 'webp': return 'image/webp'
     default: return undefined
   }

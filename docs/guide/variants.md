@@ -19,8 +19,8 @@ const attachmentConfig = defineConfig({
   storage: LocalFileStorage.fromApp,
   converters: {
     thumbnail: {
-      width: 320,
-      format: 'webp',
+      resize: { width: 320, fit: 'cover' },
+      format: { format: 'webp', options: { quality: 82 } },
     },
   },
 })
@@ -69,6 +69,11 @@ Set `converter: () => import('#converters/...')` to override this behavior for o
 The module augmentation also types variant keys in `variants`, `createFrom*` options, and
 `regenerateVariants()`. A key not present in this configuration becomes a TypeScript error.
 
+For image inputs, `format` retains the v5 declaration format: use `jpeg`, `jpg`, `png`,
+`gif`, `webp`, `avif`, `heif`, `tiff`, or `raw`; formats with Sharp encoder options use
+`{ format, options }`. The `resize` object also accepts Sharp's `background`, `kernel`,
+`withoutEnlargement`, `withoutReduction`, and `fastShrinkOnLoad` settings.
+
 ### Direct object converters
 
 You can also provide a `VariantConverter` object directly to `VariantGenerationService`.
@@ -88,7 +93,7 @@ const thumbnail = createSharpVariantConverter({
   width: 200,
   height: 200,
   resize: { fit: 'cover' },
-  format: 'webp',
+  format: { format: 'webp', options: { quality: 82 } },
   folder: 'variants',
 })
 ```

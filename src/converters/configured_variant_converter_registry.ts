@@ -9,15 +9,15 @@ import Converter, { type ConverterOptions } from './converter.js'
 import AutodetectConverter from './autodetect_converter.js'
 import type { VariantConverter } from '../variants/variant_converter.js'
 
-export type ConverterConstructor = new (options?: ConverterOptions) => Converter
+export type ConverterConstructor = new (options?: any) => Converter<any>
 export type ConverterModule = {
   default: ConverterConstructor | Converter | VariantConverter
 }
-export type ConverterConfig = ConverterOptions & {
+export type ConverterConfig<Options extends ConverterOptions = ConverterOptions> = Options & {
   /** Defaults to AutodetectConverter when omitted. */
   converter?: () => Promise<ConverterModule>
   /** Optional nested options are merged after the direct v5-style options. */
-  options?: ConverterOptions
+  options?: Options
 }
 export type ConverterConfigMap = Record<string, ConverterConfig>
 

@@ -5,7 +5,7 @@
  * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
  */
 
-import Converter, { type ConverterAttributes, type ConverterOptions } from './converter.js'
+import Converter, { type ConverterAttributes, type ConverterOptions, type SharpFormat } from './converter.js'
 import {
   createDocumentThumbnailConverter,
   createFfmpegThumbnailConverter,
@@ -15,17 +15,6 @@ import {
 import { createSharpVariantConverter, type SharpFactory, type SharpResizeOptions } from '../media/sharp.js'
 
 export type AutodetectConverterOptions = ConverterOptions & {
-  resize?: number | {
-    width?: number
-    height?: number
-    fit?: string
-    position?: string
-    withoutEnlargement?: boolean
-  }
-  format?: 'avif' | 'jpeg' | 'jpg' | 'png' | 'webp'
-  folder?: string
-  startTime?: number
-  startPage?: number
   runner?: CommandRunner
   ffmpegCommand?: string
   pdftoppmCommand?: string
@@ -49,12 +38,15 @@ export default class AutodetectConverter extends Converter {
         key: 'autodetect',
         sharp,
         ...resize,
-        ...(options.format ? { format: normalizeImageFormat(options.format) } : {}),
+        ...(options.format ? { format: options.format } : {}),
+        autoOrient: options.autoOrient ?? true,
         ...(options.folder ? { folder: options.folder } : {}),
       }).convert({ attachment, body })
     }
 
     if (attachment.mimeType.startsWith('video/')) {
+      const format = binaryFormat(options.format)
+
       return createFfmpegThumbnailConverter({
         key: 'autodetect',
         ...(options.runner ? { runner: options.runner } : {}),
@@ -62,7 +54,7 @@ export default class AutodetectConverter extends Converter {
         ...(options.startTime !== undefined ? { time: options.startTime } : {}),
         ...(resize.width !== undefined ? { width: resize.width } : {}),
         ...(resize.height !== undefined ? { height: resize.height } : {}),
-        ...(isBinaryFormat(options.format) ? { format: options.format === 'jpg' ? 'jpeg' : options.format } : {}),
+        ...(format ? { format } : {}),
         ...(options.folder ? { folder: options.folder } : {}),
       }).convert({ attachment, body })
     }
@@ -117,12 +109,14 @@ function normalizeResize(value: AutodetectConverterOptions['resize']): {
   }
 }
 
-function normalizeImageFormat(format: NonNullable<AutodetectConverterOptions['format']>): 'avif' | 'jpeg' | 'png' | 'webp' {
-  return format === 'jpg' ? 'jpeg' : format
-}
+function binaryFormat(format: SharpFormat | undefined): 'jpeg' | 'png' | 'webp' | undefined {
+  const value = typeof format === 'string' ? format : format?.format
 
-function isBinaryFormat(format: AutodetectConverterOptions['format']): format is 'jpeg' | 'jpg' | 'png' | 'webp' {
-  return format === 'jpeg' || format === 'jpg' || format === 'png' || format === 'webp'
+  if (value === 'jpg' || value === 'jpeg') {
+    return 'jpeg'
+  }
+
+  return value === 'png' || value === 'webp' ? value : undefined
 }
 
 function isOfficeDocument(mimeType: string): boolean {

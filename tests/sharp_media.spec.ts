@@ -58,12 +58,16 @@ test.group('Sharp media adapters', () => {
         async metadata() {
           return {}
         },
+        autoOrient() {
+          operations.push(['autoOrient'])
+          return this
+        },
         resize(width, height, options) {
           operations.push(['resize', width, height, options])
           return this
         },
-        toFormat(format) {
-          operations.push(['format', format])
+        toFormat(format, formatOptions) {
+          operations.push(['format', format, formatOptions])
           return this
         },
         async toBuffer() {
@@ -72,16 +76,18 @@ test.group('Sharp media adapters', () => {
       })) as SharpFactory,
       width: 200,
       height: 120,
-      resize: { fit: 'cover' },
-      format: 'webp',
+      resize: { fit: 'cover', background: '#ffffff', kernel: 'lanczos3' },
+      format: { format: 'webp', options: { quality: 82, effort: 4 } },
+      autoOrient: true,
       folder: 'variants',
     })
 
     const output = await converter.convert({ attachment, body: new Uint8Array([1, 2, 3]) })
 
     assert.deepEqual(operations, [
-      ['resize', 200, 120, { fit: 'cover' }],
-      ['format', 'webp'],
+      ['autoOrient'],
+      ['resize', 200, 120, { fit: 'cover', background: '#ffffff', kernel: 'lanczos3' }],
+      ['format', 'webp', { quality: 82, effort: 4 }],
     ])
     assert.deepEqual(output, {
       body: new Uint8Array([4, 5]),

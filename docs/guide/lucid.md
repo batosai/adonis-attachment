@@ -137,7 +137,7 @@ Create the migration:
 node ace make:attachments-table
 ```
 
-Set `lucid.tableName` in `config/attachment.ts` to customize the generated file and the runtime models. The link table is derived from the singular base table name: `media_attachments` becomes `media_attachment_links`. `--table=media_attachments` overrides this setting for one generated migration; `--folder=database/migrations` changes its destination.
+Set `integrations.lucid.tableName` in `config/attachment.ts` to customize the generated file and the runtime models. The link table is derived from the singular base table name: `media_attachments` becomes `media_attachment_links`. `--table=media_attachments` overrides this setting for one generated migration; `--folder=database/migrations` changes its destination.
 
 The generated migration delegates the table definitions to `AttachmentSchemaService`. This keeps application migrations stable when the package evolves the attachment schema:
 

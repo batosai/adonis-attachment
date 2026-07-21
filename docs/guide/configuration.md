@@ -40,13 +40,15 @@ export default defineConfig({
 });
 ```
 
-`lucid.tableName` changes the blob table used by the Lucid integration. The polymorphic link table is always derived from it with Adonis `string.singular`: `attachments` uses `attachment_links`, while `media_attachments` uses `media_attachment_links`. Use the same setting before generating the migration and at runtime.
+`integrations.lucid.tableName` changes the blob table used by the optional Lucid integration. The polymorphic link table is always derived from it with Adonis `string.singular`: `attachments` uses `attachment_links`, while `media_attachments` uses `media_attachment_links`. Use the same setting before generating the migration and at runtime.
 
 ```ts
 export default defineConfig({
   storage: LocalFileStorage.fromApp,
-  lucid: {
-    tableName: "media_attachments",
+  integrations: {
+    lucid: {
+      tableName: "media_attachments",
+    },
   },
 });
 ```

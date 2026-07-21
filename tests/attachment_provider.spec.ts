@@ -91,7 +91,9 @@ test.group('AttachmentProvider', (group) => {
           return defineConfig({
             defaultDisk: 'public',
             storage,
-            lucid: { tableName: 'media_attachments' },
+            integrations: {
+              lucid: { tableName: 'media_attachments' },
+            },
           })
         },
       },

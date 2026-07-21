@@ -34,6 +34,11 @@ export type LucidAttachmentConfig = {
   tableName?: string
 }
 
+export type AttachmentIntegrationsConfig = {
+  /** Optional configuration for the Lucid persistence integration. */
+  lucid?: LucidAttachmentConfig
+}
+
 export type AttachmentConfig = {
   /** Overrides the storage default. Falls back to `fs` when no adapter provides one. */
   defaultDisk?: string
@@ -46,8 +51,7 @@ export type AttachmentConfig = {
   defaults?: AttachmentPersistenceOptions
   sources?: AttachmentManagerOptions
   route?: AttachmentRouteConfig
-  /** Optional configuration for the Lucid persistence integration. */
-  lucid?: LucidAttachmentConfig
+  integrations?: AttachmentIntegrationsConfig
   queueConcurrency?: number
   createId?: () => string
 }
@@ -57,7 +61,9 @@ export type ResolvedAttachmentConfig = AttachmentServiceOptions & {
   defaults?: AttachmentPersistenceOptions
   sources?: AttachmentManagerOptions
   route: ResolvedAttachmentRouteConfig | false
-  lucid?: AttachmentTableNames
+  integrations?: {
+    lucid?: AttachmentTableNames
+  }
 }
 
 /**
@@ -90,7 +96,13 @@ export function defineConfig(config: AttachmentConfig): ConfigProvider<ResolvedA
         : {}),
       ...(config.defaults ? { defaults: config.defaults } : {}),
       ...(config.sources ? { sources: config.sources } : {}),
-      ...(config.lucid ? { lucid: resolveAttachmentTableNames(config.lucid.tableName) } : {}),
+      ...(config.integrations?.lucid
+        ? {
+            integrations: {
+              lucid: resolveAttachmentTableNames(config.integrations.lucid.tableName),
+            },
+          }
+        : {}),
       ...(config.createId ? { createId: config.createId } : {}),
     }
   })

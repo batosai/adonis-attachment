@@ -98,7 +98,9 @@ test.group('attachments table migration stub', () => {
                 },
                 async remove() {},
               },
-              lucid: { tableName: 'media_attachments' },
+              integrations: {
+                lucid: { tableName: 'media_attachments' },
+              },
             })
           },
         },

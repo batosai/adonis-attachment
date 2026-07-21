@@ -210,12 +210,16 @@ test.group('defineConfig', () => {
     const resolved = await defineConfig({
       defaultDisk: 'public',
       storage,
-      lucid: { tableName: 'media_attachments' },
+      integrations: {
+        lucid: { tableName: 'media_attachments' },
+      },
     }).resolver({} as never)
 
-    assert.deepEqual(resolved.lucid, {
-      tableName: 'media_attachments',
-      linksTableName: 'media_attachment_links',
+    assert.deepEqual(resolved.integrations, {
+      lucid: {
+        tableName: 'media_attachments',
+        linksTableName: 'media_attachment_links',
+      },
     })
   })
 

@@ -92,11 +92,13 @@ export default class AttachmentProvider {
 }
 
 async function applyLucidConfig(config: ResolvedAttachmentConfig): Promise<void> {
-  if (!config.lucid) {
+  const lucid = config.integrations?.lucid
+
+  if (!lucid) {
     return
   }
 
   const { configureLucidAttachmentTables } =
     await import('../src/integrations/lucid/configure_lucid_attachment_tables.js')
-  configureLucidAttachmentTables(config.lucid.tableName)
+  configureLucidAttachmentTables(lucid.tableName)
 }

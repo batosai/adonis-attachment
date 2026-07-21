@@ -17,6 +17,7 @@ export { configure } from "./configure.js";
 export { attachmentManager };
 export {
   defineConfig,
+  type AttachmentIntegrationsConfig,
   type AttachmentConfig,
   type LucidAttachmentConfig,
   type ResolvedAttachmentConfig,

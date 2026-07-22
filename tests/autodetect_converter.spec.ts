@@ -54,10 +54,11 @@ test.group('AutodetectConverter', () => {
   })
 
   test('is used when a configured key has no converter loader', async ({ assert }) => {
-    const registry = new ConfiguredVariantConverterRegistry({ thumbnail: {} })
+    const registry = new ConfiguredVariantConverterRegistry({ thumbnail: { blurhash: true } })
     const converter = await registry.get('thumbnail')
 
     assert.equal(converter?.key, 'thumbnail')
+    assert.isTrue(converter?.blurhash === true)
     assert.isUndefined(await converter?.convert({
       attachment: { ...pdf, mimeType: 'application/zip', name: 'archive.zip' },
       body: new Uint8Array(),

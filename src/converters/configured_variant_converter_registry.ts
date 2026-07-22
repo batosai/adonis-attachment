@@ -60,7 +60,8 @@ export class ConfiguredVariantConverterRegistry<
 
   async #load(key: string, config: ConverterConfig): Promise<VariantConverter> {
     if (!config.converter) {
-      return asVariantConverter(key, new AutodetectConverter(resolveOptions(config)))
+      const options = resolveOptions(config)
+      return asVariantConverter(key, new AutodetectConverter(options), options)
     }
 
     const module = await config.converter()

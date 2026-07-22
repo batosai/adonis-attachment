@@ -128,7 +128,8 @@ converters: {
 ```
 
 Blurhash generation is disabled by default. A failure to generate it does not discard the
-variant; the variant is persisted without a hash, matching the resilient v5 workflow.
+variant; the variant is persisted without a hash, matching the resilient v5 workflow. This
+option works with both the default autodetected converter and an explicit custom converter.
 
 | Image format | Typed encoder options |
 | --- | --- |

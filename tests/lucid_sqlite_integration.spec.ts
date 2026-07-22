@@ -56,7 +56,7 @@ test.group('Lucid SQLite integration', (group) => {
     const variant = await store.createVariant(
       original.attachment,
       'thumbnail',
-      makeAttachment('variant-id', 'users/42/thumbnail.jpg')
+      { ...makeAttachment('variant-id', 'users/42/thumbnail.jpg'), blurhash: 'LEHV6nWB2yk8pyo0adR*.7kCMdnj' }
     )
 
     const reloaded = await AttachmentModel.findOrFail(original.attachmentId)
@@ -71,6 +71,7 @@ test.group('Lucid SQLite integration', (group) => {
     assert.isNotNull(reloaded.updatedAt)
     assert.equal(variant.parentId, original.attachmentId)
     assert.equal(variant.variantKey, 'thumbnail')
+    assert.equal(variant.toAttachment().blurhash, 'LEHV6nWB2yk8pyo0adR*.7kCMdnj')
     assert.equal(persisted?.original.id, original.id)
     assert.deepEqual(persisted?.variants.map((row) => row.id), ['variant-id'])
   })

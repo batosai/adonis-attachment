@@ -229,6 +229,7 @@ export class LucidAttachmentStore {
         ...attachment,
         parentId: options.parentId ?? null,
         variantKey: options.variantKey ?? null,
+        blurhash: attachment.blurhash ?? null,
         metadata: attachment.metadata ?? null,
       },
       this.#client ? { client: this.#client } : undefined

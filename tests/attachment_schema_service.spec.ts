@@ -30,6 +30,7 @@ test.group('AttachmentSchemaService', (group) => {
 
     assert.isTrue(await database.connection().schema.hasTable('media_attachments'))
     assert.isTrue(await database.connection().schema.hasTable('media_attachment_links'))
+    assert.isTrue(await database.connection().schema.hasColumn('media_attachments', 'blurhash'))
 
     await service.dropTables()
 
@@ -45,6 +46,7 @@ test.group('AttachmentSchemaService', (group) => {
 
     assert.isTrue(await database.connection().schema.hasTable('attachments'))
     assert.isTrue(await database.connection().schema.hasTable('attachment_links'))
+    assert.isTrue(await database.connection().schema.hasColumn('attachments', 'blurhash'))
     assert.isFalse(await database.connection().schema.hasTable('attachments_links'))
   })
 })

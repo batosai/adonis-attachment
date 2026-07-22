@@ -46,6 +46,7 @@ export async function createLucidTestDatabase(): Promise<Database> {
     table.string('mime_type').notNullable()
     table.string('extname').notNullable()
     table.bigInteger('size').unsigned().notNullable()
+    table.string('blurhash').nullable()
     table.json('metadata').nullable()
     table.timestamp('created_at').notNullable()
     table.timestamp('updated_at').notNullable()

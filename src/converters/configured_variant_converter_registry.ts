@@ -77,7 +77,7 @@ export class ConfiguredVariantConverterRegistry<
       throw new InvalidConverterModuleError(key)
     }
 
-    return asVariantConverter(key, converter)
+    return asVariantConverter(key, converter, converter.options)
   }
 }
 

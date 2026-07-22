@@ -49,6 +49,9 @@ export class AttachmentModel extends BaseModel {
   @column()
   declare size: number
 
+  @column()
+  declare blurhash: string | null
+
   @column({
     prepare(value: AttachmentMetadata | null) {
       return value === null ? null : JSON.stringify(value)
@@ -79,6 +82,7 @@ export class AttachmentModel extends BaseModel {
       mimeType: this.mimeType,
       extname: this.extname,
       size: this.size,
+      ...(this.blurhash ? { blurhash: this.blurhash } : {}),
       ...(this.metadata ? { metadata: this.metadata } : {}),
     }
   }

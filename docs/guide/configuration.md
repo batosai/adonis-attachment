@@ -97,8 +97,8 @@ export default defineConfig({
   storage: LocalFileStorage.fromApp,
   media: {
     metadata: createV5CompatibleMetadataExtractors({
-      ffprobe: { command: 'ffprobe' },
-      pdfinfo: { command: 'pdfinfo' },
+      ffprobe: { command: '/opt/media/bin/ffprobe', timeout: 5_000 },
+      pdfinfo: { command: '/opt/media/bin/pdfinfo', timeout: 5_000 },
     }),
   },
   defaults: { meta: true },
@@ -107,8 +107,8 @@ export default defineConfig({
 
 Install the optional `exifreader` dependency to extract image EXIF and GPS metadata. The
 profile invokes `ffprobe` for audio/video and `pdfinfo` for PDFs only when `meta: true` is
-effective for that attachment. Both binaries can be selected with their `command` option;
-set `exif`, `ffprobe`, or `pdfinfo` to `false` to disable an extractor.
+effective for that attachment. `command` accepts either an executable available on `PATH` or
+an absolute path. Set `exif`, `ffprobe`, or `pdfinfo` to `false` to disable an extractor.
 
 ### Performance policy
 
@@ -175,7 +175,7 @@ media: { metadata: [createSharpMetadataExtractor(sharp)] }
 
 For audio and video, `createFfprobeMetadataExtractor()` from
 `@jrmc/adonis-attachment/media/binaries` reads duration, codecs and video dimensions. It
-requires the `ffprobe` executable to be available to the application process.
+accepts the same `command` and `timeout` options when the v5 profile is not used.
 
 Generated variants use the same extraction pipeline when their original was scheduled with
 `meta: true`. Converter-provided metadata still takes precedence over extracted values.

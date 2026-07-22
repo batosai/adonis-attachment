@@ -197,12 +197,23 @@ const videoThumbnail = createFfmpegThumbnailConverter({
   time: 1,
   width: 320,
   format: 'webp',
+  command: '/opt/media/bin/ffmpeg',
+  timeout: 15_000,
 }) // requires ffmpeg
 
-const pdfThumbnail = createPdfThumbnailConverter({ key: 'thumbnail', width: 320 })
+const pdfThumbnail = createPdfThumbnailConverter({
+  key: 'thumbnail',
+  width: 320,
+  command: '/opt/media/bin/pdftoppm',
+})
 // requires pdftoppm (Poppler)
 
-const documentThumbnail = createDocumentThumbnailConverter({ key: 'thumbnail', width: 320 })
+const documentThumbnail = createDocumentThumbnailConverter({
+  key: 'thumbnail',
+  width: 320,
+  command: '/opt/media/bin/pdftoppm',
+  officeCommand: '/opt/media/bin/libreoffice',
+})
 // requires LibreOffice and pdftoppm
 ```
 

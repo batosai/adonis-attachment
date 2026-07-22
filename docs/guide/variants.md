@@ -85,6 +85,31 @@ The image autodetect converter applies `autoOrient: true` unless it is explicitl
 Video thumbnails support only `jpeg`, `png`, and `webp`; PDF and Office thumbnails are
 always generated as PNG.
 
+### Video capture time
+
+For an autodetected video converter, `startTime` selects the frame to capture in seconds.
+It is passed to ffmpeg as its seek position. When omitted, ffmpeg captures the first frame.
+
+```ts
+converters: {
+  videoPreview: {
+    startTime: 12,
+    resize: { width: 640 },
+    format: 'webp',
+  },
+}
+```
+
+The direct ffmpeg adapter uses the equivalent `time` option:
+
+```ts
+createFfmpegThumbnailConverter({
+  key: 'videoPreview',
+  time: 12,
+  format: 'webp',
+})
+```
+
 ### Blurhash
 
 The v5 `blurhash` converter option is preserved. Install the optional `sharp` and `blurhash`

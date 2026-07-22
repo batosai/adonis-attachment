@@ -214,29 +214,28 @@ test.group("Lucid attachment relations", (group) => {
     assert,
   }) => {
     const user = await createUser();
-    user.gallery.add(createDraft("first.txt"));
-    user.gallery.add(createDraft("second.txt"));
-    user.gallery.add(createDraft("before.txt"), 0);
+    user.gallery.add(createDraft("existing.txt"));
+    user.gallery.addMany([createDraft("first.txt"), createDraft("second.txt")], 0);
     await user.save();
-    const [before, first, second] = await user.gallery.all();
+    const [first, second, existing] = await user.gallery.all();
 
-    if (!before || !first || !second) {
+    if (!first || !second || !existing) {
       throw new Error("Expected persisted gallery links");
     }
 
     assert.deepEqual(
       (await user.gallery.all()).map((item) => item.id),
-      [before.id, first.id, second.id],
+      [first.id, second.id, existing.id],
     );
 
-    user.gallery.move(second.id, 0);
+    user.gallery.move(existing.id, 0);
     await user.save();
     assert.deepEqual(
       (await user.gallery.all()).map((item) => item.id),
-      [second.id, before.id, first.id],
+      [existing.id, first.id, second.id],
     );
 
-    user.gallery.remove(before.id);
+    user.gallery.remove(first.id);
     user.gallery.remove("missing-id");
     await user.save();
 

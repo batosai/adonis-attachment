@@ -256,6 +256,16 @@ export class AttachmentCollectionRelation {
     this.#pending.push({ type: "add", input, ...(position !== undefined ? { position } : {}) });
   }
 
+  /** Stages several attachments while retaining their input order. */
+  addMany(
+    inputs: readonly AttachmentRelationInput[],
+    position?: number,
+  ): void {
+    inputs.forEach((input, index) => {
+      this.add(input, position === undefined ? undefined : position + index);
+    });
+  }
+
   addExisting(
     attachmentId: string,
     position?: number,

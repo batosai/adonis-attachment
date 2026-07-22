@@ -110,6 +110,7 @@ Collection mutations are staged the same way, then applied on `save()` (or
 | --- | --- |
 | `all()` | Reads items, ordered by position. Async. |
 | `add(draft, position?)` | Stages an append (or insert at `position`). |
+| `addMany(drafts, position?)` | Stages several attachments, in input order. |
 | `addExisting(id, position?)` | Stages adding an existing blob (reuse). |
 | `remove(id)` | Stages removal of one item; positions renormalize on flush. |
 | `move(id, position)` | Stages a reorder. |
@@ -118,12 +119,14 @@ Collection mutations are staged the same way, then applied on `save()` (or
 | `persist()` | Flushes staged operations now (requires a persisted owner). Async. |
 
 ```ts
-const a = await attachmentManager.createFromFile(request.file('image')!)
-const b = await attachmentManager.createFromFile(request.file('image')!)
+const drafts = await attachmentManager.createFromFiles(request.files('images'))
 
-post.gallery.add(a)
-post.gallery.add(b, 0) // insert first
-await post.save()      // flush both
+post.gallery.addMany(drafts)
+await post.save()      // flush the collection
+
+// Insert several files at a specific position.
+post.gallery.addMany(drafts, 0)
+await post.save()
 
 // move takes the persisted link id from all()
 const [first] = await post.gallery.all()

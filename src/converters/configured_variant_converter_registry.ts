@@ -8,6 +8,7 @@
 import Converter, { type ConverterOptions } from './converter.js'
 import AutodetectConverter from './autodetect_converter.js'
 import type { VariantConverter } from '../variants/variant_converter.js'
+import { AttachmentError } from '../errors.js'
 
 export type ConverterConstructor = new (options?: any) => Converter<any>
 export type ConverterModule = {
@@ -81,7 +82,9 @@ export class ConfiguredVariantConverterRegistry<
   }
 }
 
-export class InvalidConverterModuleError extends Error {
+export class InvalidConverterModuleError extends AttachmentError {
+  static code = 'E_INVALID_CONVERTER_MODULE'
+
   constructor(key: string) {
     super(`Converter "${key}" must default-export a Converter class or a VariantConverter object`)
     this.name = 'InvalidConverterModuleError'

@@ -21,6 +21,11 @@ import { AttachmentLinkModel } from "../models/attachment_link_model.js";
 import { AttachmentModel } from "../models/attachment_model.js";
 import { LucidAttachmentLifecycleService } from "../persistence/lucid_attachment_lifecycle_service.js";
 import { LucidAttachmentStore } from "../persistence/lucid_attachment_store.js";
+import {
+  AttachmentConfigurationError,
+  AttachmentConflictError,
+  AttachmentValidationError,
+} from "../../../errors.js";
 
 type AttachmentRelationInput = CreateAttachmentInput | AttachmentDraft;
 
@@ -118,7 +123,7 @@ export class AttachmentRelation {
 
   attach(input: AttachmentRelationInput): void {
     if (this.#pending && this.#pending.type !== "detach") {
-      throw new Error(
+      throw new AttachmentConflictError(
         `Attachment relation "${this.#definition.field}" already has a pending attachment; use replace() or set()`,
       );
     }
@@ -128,7 +133,7 @@ export class AttachmentRelation {
 
   attachExisting(attachmentId: string): void {
     if (this.#pending && this.#pending.type !== "detach") {
-      throw new Error(
+      throw new AttachmentConflictError(
         `Attachment relation "${this.#definition.field}" already has a pending attachment; use replace() or set()`,
       );
     }
@@ -162,7 +167,7 @@ export class AttachmentRelation {
     switch (pending.type) {
       case "attach":
         if (await lifecycle.get(owner)) {
-          throw new Error(
+          throw new AttachmentConflictError(
             `Attachment relation "${owner.field}" already has an attachment; use replace() or set()`,
           );
         }
@@ -170,7 +175,7 @@ export class AttachmentRelation {
         break;
       case "attachExisting":
         if (await lifecycle.get(owner)) {
-          throw new Error(
+          throw new AttachmentConflictError(
             `Attachment relation "${owner.field}" already has an attachment; use replace() or set()`,
           );
         }
@@ -345,7 +350,7 @@ function defineRelation<Model>(
       relationDefinitions.get(Model) ?? new Map<string, RelationDefinition>();
 
     if (definitions.has(field)) {
-      throw new Error(
+      throw new AttachmentConfigurationError(
         `Attachment relation "${field}" is already declared on this model`,
       );
     }
@@ -409,13 +414,13 @@ function createOwner(
     row.$primaryKeyValue === null ||
     row.$primaryKeyValue === undefined
   ) {
-    throw new Error("Attachment relations require a persisted Lucid model");
+    throw new AttachmentValidationError("Attachment relations require a persisted Lucid model");
   }
 
   const type = definition.options.type ?? row.constructor.table;
 
   if (!type) {
-    throw new Error(
+    throw new AttachmentConfigurationError(
       "Attachment relations require a Lucid model table or an explicit relation type",
     );
   }

@@ -9,6 +9,7 @@ import { configProvider } from '@adonisjs/core'
 import type { ApplicationService } from '@adonisjs/core/types'
 
 import type { AttachmentStorage, StorageLocation, WriteAttachmentInput } from '../core/storage.js'
+import { AttachmentError } from '../errors.js'
 
 export type AdonisDriveDisk = {
   put(path: string, contents: Uint8Array): Promise<void>
@@ -43,7 +44,9 @@ export class AdonisDriveStorage implements AttachmentStorage {
     )
 
     if (!config) {
-      throw new Error('Drive config is required when using AdonisDriveStorage.fromApp')
+      throw new AttachmentError('Drive config is required when using AdonisDriveStorage.fromApp', {
+        code: 'E_DRIVE_CONFIG_NOT_FOUND',
+      })
     }
 
     return new AdonisDriveStorage(

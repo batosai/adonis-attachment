@@ -8,6 +8,7 @@
 import type { Attachment } from './attachment.js'
 import type { AttachmentJob } from './queue.js'
 import type { AttachmentRepository } from './attachment_repository.js'
+import { AttachmentError } from '../errors.js'
 
 export type VariantGenerationRequest = {
   attachment: Attachment
@@ -86,14 +87,19 @@ export class AttachmentJobProcessor {
   }
 }
 
-export class AttachmentNotFoundError extends Error {
+export class AttachmentNotFoundError extends AttachmentError {
+  static code = 'E_ATTACHMENT_NOT_FOUND'
+  static status = 404
+
   constructor(attachmentId: string) {
     super(`Attachment "${attachmentId}" was not found`)
     this.name = 'AttachmentNotFoundError'
   }
 }
 
-export class DeferredMetadataProcessorNotConfiguredError extends Error {
+export class DeferredMetadataProcessorNotConfiguredError extends AttachmentError {
+  static code = 'E_METADATA_PROCESSOR_NOT_CONFIGURED'
+
   constructor() {
     super('Attachment metadata jobs require a configured metadata processor')
     this.name = 'DeferredMetadataProcessorNotConfiguredError'

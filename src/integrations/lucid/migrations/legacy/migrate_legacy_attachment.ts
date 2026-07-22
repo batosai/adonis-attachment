@@ -35,6 +35,7 @@ import {
   type AttachmentOwner,
 } from "../../relations/attachment_owner.js";
 import type { Attachment } from "../../../../core/attachment.js";
+import { AttachmentError } from "../../../../errors.js";
 
 export type { AttachmentOwner } from "../../relations/attachment_owner.js";
 
@@ -140,8 +141,9 @@ export function migrateLegacyAttachmentColumn(
     typeof value === "string" ? parseLegacyAttachment(value) : value;
 
   if (attachment.variants?.length) {
-    throw new Error(
+    throw new AttachmentError(
       "Legacy attachments with variants must migrate to the polymorphic table",
+      { code: "E_LEGACY_VARIANTS_REQUIRE_RELATIONS", status: 422 },
     );
   }
 
@@ -164,7 +166,10 @@ function parseLegacyAttachment(value: string): LegacyAttachment {
   try {
     return JSON.parse(value) as LegacyAttachment;
   } catch {
-    throw new Error("Legacy attachment value must be valid JSON");
+    throw new AttachmentError("Legacy attachment value must be valid JSON", {
+      code: "E_INVALID_LEGACY_ATTACHMENT",
+      status: 400,
+    });
   }
 }
 

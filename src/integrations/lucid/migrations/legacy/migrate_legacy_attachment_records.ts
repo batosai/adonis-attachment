@@ -6,6 +6,7 @@
  */
 
 import type { AttachmentOwner } from '../../relations/attachment_owner.js'
+import { AttachmentError } from '../../../../errors.js'
 import {
   migrateLegacyAttachment,
   type LegacyAttachment,
@@ -46,7 +47,9 @@ export async function migrateLegacyAttachmentRecords(
   const batchSize = options.batchSize ?? 100
 
   if (!Number.isSafeInteger(batchSize) || batchSize < 1) {
-    throw new Error('Legacy attachment migration batchSize must be a positive integer')
+    throw new AttachmentError('Legacy attachment migration batchSize must be a positive integer', {
+      code: 'E_INVALID_LEGACY_MIGRATION_BATCH_SIZE',
+    })
   }
 
   const result: LegacyAttachmentMigrationResult = {

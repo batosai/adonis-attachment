@@ -7,6 +7,7 @@
 
 import { configProvider } from '@adonisjs/core'
 import { MemoryAttachmentQueue } from './queues/memory_queue.js'
+import { AttachmentError } from './errors.js'
 import {
   resolveAttachmentTableNames,
   type AttachmentTableNames,
@@ -129,8 +130,9 @@ export function defineConfig<const KnownConverters extends ConverterConfigMap = 
       ?? await resolveLucidMetadataPersister(config.media?.metadataPolicy?.mode, config.integrations?.lucid)
 
     if (config.media?.metadataPolicy?.mode === 'deferred' && !resolvedMetadataPersister) {
-      throw new Error(
-        'Deferred metadata extraction requires media.metadataPersister or integrations.lucid'
+      throw new AttachmentError(
+        'Deferred metadata extraction requires media.metadataPersister or integrations.lucid',
+        { code: 'E_INVALID_ATTACHMENT_CONFIG' }
       )
     }
 
@@ -184,7 +186,9 @@ function resolveRoute(route: AttachmentRouteConfig | undefined): ResolvedAttachm
   const prefix = route?.prefix ?? '/attachments'
 
   if (!prefix.startsWith('/') || prefix.includes(':')) {
-    throw new Error('Attachment route prefix must start with "/" and cannot contain parameters')
+    throw new AttachmentError('Attachment route prefix must start with "/" and cannot contain parameters', {
+      code: 'E_INVALID_ATTACHMENT_ROUTE',
+    })
   }
 
   return { path: `${prefix.replace(/\/+$/, '') || ''}/:id` }

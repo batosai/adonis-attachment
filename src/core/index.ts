@@ -31,6 +31,12 @@ export {
 } from './attachment_service.js'
 export { type AttachmentMetadataPersister } from './attachment_metadata_persister.js'
 export {
+  AttachmentError,
+  AttachmentSourceError,
+  MissingOptionalDependencyError,
+  type AttachmentErrorOptions,
+} from '../errors.js'
+export {
   default as Converter,
   type ConverterAttributes,
   type ConverterOptions,

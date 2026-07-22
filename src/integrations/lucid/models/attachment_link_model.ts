@@ -11,6 +11,7 @@ import type { DateTime } from 'luxon'
 
 import type { Attachment } from '../../../core/attachment.js'
 import { AttachmentModel } from './attachment_model.js'
+import { AttachmentConfigurationError } from '../../../errors.js'
 
 /**
  * Polymorphic relation between an application record and an attachment blob.
@@ -51,7 +52,9 @@ export class AttachmentLinkModel extends BaseModel {
 
   toAttachment(): Attachment {
     if (!this.attachment) {
-      throw new Error('Attachment links must load their attachment blob before they can be read')
+      throw new AttachmentConfigurationError(
+        'Attachment links must load their attachment blob before they can be read'
+      )
     }
 
     return this.attachment.toAttachment()

@@ -10,6 +10,7 @@ import type { VariantGenerationRequest, VariantGenerator } from '../../../core/a
 import type { GeneratedVariant, VariantGenerationService } from '../../../variants/variant_generation_service.js'
 import { AttachmentModel } from '../models/attachment_model.js'
 import { LucidAttachmentStore } from './lucid_attachment_store.js'
+import { AttachmentError } from '../../../errors.js'
 
 export type LucidVariantGenerationServiceOptions = {
   generator: Pick<VariantGenerationService, 'generateAll'>
@@ -57,7 +58,10 @@ export class LucidVariantGenerationService implements VariantGenerator {
   }
 }
 
-export class PersistedAttachmentNotFoundError extends Error {
+export class PersistedAttachmentNotFoundError extends AttachmentError {
+  static code = 'E_PERSISTED_ATTACHMENT_NOT_FOUND'
+  static status = 404
+
   constructor(id: string) {
     super(`Persisted attachment "${id}" was not found`)
     this.name = 'PersistedAttachmentNotFoundError'

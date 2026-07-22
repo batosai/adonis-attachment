@@ -16,6 +16,7 @@ import {
   resolveBlurhashComponents,
   type BlurhashGenerator,
 } from '../media/blurhash.js'
+import { AttachmentError } from '../errors.js'
 
 export type GeneratedVariant = {
   key: string
@@ -112,7 +113,10 @@ export class VariantGenerationService implements VariantGenerator {
   }
 }
 
-export class UnknownVariantConverterError extends Error {
+export class UnknownVariantConverterError extends AttachmentError {
+  static code = 'E_UNKNOWN_VARIANT_CONVERTER'
+  static status = 422
+
   constructor(key: string) {
     super(`No variant converter is registered for "${key}"`)
     this.name = 'UnknownVariantConverterError'

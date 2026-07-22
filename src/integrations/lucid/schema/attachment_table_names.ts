@@ -6,6 +6,7 @@
  */
 
 import string from '@adonisjs/core/helpers/string'
+import { AttachmentError } from '../../../errors.js'
 
 export type AttachmentTableNames = {
   tableName: string
@@ -17,7 +18,9 @@ export type AttachmentTableNames = {
  */
 export function resolveAttachmentTableNames(tableName = 'attachments'): AttachmentTableNames {
   if (!/^[a-z][a-z0-9_]*$/.test(tableName)) {
-    throw new Error('Lucid attachment table names must be snake_case identifiers')
+    throw new AttachmentError('Lucid attachment table names must be snake_case identifiers', {
+      code: 'E_INVALID_ATTACHMENT_TABLE_NAME',
+    })
   }
 
   return {

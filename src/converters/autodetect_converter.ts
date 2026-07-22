@@ -13,6 +13,7 @@ import {
   type CommandRunner,
 } from '../media/binaries.js'
 import { createSharpVariantConverter, type SharpFactory, type SharpResizeOptions } from '../media/sharp.js'
+import { MissingOptionalDependencyError } from '../errors.js'
 
 export type AutodetectConverterOptions = ConverterOptions & {
   runner?: CommandRunner
@@ -142,7 +143,7 @@ async function loadSharp(): Promise<SharpFactory> {
   const module = await import(specifier) as { default?: unknown }
 
   if (typeof module.default !== 'function') {
-    throw new Error('Autodetect image conversion requires the optional "sharp" dependency')
+    throw new MissingOptionalDependencyError('sharp')
   }
 
   return module.default as SharpFactory

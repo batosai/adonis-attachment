@@ -24,6 +24,7 @@ import type { AttachmentQueue } from './queue.js'
 import type { AttachmentMetadataPersister } from './attachment_metadata_persister.js'
 import type { AttachmentStorage } from './storage.js'
 import { MediaMetadataService, type MediaMetadataExtractor } from '../media/media_metadata.js'
+import { AttachmentError } from '../errors.js'
 import type { AttachmentVariantKey } from '../../index.js'
 
 export type AttachmentServiceOptions = {
@@ -213,7 +214,9 @@ export class AttachmentService {
   }
 }
 
-export class DeferredMetadataNotConfiguredError extends Error {
+export class DeferredMetadataNotConfiguredError extends AttachmentError {
+  static code = 'E_METADATA_NOT_CONFIGURED'
+
   constructor() {
     super('Deferred metadata extraction requires configured extractors and a metadata persister')
     this.name = 'DeferredMetadataNotConfiguredError'

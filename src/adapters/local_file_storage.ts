@@ -12,6 +12,7 @@ import { randomUUID } from 'node:crypto'
 import type { ApplicationService } from '@adonisjs/core/types'
 
 import type { AttachmentStorage, StorageLocation, WriteAttachmentInput } from '../core/storage.js'
+import { AttachmentError } from '../errors.js'
 
 export type LocalFileStorageOptions = {
   location: string
@@ -59,14 +60,20 @@ export class LocalFileStorage implements AttachmentStorage {
 
   #resolve(location: StorageLocation): string {
     if (location.disk !== this.defaultDisk) {
-      throw new Error(`LocalFileStorage cannot access the "${location.disk}" disk`)
+      throw new AttachmentError(`LocalFileStorage cannot access the "${location.disk}" disk`, {
+        code: 'E_STORAGE_DISK_NOT_FOUND',
+        status: 404,
+      })
     }
 
     const filePath = resolve(this.#location, location.path)
     const pathFromRoot = relative(this.#location, filePath)
 
     if (!pathFromRoot || pathFromRoot === '..' || pathFromRoot.startsWith(`..${sep}`)) {
-      throw new Error('Attachment paths must stay inside the local storage directory')
+      throw new AttachmentError('Attachment paths must stay inside the local storage directory', {
+        code: 'E_STORAGE_PATH_OUTSIDE_ROOT',
+        status: 400,
+      })
     }
 
     return filePath

@@ -13,6 +13,7 @@ import { spawn } from 'node:child_process'
 import type { MediaMetadataExtractor } from './media_metadata.js'
 import type { AttachmentMetadata } from './media_metadata.js'
 import type { VariantConverter } from '../variants/variant_converter.js'
+import { AttachmentError } from '../errors.js'
 
 export type CommandExecution = {
   command: string
@@ -67,7 +68,7 @@ export class NodeCommandRunner implements CommandRunner {
           return
         }
 
-        reject(error)
+        reject(new CommandExecutionError(execution, null, error.message, { cause: error }))
       }))
       child.once('close', (code) => {
         const result = { stdout: Buffer.concat(stdout), stderr: Buffer.concat(stderr) }
@@ -89,16 +90,24 @@ export class NodeCommandRunner implements CommandRunner {
   }
 }
 
-export class CommandExecutionError extends Error {
-  constructor(execution: CommandExecution, code: number | null, stderr: string) {
+export class CommandExecutionError extends AttachmentError {
+  static code = 'E_COMMAND_EXECUTION_FAILED'
+
+  constructor(execution: CommandExecution, code: number | null, stderr: string, options?: ErrorOptions) {
     super(
       `Command "${execution.command}" exited with code ${code ?? 'unknown'}${stderr ? `: ${stderr}` : ''}`
     )
+    if (options?.cause) {
+      this.cause = options.cause
+    }
     this.name = 'CommandExecutionError'
   }
 }
 
-export class CommandTimeoutError extends Error {
+export class CommandTimeoutError extends AttachmentError {
+  static code = 'E_COMMAND_TIMEOUT'
+  static status = 504
+
   constructor(execution: CommandExecution) {
     super(`Command "${execution.command}" exceeded its ${execution.timeout}ms timeout`)
     this.name = 'CommandTimeoutError'

@@ -17,6 +17,7 @@ import type { AttachmentOwner } from '../relations/attachment_owner.js'
 import { AttachmentLinkModel } from '../models/attachment_link_model.js'
 import { AttachmentModel } from '../models/attachment_model.js'
 import { LucidAttachmentStore } from './lucid_attachment_store.js'
+import { AttachmentConfigurationError } from '../../../errors.js'
 
 export type AttachmentFileService = Pick<AttachmentService, 'create' | 'remove'> &
   Partial<Pick<AttachmentService, 'createDraft' | 'getVariantKeys' | 'getVariantMetadataEnabled' | 'getMetadataMode' | 'scheduleMetadataExtraction' | 'scheduleVariantGeneration'>>
@@ -304,7 +305,9 @@ export class LucidAttachmentLifecycleService {
       !store.moveCollectionItem ||
       !store.removeCollectionItem
     ) {
-      throw new Error('Lucid attachment collection operations require a collection-capable store')
+      throw new AttachmentConfigurationError(
+        'Lucid attachment collection operations require a collection-capable store'
+      )
     }
 
     return store as Required<
@@ -325,7 +328,9 @@ export class LucidAttachmentLifecycleService {
     const store = this.#store
 
     if (!store.createOriginalLink || !store.createCollectionLink) {
-      throw new Error('Lucid attachment link operations require a link-capable store')
+      throw new AttachmentConfigurationError(
+        'Lucid attachment link operations require a link-capable store'
+      )
     }
 
     return store as Required<

@@ -14,6 +14,7 @@ import { markAttachmentPersisted } from '../../../core/attachment_state.js'
 import { createAttachmentOwnerKey, type AttachmentOwner } from '../relations/attachment_owner.js'
 import { AttachmentLinkModel } from '../models/attachment_link_model.js'
 import { AttachmentModel } from '../models/attachment_model.js'
+import { AttachmentNotFoundError, AttachmentValidationError } from '../../../errors.js'
 
 export type LucidAttachmentWithVariants = {
   original: AttachmentLinkModel
@@ -160,7 +161,7 @@ export class LucidAttachmentStore {
     const source = items.findIndex((item) => item.id === id)
 
     if (source === -1) {
-      throw new Error(`Attachment link "${id}" does not belong to this collection`)
+      throw new AttachmentValidationError(`Attachment link "${id}" does not belong to this collection`)
     }
 
     const target = normalizePosition(position, items.length - 1)
@@ -243,7 +244,7 @@ export class LucidAttachmentStore {
     const blob = await this.findById(id)
 
     if (!blob) {
-      throw new Error(`Attachment blob "${id}" does not exist`)
+      throw new AttachmentNotFoundError(id)
     }
 
     return blob
@@ -320,7 +321,7 @@ function normalizePosition(position: number | undefined, maximum: number): numbe
   }
 
   if (!Number.isSafeInteger(position) || position < 0) {
-    throw new Error('Attachment collection positions must be non-negative integers')
+    throw new AttachmentValidationError('Attachment collection positions must be non-negative integers')
   }
 
   return Math.min(position, maximum)

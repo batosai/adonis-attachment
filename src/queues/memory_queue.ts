@@ -6,6 +6,7 @@
  */
 
 import type { AttachmentJob, AttachmentJobHandler, AttachmentQueue } from '../core/queue.js'
+import { AttachmentError } from '../errors.js'
 
 export type MemoryAttachmentQueueOptions = {
   handler: AttachmentJobHandler
@@ -26,7 +27,9 @@ export class MemoryAttachmentQueue implements AttachmentQueue {
 
   constructor(options: MemoryAttachmentQueueOptions) {
     if (!Number.isInteger(options.concurrency ?? 1) || (options.concurrency ?? 1) < 1) {
-      throw new Error('Memory queue concurrency must be a positive integer')
+      throw new AttachmentError('Memory queue concurrency must be a positive integer', {
+        code: 'E_INVALID_QUEUE_CONCURRENCY',
+      })
     }
 
     this.#handler = options.handler

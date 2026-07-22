@@ -13,6 +13,7 @@ import type {
   AttachmentPersistenceOptions,
 } from './attachment_options.js'
 import type { AttachmentMetadata } from '../media/media_metadata.js'
+import { AttachmentError } from '../errors.js'
 
 export type Attachment = Readonly<{
   id: string
@@ -100,7 +101,10 @@ export class AttachmentDraft implements Attachment {
 
   get source(): Readonly<CreateAttachmentInput> {
     if (!this.#source) {
-      throw new Error('Attachment draft source is no longer available after persistence')
+      throw new AttachmentError('Attachment draft source is no longer available after persistence', {
+        code: 'E_ATTACHMENT_DRAFT_SOURCE_UNAVAILABLE',
+        status: 409,
+      })
     }
 
     return this.#source
@@ -149,7 +153,10 @@ export class AttachmentDraft implements Attachment {
 
   toJSON(): Attachment {
     if (!this.#persisted) {
-      throw new Error('Attachment drafts must be persisted before serialization')
+      throw new AttachmentError('Attachment drafts must be persisted before serialization', {
+        code: 'E_ATTACHMENT_DRAFT_NOT_PERSISTED',
+        status: 409,
+      })
     }
 
     return this.toAttachment()
@@ -219,7 +226,10 @@ function getExtension(fileName: string): string {
 
 function joinPath(folder: string | undefined, name: string): string {
   if (name.includes('/') || name.includes('\\') || name === '.' || name === '..') {
-    throw new Error('Attachment names must not contain path separators')
+    throw new AttachmentError('Attachment names must not contain path separators', {
+      code: 'E_INVALID_ATTACHMENT_NAME',
+      status: 400,
+    })
   }
 
   if (!folder) {
@@ -229,7 +239,10 @@ function joinPath(folder: string | undefined, name: string): string {
   const normalizedFolder = folder.replaceAll('\\', '/').replace(/^\/+|\/+$/g, '')
 
   if (!normalizedFolder || normalizedFolder.split('/').includes('..')) {
-    throw new Error('Attachment folder must be a relative path without parent segments')
+    throw new AttachmentError('Attachment folder must be a relative path without parent segments', {
+      code: 'E_INVALID_ATTACHMENT_FOLDER',
+      status: 400,
+    })
   }
 
   return `${normalizedFolder}/${name}`

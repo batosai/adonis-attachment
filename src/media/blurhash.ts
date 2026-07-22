@@ -5,6 +5,8 @@
  * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
  */
 
+import { MissingOptionalDependencyError } from '../errors.js'
+
 export type BlurhashComponent = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
 
 /** Matches the v5 blurhash declaration accepted by converter configuration. */
@@ -91,7 +93,7 @@ async function loadGenerator(): Promise<BlurhashGenerator> {
   ])
 
   if (typeof sharpModule.default !== 'function' || typeof blurhashModule.encode !== 'function') {
-    throw new Error('Blurhash generation requires the optional "sharp" and "blurhash" dependencies')
+    throw new MissingOptionalDependencyError(['sharp', 'blurhash'])
   }
 
   return createSharpBlurhashGenerator(

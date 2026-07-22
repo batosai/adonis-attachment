@@ -13,6 +13,7 @@ import type { Readable } from 'node:stream'
 import type { AttachmentDraft, CreateAttachmentInput } from '../core/attachment.js'
 import type { AttachmentPersistenceOptions } from '../core/attachment_options.js'
 import type { AttachmentService } from '../core/attachment_service.js'
+import { AttachmentSourceError } from '../errors.js'
 
 export type MultipartAttachmentFile = {
   tmpPath?: string
@@ -56,7 +57,9 @@ export class AttachmentManager {
 
   constructor(attachments: Pick<AttachmentService, 'createDraft'>, options: AttachmentManagerOptions = {}) {
     if (options.maxBytes !== undefined && (!Number.isSafeInteger(options.maxBytes) || options.maxBytes < 1)) {
-      throw new Error('Attachment source maxBytes must be a positive integer')
+      throw new AttachmentSourceError('Attachment source maxBytes must be a positive integer', {
+        code: 'E_INVALID_ATTACHMENT_SOURCE_OPTIONS',
+      })
     }
 
     this.#attachments = attachments
@@ -119,7 +122,8 @@ export class AttachmentManager {
 
     if (!response.ok) {
       throw new AttachmentSourceError(
-        `Unable to download attachment source: ${response.status} ${response.statusText}`
+        `Unable to download attachment source: ${response.status} ${response.statusText}`,
+        { code: 'E_ATTACHMENT_SOURCE_DOWNLOAD_FAILED', status: 502 }
       )
     }
 
@@ -141,7 +145,9 @@ export class AttachmentManager {
 
   createFromFile(input: MultipartAttachmentFile, options: AttachmentSourceOptions = {}): Promise<AttachmentDraft> {
     if (!input.tmpPath) {
-      throw new AttachmentSourceError('Multipart attachment file has no temporary path')
+      throw new AttachmentSourceError('Multipart attachment file has no temporary path', {
+        code: 'E_MULTIPART_SOURCE_PATH_MISSING',
+      })
     }
 
     return this.createFromPath(input.tmpPath, {
@@ -174,7 +180,9 @@ export class AttachmentManager {
 
   #assertSize(size: number, override: number | undefined): void {
     if (override !== undefined && (!Number.isSafeInteger(override) || override < 1)) {
-      throw new Error('Attachment source maxBytes must be a positive integer')
+      throw new AttachmentSourceError('Attachment source maxBytes must be a positive integer', {
+        code: 'E_INVALID_ATTACHMENT_SOURCE_OPTIONS',
+      })
     }
 
     const maxBytes =
@@ -185,7 +193,10 @@ export class AttachmentManager {
           : Math.min(override, this.#maxBytes)
 
     if (maxBytes !== undefined && size > maxBytes) {
-      throw new AttachmentSourceError(`Attachment source exceeds the ${maxBytes}-byte limit`)
+      throw new AttachmentSourceError(`Attachment source exceeds the ${maxBytes}-byte limit`, {
+        code: 'E_ATTACHMENT_SOURCE_TOO_LARGE',
+        status: 413,
+      })
     }
   }
 }
@@ -201,12 +212,7 @@ function toPersistenceOptions(options: AttachmentSourceOptions): AttachmentPersi
   }
 }
 
-export class AttachmentSourceError extends Error {
-  constructor(message: string) {
-    super(message)
-    this.name = 'AttachmentSourceError'
-  }
-}
+export { AttachmentSourceError } from '../errors.js'
 
 function parseBase64(input: string): { body: Uint8Array; mimeType?: string } {
   const dataUri = /^data:([^;,]+)?;base64,([A-Za-z0-9+/\s]*={0,2})$/i.exec(input)
@@ -214,7 +220,9 @@ function parseBase64(input: string): { body: Uint8Array; mimeType?: string } {
   const value = (dataUri?.[2] ?? input).replaceAll(/\s/g, '')
 
   if (!isBase64(value)) {
-    throw new AttachmentSourceError('Attachment source must be valid Base64 data')
+    throw new AttachmentSourceError('Attachment source must be valid Base64 data', {
+      code: 'E_ISNOT_BASE64',
+    })
   }
 
   return { body: Buffer.from(value, 'base64'), ...(mimeType ? { mimeType } : {}) }

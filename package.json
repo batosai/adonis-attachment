@@ -164,7 +164,7 @@
     "@adonisjs/queue": "^0.6.0",
     "blurhash": "^2.0.5",
     "exifreader": "^4.41.3",
-    "sharp": "^0.34.0"
+    "sharp": "^0.35.3"
   },
   "peerDependenciesMeta": {
     "@adonisjs/drive": {

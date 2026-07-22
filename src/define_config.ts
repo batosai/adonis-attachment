@@ -24,6 +24,7 @@ import type { AttachmentStorage } from './core/storage.js'
 import type { AttachmentManagerOptions } from './sources/attachment_manager.js'
 import type { AttachmentPersistenceOptions } from './core/attachment_options.js'
 import type { MediaMetadataExtractor } from './media/media_metadata.js'
+import type { AttachmentEventEmitter } from './events/attachment_events.js'
 import {
   ConfiguredVariantConverterRegistry,
   type ConverterConfigMap,
@@ -58,6 +59,9 @@ export type AttachmentMediaConfig = {
   metadataPersister?: Integration<AttachmentMetadataPersister>
 }
 
+/** Optional application event emitter used for attachment lifecycle events. */
+export type AttachmentEventsConfig = Integration<AttachmentEventEmitter>
+
 /** v5-style named converter declarations, resolved lazily when a job needs one. */
 export type AttachmentConvertersConfig = ConverterConfigMap
 
@@ -75,6 +79,7 @@ export type AttachmentConfig<KnownConverters extends ConverterConfigMap = Conver
   route?: AttachmentRouteConfig
   integrations?: AttachmentIntegrationsConfig
   media?: AttachmentMediaConfig
+  events?: AttachmentEventsConfig
   converters?: KnownConverters
   queueConcurrency?: number
   createId?: () => string
@@ -128,6 +133,11 @@ export function defineConfig<const KnownConverters extends ConverterConfigMap = 
       : undefined
     const resolvedMetadataPersister = metadataPersister
       ?? await resolveLucidMetadataPersister(config.media?.metadataPolicy?.mode, config.integrations?.lucid)
+    const events = config.events ? await resolveIntegration(config.events, app) : undefined
+
+    if (processor && events) {
+      processor.setEventEmitter(events)
+    }
 
     if (config.media?.metadataPolicy?.mode === 'deferred' && !resolvedMetadataPersister) {
       throw new AttachmentError(
@@ -150,6 +160,7 @@ export function defineConfig<const KnownConverters extends ConverterConfigMap = 
       ...(config.media?.metadataPolicy?.mode ? { metadataMode: config.media.metadataPolicy.mode } : {}),
       ...(config.media?.metadataPolicy?.variants !== undefined ? { metadataVariants: config.media.metadataPolicy.variants } : {}),
       ...(resolvedMetadataPersister ? { metadataPersister: resolvedMetadataPersister } : {}),
+      ...(events ? { events } : {}),
       ...(config.converters
         ? { converters: new ConfiguredVariantConverterRegistry(config.converters) }
         : {}),

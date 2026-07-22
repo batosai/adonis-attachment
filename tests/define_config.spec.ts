@@ -144,6 +144,27 @@ test.group('defineConfig', () => {
     assert.instanceOf(resolved.queue, MemoryAttachmentQueue)
   })
 
+  test('preserves the configured attachment event emitter', async ({ assert }) => {
+    const storage: AttachmentStorage = {
+      async write() {},
+      async read() { return new Uint8Array() },
+      async remove() {},
+    }
+    const events = { emit() {} }
+    let injected: unknown
+    const processor = {
+      async process() {},
+      setEventEmitter(value: unknown) {
+        injected = value
+      },
+    } as never
+
+    const resolved = await defineConfig({ storage, events, processor }).resolver({} as never)
+
+    assert.equal(resolved.events, events)
+    assert.equal(injected, events)
+  })
+
   test('allows applications to disable or prefix the read route', async ({ assert }) => {
     const storage: AttachmentStorage = {
       async write() {},

@@ -151,4 +151,22 @@ test.group('AttachmentProvider', (group) => {
     assert.isDefined(await registry.get('thumbnail'))
     assert.equal(imports, 1)
   })
+
+  test('registers a configured attachment event emitter', async ({ assert }) => {
+    const bindings = new Map<string, () => Promise<unknown>>()
+    const events = { emit() {} }
+    const config = defineConfig({ defaultDisk: 'public', storage, events })
+    const provider = new AttachmentProvider({
+      config: { get: () => config },
+      container: {
+        singleton(binding: string, factory: () => Promise<unknown>) {
+          bindings.set(binding, factory)
+        },
+      },
+    } as never)
+
+    provider.register()
+
+    assert.equal(await bindings.get('jrmc.attachment.events')?.(), events)
+  })
 })

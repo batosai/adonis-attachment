@@ -144,6 +144,39 @@ test.group('LucidAttachmentLifecycleService', () => {
     assert.deepEqual(jobs, ['extract-metadata:attachment-id'])
   })
 
+  test('preserves the Lucid owner in queued lifecycle events', async ({ assert }) => {
+    const jobs: Array<Record<string, unknown>> = []
+    const attachments = new AttachmentService({
+      defaultDisk: 'fs',
+      createId: () => attachment.id,
+      queue: { async enqueue(job) { jobs.push(job) } },
+      storage: { async write() {}, async read() { return new Uint8Array() }, async remove() {} },
+      defaults: { variants: ['thumbnail'] },
+    })
+    const owner = {
+      type: 'users',
+      id: '42',
+      field: 'avatar',
+      model: { constructor: { primaryKey: 'uuid' } },
+    }
+
+    await new LucidAttachmentLifecycleService(attachments, makeStore()).attach(owner, {
+      body: new Uint8Array([1]),
+      originalName: 'profile.jpg',
+    })
+
+    assert.deepEqual(jobs, [{
+      type: 'generate-variants',
+      attachmentId: attachment.id,
+      variantKeys: ['thumbnail'],
+      eventContext: {
+        tableName: 'users',
+        attributeName: 'avatar',
+        primary: { key: 'uuid', value: '42' },
+      },
+    }])
+  })
+
   test('removes a new file when blob or link persistence fails', async ({ assert }) => {
     const removed: Attachment[] = []
     const service = new LucidAttachmentLifecycleService(

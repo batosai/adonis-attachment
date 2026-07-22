@@ -18,6 +18,7 @@ import { AttachmentLinkModel } from '../models/attachment_link_model.js'
 import { AttachmentModel } from '../models/attachment_model.js'
 import { LucidAttachmentStore } from './lucid_attachment_store.js'
 import { AttachmentConfigurationError } from '../../../errors.js'
+import type { AttachmentEventContext } from '../../../events/attachment_events.js'
 
 export type AttachmentFileService = Pick<AttachmentService, 'create' | 'remove'> &
   Partial<Pick<AttachmentService, 'createDraft' | 'getVariantKeys' | 'getVariantMetadataEnabled' | 'getMetadataMode' | 'scheduleMetadataExtraction' | 'scheduleVariantGeneration'>>
@@ -385,7 +386,8 @@ export class LucidAttachmentLifecycleService {
 
     const meta = this.#attachments.getVariantMetadataEnabled?.(persisted.draft, options)
 
-    await this.#afterCommit(owner, () => this.#attachments.scheduleVariantGeneration!(persisted.attachment, keys, meta))
+    const eventContext = this.#eventContext(owner)
+    await this.#afterCommit(owner, () => this.#attachments.scheduleVariantGeneration!(persisted.attachment, keys, meta, eventContext))
   }
 
   async #scheduleMetadata(
@@ -400,7 +402,21 @@ export class LucidAttachmentLifecycleService {
       return
     }
 
-    await this.#afterCommit(owner, () => this.#attachments.scheduleMetadataExtraction!(persisted.attachment))
+    const eventContext = this.#eventContext(owner)
+    await this.#afterCommit(owner, () => this.#attachments.scheduleMetadataExtraction!(persisted.attachment, eventContext))
+  }
+
+  #eventContext(owner: AttachmentOwner): AttachmentEventContext {
+    const model = owner.model as { constructor?: { primaryKey?: string } } | undefined
+
+    return {
+      tableName: owner.type,
+      attributeName: owner.field,
+      primary: {
+        key: model?.constructor?.primaryKey ?? 'id',
+        value: owner.id,
+      },
+    }
   }
 }
 

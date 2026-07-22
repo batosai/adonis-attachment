@@ -31,6 +31,15 @@ export {
 } from './attachment_service.js'
 export { type AttachmentMetadataPersister } from './attachment_metadata_persister.js'
 export {
+  emitAttachmentEvent,
+  toAttachmentEventFailure,
+  type AttachmentEventContext,
+  type AttachmentEventEmitter,
+  type AttachmentEventFailure,
+  type AttachmentEventName,
+  type AttachmentEventPayload,
+} from '../events/attachment_events.js'
+export {
   AttachmentError,
   AttachmentSourceError,
   MissingOptionalDependencyError,

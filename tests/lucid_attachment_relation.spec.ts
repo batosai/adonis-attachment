@@ -370,6 +370,11 @@ test.group("Lucid attachment relations", (group) => {
         type: "generate-variants",
         attachmentId: draft.id,
         variantKeys: ["manager"],
+        eventContext: {
+          tableName: "relation_users",
+          attributeName: "avatar",
+          primary: { key: "id", value: user.id },
+        },
       },
     ]);
   });

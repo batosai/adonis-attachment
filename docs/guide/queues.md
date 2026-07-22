@@ -60,6 +60,9 @@ const processor = new AttachmentJobProcessor({
 })
 ```
 
+To emit lifecycle events from this worker, pass the same event adapter configured for the
+package as `events`. See [Events](/guide/events#workers-and-external-queues).
+
 ## A real worker with `@adonisjs/queue`
 
 For production, dispatch jobs to `@adonisjs/queue`. `AdonisAttachmentQueue` adapts your job

@@ -6,18 +6,21 @@
  */
 
 import type { Attachment } from './attachment.js'
+import type { AttachmentEventContext } from '../events/attachment_events.js'
 
 export type GenerateVariantsJob = {
   type: 'generate-variants'
   attachmentId: string
   variantKeys?: readonly string[]
   meta?: boolean
+  eventContext?: AttachmentEventContext
 }
 
 export type ExtractMetadataJob = {
   type: 'extract-metadata'
   attachmentId: string
   attachment: Attachment
+  eventContext?: AttachmentEventContext
 }
 
 export type AttachmentJob = GenerateVariantsJob | ExtractMetadataJob

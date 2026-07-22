@@ -47,6 +47,10 @@
       "types": "./build/src/core/index.d.ts",
       "default": "./build/src/core/index.js"
     },
+    "./events/adonis": {
+      "types": "./build/src/events/adonis_attachment_event_emitter.d.ts",
+      "default": "./build/src/events/adonis_attachment_event_emitter.js"
+    },
     "./queues/memory": {
       "types": "./build/src/queues/memory_queue.d.ts",
       "default": "./build/src/queues/memory_queue.js"

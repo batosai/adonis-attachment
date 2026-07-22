@@ -2,6 +2,7 @@ import type { AttachmentService } from "./src/core/attachment_service.js";
 import type { AttachmentRepository } from "./src/core/attachment_repository.js";
 import type { AttachmentManager } from "./src/sources/attachment_manager.js";
 import type { VariantConverterRegistry } from "./src/converters/configured_variant_converter_registry.js";
+import type { AttachmentEventEmitter } from "./src/events/attachment_events.js";
 
 import attachmentManager from "./services/main.js";
 import attachmentConverters from "./services/converters.js";
@@ -19,6 +20,7 @@ declare module "@adonisjs/core/types" {
     "jrmc.attachment.manager": AttachmentManager;
     "jrmc.attachment.converters": VariantConverterRegistry;
     "jrmc.attachment.repository": AttachmentRepository;
+    "jrmc.attachment.events": AttachmentEventEmitter;
   }
 }
 
@@ -30,12 +32,22 @@ export {
   defineConfig,
   type AttachmentIntegrationsConfig,
   type AttachmentMediaConfig,
+  type AttachmentEventsConfig,
   type AttachmentConvertersConfig,
   type AttachmentConfig,
   type InferConverters,
   type LucidAttachmentConfig,
   type ResolvedAttachmentConfig,
 } from "./src/define_config.js";
+export {
+  emitAttachmentEvent,
+  toAttachmentEventFailure,
+  type AttachmentEventContext,
+  type AttachmentEventEmitter,
+  type AttachmentEventFailure,
+  type AttachmentEventName,
+  type AttachmentEventPayload,
+} from "./src/events/attachment_events.js";
 export { AdonisDriveStorage } from "./src/adapters/adonis_drive_storage.js";
 export {
   LocalFileStorage,

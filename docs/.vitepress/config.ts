@@ -31,6 +31,7 @@ export default withMermaid(
               { text: 'Image variants', link: '/guide/variants' },
               { text: 'Serving files', link: '/guide/serving-files' },
               { text: 'Background processing', link: '/guide/queues' },
+              { text: 'Events', link: '/guide/events' },
               { text: 'Errors', link: '/guide/errors' },
             ],
           },

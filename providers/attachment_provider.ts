@@ -9,6 +9,7 @@ import { configProvider } from '@adonisjs/core'
 import { AttachmentService } from '../src/core/attachment_service.js'
 import { AttachmentsController } from '../src/controllers/attachments_controller.js'
 import { AttachmentManager } from '../src/sources/attachment_manager.js'
+import { AdonisAttachmentEventEmitter } from '../src/events/adonis_attachment_event_emitter.js'
 
 import type { ApplicationService } from '@adonisjs/core/types'
 import type { ResolvedAttachmentConfig } from '../src/define_config.js'
@@ -32,7 +33,23 @@ export default class AttachmentProvider {
 
       await applyLucidConfig(config)
 
-      return new AttachmentService(config)
+      const events = await this.app.container.make('jrmc.attachment.events')
+      return new AttachmentService({ ...config, events })
+    })
+
+    this.app.container.singleton('jrmc.attachment.events', async () => {
+      const attachmentConfig = this.app.config.get('attachment')
+      const config = await configProvider.resolve<ResolvedAttachmentConfig>(
+        this.app,
+        attachmentConfig
+      )
+
+      if (config?.events) {
+        return config.events
+      }
+
+      const { default: emitter } = await import('@adonisjs/core/services/emitter')
+      return new AdonisAttachmentEventEmitter(emitter)
     })
 
     this.app.container.singleton('jrmc.attachment.repository', async () => {

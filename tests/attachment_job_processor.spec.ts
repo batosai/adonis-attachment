@@ -15,6 +15,9 @@ import {
   type AttachmentRepository,
   type VariantGenerationRequest,
   type VariantGenerator,
+  type AttachmentEventEmitter,
+  type AttachmentEventName,
+  type AttachmentEventPayload,
 } from '../index.js'
 
 const attachment: Attachment = {
@@ -41,6 +44,14 @@ class FakeVariantGenerator implements VariantGenerator {
 
   async generate(request: VariantGenerationRequest): Promise<void> {
     this.requests.push(request)
+  }
+}
+
+class FakeEmitter implements AttachmentEventEmitter {
+  events: Array<{ name: AttachmentEventName; payload: AttachmentEventPayload }> = []
+
+  emit(name: AttachmentEventName, payload: AttachmentEventPayload): void {
+    this.events.push({ name, payload })
   }
 }
 
@@ -126,6 +137,61 @@ test.group('AttachmentJobProcessor', () => {
     await processor.process({ type: 'extract-metadata', attachmentId: attachment.id, attachment })
 
     assert.deepEqual(processed, [attachment])
+  })
+
+  test('preserves the v5 variant events and adds the failed job error', async ({ assert }) => {
+    const events = new FakeEmitter()
+    const variants = new FakeVariantGenerator()
+    const processor = new AttachmentJobProcessor({
+      attachments: new FakeRepository(attachment),
+      variants,
+      events,
+    })
+    const eventContext = {
+      tableName: 'users',
+      attributeName: 'avatar',
+      primary: { key: 'id', value: '42' },
+    }
+
+    await processor.process({
+      type: 'generate-variants',
+      attachmentId: attachment.id,
+      variantKeys: ['thumbnail'],
+      eventContext,
+    })
+
+    assert.deepEqual(events.events.map(({ name }) => name), [
+      'attachment:variant_started',
+      'attachment:variant_completed',
+    ])
+    assert.deepEqual(events.events[0]?.payload, {
+      ...eventContext,
+      attachment,
+      variants: ['thumbnail'],
+    })
+
+    const failed = new AttachmentJobProcessor({
+      attachments: new FakeRepository(attachment),
+      events,
+      variants: {
+        async generate() {
+          throw Object.assign(new Error('conversion failed'), { code: 'E_CONVERSION_FAILED' })
+        },
+      },
+    })
+    await assert.rejects(
+      () => failed.process({ type: 'generate-variants', attachmentId: attachment.id, eventContext }),
+      'conversion failed'
+    )
+
+    assert.deepEqual(events.events.at(-1), {
+      name: 'attachment:variant_failed',
+      payload: {
+        ...eventContext,
+        attachment,
+        error: { message: 'conversion failed', code: 'E_CONVERSION_FAILED' },
+      },
+    })
   })
 
   test('rejects deferred metadata jobs without a metadata processor', async ({ assert }) => {

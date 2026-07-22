@@ -14,6 +14,7 @@ test('imports every published package entry point', async ({ assert }) => {
   const entryPoints = [
     '@jrmc/adonis-attachment',
     '@jrmc/adonis-attachment/core',
+    '@jrmc/adonis-attachment/events/adonis',
     '@jrmc/adonis-attachment/queues/memory',
     '@jrmc/adonis-attachment/queues/adonis',
     '@jrmc/adonis-attachment/adapters/adonis-drive',

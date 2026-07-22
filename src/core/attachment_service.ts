@@ -26,6 +26,12 @@ import type { AttachmentStorage } from './storage.js'
 import { MediaMetadataService, type MediaMetadataExtractor } from '../media/media_metadata.js'
 import { AttachmentError } from '../errors.js'
 import type { AttachmentVariantKey } from '../../index.js'
+import {
+  emitAttachmentEvent,
+  toAttachmentEventFailure,
+  type AttachmentEventContext,
+  type AttachmentEventEmitter,
+} from '../events/attachment_events.js'
 
 export type AttachmentServiceOptions = {
   storage: AttachmentStorage
@@ -37,6 +43,7 @@ export type AttachmentServiceOptions = {
   metadataMode?: AttachmentMetadataMode
   metadataPersister?: AttachmentMetadataPersister
   metadataVariants?: boolean
+  events?: AttachmentEventEmitter
 }
 
 export type AttachmentMetadataMode = 'sync' | 'deferred'
@@ -54,6 +61,7 @@ export class AttachmentService {
   readonly #metadataMode: AttachmentMetadataMode
   readonly #metadataPersister: AttachmentMetadataPersister | undefined
   readonly #metadataVariants: boolean
+  readonly #events: AttachmentEventEmitter | undefined
 
   constructor(options: AttachmentServiceOptions) {
     this.#storage = options.storage
@@ -66,6 +74,7 @@ export class AttachmentService {
     this.#metadataMode = options.metadataMode ?? 'sync'
     this.#metadataPersister = options.metadataPersister
     this.#metadataVariants = options.metadataVariants ?? true
+    this.#events = options.events
   }
 
   createDraft(
@@ -115,13 +124,20 @@ export class AttachmentService {
     })
 
     if (options.meta && this.#metadata && this.#metadataMode === 'sync') {
-      const metadata = await this.#metadata.extract({ attachment, body: source.body })
+      this.#emit('attachment:metadata_started', attachment)
+      try {
+        const metadata = await this.#metadata.extract({ attachment, body: source.body })
 
-      if (metadata) {
-        attachment = {
-          ...attachment,
-          metadata: { ...metadata, ...(source.metadata ?? {}) },
+        if (metadata) {
+          attachment = {
+            ...attachment,
+            metadata: { ...metadata, ...(source.metadata ?? {}) },
+          }
         }
+        this.#emit('attachment:metadata_completed', attachment)
+      } catch (error) {
+        this.#emit('attachment:metadata_failed', attachment, undefined, undefined, error)
+        throw error
       }
     }
 
@@ -133,23 +149,33 @@ export class AttachmentService {
     })
 
     markAttachmentPending(draft)
+    this.#emit('attachment:created', attachment)
     return attachment
   }
 
-  remove(attachment: Attachment): Promise<void> {
-    return this.#storage.remove(attachment)
+  async remove(attachment: Attachment): Promise<void> {
+    await this.#storage.remove(attachment)
+    this.#emit('attachment:deleted', attachment)
   }
 
   read(attachment: Attachment): Promise<Uint8Array> {
     return this.#storage.read({ disk: attachment.disk, path: attachment.path })
   }
 
-  scheduleMetadataExtraction(attachment: Attachment): Promise<void> {
+  scheduleMetadataExtraction(
+    attachment: Attachment,
+    eventContext?: AttachmentEventContext
+  ): Promise<void> {
     if (!this.#metadata || !this.#metadataPersister) {
       throw new DeferredMetadataNotConfiguredError()
     }
 
-    return this.#queue.enqueue({ type: 'extract-metadata', attachmentId: attachment.id, attachment })
+    return this.#queue.enqueue({
+      type: 'extract-metadata',
+      attachmentId: attachment.id,
+      attachment,
+      ...(eventContext ? { eventContext } : {}),
+    })
   }
 
   async extractAndPersistMetadata(attachment: Attachment): Promise<void> {
@@ -171,13 +197,15 @@ export class AttachmentService {
   scheduleVariantGeneration(
     attachment: Attachment,
     variantKeys?: readonly AttachmentVariantKey[],
-    meta?: boolean
+    meta?: boolean,
+    eventContext?: AttachmentEventContext
   ): Promise<void> {
     return this.#queue.enqueue({
       type: 'generate-variants',
       attachmentId: attachment.id,
       ...(variantKeys ? { variantKeys } : {}),
       ...(meta !== undefined ? { meta } : {}),
+      ...(eventContext ? { eventContext } : {}),
     })
   }
 
@@ -211,6 +239,21 @@ export class AttachmentService {
     return resolveAttachmentPersistenceOptions(this.#defaults, options, draft?.options).meta
       ? this.#metadataMode
       : undefined
+  }
+
+  #emit(
+    event: 'attachment:created' | 'attachment:deleted' | 'attachment:metadata_started' | 'attachment:metadata_completed' | 'attachment:metadata_failed',
+    attachment: Attachment,
+    variants?: readonly string[],
+    context?: AttachmentEventContext,
+    error?: unknown
+  ): void {
+    emitAttachmentEvent(this.#events, event, {
+      ...(context ?? {}),
+      attachment,
+      ...(variants ? { variants } : {}),
+      ...(error ? { error: toAttachmentEventFailure(error) } : {}),
+    })
   }
 }
 

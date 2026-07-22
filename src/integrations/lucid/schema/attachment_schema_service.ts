@@ -70,6 +70,20 @@ export class AttachmentSchemaService {
     })
   }
 
+  /** Adds the nullable blurhash column to a table created by an earlier v6 schema. */
+  addBlurhashColumn(): Promise<void> {
+    return this.#connection.schema.table(this.#tableName, (table) => {
+      table.string('blurhash').nullable()
+    })
+  }
+
+  /** Removes the blurhash column when rolling back a schema upgrade. */
+  dropBlurhashColumn(): Promise<void> {
+    return this.#connection.schema.table(this.#tableName, (table) => {
+      table.dropColumn('blurhash')
+    })
+  }
+
   dropTables(): Promise<void> {
     return this.dropLinksTable().then(() => this.dropBlobsTable())
   }

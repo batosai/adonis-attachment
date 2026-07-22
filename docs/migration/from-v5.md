@@ -43,6 +43,29 @@ The v5 `meta` object is copied unchanged to the v6 `metadata` column for both or
 variants. Configure `createV5CompatibleMetadataExtractors()` for newly uploaded files when
 you want to keep the same EXIF, video, and PDF metadata shape after migration.
 
+## Existing v6 tables
+
+Tables created before blurhash support need a nullable column before variants can persist a
+hash. Create a normal Lucid migration and delegate that change to the schema service:
+
+```ts
+import { BaseSchema } from '@adonisjs/lucid/schema'
+import { AttachmentSchemaService } from '@jrmc/adonis-attachment/lucid'
+
+export default class AddBlurhashToAttachments extends BaseSchema {
+  async up() {
+    await new AttachmentSchemaService(this.db.getWriteClient()).addBlurhashColumn()
+  }
+
+  async down() {
+    await new AttachmentSchemaService(this.db.getWriteClient()).dropBlurhashColumn()
+  }
+}
+```
+
+Pass `{ tableName: 'media_attachments' }` to the service when the blob table uses a custom
+name. Newly generated attachment-table migrations already include the column.
+
 ## Keeping a single JSON column
 
 If a field only ever holds **one file with no variants**, you can keep the v5-style JSON

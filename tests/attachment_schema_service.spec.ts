@@ -49,4 +49,21 @@ test.group('AttachmentSchemaService', (group) => {
     assert.isTrue(await database.connection().schema.hasColumn('attachments', 'blurhash'))
     assert.isFalse(await database.connection().schema.hasTable('attachments_links'))
   })
+
+  test('upgrades an existing blob table with the blurhash column', async ({ assert }) => {
+    const tableName = 'legacy_attachments'
+    await database.connection().schema.createTable(tableName, (table) => {
+      table.uuid('id').primary()
+    })
+    const service = new AttachmentSchemaService(database.connection().getWriteClient(), { tableName })
+
+    await service.addBlurhashColumn()
+
+    assert.isTrue(await database.connection().schema.hasColumn(tableName, 'blurhash'))
+
+    await service.dropBlurhashColumn()
+    await database.connection().schema.dropTable(tableName)
+
+    assert.isFalse(await database.connection().schema.hasColumn(tableName, 'blurhash'))
+  })
 })

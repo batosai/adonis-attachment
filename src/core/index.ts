@@ -34,6 +34,8 @@ export {
   default as Converter,
   type ConverterAttributes,
   type ConverterOptions,
+  type BlurhashComponent,
+  type BlurhashOptions,
 } from '../converters/converter.js'
 export {
   default as AutodetectConverter,

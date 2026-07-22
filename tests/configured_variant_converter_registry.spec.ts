@@ -38,6 +38,7 @@ test.group('ConfiguredVariantConverterRegistry', () => {
     const registry = new ConfiguredVariantConverterRegistry({
       thumbnail: {
         width: 320,
+        blurhash: true,
         converter: async () => {
           imports += 1
           return { default: ThumbnailConverter }
@@ -51,6 +52,7 @@ test.group('ConfiguredVariantConverterRegistry', () => {
     assert.equal(first, second)
     assert.equal(imports, 1)
     assert.deepEqual(await registry.keys(), ['thumbnail'])
+    assert.isTrue(first?.blurhash === true)
     assert.deepEqual(output, {
       body: new Uint8Array([1, 2, 3]),
       fileName: 'thumbnail-320.webp',

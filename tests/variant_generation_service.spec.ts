@@ -159,6 +159,44 @@ test.group('VariantGenerationService', () => {
     assert.deepEqual(writes, [new Uint8Array([2])])
   })
 
+  test('stores a v5-style blurhash on a generated variant', async ({ assert }) => {
+    const requests: Array<{ body: Uint8Array; componentX: number; componentY: number }> = []
+    const service = new VariantGenerationService({
+      attachments: {
+        async read() {
+          return new Uint8Array([1])
+        },
+        async create(input) {
+          return {
+            ...sourceAttachment,
+            id: 'thumbnail-id',
+            name: 'thumbnail.png',
+            path: 'variants/thumbnail.png',
+            ...(input.blurhash ? { blurhash: input.blurhash } : {}),
+          }
+        },
+      },
+      converters: [{
+        key: 'thumbnail',
+        blurhash: { enabled: true, componentX: 3, componentY: 5 },
+        async convert() {
+          return { body: new Uint8Array([2]), fileName: 'thumbnail.png', mimeType: 'image/png' }
+        },
+      }],
+      blurhash: {
+        async generate(input) {
+          requests.push(input)
+          return 'LEHV6nWB2yk8pyo0adR*.7kCMdnj'
+        },
+      },
+    })
+
+    const variants = await service.generateAll({ attachment: sourceAttachment, variantKeys: ['thumbnail'] })
+
+    assert.equal(variants[0]?.attachment.blurhash, 'LEHV6nWB2yk8pyo0adR*.7kCMdnj')
+    assert.deepEqual(requests, [{ body: new Uint8Array([2]), componentX: 3, componentY: 5 }])
+  })
+
   test('ignores a converter that intentionally returns no variant', async ({ assert }) => {
     const service = new VariantGenerationService({
       attachments: {

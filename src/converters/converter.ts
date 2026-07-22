@@ -6,6 +6,9 @@
  */
 
 import type { VariantConversionInput, VariantConversionOutput } from '../variants/variant_converter.js'
+import type { BlurhashOptions } from '../media/blurhash.js'
+
+export type { BlurhashComponent, BlurhashOptions } from '../media/blurhash.js'
 
 export type SharpBackground =
   | string
@@ -139,6 +142,7 @@ export type ConverterOptions = {
   resize?: number | SharpResizeOptions
   format?: SharpFormat
   autoOrient?: boolean
+  blurhash?: BlurhashOptions
   startTime?: number
   startPage?: number
   folder?: string

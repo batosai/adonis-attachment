@@ -66,7 +66,7 @@ export class ConfiguredVariantConverterRegistry<
     const implementation = module.default
 
     if (isVariantConverter(implementation)) {
-      return { key, convert: implementation.convert.bind(implementation) }
+      return asVariantConverter(key, implementation, resolveOptions(config))
     }
 
     const converter = typeof implementation === 'function'
@@ -92,11 +92,24 @@ function isVariantConverter(value: unknown): value is VariantConverter {
   return !!value && typeof value === 'object' && 'convert' in value && typeof value.convert === 'function'
 }
 
-function asVariantConverter(key: string, converter: Converter): VariantConverter {
+function asVariantConverter(
+  key: string,
+  converter: Converter | VariantConverter,
+  options?: ConverterOptions
+): VariantConverter {
+  const inheritedBlurhash = converter instanceof Converter ? undefined : converter.blurhash
+
   return {
     key,
+    ...(options?.blurhash !== undefined
+      ? { blurhash: options.blurhash }
+      : inheritedBlurhash !== undefined
+        ? { blurhash: inheritedBlurhash }
+        : {}),
     convert(input) {
-      return converter.handle({ ...input, options: converter.options })
+      return converter instanceof Converter
+        ? converter.handle({ ...input, options: converter.options })
+        : converter.convert(input)
     },
   }
 }

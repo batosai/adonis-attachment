@@ -23,6 +23,7 @@ export type Attachment = Readonly<{
   size: number
   extname: string
   mimeType: string
+  blurhash?: string
   metadata?: AttachmentMetadata | undefined
 }>
 
@@ -40,6 +41,7 @@ export type CreateAttachmentInput = {
   body: Uint8Array
   originalName: string
   mimeType?: string
+  blurhash?: string
   disk?: string
   folder?: string
   metadata?: AttachmentMetadata
@@ -58,6 +60,7 @@ export class AttachmentDraft implements Attachment {
   size: number
   extname: string
   mimeType: string
+  blurhash?: string
   metadata?: AttachmentMetadata | undefined
 
   readonly #options: AttachmentPersistenceOptions
@@ -80,6 +83,9 @@ export class AttachmentDraft implements Attachment {
     this.size = provisional.size
     this.extname = provisional.extname
     this.mimeType = provisional.mimeType
+    if (provisional.blurhash) {
+      this.blurhash = provisional.blurhash
+    }
     if (provisional.metadata) {
       this.metadata = provisional.metadata
     }
@@ -118,6 +124,11 @@ export class AttachmentDraft implements Attachment {
           this.size = attachment.size
           this.extname = attachment.extname
           this.mimeType = attachment.mimeType
+          if (attachment.blurhash) {
+            this.blurhash = attachment.blurhash
+          } else {
+            delete this.blurhash
+          }
           if (attachment.metadata) {
             this.metadata = attachment.metadata
           } else {
@@ -154,6 +165,7 @@ export class AttachmentDraft implements Attachment {
       size: this.size,
       extname: this.extname,
       mimeType: this.mimeType,
+      ...(this.blurhash ? { blurhash: this.blurhash } : {}),
       ...(this.metadata ? { metadata: this.metadata } : {}),
     }
   }
@@ -195,6 +207,7 @@ export class AttachmentFactory {
       size: input.body.byteLength,
       extname: extension,
       mimeType: input.mimeType ?? 'application/octet-stream',
+      ...(input.blurhash ? { blurhash: input.blurhash } : {}),
       ...(input.metadata ? { metadata: input.metadata } : {}),
     }
   }

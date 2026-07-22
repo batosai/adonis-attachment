@@ -10,6 +10,12 @@ import type { AttachmentService } from '../core/attachment_service.js'
 import type { VariantGenerationRequest, VariantGenerator } from '../core/attachment_job_processor.js'
 import type { VariantConverter } from './variant_converter.js'
 import type { VariantConverterRegistry } from '../converters/configured_variant_converter_registry.js'
+import {
+  DynamicBlurhashGenerator,
+  isBlurhashEnabled,
+  resolveBlurhashComponents,
+  type BlurhashGenerator,
+} from '../media/blurhash.js'
 
 export type GeneratedVariant = {
   key: string
@@ -19,12 +25,14 @@ export type GeneratedVariant = {
 export type VariantGenerationServiceOptions = {
   attachments: Pick<AttachmentService, 'create' | 'read'> & Partial<Pick<AttachmentService, 'createDraft'>>
   converters: readonly VariantConverter[] | VariantConverterRegistry
+  blurhash?: BlurhashGenerator
 }
 
 export class VariantGenerationService implements VariantGenerator {
   readonly #attachments: Pick<AttachmentService, 'create' | 'read'> & Partial<Pick<AttachmentService, 'createDraft'>>
   readonly #converters: Map<string, VariantConverter> | undefined
   readonly #registry: VariantConverterRegistry | undefined
+  readonly #blurhash: BlurhashGenerator
 
   constructor(options: VariantGenerationServiceOptions) {
     this.#attachments = options.attachments
@@ -33,6 +41,7 @@ export class VariantGenerationService implements VariantGenerator {
     } else {
       this.#converters = new Map(options.converters.map((converter) => [converter.key, converter]))
     }
+    this.#blurhash = options.blurhash ?? new DynamicBlurhashGenerator()
   }
 
   async generate(request: VariantGenerationRequest): Promise<void> {
@@ -56,12 +65,14 @@ export class VariantGenerationService implements VariantGenerator {
         if (!output) {
           return undefined
         }
+        const blurhash = output.blurhash ?? await this.#generateBlurhash(converter, output.body)
         const input: CreateAttachmentInput = {
           body: output.body,
           originalName: output.fileName,
           mimeType: output.mimeType,
           ...(output.folder ? { folder: output.folder } : {}),
           ...(output.metadata ? { metadata: output.metadata } : {}),
+          ...(blurhash ? { blurhash } : {}),
           disk: request.attachment.disk,
         }
 
@@ -86,6 +97,18 @@ export class VariantGenerationService implements VariantGenerator {
     }
 
     return this.#attachments.create(input)
+  }
+
+  async #generateBlurhash(converter: VariantConverter, body: Uint8Array): Promise<string | undefined> {
+    if (!isBlurhashEnabled(converter.blurhash)) {
+      return undefined
+    }
+
+    try {
+      return await this.#blurhash.generate({ body, ...resolveBlurhashComponents(converter.blurhash) })
+    } catch {
+      return undefined
+    }
   }
 }
 

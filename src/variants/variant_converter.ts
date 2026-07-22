@@ -6,6 +6,7 @@
  */
 
 import type { Attachment } from '../core/attachment.js'
+import type { BlurhashOptions } from '../media/blurhash.js'
 
 export type VariantConversionInput = {
   attachment: Attachment
@@ -18,9 +19,11 @@ export type VariantConversionOutput = {
   mimeType: string
   folder?: string
   metadata?: Record<string, unknown>
+  blurhash?: string
 }
 
 export interface VariantConverter {
   key: string
+  blurhash?: BlurhashOptions
   convert(input: VariantConversionInput): Promise<VariantConversionOutput | undefined>
 }

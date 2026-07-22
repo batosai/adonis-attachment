@@ -44,6 +44,7 @@ test.group("migrateLegacyAttachment", () => {
             extname: "webp",
             mimeType: "image/webp",
             path: "users/42/variants/avatar.webp",
+            blurhash: "LEHV6nWB2yk8pyo0adR*.7kCMdnj",
           },
         ],
       },
@@ -67,6 +68,7 @@ test.group("migrateLegacyAttachment", () => {
         mimeType: "image/jpeg",
         extname: "jpg",
         size: 42,
+        blurhash: null,
         metadata: legacyMetadata,
         },
         {
@@ -80,6 +82,7 @@ test.group("migrateLegacyAttachment", () => {
         mimeType: "image/webp",
         extname: "webp",
         size: 12,
+        blurhash: "LEHV6nWB2yk8pyo0adR*.7kCMdnj",
         metadata: null,
         },
       ],

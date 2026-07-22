@@ -14,6 +14,7 @@ export type LegacyAttachment = {
   disk?: string;
   path?: string;
   meta?: Record<string, unknown>;
+  blurhash?: string;
   variants?: LegacyVariant[];
 };
 
@@ -26,6 +27,7 @@ export type LegacyVariant = {
   disk?: string;
   path?: string;
   meta?: Record<string, unknown>;
+  blurhash?: string;
 };
 
 import {
@@ -47,6 +49,7 @@ export type MigratedAttachmentBlob = {
   mimeType: string;
   extname: string;
   size: number;
+  blurhash: string | null;
   metadata: Record<string, unknown> | null;
 };
 
@@ -191,6 +194,7 @@ function toBlob({
     mimeType: attachment.mimeType,
     extname: attachment.extname,
     size: attachment.size,
+    blurhash: attachment.blurhash ?? null,
     metadata: attachment.meta ?? null,
   };
 }

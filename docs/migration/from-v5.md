@@ -36,8 +36,8 @@ column, and owner each value belongs to.
 
 The script uses `migrateLegacyAttachmentRecords`, which writes blob and link rows in
 batches (100 per transaction by default). It preserves file paths, disk names, metadata,
-and the relationship between an original and its variants. It does not move files in
-storage; only database rows change.
+variant blurhashes, and the relationship between an original and its variants. It does not
+move files in storage; only database rows change.
 
 The v5 `meta` object is copied unchanged to the v6 `metadata` column for both originals and
 variants. Configure `createV5CompatibleMetadataExtractors()` for newly uploaded files when

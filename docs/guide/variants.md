@@ -85,6 +85,26 @@ The image autodetect converter applies `autoOrient: true` unless it is explicitl
 Video thumbnails support only `jpeg`, `png`, and `webp`; PDF and Office thumbnails are
 always generated as PNG.
 
+### Blurhash
+
+The v5 `blurhash` converter option is preserved. Install the optional `sharp` and `blurhash`
+packages, then enable it for an image-producing converter. The hash is calculated from the
+final variant bytes and exposed as `variant.attachment.blurhash`.
+
+```ts
+converters: {
+  thumbnail: {
+    resize: { width: 320, fit: 'cover' },
+    format: 'webp',
+    blurhash: true,
+    // or: blurhash: { enabled: true, componentX: 4, componentY: 4 },
+  },
+}
+```
+
+Blurhash generation is disabled by default. A failure to generate it does not discard the
+variant; the variant is persisted without a hash, matching the resilient v5 workflow.
+
 | Image format | Typed encoder options |
 | --- | --- |
 | `jpeg`, `jpg` | `quality`, `progressive`, `chromaSubsampling`, `mozjpeg`, and JPEG optimization settings |

@@ -117,6 +117,7 @@ Collection mutations are staged the same way, then applied on `save()` (or
 | `clear()` | Stages removal of all items. |
 | `replaceAll(drafts)` | Stages a full swap of the collection. |
 | `persist()` | Flushes staged operations now (requires a persisted owner). Async. |
+| `regenerateVariants(keys?)` | Enqueues replacement generation for every persisted item. |
 
 ```ts
 const drafts = await attachmentManager.createFromFiles(request.files('images'))

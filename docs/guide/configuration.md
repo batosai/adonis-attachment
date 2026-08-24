@@ -79,10 +79,10 @@ export default defineConfig({
 
 Available options: `disk`, `folder`, `rename`, `meta`, `preComputeUrl`, `variants`.
 `meta` activates the configured metadata extractors during `persist()`. With Lucid column
-attachments, `preComputeUrl` calculates the public URL after Lucid reads a model and keeps it
-only in memory. With Lucid relations, `variants` schedules the listed keys after the blob and
-its link are committed. It is resolved with the same priority as the other persistence
-options.
+attachments and relations, `preComputeUrl` calculates the public URL after Lucid reads a
+model and keeps it only in memory. With Lucid relations, `variants` schedules the listed keys
+after the blob and its link are committed. It is resolved with the same priority as the other
+persistence options.
 
 ## URLs
 

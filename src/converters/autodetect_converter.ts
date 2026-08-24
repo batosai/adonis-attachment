@@ -18,8 +18,11 @@ import { MissingOptionalDependencyError } from '../errors.js'
 export type AutodetectConverterOptions = ConverterOptions & {
   runner?: CommandRunner
   ffmpegCommand?: string
+  ffmpegTimeout?: number
   pdftoppmCommand?: string
+  pdftoppmTimeout?: number
   officeCommand?: string
+  officeTimeout?: number
   timeout?: number
 }
 
@@ -59,7 +62,9 @@ export default class AutodetectConverter extends Converter {
         ...(resize.height !== undefined ? { height: resize.height } : {}),
         ...(format ? { format } : {}),
         ...(options.folder ? { folder: options.folder } : {}),
-        ...(options.timeout !== undefined ? { timeout: options.timeout } : {}),
+        ...(options.ffmpegTimeout ?? options.timeout) !== undefined
+          ? { timeout: options.ffmpegTimeout ?? options.timeout }
+          : {},
       }).convert({ attachment, body })
     }
 
@@ -71,7 +76,9 @@ export default class AutodetectConverter extends Converter {
         ...(resize.width !== undefined ? { width: resize.width } : {}),
         ...(options.startPage !== undefined ? { page: options.startPage } : {}),
         ...(options.folder ? { folder: options.folder } : {}),
-        ...(options.timeout !== undefined ? { timeout: options.timeout } : {}),
+        ...(options.pdftoppmTimeout ?? options.timeout) !== undefined
+          ? { timeout: options.pdftoppmTimeout ?? options.timeout }
+          : {},
       }).convert({ attachment, body })
     }
 
@@ -84,6 +91,12 @@ export default class AutodetectConverter extends Converter {
         ...(resize.width !== undefined ? { width: resize.width } : {}),
         ...(options.startPage !== undefined ? { page: options.startPage } : {}),
         ...(options.folder ? { folder: options.folder } : {}),
+        ...(options.officeTimeout ?? options.timeout) !== undefined
+          ? { officeTimeout: options.officeTimeout ?? options.timeout }
+          : {},
+        ...(options.pdftoppmTimeout ?? options.timeout) !== undefined
+          ? { pdfTimeout: options.pdftoppmTimeout ?? options.timeout }
+          : {},
       }).convert({ attachment, body })
     }
 

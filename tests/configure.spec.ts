@@ -42,8 +42,9 @@ test.group('configure', () => {
     )
     assert.include(
       await readFile(join(stubsRoot, 'config/attachment.stub'), 'utf8'),
-      'createV5CompatibleMetadataExtractors()'
+      'createV5CompatibleMetadataExtractors({ binaries })'
     )
+    assert.include(await readFile(join(stubsRoot, 'config/attachment.stub'), 'utf8'), 'binaries,')
     assert.notInclude(await readFile(join(stubsRoot, 'config/attachment.stub'), 'utf8'), 'maxBytes')
   })
 })

@@ -50,6 +50,10 @@ export {
 } from "./src/events/attachment_events.js";
 export { AdonisDriveStorage } from "./src/adapters/adonis_drive_storage.js";
 export {
+  type AttachmentBinaryConfig,
+  type AttachmentBinariesConfig,
+} from "./src/media/binary_config.js";
+export {
   LocalFileStorage,
   type LocalFileStorageOptions,
 } from "./src/adapters/local_file_storage.js";

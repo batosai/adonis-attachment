@@ -8,6 +8,14 @@ import {
 } from '@jrmc/adonis-attachment'
 import { createV5CompatibleMetadataExtractors } from '@jrmc/adonis-attachment/media/metadata'
 
+const binaries = {
+  // ffmpeg: { command: '/opt/media/bin/ffmpeg', timeout: 15_000 },
+  // ffprobe: { command: '/opt/media/bin/ffprobe', timeout: 5_000 },
+  // pdftoppm: { command: '/opt/media/bin/pdftoppm' },
+  // pdfinfo: { command: '/opt/media/bin/pdfinfo' },
+  // soffice: { command: '/opt/media/bin/libreoffice' },
+}
+
 /**
  * Attachments are stored locally by default. Lucid, Drive, external queues,
  * custom storage, and read routes can be added as the application needs them.
@@ -15,7 +23,8 @@ import { createV5CompatibleMetadataExtractors } from '@jrmc/adonis-attachment/me
 const attachmentConfig = defineConfig({
   storage: LocalFileStorage.fromApp,
   media: {
-    metadata: createV5CompatibleMetadataExtractors(),
+    binaries,
+    metadata: createV5CompatibleMetadataExtractors({ binaries }),
     // metadataPolicy: { mode: 'deferred', variants: false },
   },
   // converters: {

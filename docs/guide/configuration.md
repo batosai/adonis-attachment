@@ -76,6 +76,41 @@ remains reserved for the media pipeline. With Lucid relations, `variants` schedu
 listed keys after the blob and its link are committed. It is resolved with the same
 priority as the other persistence options.
 
+## Media binaries
+
+Declare external media binaries once under `media.binaries`. The autodetected video, PDF,
+and office-document converters use these values. A command or timeout declared directly on
+a converter remains more specific and takes precedence.
+
+```ts
+const binaries = {
+  ffmpeg: { command: '/opt/media/bin/ffmpeg', timeout: 15_000 },
+  ffprobe: { command: '/opt/media/bin/ffprobe', timeout: 5_000 },
+  pdftoppm: { command: '/opt/media/bin/pdftoppm', timeout: 10_000 },
+  pdfinfo: { command: '/opt/media/bin/pdfinfo', timeout: 5_000 },
+  soffice: { command: '/opt/media/bin/libreoffice', timeout: 20_000 },
+}
+
+export default defineConfig({
+  storage: LocalFileStorage.fromApp,
+  media: {
+    binaries,
+    metadata: createV5CompatibleMetadataExtractors({ binaries }),
+  },
+})
+```
+
+The v5-compatible metadata profile does not implicitly inspect package configuration, so
+pass the same `binaries` value when creating it. Its per-extractor values still take
+precedence:
+
+```ts
+createV5CompatibleMetadataExtractors({
+  binaries,
+  ffprobe: { timeout: 1_000 },
+})
+```
+
 ## Media metadata
 
 Register extractors once under `media.metadata`, then enable them per attachment with

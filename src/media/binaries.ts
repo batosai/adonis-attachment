@@ -248,6 +248,8 @@ export function createPdfThumbnailConverter(options: PdfThumbnailConverterOption
 
 export type DocumentThumbnailConverterOptions = PdfThumbnailConverterOptions & {
   officeCommand?: string
+  officeTimeout?: number
+  pdfTimeout?: number
 }
 
 /** Converts an office document to PDF with LibreOffice, then renders its first page. */
@@ -266,7 +268,9 @@ export function createDocumentThumbnailConverter(
     await runner.run({
       command: officeCommand,
       args: ['--headless', '--convert-to', 'pdf', '--outdir', directory, source],
-      ...(options.timeout !== undefined ? { timeout: options.timeout } : {}),
+      ...(options.officeTimeout ?? options.timeout) !== undefined
+        ? { timeout: options.officeTimeout ?? options.timeout }
+        : {},
     })
 
     const args = ['-f', String(options.page ?? 1), '-singlefile', '-png']
@@ -274,7 +278,13 @@ export function createDocumentThumbnailConverter(
       args.push('-scale-to-x', String(options.width), '-scale-to-y', '-1')
     }
     args.push(converted, outputBase)
-    await runner.run({ command: pdfCommand, args, ...(options.timeout !== undefined ? { timeout: options.timeout } : {}) })
+    await runner.run({
+      command: pdfCommand,
+      args,
+      ...(options.pdfTimeout ?? options.timeout) !== undefined
+        ? { timeout: options.pdfTimeout ?? options.timeout }
+        : {},
+    })
 
     return { output: `${outputBase}.png`, format: 'png' }
   })

@@ -31,6 +31,10 @@ export {
 } from './attachment_service.js'
 export { type AttachmentMetadataPersister } from './attachment_metadata_persister.js'
 export {
+  type AttachmentBinaryConfig,
+  type AttachmentBinariesConfig,
+} from '../media/binary_config.js'
+export {
   emitAttachmentEvent,
   toAttachmentEventFailure,
   type AttachmentEventContext,

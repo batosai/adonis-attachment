@@ -265,7 +265,9 @@ const documentThumbnail = createDocumentThumbnailConverter({
 
 Pass `{ runner, command, timeout }` (and `{ officeCommand }` for office documents) to select
 custom binary locations, enforce a maximum execution time, or integrate your own process
-runner.
+runner. For autodetected converters, declare the shared paths in
+[media binary configuration](/guide/configuration#media-binaries); a converter-level command
+or timeout overrides that shared value.
 
 ## Generate them
 

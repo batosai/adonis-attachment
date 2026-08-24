@@ -24,6 +24,7 @@ import type { AttachmentStorage } from './core/storage.js'
 import type { AttachmentManagerOptions } from './sources/attachment_manager.js'
 import type { AttachmentPersistenceOptions } from './core/attachment_options.js'
 import type { MediaMetadataExtractor } from './media/media_metadata.js'
+import type { AttachmentBinariesConfig } from './media/binary_config.js'
 import type { AttachmentEventEmitter } from './events/attachment_events.js'
 import {
   ConfiguredVariantConverterRegistry,
@@ -50,6 +51,8 @@ export type AttachmentIntegrationsConfig = {
 }
 
 export type AttachmentMediaConfig = {
+  /** Shared executable paths and timeouts for the built-in media adapters. */
+  binaries?: AttachmentBinariesConfig
   /** Extracts technical metadata when a persistence option enables `meta`. */
   metadata?: Integration<readonly MediaMetadataExtractor[]>
   metadataPolicy?: {
@@ -162,7 +165,11 @@ export function defineConfig<const KnownConverters extends ConverterConfigMap = 
       ...(resolvedMetadataPersister ? { metadataPersister: resolvedMetadataPersister } : {}),
       ...(events ? { events } : {}),
       ...(config.converters
-        ? { converters: new ConfiguredVariantConverterRegistry(config.converters) }
+        ? {
+            converters: new ConfiguredVariantConverterRegistry(config.converters, {
+              autodetect: toAutodetectOptions(config.media?.binaries),
+            }),
+          }
         : {}),
       ...(config.integrations?.lucid
         ? {
@@ -174,6 +181,17 @@ export function defineConfig<const KnownConverters extends ConverterConfigMap = 
       ...(config.createId ? { createId: config.createId } : {}),
     }
   })
+}
+
+function toAutodetectOptions(binaries: AttachmentBinariesConfig | undefined) {
+  return {
+    ...(binaries?.ffmpeg?.command ? { ffmpegCommand: binaries.ffmpeg.command } : {}),
+    ...(binaries?.ffmpeg?.timeout !== undefined ? { ffmpegTimeout: binaries.ffmpeg.timeout } : {}),
+    ...(binaries?.pdftoppm?.command ? { pdftoppmCommand: binaries.pdftoppm.command } : {}),
+    ...(binaries?.pdftoppm?.timeout !== undefined ? { pdftoppmTimeout: binaries.pdftoppm.timeout } : {}),
+    ...(binaries?.soffice?.command ? { officeCommand: binaries.soffice.command } : {}),
+    ...(binaries?.soffice?.timeout !== undefined ? { officeTimeout: binaries.soffice.timeout } : {}),
+  }
 }
 
 async function resolveLucidMetadataPersister(

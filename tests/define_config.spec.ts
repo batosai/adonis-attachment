@@ -6,6 +6,7 @@
  */
 
 import { configProvider } from '@adonisjs/core'
+import { writeFile } from 'node:fs/promises'
 import { test } from '@japa/runner'
 
 import {
@@ -17,6 +18,29 @@ import {
   type AttachmentQueue,
   type AttachmentStorage,
 } from '../index.js'
+import type { Attachment } from '../src/core/attachment.js'
+import type { CommandExecution, CommandRunner } from '../src/media/binaries.js'
+
+const pdf: Attachment = {
+  id: 'attachment-id',
+  disk: 'fs',
+  path: 'uploads/report.pdf',
+  name: 'report.pdf',
+  originalName: 'report.pdf',
+  mimeType: 'application/pdf',
+  extname: 'pdf',
+  size: 3,
+}
+
+class FakePdfRunner implements CommandRunner {
+  executions: CommandExecution[] = []
+
+  async run(execution: CommandExecution) {
+    this.executions.push(execution)
+    await writeFile(`${execution.args.at(-1)!}.png`, new Uint8Array([1]))
+    return { stdout: new Uint8Array(), stderr: new Uint8Array() }
+  }
+}
 
 test.group('defineConfig', () => {
   test('uses the default disk resolved from Drive config', async ({ assert }) => {
@@ -301,6 +325,35 @@ test.group('defineConfig', () => {
     assert.deepEqual(await resolved.converters?.keys(), ['thumbnail'])
     assert.equal((await resolved.converters?.get('thumbnail'))?.key, 'thumbnail')
     assert.equal(imports, 1)
+  })
+
+  test('applies shared binary config to autodetected converters and lets local options override it', async ({ assert }) => {
+    const storage: AttachmentStorage = {
+      async write() {},
+      async read() { return new Uint8Array() },
+      async remove() {},
+    }
+    const sharedRunner = new FakePdfRunner()
+    const localRunner = new FakePdfRunner()
+    const resolved = await defineConfig({
+      storage,
+      media: {
+        binaries: { pdftoppm: { command: '/opt/media/pdftoppm', timeout: 5_000 } },
+      },
+      converters: {
+        shared: { runner: sharedRunner },
+        local: { runner: localRunner, pdftoppmCommand: '/workspace/pdftoppm', timeout: 1_000 },
+      },
+    }).resolver({} as never)
+
+    await (await resolved.converters?.get('shared'))?.convert({ attachment: pdf, body: new Uint8Array([1]) })
+    await (await resolved.converters?.get('local'))?.convert({ attachment: pdf, body: new Uint8Array([1]) })
+
+    assert.equal(sharedRunner.executions[0]?.command, '/opt/media/pdftoppm')
+    assert.equal(sharedRunner.executions[0]?.timeout, 5_000)
+    assert.deepEqual(sharedRunner.executions[0]?.args.slice(0, 4), ['-f', '1', '-singlefile', '-png'])
+    assert.equal(localRunner.executions[0]?.command, '/workspace/pdftoppm')
+    assert.equal(localRunner.executions[0]?.timeout, 1_000)
   })
 
   test('derives Lucid link table names from one configured blob table', async ({ assert }) => {

@@ -6,7 +6,7 @@
  */
 
 import Converter, { type ConverterOptions } from './converter.js'
-import AutodetectConverter from './autodetect_converter.js'
+import AutodetectConverter, { type AutodetectConverterOptions } from './autodetect_converter.js'
 import type { VariantConverter } from '../variants/variant_converter.js'
 import { AttachmentError } from '../errors.js'
 
@@ -27,15 +27,21 @@ export interface VariantConverterRegistry<Key extends string = string> {
   get(key: string): Promise<VariantConverter | undefined>
 }
 
+export type ConfiguredVariantConverterRegistryOptions = {
+  autodetect?: AutodetectConverterOptions
+}
+
 /** Lazily imports and instantiates the converters declared in package configuration. */
 export class ConfiguredVariantConverterRegistry<
   Config extends ConverterConfigMap = ConverterConfigMap,
 > implements VariantConverterRegistry<Extract<keyof Config, string>> {
   readonly #config: Config
+  readonly #autodetect: AutodetectConverterOptions
   readonly #converters = new Map<string, Promise<VariantConverter>>()
 
-  constructor(config: Config) {
+  constructor(config: Config, options: ConfiguredVariantConverterRegistryOptions = {}) {
     this.#config = config
+    this.#autodetect = options.autodetect ?? {}
   }
 
   async keys(): Promise<readonly Extract<keyof Config, string>[]> {
@@ -60,7 +66,18 @@ export class ConfiguredVariantConverterRegistry<
 
   async #load(key: string, config: ConverterConfig): Promise<VariantConverter> {
     if (!config.converter) {
-      const options = resolveOptions(config)
+      const local = resolveOptions(config)
+      const options = {
+        ...this.#autodetect,
+        ...local,
+        ...(local.timeout !== undefined
+          ? {
+              ffmpegTimeout: local.timeout,
+              pdftoppmTimeout: local.timeout,
+              officeTimeout: local.timeout,
+            }
+          : {}),
+      }
       return asVariantConverter(key, new AutodetectConverter(options), options)
     }
 

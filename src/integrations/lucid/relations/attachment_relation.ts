@@ -46,13 +46,15 @@ type AttachmentRelationRow = LucidRow & {
   };
 };
 
-type RelationKind = "one" | "many";
+export type AttachmentRelationKind = "one" | "many";
 
-type RelationDefinition = {
-  kind: RelationKind;
+export type AttachmentRelationDefinition = {
+  kind: AttachmentRelationKind;
   field: string;
   options: AttachmentRelationOptions<any>;
 };
+
+type RelationDefinition = AttachmentRelationDefinition;
 
 type PendingSingularOperation =
   | { type: "attach"; input: AttachmentRelationInput }
@@ -83,6 +85,13 @@ const relationInstances = new WeakMap<
 >();
 const deleteHooks = new WeakSet<object>();
 const saveHooks = new WeakSet<object>();
+
+/** Returns the attachment relation declarations registered on a Lucid model. */
+export function getAttachmentRelationDefinitions(
+  Model: object,
+): readonly AttachmentRelationDefinition[] {
+  return [...(relationDefinitions.get(Model)?.values() ?? [])];
+}
 
 /**
  * Declares one attachment persisted in the polymorphic attachments table.
@@ -280,6 +289,25 @@ export class AttachmentCollectionRelation {
     return links;
   }
 
+  /** Enqueues replacement generation for every original in this collection. */
+  async regenerateVariants(variantKeys?: readonly AttachmentVariantKey[]): Promise<number> {
+    const lifecycle = await this.#lifecycle();
+    const attachments = await lifecycle.listCollection(this.#owner());
+    const service = await resolveAttachmentService();
+
+    await Promise.all(attachments.map((attachment) =>
+      service.scheduleVariantGeneration(
+        attachment.toAttachment(),
+        variantKeys,
+        service.getVariantMetadataEnabled(undefined, this.#definition.options),
+        undefined,
+        'replace',
+      )
+    ));
+
+    return attachments.length;
+  }
+
   get hasPending(): boolean {
     return this.#pending.length > 0;
   }
@@ -384,7 +412,7 @@ export class AttachmentCollectionRelation {
 }
 
 function defineRelation<Model>(
-  kind: RelationKind,
+  kind: AttachmentRelationKind,
   options: AttachmentRelationOptions<Model>,
 ): PropertyDecorator {
   return (target, propertyKey) => {

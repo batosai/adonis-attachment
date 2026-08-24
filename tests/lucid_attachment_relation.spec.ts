@@ -13,11 +13,12 @@ import { test } from "@japa/runner";
 import {
   attachmentRelation,
   attachmentsRelation,
+  AttachmentRegenerator,
   type AttachmentCollectionRelation,
   type AttachmentRelation,
 } from "../src/integrations/lucid/index.js";
 import { AttachmentService } from "../src/core/attachment_service.js";
-import type { AttachmentJob } from "../src/core/queue.js";
+import type { AttachmentJob, GenerateVariantsJob } from "../src/core/queue.js";
 import { AttachmentModel } from "../src/integrations/lucid/models/attachment_model.js";
 import { LucidAttachmentStore } from "../src/integrations/lucid/persistence/lucid_attachment_store.js";
 import { createLucidTestDatabase } from "./helpers/lucid_test_database.js";
@@ -51,7 +52,7 @@ let database: Database;
 let attachments: AttachmentService;
 let removed: string[];
 let writes: Array<{ disk: string; path: string }>;
-let queued: string[];
+let queued: GenerateVariantsJob[];
 let nextId = 0;
 
 function createDraft(
@@ -111,7 +112,9 @@ test.group("Lucid attachment relations", (group) => {
       createId: () => `attachment-${++nextId}`,
       queue: {
         async enqueue(job) {
-          queued.push(job.attachmentId);
+          if (job.type === "generate-variants") {
+            queued.push(job);
+          }
         },
       },
       storage: {
@@ -198,7 +201,8 @@ test.group("Lucid attachment relations", (group) => {
       ["variant-id"],
     );
     assert.isTrue(await user.avatar.regenerateVariants(["thumbnail"]));
-    assert.deepEqual(queued, [current.attachmentId]);
+    assert.deepEqual(queued.map((job) => job.attachmentId), [current.attachmentId]);
+    assert.equal(queued[0]?.mode, "replace");
 
     user.avatar.detach();
     await user.save();
@@ -259,6 +263,38 @@ test.group("Lucid attachment relations", (group) => {
     await user.save();
     assert.deepEqual(await user.gallery.all(), []);
     assert.equal(removed.length, 5);
+  });
+
+  test("regenerates selected relation fields across paginated Lucid models", async ({ assert }) => {
+    for (const id of ["first", "second", "third"]) {
+      const user = await createUser(id);
+      user.avatar.attach(createDraft(`${id}.txt`));
+      await user.save();
+    }
+
+    const result = await new AttachmentRegenerator()
+      .model(RelationUser, { attributes: ["avatar"], variants: ["thumbnail"], batchSize: 2, concurrency: 2 })
+      .run();
+
+    assert.deepEqual(result, { rows: 3, attachments: 3 });
+    assert.deepEqual(queued.map((job) => ({ id: job.attachmentId, keys: job.variantKeys, mode: job.mode })).sort((left, right) => left.id.localeCompare(right.id)), [
+      { id: "attachment-1", keys: ["thumbnail"], mode: "replace" },
+      { id: "attachment-2", keys: ["thumbnail"], mode: "replace" },
+      { id: "attachment-3", keys: ["thumbnail"], mode: "replace" },
+    ]);
+  });
+
+  test("regenerates every item from an attachment collection", async ({ assert }) => {
+    const user = await createUser();
+    user.gallery.addMany([createDraft("first.txt"), createDraft("second.txt")]);
+    await user.save();
+
+    const result = await new AttachmentRegenerator()
+      .row(user, { attributes: ["gallery"] })
+      .run();
+
+    assert.deepEqual(result, { rows: 1, attachments: 2 });
+    assert.deepEqual(queued.map((job) => job.mode), ["replace", "replace"]);
   });
 
   test("can flush a staged relation explicitly for a persisted owner", async ({ assert }) => {

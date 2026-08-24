@@ -28,7 +28,14 @@ export {
   AttachmentRelation,
   AttachmentCollectionRelation,
   type AttachmentRelationOptions,
+  type AttachmentRelationDefinition,
+  type AttachmentRelationKind,
 } from "./relations/attachment_relation.js";
+export {
+  AttachmentRegenerator,
+  type AttachmentRegenerationOptions,
+  type AttachmentRegenerationResult,
+} from "./regeneration/attachment_regenerator.js";
 export { LucidAttachmentRepository } from "./persistence/lucid_attachment_repository.js";
 export { LucidAttachmentMetadataPersister } from "./persistence/lucid_attachment_metadata_persister.js";
 export {

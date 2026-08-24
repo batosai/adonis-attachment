@@ -177,6 +177,41 @@ await db.transaction(async (trx) => {
 Deleting the owning record triggers an `after('delete')` hook that removes all of its
 links (and any blobs that become unreferenced).
 
+## Regenerate variants
+
+Regeneration is available only for relation-mode attachments. It generates the requested
+variants again from each original, then replaces the existing variant with the same key.
+
+For one relation or one collection, call the accessor directly:
+
+```ts
+await user.avatar.regenerateVariants(['thumbnail'])
+await post.gallery.regenerateVariants()
+```
+
+For maintenance work across a model, use `AttachmentRegenerator`. It fetches the model in
+pages and enqueues work with bounded concurrency; it does not perform conversions in the
+web request.
+
+```ts
+import { AttachmentRegenerator } from '@jrmc/adonis-attachment/lucid'
+import User from '#models/user'
+
+const result = await new AttachmentRegenerator()
+  .model(User, {
+    attributes: ['avatar'],
+    variants: ['thumbnail'],
+    batchSize: 100,
+    concurrency: 5,
+  })
+  .run()
+
+// { rows: 250, attachments: 250 }
+```
+
+Use `.row(user, options).run()` when a single persisted model must be regenerated. The
+`attributes` option is validated against the model's declared attachment relations.
+
 ## Single JSON column - `@attachment`
 
 For the simplest case - one file, stored inline as JSON on your model's own table - use the

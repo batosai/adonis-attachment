@@ -52,6 +52,9 @@ export class AttachmentModel extends BaseModel {
   @column()
   declare blurhash: string | null
 
+  /** Runtime-only URL populated by relation accessors when enabled. */
+  declare url: string | undefined
+
   @column({
     prepare(value: AttachmentMetadata | null) {
       return value === null ? null : JSON.stringify(value)
@@ -84,6 +87,7 @@ export class AttachmentModel extends BaseModel {
       size: this.size,
       ...(this.blurhash ? { blurhash: this.blurhash } : {}),
       ...(this.metadata ? { metadata: this.metadata } : {}),
+      ...(this.url ? { url: this.url } : {}),
     }
   }
 }

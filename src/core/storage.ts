@@ -9,6 +9,9 @@ import type { Attachment } from './attachment.js'
 
 export type StorageLocation = Pick<Attachment, 'disk' | 'path'>
 
+/** Options forwarded unchanged to a storage provider when creating a signed URL. */
+export type AttachmentSignedUrlOptions = Record<string, unknown>
+
 export type WriteAttachmentInput = StorageLocation & {
   body: Uint8Array
   mimeType: string
@@ -23,4 +26,11 @@ export interface AttachmentStorage {
   write(input: WriteAttachmentInput): Promise<void>
   read(location: StorageLocation): Promise<Uint8Array>
   remove(location: StorageLocation): Promise<void>
+  /** Returns a public URL when the storage backend has one. */
+  getUrl?(location: StorageLocation): Promise<string | undefined>
+  /** Returns an expiring URL when the storage backend supports signed URLs. */
+  getSignedUrl?(
+    location: StorageLocation,
+    options?: AttachmentSignedUrlOptions
+  ): Promise<string | undefined>
 }

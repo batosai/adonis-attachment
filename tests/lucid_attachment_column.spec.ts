@@ -75,6 +75,20 @@ class HiddenColumnUser extends BaseModel {
   declare avatar: Attachment | null
 }
 
+class UrlColumnUser extends BaseModel {
+  static table = 'column_users'
+  static selfAssignPrimaryKey = true
+
+  @column({ isPrimary: true })
+  declare id: string
+
+  @column()
+  declare name: string
+
+  @attachment({ preComputeUrl: true })
+  declare avatar: Attachment | null
+}
+
 let database: Database
 let attachments: AttachmentService
 let removed: string[]
@@ -95,6 +109,7 @@ test.group('Lucid attachment column', (group) => {
     ConfiguredColumnUser.useAdapter(database.modelAdapter())
     SerializedColumnUser.useAdapter(database.modelAdapter())
     HiddenColumnUser.useAdapter(database.modelAdapter())
+    UrlColumnUser.useAdapter(database.modelAdapter())
     await database.connection().schema.createTable('column_users', (table) => {
       table.string('id').primary()
       table.string('name').notNullable().unique()
@@ -119,6 +134,9 @@ test.group('Lucid attachment column', (group) => {
         },
         async remove(location) {
           removed.push(location.path)
+        },
+        async getUrl(location) {
+          return `https://cdn.example.test/${location.path}`
         },
       },
     })
@@ -223,6 +241,21 @@ test.group('Lucid attachment column', (group) => {
     await hidden.save()
 
     assert.deepEqual(hidden.serialize(), { id: 'user-2', name: 'Paul' })
+  })
+
+  test('pre-computes public URLs after Lucid hydration without writing them to JSON', async ({ assert }) => {
+    const user = new UrlColumnUser()
+    user.id = 'user-1'
+    user.name = 'Jeremy'
+    user.avatar = await createAttachment('avatar.txt')
+    await user.save()
+
+    const reloaded = await UrlColumnUser.findOrFail(user.id)
+    const raw = await database.from('column_users').where('id', user.id).first()
+    const persisted = typeof raw.avatar === 'string' ? JSON.parse(raw.avatar) : raw.avatar
+
+    assert.equal(reloaded.avatar?.url, `https://cdn.example.test/${reloaded.avatar?.path}`)
+    assert.notProperty(persisted, 'url')
   })
 
   test('removes a newly assigned file when save fails', async ({ assert }) => {

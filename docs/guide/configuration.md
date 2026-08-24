@@ -28,7 +28,14 @@ storage: LocalFileStorage.fromApp,
 
 `LocalFileStorage` writes under `storage/attachments`, on the `fs` disk. It creates parent
 directories, writes atomically (temp file + rename), and refuses paths that escape its
-root.
+root. Pass `baseUrl` when those files are exposed publicly and you need public URLs:
+
+```ts
+storage: new LocalFileStorage({
+  location: app.makePath('storage/attachments'),
+  baseUrl: 'https://app.example.test/uploads',
+})
+```
 
 ### Adonis Drive (S3, GCS, ...)
 
@@ -71,10 +78,30 @@ export default defineConfig({
 ```
 
 Available options: `disk`, `folder`, `rename`, `meta`, `preComputeUrl`, `variants`.
-`meta` activates the configured metadata extractors during `persist()`. `preComputeUrl`
-remains reserved for the media pipeline. With Lucid relations, `variants` schedules the
-listed keys after the blob and its link are committed. It is resolved with the same
-priority as the other persistence options.
+`meta` activates the configured metadata extractors during `persist()`. With Lucid column
+attachments, `preComputeUrl` calculates the public URL after Lucid reads a model and keeps it
+only in memory. With Lucid relations, `variants` schedules the listed keys after the blob and
+its link are committed. It is resolved with the same priority as the other persistence
+options.
+
+## URLs
+
+Use `attachmentService` to resolve URLs from any persisted attachment. Public URLs can be
+pre-calculated on Lucid column reads with `preComputeUrl: true`; signed URLs are always
+generated on demand and are never cached or stored.
+
+```ts
+import { attachmentService } from '@jrmc/adonis-attachment'
+
+const url = await attachmentService.getUrl(user.avatar!)
+const signedUrl = await attachmentService.getSignedUrl(user.avatar!, {
+  expiresIn: '15m',
+})
+```
+
+Storage adapters without public or signed URL support return `undefined`. `AdonisDriveStorage`
+delegates to the selected Drive disk. `LocalFileStorage` can generate public URLs only when
+configured with `baseUrl`.
 
 ## Media binaries
 

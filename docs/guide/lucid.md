@@ -224,6 +224,20 @@ declare internalDocument: Attachment | null
 This option applies to the JSON-column decorator. Relations expose explicit accessors and
 are not Lucid columns.
 
+### Public URLs
+
+Enable `preComputeUrl` to calculate a public URL each time Lucid hydrates the model. The URL
+is available as `attachment.url` in memory and is never written into the JSON column.
+
+```ts
+@attachment({ preComputeUrl: true })
+declare avatar: Attachment | null
+```
+
+The configured storage must provide a public URL, such as Adonis Drive or
+`LocalFileStorage` with `baseUrl`. Signed URLs are always generated explicitly through
+`attachmentService.getSignedUrl()` because they expire.
+
 ## Reading with variants
 
 Load an owner field together with its variants through the store:

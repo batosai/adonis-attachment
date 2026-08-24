@@ -8,7 +8,7 @@
 import app from '@adonisjs/core/services/app'
 import type { LucidModel, LucidRow } from '@adonisjs/lucid/types/model'
 
-import { isAttachmentDraft, type Attachment } from '../../../core/attachment.js'
+import { isAttachmentDraft, toPersistedAttachment, type Attachment } from '../../../core/attachment.js'
 import { isAttachmentPending, markAttachmentPersisted } from '../../../core/attachment_state.js'
 import type { AttachmentPersistenceOptions } from '../../../core/attachment_options.js'
 import type { AttachmentService } from '../../../core/attachment_service.js'
@@ -60,6 +60,8 @@ export function attachment<Model = LucidRow>(options: LucidAttachmentOptions<Mod
       Model.after('save', finalizeSave)
       Model.before('delete', prepareDelete)
       Model.after('delete', finalizeDelete)
+      Model.after('find', preComputeColumnUrl)
+      Model.after('fetch', preComputeColumnUrls)
       wrapSave(Model)
     }
   }
@@ -68,7 +70,7 @@ export function attachment<Model = LucidRow>(options: LucidAttachmentOptions<Mod
 function makeColumnOptions(options: LucidAttachmentOptions<any>) {
   return {
     prepare(value: Attachment | null | undefined) {
-      return value ? JSON.stringify(value) : null
+      return value ? JSON.stringify(toPersistedAttachment(value)) : null
     },
     consume(value: Attachment | string | null | undefined) {
       if (!value || typeof value !== 'string') {
@@ -80,6 +82,23 @@ function makeColumnOptions(options: LucidAttachmentOptions<any>) {
     serialize: options.serialize ?? ((value: Attachment | null | undefined) => value ?? null),
     ...(options.serializeAs !== undefined ? { serializeAs: options.serializeAs } : {}),
   }
+}
+
+async function preComputeColumnUrl(row: AttachmentColumnRow): Promise<void> {
+  const service = (await app.container.make('jrmc.attachment')) as AttachmentService
+
+  for (const name of getColumnNames(row)) {
+    const attachment = toAttachment(row.$attributes[name])
+    const options = columnOptions.get(row.constructor)?.get(name)
+
+    if (attachment && service.getPreComputeUrlEnabled(options)) {
+      row.$attributes[name] = await service.preComputeUrl(attachment)
+    }
+  }
+}
+
+async function preComputeColumnUrls(rows: AttachmentColumnRow[]): Promise<void> {
+  await Promise.all(rows.map((row) => preComputeColumnUrl(row)))
 }
 
 async function prepareSave(row: AttachmentColumnRow): Promise<void> {

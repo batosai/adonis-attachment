@@ -17,6 +17,8 @@ import { AttachmentError } from '../errors.js'
 export type LocalFileStorageOptions = {
   location: string
   disk?: string
+  /** Public base URL for files served from this storage location. */
+  baseUrl?: string
 }
 
 /**
@@ -24,11 +26,13 @@ export type LocalFileStorageOptions = {
  */
 export class LocalFileStorage implements AttachmentStorage {
   readonly #location: string
+  readonly #baseUrl: string | undefined
   readonly defaultDisk: string
 
   constructor(options: LocalFileStorageOptions) {
     this.#location = resolve(options.location)
     this.defaultDisk = options.disk ?? 'fs'
+    this.#baseUrl = options.baseUrl?.replace(/\/+$/, '')
   }
 
   static fromApp(app: ApplicationService): LocalFileStorage {
@@ -56,6 +60,15 @@ export class LocalFileStorage implements AttachmentStorage {
 
   async remove(location: StorageLocation): Promise<void> {
     await rm(this.#resolve(location), { force: true })
+  }
+
+  async getUrl(location: StorageLocation): Promise<string | undefined> {
+    this.#resolve(location)
+    if (!this.#baseUrl) {
+      return undefined
+    }
+
+    return `${this.#baseUrl}/${location.path.split('/').map(encodeURIComponent).join('/')}`
   }
 
   #resolve(location: StorageLocation): string {

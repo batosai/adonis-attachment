@@ -9,7 +9,7 @@ import { test } from '@japa/runner'
 import { setApp } from '@adonisjs/core/services/app'
 import type { ApplicationService } from '@adonisjs/core/types'
 
-import { attachmentManager } from '../index.js'
+import { attachmentManager, attachmentService } from '../index.js'
 import { AttachmentDraft } from '../src/core/attachment.js'
 import { AttachmentManager } from '../src/sources/attachment_manager.js'
 
@@ -50,5 +50,38 @@ test.group('attachmentManager service', () => {
 
     assert.equal(attachment.originalName, 'file.txt')
     assert.equal(attachment.mimeType, 'text/plain')
+  })
+
+  test('resolves the typed attachment service lazily from the Adonis container', async ({ assert }) => {
+    const service = {
+      async getUrl() {
+        return 'https://cdn.example.test/file.txt'
+      },
+    }
+
+    setApp({
+      booted(callback: Parameters<ApplicationService['booted']>[0]) {
+        return callback(this as never)
+      },
+      container: {
+        async make(binding: string) {
+          assert.equal(binding, 'jrmc.attachment')
+          return service
+        },
+      },
+    } as never)
+
+    const url = await attachmentService.getUrl({
+      id: 'attachment-id',
+      disk: 'fs',
+      name: 'file.txt',
+      path: 'file.txt',
+      originalName: 'file.txt',
+      size: 4,
+      extname: 'txt',
+      mimeType: 'text/plain',
+    })
+
+    assert.equal(url, 'https://cdn.example.test/file.txt')
   })
 })

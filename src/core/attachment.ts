@@ -26,6 +26,8 @@ export type Attachment = Readonly<{
   mimeType: string
   blurhash?: string
   metadata?: AttachmentMetadata | undefined
+  /** Runtime-only public URL. It is never persisted with the attachment. */
+  url?: string
 }>
 
 export type AttachmentPersistRequest<Model = any> = {
@@ -180,6 +182,12 @@ export class AttachmentDraft implements Attachment {
 
 export function isAttachmentDraft(value: unknown): value is AttachmentDraft {
   return value instanceof AttachmentDraft
+}
+
+/** Drops runtime-only fields before an attachment is persisted as JSON or a blob row. */
+export function toPersistedAttachment(attachment: Attachment): Attachment {
+  const { url: _url, ...persisted } = attachment
+  return persisted
 }
 
 export type AttachmentFactoryOptions = {

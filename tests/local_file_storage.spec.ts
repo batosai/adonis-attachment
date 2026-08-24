@@ -53,4 +53,19 @@ test.group('LocalFileStorage', () => {
       await rm(location, { recursive: true, force: true })
     }
   })
+
+  test('returns a public URL only when a base URL is configured', async ({ assert }) => {
+    const location = await mkdtemp(join(tmpdir(), 'adonis-attachment-'))
+    const storage = new LocalFileStorage({ location, baseUrl: 'https://app.example.test/uploads/' })
+
+    try {
+      assert.equal(
+        await storage.getUrl({ disk: 'fs', path: 'users/42/avatar image.png' }),
+        'https://app.example.test/uploads/users/42/avatar%20image.png'
+      )
+      assert.isUndefined(await new LocalFileStorage({ location }).getUrl({ disk: 'fs', path: 'avatar.png' }))
+    } finally {
+      await rm(location, { recursive: true, force: true })
+    }
+  })
 })

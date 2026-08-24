@@ -8,13 +8,20 @@
 import { configProvider } from '@adonisjs/core'
 import type { ApplicationService } from '@adonisjs/core/types'
 
-import type { AttachmentStorage, StorageLocation, WriteAttachmentInput } from '../core/storage.js'
+import type {
+  AttachmentSignedUrlOptions,
+  AttachmentStorage,
+  StorageLocation,
+  WriteAttachmentInput,
+} from '../core/storage.js'
 import { AttachmentError } from '../errors.js'
 
 export type AdonisDriveDisk = {
   put(path: string, contents: Uint8Array): Promise<void>
   getBytes(path: string): Promise<Uint8Array>
   delete(path: string): Promise<void>
+  getUrl?(path: string): Promise<string>
+  getSignedUrl?(path: string, options?: AttachmentSignedUrlOptions): Promise<string>
 }
 
 /**
@@ -65,5 +72,16 @@ export class AdonisDriveStorage implements AttachmentStorage {
 
   async remove(location: StorageLocation): Promise<void> {
     await this.#drive.use(location.disk).delete(location.path)
+  }
+
+  getUrl(location: StorageLocation): Promise<string | undefined> {
+    return this.#drive.use(location.disk).getUrl?.(location.path) ?? Promise.resolve(undefined)
+  }
+
+  getSignedUrl(
+    location: StorageLocation,
+    options?: AttachmentSignedUrlOptions
+  ): Promise<string | undefined> {
+    return this.#drive.use(location.disk).getSignedUrl?.(location.path, options) ?? Promise.resolve(undefined)
   }
 }

@@ -36,6 +36,7 @@ class RelationUser extends BaseModel {
     disk: "decorator",
     folder: ({ model }) => `avatars/${(model as RelationUser).id}`,
     rename: false,
+    preComputeUrl: true,
   })
   declare avatar: AttachmentRelation;
 
@@ -123,6 +124,9 @@ test.group("Lucid attachment relations", (group) => {
         async remove(location) {
           removed.push(location.path);
         },
+        async getUrl(location) {
+          return `https://cdn.example.test/${location.path}`;
+        },
       },
     });
     setApp({
@@ -162,6 +166,7 @@ test.group("Lucid attachment relations", (group) => {
     assert.equal(first.disk, "decorator");
     assert.equal(first.path, "avatars/user-1/first.txt");
     assert.equal((await user.avatar.get())?.id, original.id);
+    assert.equal((await user.avatar.get())?.attachment.url, "https://cdn.example.test/avatars/user-1/first.txt");
 
     user.avatar.attach(createDraft("duplicate.txt"));
     await assert.rejects(

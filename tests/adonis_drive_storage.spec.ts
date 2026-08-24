@@ -78,4 +78,35 @@ test.group('AdonisDriveStorage', () => {
       new Uint8Array([1, 2, 3])
     )
   })
+
+  test('resolves public and signed URLs when the selected disk supports them', async ({ assert }) => {
+    const calls: Array<{ type: string; path: string; options?: Record<string, unknown> }> = []
+    const storage = new AdonisDriveStorage({
+      use() {
+        return {
+          async put() {},
+          async getBytes() { return new Uint8Array() },
+          async delete() {},
+          async getUrl(path) {
+            calls.push({ type: 'public', path })
+            return `https://cdn.example.test/${path}`
+          },
+          async getSignedUrl(path, options) {
+            calls.push({ type: 'signed', path, ...(options ? { options } : {}) })
+            return `https://cdn.example.test/${path}?signature=value`
+          },
+        }
+      },
+    })
+
+    assert.equal(await storage.getUrl({ disk: 's3', path: 'users/42/avatar.jpg' }), 'https://cdn.example.test/users/42/avatar.jpg')
+    assert.equal(
+      await storage.getSignedUrl({ disk: 's3', path: 'users/42/avatar.jpg' }, { expiresIn: '15m' }),
+      'https://cdn.example.test/users/42/avatar.jpg?signature=value'
+    )
+    assert.deepEqual(calls, [
+      { type: 'public', path: 'users/42/avatar.jpg' },
+      { type: 'signed', path: 'users/42/avatar.jpg', options: { expiresIn: '15m' } },
+    ])
+  })
 })

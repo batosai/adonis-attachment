@@ -114,7 +114,7 @@ export class AttachmentRelation {
 
   async get(): Promise<AttachmentLinkModel | null> {
     const lifecycle = await this.#lifecycle();
-    return lifecycle.get(this.#owner());
+    return this.#preComputeUrl(await lifecycle.get(this.#owner()));
   }
 
   get hasPending(): boolean {
@@ -196,7 +196,7 @@ export class AttachmentRelation {
 
   async variants(): Promise<AttachmentModel[]> {
     const lifecycle = await this.#lifecycle();
-    return lifecycle.listVariants(this.#owner());
+    return this.#preComputeVariantUrls(await lifecycle.listVariants(this.#owner()));
   }
 
   async regenerateVariants(variantKeys?: readonly AttachmentVariantKey[]): Promise<boolean> {
@@ -228,6 +228,30 @@ export class AttachmentRelation {
   #owner(): AttachmentOwner<AttachmentRelationRow> {
     return createOwner(this.#row, this.#definition);
   }
+
+  async #preComputeUrl(link: AttachmentLinkModel | null): Promise<AttachmentLinkModel | null> {
+    if (!link) {
+      return null;
+    }
+
+    const service = await resolveAttachmentService();
+    if (service.getPreComputeUrlEnabled(this.#definition.options)) {
+      link.attachment.url = (await service.preComputeUrl(link.toAttachment())).url;
+    }
+    return link;
+  }
+
+  async #preComputeVariantUrls(variants: AttachmentModel[]): Promise<AttachmentModel[]> {
+    const service = await resolveAttachmentService();
+    if (!service.getPreComputeUrlEnabled(this.#definition.options)) {
+      return variants;
+    }
+
+    await Promise.all(variants.map(async (variant) => {
+      variant.url = (await service.preComputeUrl(variant.toAttachment())).url;
+    }));
+    return variants;
+  }
 }
 
 export class AttachmentCollectionRelation {
@@ -242,7 +266,16 @@ export class AttachmentCollectionRelation {
 
   async all(): Promise<AttachmentLinkModel[]> {
     const lifecycle = await this.#lifecycle();
-    return lifecycle.listCollection(this.#owner());
+    const links = await lifecycle.listCollection(this.#owner());
+    const service = await resolveAttachmentService();
+    if (!service.getPreComputeUrlEnabled(this.#definition.options)) {
+      return links;
+    }
+
+    await Promise.all(links.map(async (link) => {
+      link.attachment.url = (await service.preComputeUrl(link.toAttachment())).url;
+    }));
+    return links;
   }
 
   get hasPending(): boolean {

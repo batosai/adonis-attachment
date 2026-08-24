@@ -22,7 +22,7 @@ import {
 } from './attachment_options.js'
 import type { AttachmentQueue } from './queue.js'
 import type { AttachmentMetadataPersister } from './attachment_metadata_persister.js'
-import type { AttachmentStorage } from './storage.js'
+import type { AttachmentSignedUrlOptions, AttachmentStorage } from './storage.js'
 import { MediaMetadataService, type MediaMetadataExtractor } from '../media/media_metadata.js'
 import { AttachmentError } from '../errors.js'
 import type { AttachmentVariantKey } from '../../index.js'
@@ -160,6 +160,31 @@ export class AttachmentService {
 
   read(attachment: Attachment): Promise<Uint8Array> {
     return this.#storage.read({ disk: attachment.disk, path: attachment.path })
+  }
+
+  getUrl(attachment: Attachment): Promise<string | undefined> {
+    return attachment.url
+      ? Promise.resolve(attachment.url)
+      : this.#storage.getUrl?.({ disk: attachment.disk, path: attachment.path }) ?? Promise.resolve(undefined)
+  }
+
+  getSignedUrl(
+    attachment: Attachment,
+    options?: AttachmentSignedUrlOptions
+  ): Promise<string | undefined> {
+    return this.#storage.getSignedUrl?.(
+      { disk: attachment.disk, path: attachment.path },
+      options
+    ) ?? Promise.resolve(undefined)
+  }
+
+  async preComputeUrl(attachment: Attachment): Promise<Attachment> {
+    const url = await this.getUrl(attachment)
+    return url ? { ...attachment, url } : attachment
+  }
+
+  getPreComputeUrlEnabled(options?: AttachmentPersistenceOptions): boolean {
+    return resolveAttachmentPersistenceOptions(this.#defaults, options).preComputeUrl === true
   }
 
   scheduleMetadataExtraction(

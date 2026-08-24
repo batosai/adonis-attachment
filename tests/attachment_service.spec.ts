@@ -239,6 +239,38 @@ test('reads an attachment from the configured storage', async ({ assert }) => {
   assert.deepEqual(storage.reads, [{ disk: 'public', path: 'attachment-id.pdf' }])
 })
 
+test('resolves public URLs once and signed URLs on demand without persisting either', async ({ assert }) => {
+  const calls: string[] = []
+  const service = new AttachmentService({
+    storage: {
+      async write() {},
+      async read() { return new Uint8Array() },
+      async remove() {},
+      async getUrl({ path }) {
+        calls.push(`public:${path}`)
+        return `https://cdn.example.test/${path}`
+      },
+      async getSignedUrl({ path }, options) {
+        calls.push(`signed:${path}:${String(options?.expiresIn)}`)
+        return `https://cdn.example.test/${path}?signature=value`
+      },
+    },
+    queue: new FakeQueue(),
+    defaultDisk: 'public',
+    createId: () => 'attachment-id',
+  })
+  const attachment = await service.create({ body: new Uint8Array(), originalName: 'report.pdf' })
+
+  const precomputed = await service.preComputeUrl(attachment)
+  assert.equal(precomputed.url, 'https://cdn.example.test/attachment-id.pdf')
+  assert.equal(await service.getUrl(precomputed), precomputed.url)
+  assert.equal(
+    await service.getSignedUrl(precomputed, { expiresIn: '15m' }),
+    'https://cdn.example.test/attachment-id.pdf?signature=value'
+  )
+  assert.deepEqual(calls, ['public:attachment-id.pdf', 'signed:attachment-id.pdf:15m'])
+})
+
 test('extracts deferred metadata through a configured persister', async ({ assert }) => {
   const storage = new FakeStorage()
   const queue = new FakeQueue()

@@ -6,6 +6,7 @@ import type { AttachmentEventEmitter } from "./src/events/attachment_events.js";
 
 import attachmentManager from "./services/main.js";
 import attachmentConverters from "./services/converters.js";
+import attachmentService from "./services/attachment.js";
 
 /** Augment this interface with `InferConverters<typeof attachmentConfig>` for typed variant keys. */
 export interface AttachmentVariants {}
@@ -28,6 +29,7 @@ export * from "./src/core/index.js";
 export { configure } from "./configure.js";
 export { attachmentManager };
 export { attachmentConverters };
+export { attachmentService };
 export {
   defineConfig,
   type AttachmentIntegrationsConfig,
@@ -78,6 +80,7 @@ export {
   type AttachmentSourceResponse,
   type MultipartAttachmentFile,
 } from "./src/sources/attachment_manager.js";
+export { type AttachmentSignedUrlOptions } from "./src/core/storage.js";
 export {
   AdonisAttachmentQueue,
   type AdonisAttachmentJob,

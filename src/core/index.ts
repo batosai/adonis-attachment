@@ -9,6 +9,7 @@ export {
   AttachmentFactory,
   AttachmentDraft,
   isAttachmentDraft,
+  toPersistedAttachment,
   type Attachment,
   type AttachmentDraftPersistence,
   type AttachmentFactoryOptions,
@@ -94,6 +95,7 @@ export {
 } from './queue.js'
 export {
   type AttachmentStorage,
+  type AttachmentSignedUrlOptions,
   type StorageLocation,
   type WriteAttachmentInput,
 } from './storage.js'

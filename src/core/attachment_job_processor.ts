@@ -6,7 +6,7 @@
  */
 
 import type { Attachment } from './attachment.js'
-import type { AttachmentJob } from './queue.js'
+import type { AttachmentJob, VariantGenerationMode } from './queue.js'
 import type { AttachmentRepository } from './attachment_repository.js'
 import { AttachmentError } from '../errors.js'
 import {
@@ -20,6 +20,7 @@ export type VariantGenerationRequest = {
   attachment: Attachment
   variantKeys?: readonly string[]
   meta?: boolean
+  mode?: VariantGenerationMode
 }
 
 export interface VariantGenerator {
@@ -62,7 +63,7 @@ export class AttachmentJobProcessor {
   async process(job: AttachmentJob): Promise<void> {
     switch (job.type) {
       case 'generate-variants':
-        await this.#generateVariants(job.attachmentId, job.variantKeys, job.meta, job.eventContext)
+        await this.#generateVariants(job.attachmentId, job.variantKeys, job.meta, job.eventContext, job.mode)
         return
       case 'extract-metadata':
         if (!this.#metadata) {
@@ -77,7 +78,8 @@ export class AttachmentJobProcessor {
     attachmentId: string,
     variantKeys?: readonly string[],
     meta?: boolean,
-    eventContext?: AttachmentEventContext
+    eventContext?: AttachmentEventContext,
+    mode?: VariantGenerationMode
   ): Promise<void> {
     const attachment = await this.#attachments.findById(attachmentId)
 
@@ -92,6 +94,7 @@ export class AttachmentJobProcessor {
         attachment,
         ...(variantKeys ? { variantKeys } : {}),
         ...(meta !== undefined ? { meta } : {}),
+        ...(mode ? { mode } : {}),
       })
       await this.#emit('attachment:variant_completed', attachment, variantKeys, eventContext)
     } catch (error) {

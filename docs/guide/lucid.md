@@ -52,7 +52,7 @@ when you `save()` the model (or when you call `await avatar.persist()`). Reads s
 | `detach()` | Stages removal of the original, its variants, and their files. |
 | `persist()` | Flushes the staged mutation now and returns the link (or `null` after detach). Async. |
 | `variants()` | Reads the persisted variants of the current original. Async. |
-| `regenerateVariants(keys?)` | Enqueues variant generation. Returns `false` if nothing is attached. |
+| `regenerateVariants(keys?)` | Enqueues replacement generation. Existing variants with the same key are updated; returns `false` if nothing is attached. |
 
 ```ts
 const draft = await attachmentManager.createFromFile(request.file('avatar')!)

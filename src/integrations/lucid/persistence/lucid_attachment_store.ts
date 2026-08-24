@@ -21,6 +21,11 @@ export type LucidAttachmentWithVariants = {
   variants: AttachmentModel[]
 }
 
+export type ReplacedLucidVariant = {
+  variant: AttachmentModel
+  replaced: Attachment | undefined
+}
+
 export type LucidAttachmentStoreOptions = {
   client?: TransactionClientContract
   linkModel?: typeof AttachmentLinkModel
@@ -99,6 +104,40 @@ export class LucidAttachmentStore {
     attachment: Attachment
   ): Promise<AttachmentModel> {
     return this.#createBlob(attachment, { parentId: original.id, variantKey: key })
+  }
+
+  /**
+   * Updates an existing variant in one database write when it has the same key.
+   * The previous file is returned for cleanup only after that write succeeds.
+   */
+  async replaceVariant(
+    original: AttachmentModel,
+    key: string,
+    attachment: Attachment
+  ): Promise<ReplacedLucidVariant> {
+    const existing = await this.#blobQuery()
+      .where('parent_id', original.id)
+      .where('variant_key', key)
+      .first()
+
+    if (!existing) {
+      return { variant: await this.createVariant(original, key, attachment), replaced: undefined }
+    }
+
+    const replaced = existing.toAttachment()
+    existing.disk = attachment.disk
+    existing.path = attachment.path
+    existing.name = attachment.name
+    existing.originalName = attachment.originalName
+    existing.mimeType = attachment.mimeType
+    existing.extname = attachment.extname
+    existing.size = attachment.size
+    existing.blurhash = attachment.blurhash ?? null
+    existing.metadata = attachment.metadata ?? null
+    await existing.save()
+    markAttachmentPersisted(attachment)
+
+    return { variant: existing, replaced }
   }
 
   async releaseOwner(original: AttachmentLinkModel): Promise<void> {

@@ -20,7 +20,7 @@ import {
   type AttachmentPersistenceOptions,
   type AttachmentRename,
 } from './attachment_options.js'
-import type { AttachmentQueue } from './queue.js'
+import type { AttachmentQueue, VariantGenerationMode } from './queue.js'
 import type { AttachmentMetadataPersister } from './attachment_metadata_persister.js'
 import type { AttachmentSignedUrlOptions, AttachmentStorage } from './storage.js'
 import { MediaMetadataService, type MediaMetadataExtractor } from '../media/media_metadata.js'
@@ -223,7 +223,8 @@ export class AttachmentService {
     attachment: Attachment,
     variantKeys?: readonly AttachmentVariantKey[],
     meta?: boolean,
-    eventContext?: AttachmentEventContext
+    eventContext?: AttachmentEventContext,
+    mode?: VariantGenerationMode
   ): Promise<void> {
     return this.#queue.enqueue({
       type: 'generate-variants',
@@ -231,6 +232,7 @@ export class AttachmentService {
       ...(variantKeys ? { variantKeys } : {}),
       ...(meta !== undefined ? { meta } : {}),
       ...(eventContext ? { eventContext } : {}),
+      ...(mode ? { mode } : {}),
     })
   }
 

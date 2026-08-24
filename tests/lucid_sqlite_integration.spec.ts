@@ -112,6 +112,27 @@ test.group('Lucid SQLite integration', (group) => {
     )
   })
 
+  test('replaces an existing variant atomically while retaining its row identity', async ({ assert }) => {
+    const store = new LucidAttachmentStore()
+    const original = await store.createOriginal(owner, makeAttachment('original-id', 'users/42/avatar.jpg'))
+    await store.createVariant(
+      original.attachment,
+      'thumbnail',
+      makeAttachment('first-variant-id', 'users/42/thumbnail.jpg')
+    )
+
+    const replacement = makeAttachment('new-file-id', 'users/42/thumbnail.webp', { width: 320 })
+    const result = await store.replaceVariant(original.attachment, 'thumbnail', replacement)
+    const stored = await AttachmentModel.findOrFail('first-variant-id')
+
+    assert.equal(result.variant.id, 'first-variant-id')
+    assert.equal(result.replaced?.path, 'users/42/thumbnail.jpg')
+    assert.equal(stored.path, 'users/42/thumbnail.webp')
+    assert.equal(stored.mimeType, 'image/jpeg')
+    assert.deepEqual(stored.metadata, { width: 320 })
+    assert.isNull(await AttachmentModel.find('new-file-id'))
+  })
+
   test('uses persisted rows for lifecycle replacement, deletion, and repository reads', async ({ assert }) => {
     const removed: string[] = []
     const attachments = [

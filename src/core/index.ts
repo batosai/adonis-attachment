@@ -92,6 +92,7 @@ export {
   type AttachmentJobHandler,
   type AttachmentQueue,
   type GenerateVariantsJob,
+  type VariantGenerationMode,
 } from './queue.js'
 export {
   type AttachmentStorage,

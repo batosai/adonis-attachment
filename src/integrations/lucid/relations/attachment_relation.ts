@@ -211,6 +211,8 @@ export class AttachmentRelation {
       attachment.toAttachment(),
       variantKeys,
       service.getVariantMetadataEnabled(undefined, this.#definition.options),
+      undefined,
+      'replace',
     );
     return true;
   }

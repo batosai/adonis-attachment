@@ -72,6 +72,25 @@ test.group('LucidVariantGenerationService', () => {
     assert.deepEqual(scheduled, ['variant-id'])
   })
 
+  test('removes the replaced file only after the replacement row is persisted', async ({ assert }) => {
+    const removed: string[] = []
+    const previous = { ...variant, id: 'previous-id', path: 'users/42/thumbnail.jpg' }
+    const persisted = { toAttachment() { return { ...variant, id: previous.id } } } as AttachmentModel
+    const service = new LucidVariantGenerationService({
+      generator: { async generateAll() { return [{ key: 'thumbnail', attachment: variant }] } },
+      attachments: { async remove(attachment) { removed.push(attachment.id) } },
+      store: {
+        async findById() { return { id: original.id } as AttachmentModel },
+        async createVariant() { throw new Error('create should not run') },
+        async replaceVariant() { return { variant: persisted, replaced: previous } },
+      },
+    })
+
+    await service.generate({ attachment: original, mode: 'replace' })
+
+    assert.deepEqual(removed, ['previous-id'])
+  })
+
   test('fails when the original is no longer persisted', async ({ assert }) => {
     const service = new LucidVariantGenerationService({
       generator: { async generateAll() { return [] } },

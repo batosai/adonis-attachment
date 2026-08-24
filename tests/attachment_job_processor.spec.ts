@@ -85,6 +85,22 @@ test.group('AttachmentJobProcessor', () => {
     )
   })
 
+  test('forwards replacement mode to the variant generator', async ({ assert }) => {
+    const variants = new FakeVariantGenerator()
+    const processor = new AttachmentJobProcessor({
+      attachments: new FakeRepository(attachment),
+      variants,
+    })
+
+    await processor.process({
+      type: 'generate-variants',
+      attachmentId: attachment.id,
+      mode: 'replace',
+    })
+
+    assert.deepEqual(variants.requests, [{ attachment, mode: 'replace' }])
+  })
+
   test('resolves a deferred variant generator once when a job is processed', async ({ assert }) => {
     let resolutions = 0
     const requests: string[] = []

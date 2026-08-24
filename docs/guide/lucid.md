@@ -207,6 +207,23 @@ It removes a new file if the save fails, removes the old file when a value is re
 removes the file when the row is deleted. It stores **one file per column** - for
 collections, variants, or the built-in read route, use relation mode.
 
+### Column serialization
+
+`@attachment()` follows Lucid's `serializeAs` convention. It changes only the key returned
+by `model.serialize()`; the property name used in application code remains unchanged. Set it
+to `null` to keep the attachment out of serialized model output.
+
+```ts
+@attachment({ serializeAs: 'profileImage' })
+declare avatar: Attachment | null
+
+@attachment({ serializeAs: null })
+declare internalDocument: Attachment | null
+```
+
+This option applies to the JSON-column decorator. Relations expose explicit accessors and
+are not Lucid columns.
+
 ## Reading with variants
 
 Load an owner field together with its variants through the store:

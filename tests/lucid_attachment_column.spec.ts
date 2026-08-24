@@ -47,6 +47,34 @@ class ConfiguredColumnUser extends BaseModel {
   declare avatar: Attachment | null
 }
 
+class SerializedColumnUser extends BaseModel {
+  static table = 'column_users'
+  static selfAssignPrimaryKey = true
+
+  @column({ isPrimary: true })
+  declare id: string
+
+  @column()
+  declare name: string
+
+  @attachment({ serializeAs: 'profileImage' })
+  declare avatar: Attachment | null
+}
+
+class HiddenColumnUser extends BaseModel {
+  static table = 'column_users'
+  static selfAssignPrimaryKey = true
+
+  @column({ isPrimary: true })
+  declare id: string
+
+  @column()
+  declare name: string
+
+  @attachment({ serializeAs: null })
+  declare avatar: Attachment | null
+}
+
 let database: Database
 let attachments: AttachmentService
 let removed: string[]
@@ -65,6 +93,8 @@ test.group('Lucid attachment column', (group) => {
     database = await createLucidTestDatabase()
     ColumnUser.useAdapter(database.modelAdapter())
     ConfiguredColumnUser.useAdapter(database.modelAdapter())
+    SerializedColumnUser.useAdapter(database.modelAdapter())
+    HiddenColumnUser.useAdapter(database.modelAdapter())
     await database.connection().schema.createTable('column_users', (table) => {
       table.string('id').primary()
       table.string('name').notNullable().unique()
@@ -169,6 +199,30 @@ test.group('Lucid attachment column', (group) => {
       { disk: 'decorator', path: 'avatars/user-1/avatar.txt' },
       { disk: 'manager', path: `imports/${managerDraft.id}.txt` },
     ])
+  })
+
+  test('renames or hides the serialized column without changing its model property', async ({ assert }) => {
+    const avatar = await createAttachment('avatar.txt')
+    const renamed = new SerializedColumnUser()
+    renamed.id = 'user-1'
+    renamed.name = 'Jeremy'
+    renamed.avatar = avatar
+    await renamed.save()
+
+    assert.deepEqual(renamed.serialize(), {
+      id: 'user-1',
+      name: 'Jeremy',
+      profileImage: avatar,
+    })
+    assert.equal(renamed.avatar, avatar)
+
+    const hidden = new HiddenColumnUser()
+    hidden.id = 'user-2'
+    hidden.name = 'Paul'
+    hidden.avatar = await createAttachment('hidden.txt')
+    await hidden.save()
+
+    assert.deepEqual(hidden.serialize(), { id: 'user-2', name: 'Paul' })
   })
 
   test('removes a newly assigned file when save fails', async ({ assert }) => {

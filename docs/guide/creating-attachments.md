@@ -78,6 +78,12 @@ await attachmentManager.createFromFile(request.file('avatar')!, {
 
 ## Good to know
 
+- **Adonis Drive filenames**: Drive (via Flydrive) accepts only ASCII letters and digits,
+  spaces, `/`, `.`, `_`, `-`, and `!` in an object key. With `rename: false`, the original
+  client filename becomes the key, so names containing accented characters or typographic
+  punctuation, such as `Capture d’écran.png`, fail with `E_UNALLOWED_CHARACTERS`. Keep
+  `rename: true` (the default), or use a `rename` callback that converts the filename to a
+  storage-safe ASCII name while retaining `originalName` for display.
 - **Size limits** are opt-in. Set a global `sources.maxBytes` in config, and/or a per-call
   `maxBytes`; the smaller of the two applies.
 - **MIME types** from URLs come from the `content-type` header when present, otherwise

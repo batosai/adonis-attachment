@@ -120,7 +120,7 @@ test.group('defineConfig', () => {
     assert.equal(resolved.defaultDisk, 'public')
     assert.equal(resolved.storage, storage)
     assert.equal(resolved.queue, queue)
-    assert.deepEqual(resolved.route, { path: '/attachments/:id' })
+    assert.deepEqual(resolved.route, { path: '/attachments/:id/:name?' })
   })
 
   test('resolves integrations from the application at boot time', async ({ assert }) => {
@@ -189,7 +189,7 @@ test.group('defineConfig', () => {
     assert.equal(injected, events)
   })
 
-  test('allows applications to disable, prefix, or add a filename to the read route', async ({ assert }) => {
+  test('allows applications to disable or prefix the read route', async ({ assert }) => {
     const storage: AttachmentStorage = {
       async write() {},
       async read() {
@@ -208,15 +208,9 @@ test.group('defineConfig', () => {
       storage,
       route: { prefix: '/media/files/' },
     }).resolver({} as never)
-    const named = await defineConfig({
-      defaultDisk: 'public',
-      storage,
-      route: { includeName: true },
-    }).resolver({} as never)
 
     assert.isFalse(disabled.route)
-    assert.deepEqual(prefixed.route, { path: '/media/files/:id' })
-    assert.deepEqual(named.route, { path: '/attachments/:id/:name?' })
+    assert.deepEqual(prefixed.route, { path: '/media/files/:id/:name?' })
   })
 
   test('preserves source-manager options', async ({ assert }) => {

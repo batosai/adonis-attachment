@@ -5,7 +5,7 @@ public assets) or your **own route** (for anything that needs authorization).
 
 ## The built-in route
 
-When you configure a `repository`, the provider registers `GET /attachments/:id` at boot.
+When you configure a `repository`, the provider registers `GET /attachments/:id/:name?` at boot.
 It resolves the attachment, reads its bytes from storage, and responds with the correct
 `content-type`.
 
@@ -27,12 +27,11 @@ const link = await user.avatar.get()
 const url = link ? `/attachments/${link.attachmentId}` : null
 ```
 
-Move, disable it, or add an optional readable filename segment:
+Move or disable it:
 
 ```ts
 route: false                     // no built-in route
-route: { prefix: '/media/files' } // GET /media/files/:id
-route: { includeName: true }      // GET /attachments/:id/:name?
+route: { prefix: '/media/files' } // GET /media/files/:id/:name?
 ```
 
 The optional `name` is ignored when resolving the file: the blob id remains the only lookup

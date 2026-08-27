@@ -34,11 +34,7 @@ import {
 
 type Integration<T> = T | ((app: ApplicationService) => T | Promise<T>)
 
-export type AttachmentRouteConfig = false | {
-  prefix?: string
-  /** Adds an optional, human-readable filename segment after the attachment id. */
-  includeName?: boolean
-}
+export type AttachmentRouteConfig = false | { prefix?: string }
 
 export type ResolvedAttachmentRouteConfig = {
   path: string
@@ -224,7 +220,7 @@ function resolveRoute(route: AttachmentRouteConfig | undefined): ResolvedAttachm
     })
   }
 
-  return { path: `${prefix.replace(/\/+$/, '') || ''}/:id${route?.includeName ? '/:name?' : ''}` }
+  return { path: `${prefix.replace(/\/+$/, '') || ''}/:id/:name?` }
 }
 
 async function resolveIntegration<T>(

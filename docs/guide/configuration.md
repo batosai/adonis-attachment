@@ -84,6 +84,23 @@ model and keeps it only in memory. With Lucid relations, `variants` schedules th
 after the blob and its link are committed. It is resolved with the same priority as the other
 persistence options.
 
+### Folder and rename defaults
+
+`folder` accepts a relative path or an async callback. `rename` accepts `true`, `false`, or a
+callback that returns the stored filename. Defaults may use V5-style `:attribute` parameters,
+which are resolved only when a model context exists, such as a Lucid decorator or relation:
+
+```ts
+defaults: {
+  folder: 'uploads/:name',
+  rename: () => ':name-file.jpg',
+}
+```
+
+String model attributes are lowercased, HTML-escaped, and slugified. A parameter that is
+unknown or not a string remains unchanged. See [Creating attachments](/guide/creating-attachments#folder-and-rename)
+for callbacks and standalone behavior.
+
 ## URLs
 
 Use `attachmentService` to resolve URLs from any persisted attachment. Public URLs can be
@@ -282,10 +299,9 @@ are pointed at these names at boot.
 
 ## Read route & background processing
 
-- **`repository`** - provide an `AttachmentRepository` to enable `GET /attachments/:id`.
+- **`repository`** - provide an `AttachmentRepository` to enable `GET /attachments/:id/:name?`.
   See [Serving files](/guide/serving-files).
-- **`route`** - `false` to disable the built-in route, `{ prefix: '/media' }` to move it,
-  or `{ includeName: true }` for `GET /attachments/:id/:name?`.
+- **`route`** - `false` to disable the built-in route, or `{ prefix: '/media' }` to move it.
 - **`processor`** / **`queue`** - control how variant jobs run. See
   [Background processing](/guide/queues).
 

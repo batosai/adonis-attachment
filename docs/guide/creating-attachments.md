@@ -76,6 +76,31 @@ await attachmentManager.createFromFile(request.file('avatar')!, {
 })
 ```
 
+### Folder and rename
+
+`folder` is either a static relative path or a callback. `rename` is `true` (the default,
+generates an id-based name), `false` (keeps the client name), or a callback returning the
+stored filename. Both callbacks receive `{ model, field, originalName }` and may be async.
+
+```ts
+const draft = await attachmentManager.createFromFile(request.file('avatar')!, {
+  folder: ({ model }) => `users/${model?.id}/avatar`,
+  rename: ({ originalName }) => `profile-${originalName}`,
+})
+```
+
+When a model is available, strings also support V5-style `:attribute` parameters. String
+attribute values are lowercased, HTML-escaped, then slugified before they are inserted:
+
+```ts
+folder: 'uploads/:name/avatars'
+rename: () => ':name-avatar.jpg'
+```
+
+For `name = 'Jane Doe'`, this produces `uploads/jane-doe/avatars/jane-doe-avatar.jpg`.
+Lucid supplies the model automatically. For standalone use, `:attribute` is not replaced
+unless you persist the draft with an explicit model context.
+
 ## Good to know
 
 - **Adonis Drive filenames**: Drive (via Flydrive) accepts only ASCII letters and digits,

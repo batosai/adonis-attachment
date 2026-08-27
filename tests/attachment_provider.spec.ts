@@ -41,7 +41,7 @@ test.group('AttachmentProvider', (group) => {
             defaultDisk: 'public',
             storage,
             repository,
-            route: { prefix: '/media', includeName: true },
+            route: { prefix: '/media' },
           })
         },
       },

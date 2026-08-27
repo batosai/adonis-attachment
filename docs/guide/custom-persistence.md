@@ -43,7 +43,7 @@ Rebuild an `Attachment`-shaped object from your columns and pass it to
 
 ## Enabling jobs and the read route
 
-Variant jobs and the built-in `GET /attachments/:id` route resolve files through an
+Variant jobs and the built-in `GET /attachments/:id/:name?` route resolve files through an
 **`AttachmentRepository`**. Implement it against your data store:
 
 ```ts

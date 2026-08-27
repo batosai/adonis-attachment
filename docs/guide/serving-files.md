@@ -27,18 +27,31 @@ const link = await user.avatar.get()
 const url = link ? `/attachments/${link.attachmentId}` : null
 ```
 
-Move or disable it:
+Move, disable it, or add an optional readable filename segment:
 
 ```ts
 route: false                     // no built-in route
 route: { prefix: '/media/files' } // GET /media/files/:id
+route: { includeName: true }      // GET /attachments/:id/:name?
+```
+
+The optional `name` is ignored when resolving the file: the blob id remains the only lookup
+key. It lets you expose URLs such as `/attachments/xxx/mon_fichier.jpeg` without breaking
+the shorter URL. Use the stored filename and encode it as one URL segment:
+
+```ts
+const attachment = link?.attachment
+const url = attachment
+  ? `/attachments/${attachment.id}/${encodeURIComponent(attachment.name)}`
+  : null
 ```
 
 Without a `repository`, the route is simply not registered.
 
 ::: warning No authorization
 The built-in route is **public** - anyone with an id can fetch the file, and an unknown id
-returns `404`. Only use it when ids are acceptable as public identifiers.
+returns `404`. The optional name does not protect the file. Only use it when ids are
+acceptable as public identifiers.
 :::
 
 ## Your own protected route

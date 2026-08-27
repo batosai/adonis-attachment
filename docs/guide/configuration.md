@@ -284,7 +284,8 @@ are pointed at these names at boot.
 
 - **`repository`** - provide an `AttachmentRepository` to enable `GET /attachments/:id`.
   See [Serving files](/guide/serving-files).
-- **`route`** - `false` to disable the built-in route, or `{ prefix: '/media' }` to move it.
+- **`route`** - `false` to disable the built-in route, `{ prefix: '/media' }` to move it,
+  or `{ includeName: true }` for `GET /attachments/:id/:name?`.
 - **`processor`** / **`queue`** - control how variant jobs run. See
   [Background processing](/guide/queues).
 

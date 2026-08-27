@@ -41,7 +41,7 @@ test.group('AttachmentProvider', (group) => {
             defaultDisk: 'public',
             storage,
             repository,
-            route: { prefix: '/media' },
+            route: { prefix: '/media', includeName: true },
           })
         },
       },
@@ -59,7 +59,7 @@ test.group('AttachmentProvider', (group) => {
 
     await provider.boot()
 
-    assert.deepEqual(routes, ['/media/:id'])
+    assert.deepEqual(routes, ['/media/:id/:name?'])
   })
 
   test('does not register a route when it is disabled or has no repository', async ({ assert }) => {

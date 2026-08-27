@@ -93,6 +93,7 @@ import { LucidAttachmentRepository } from '@jrmc/adonis-attachment/lucid'
 export default defineConfig({
   storage: LocalFileStorage.fromApp,
   repository: new LucidAttachmentRepository(), // enables GET /attachments/:id
+  route: { includeName: true }, // also accepts GET /attachments/:id/:name?
 })
 ```
 
@@ -102,7 +103,10 @@ Then read the avatar and build its URL from the blob id:
 const user = await User.findOrFail(params.id)
 const link = await user.avatar.get() // AttachmentLinkModel | null
 
-const avatarUrl = link ? `/attachments/${link.attachmentId}` : null
+const attachment = link?.attachment
+const avatarUrl = attachment
+  ? `/attachments/${attachment.id}/${encodeURIComponent(attachment.name)}`
+  : null
 ```
 
 ```edge
@@ -112,7 +116,7 @@ const avatarUrl = link ? `/attachments/${link.attachmentId}` : null
 ```
 
 ::: warning The built-in route is public
-`GET /attachments/:id` has no authorization. It's fine for public assets. For protected
+`GET /attachments/:id` (with or without `/:name`) has no authorization. It's fine for public assets. For protected
 files, build your own route. See [Serving files](/guide/serving-files).
 :::
 

@@ -47,6 +47,20 @@ class ConfiguredColumnUser extends BaseModel {
   declare avatar: Attachment | null
 }
 
+class ParameterizedColumnUser extends BaseModel {
+  static table = 'column_users'
+  static selfAssignPrimaryKey = true
+
+  @column({ isPrimary: true })
+  declare id: string
+
+  @column()
+  declare name: string
+
+  @attachment({ folder: 'avatars/:name', rename: false })
+  declare avatar: Attachment | null
+}
+
 class SerializedColumnUser extends BaseModel {
   static table = 'column_users'
   static selfAssignPrimaryKey = true
@@ -107,6 +121,7 @@ test.group('Lucid attachment column', (group) => {
     database = await createLucidTestDatabase()
     ColumnUser.useAdapter(database.modelAdapter())
     ConfiguredColumnUser.useAdapter(database.modelAdapter())
+    ParameterizedColumnUser.useAdapter(database.modelAdapter())
     SerializedColumnUser.useAdapter(database.modelAdapter())
     HiddenColumnUser.useAdapter(database.modelAdapter())
     UrlColumnUser.useAdapter(database.modelAdapter())
@@ -217,6 +232,20 @@ test.group('Lucid attachment column', (group) => {
       { disk: 'decorator', path: 'avatars/user-1/avatar.txt' },
       { disk: 'manager', path: `imports/${managerDraft.id}.txt` },
     ])
+  })
+
+  test('resolves folder parameters from Lucid model attributes', async ({ assert }) => {
+    const user = new ParameterizedColumnUser()
+    user.id = 'user-1'
+    user.name = 'Marie D\'Été'
+    user.avatar = attachments.createDraft({
+      body: Buffer.from('avatar'),
+      originalName: 'avatar.txt',
+      mimeType: 'text/plain',
+    })
+    await user.save()
+
+    assert.equal(user.avatar?.path, 'avatars/marie-d-x27-t/avatar.txt')
   })
 
   test('renames or hides the serialized column without changing its model property', async ({ assert }) => {

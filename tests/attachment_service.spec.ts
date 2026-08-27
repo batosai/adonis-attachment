@@ -125,6 +125,28 @@ test('keeps drafts in memory until persist resolves their contextual options', a
   }])
 })
 
+test('resolves v5-style model path parameters in folders and custom names', async ({ assert }) => {
+  const storage = new FakeStorage()
+  const service = new AttachmentService({
+    storage,
+    queue: new FakeQueue(),
+    defaultDisk: 'public',
+    createId: () => 'attachment-id',
+  })
+  const draft = service.createDraft({ body: new Uint8Array([1]), originalName: 'avatar.jpg' })
+
+  const attachment = await draft.persist({
+    options: {
+      folder: 'uploads/:name/avatars/:missing',
+      rename: () => ':name-profile.jpg',
+    },
+    context: { model: { name: 'Marie D\'Été' } },
+  })
+
+  assert.equal(attachment.name, 'marie-d-x27-t-profile.jpg')
+  assert.equal(attachment.path, 'uploads/marie-d-x27-t/avatars/:missing/marie-d-x27-t-profile.jpg')
+})
+
 test('extracts configured metadata only when meta is enabled', async ({ assert }) => {
   const storage = new FakeStorage()
   const service = new AttachmentService({

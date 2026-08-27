@@ -32,6 +32,7 @@ import {
   type AttachmentEventContext,
   type AttachmentEventEmitter,
 } from '../events/attachment_events.js'
+import string from '@adonisjs/core/helpers/string'
 
 export type AttachmentServiceOptions = {
   storage: AttachmentStorage
@@ -297,11 +298,9 @@ async function resolveFolder(
   folder: AttachmentFolder | undefined,
   context: AttachmentPersistenceContext
 ): Promise<string | undefined> {
-  if (typeof folder === 'function') {
-    return folder(context)
-  }
+  const value = typeof folder === 'function' ? await folder(context) : folder
 
-  return folder
+  return resolvePathParameters(value, context.model)
 }
 
 async function resolveName(
@@ -309,8 +308,35 @@ async function resolveName(
   context: AttachmentPersistenceContext
 ): Promise<string | undefined> {
   if (typeof rename === 'function') {
-    return rename(context)
+    return resolvePathParameters(await rename(context), context.model)
   }
 
-  return rename === false ? context.originalName : undefined
+  return resolvePathParameters(rename === false ? context.originalName : undefined, context.model)
+}
+
+/** Preserves v5 `:attribute` path parameters for string-valued model attributes. */
+function resolvePathParameters(value: string | undefined, model: unknown): string | undefined {
+  if (!value || !model || typeof model !== 'object') {
+    return value
+  }
+
+  return value.replace(/:(\w+)/g, (parameter, attributeName: string) => {
+    const attribute = getModelAttribute(model, attributeName)
+
+    if (typeof attribute !== 'string') {
+      return parameter
+    }
+
+    return string.slug(string.noCase(string.escapeHTML(attribute.toLowerCase())))
+  })
+}
+
+function getModelAttribute(model: object, attributeName: string): unknown {
+  const attributes = '$attributes' in model ? model.$attributes : undefined
+
+  if (attributes && typeof attributes === 'object') {
+    return (attributes as Record<string, unknown>)[attributeName]
+  }
+
+  return (model as Record<string, unknown>)[attributeName]
 }

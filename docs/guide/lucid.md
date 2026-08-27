@@ -84,6 +84,26 @@ you rename tables:
 declare avatar: AttachmentRelation
 ```
 
+### Paths from model attributes
+
+String `folder` and custom `rename` values support V5-style `:attribute` parameters. The
+value is read from the model, then lowercased and slugified before insertion. Only string
+attributes are substituted; an unknown or non-string parameter stays unchanged.
+
+```ts
+@attachmentRelation({
+  folder: 'uploads/:name/avatars',
+  rename: () => ':name-avatar.jpg',
+})
+declare avatar: AttachmentRelation
+```
+
+For `name = 'Jane Doe'`, this writes to
+`uploads/jane-doe/avatars/jane-doe-avatar.jpg`. Avoid an auto-increment `:id` in a
+column attachment created during the model's first save, because the identifier is not yet
+available. Relation attachments are staged until after the owner is saved, so `:id` is safe
+there.
+
 ## Many attachments - `@attachmentsRelation`
 
 An **ordered** collection. Each item is a link row with a `position` and a `null`

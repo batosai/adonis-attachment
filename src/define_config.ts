@@ -48,8 +48,8 @@ export type LucidAttachmentConfig = {
 }
 
 export type AttachmentIntegrationsConfig = {
-  /** Optional configuration for the Lucid persistence integration. */
-  lucid?: LucidAttachmentConfig
+  /** Configures Lucid when detected in the container, or disables its automatic integration. */
+  lucid?: LucidAttachmentConfig | false
 }
 
 export type AttachmentMediaConfig = {
@@ -116,6 +116,7 @@ export function defineConfig<const KnownConverters extends ConverterConfigMap = 
 ): ConfigProvider<ResolvedAttachmentConfig<KnownConverters>> {
   return configProvider.create(async (app) => {
     const storage = await resolveIntegration(config.storage, app)
+    const lucid = resolveLucidIntegration(app, config.integrations?.lucid)
     const processor = config.processor
       ? await resolveIntegration(config.processor, app)
       : undefined
@@ -138,7 +139,12 @@ export function defineConfig<const KnownConverters extends ConverterConfigMap = 
       ? await resolveIntegration(config.media.metadataPersister, app)
       : undefined
     const resolvedMetadataPersister = metadataPersister
-      ?? await resolveLucidMetadataPersister(config.media?.metadataPolicy?.mode, config.integrations?.lucid)
+      ?? await resolveLucidMetadataPersister(config.media?.metadataPolicy?.mode, lucid)
+    const repository = config.repository
+      ? await resolveIntegration(config.repository, app)
+      : lucid
+        ? await resolveLucidRepository()
+        : undefined
     const events = config.events ? await resolveIntegration(config.events, app) : undefined
 
     if (processor && events) {
@@ -157,9 +163,7 @@ export function defineConfig<const KnownConverters extends ConverterConfigMap = 
       storage,
       queue,
       route: resolveRoute(config.route),
-      ...(config.repository
-        ? { repository: await resolveIntegration(config.repository, app) }
-        : {}),
+      ...(repository ? { repository } : {}),
       ...(config.defaults ? { defaults: config.defaults } : {}),
       ...(config.sources ? { sources: config.sources } : {}),
       metadataExtractors,
@@ -174,10 +178,10 @@ export function defineConfig<const KnownConverters extends ConverterConfigMap = 
             }),
           }
         : {}),
-      ...(config.integrations?.lucid
+      ...(lucid
         ? {
             integrations: {
-              lucid: resolveAttachmentTableNames(config.integrations.lucid.tableName),
+              lucid,
             },
           }
         : {}),
@@ -199,7 +203,7 @@ function toAutodetectOptions(binaries: AttachmentBinariesConfig | undefined) {
 
 async function resolveLucidMetadataPersister(
   mode: AttachmentMetadataMode | undefined,
-  lucid: LucidAttachmentConfig | undefined
+  lucid: AttachmentTableNames | undefined
 ): Promise<AttachmentMetadataPersister | undefined> {
   if (mode !== 'deferred' || !lucid) {
     return undefined
@@ -210,6 +214,29 @@ async function resolveLucidMetadataPersister(
     () => import('./integrations/lucid/persistence/lucid_attachment_metadata_persister.js')
   )
   return new LucidAttachmentMetadataPersister()
+}
+
+async function resolveLucidRepository(): Promise<AttachmentRepository> {
+  const { LucidAttachmentRepository } = await loadOptionalDependency(
+    '@adonisjs/lucid',
+    () => import('./integrations/lucid/persistence/lucid_attachment_repository.js')
+  )
+  return new LucidAttachmentRepository()
+}
+
+function resolveLucidIntegration(
+  app: ApplicationService,
+  lucid: LucidAttachmentConfig | false | undefined
+): AttachmentTableNames | undefined {
+  if (lucid === false) {
+    return undefined
+  }
+
+  if (lucid || app.container?.hasBinding?.('lucid.db')) {
+    return resolveAttachmentTableNames(lucid?.tableName)
+  }
+
+  return undefined
 }
 
 function resolveRoute(route: AttachmentRouteConfig | undefined): ResolvedAttachmentRouteConfig | false {

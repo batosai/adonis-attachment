@@ -20,6 +20,8 @@ import {
 } from '../index.js'
 import type { Attachment } from '../src/core/attachment.js'
 import type { CommandExecution, CommandRunner } from '../src/media/binaries.js'
+import { LucidAttachmentMetadataPersister } from '../src/integrations/lucid/persistence/lucid_attachment_metadata_persister.js'
+import { LucidAttachmentRepository } from '../src/integrations/lucid/persistence/lucid_attachment_repository.js'
 
 const pdf: Attachment = {
   id: 'attachment-id',
@@ -407,6 +409,103 @@ test.group('defineConfig', () => {
         linksTableName: 'media_attachment_links',
       },
     })
+    assert.instanceOf(resolved.repository, LucidAttachmentRepository)
+  })
+
+  test('uses Lucid defaults when its container binding is available', async ({ assert }) => {
+    const storage: AttachmentStorage = {
+      async write() {},
+      async read() {
+        return new Uint8Array()
+      },
+      async remove() {},
+    }
+    const app = {
+      container: {
+        hasBinding(binding: string) {
+          return binding === 'lucid.db'
+        },
+      },
+    }
+
+    const resolved = await defineConfig({ storage }).resolver(app as never)
+
+    assert.instanceOf(resolved.repository, LucidAttachmentRepository)
+    assert.deepEqual(resolved.integrations?.lucid, {
+      tableName: 'attachments',
+      linksTableName: 'attachment_links',
+    })
+  })
+
+  test('uses Lucid as the deferred metadata persister when it is detected', async ({ assert }) => {
+    const storage: AttachmentStorage = {
+      async write() {},
+      async read() {
+        return new Uint8Array()
+      },
+      async remove() {},
+    }
+    const app = {
+      container: {
+        hasBinding(binding: string) {
+          return binding === 'lucid.db'
+        },
+      },
+    }
+
+    const resolved = await defineConfig({
+      storage,
+      media: { metadataPolicy: { mode: 'deferred' } },
+    }).resolver(app as never)
+
+    assert.instanceOf(resolved.metadataPersister, LucidAttachmentMetadataPersister)
+  })
+
+  test('allows automatic Lucid integration to be disabled', async ({ assert }) => {
+    const storage: AttachmentStorage = {
+      async write() {},
+      async read() {
+        return new Uint8Array()
+      },
+      async remove() {},
+    }
+    const app = {
+      container: {
+        hasBinding() {
+          return true
+        },
+      },
+    }
+
+    const resolved = await defineConfig({
+      storage,
+      integrations: { lucid: false },
+    }).resolver(app as never)
+
+    assert.isUndefined(resolved.repository)
+    assert.isUndefined(resolved.integrations)
+  })
+
+  test('prefers an explicit repository over the detected Lucid repository', async ({ assert }) => {
+    const storage: AttachmentStorage = {
+      async write() {},
+      async read() {
+        return new Uint8Array()
+      },
+      async remove() {},
+    }
+    const repository = { async findById() { return null } }
+    const app = {
+      container: {
+        hasBinding() {
+          return true
+        },
+      },
+    }
+
+    const resolved = await defineConfig({ storage, repository }).resolver(app as never)
+
+    assert.equal(resolved.repository, repository)
   })
 
   test('rejects invalid route prefixes', async ({ assert }) => {

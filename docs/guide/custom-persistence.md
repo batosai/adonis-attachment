@@ -71,6 +71,7 @@ const metadataPersister: AttachmentMetadataPersister = {
 
 export default defineConfig({
   storage: LocalFileStorage.fromApp,
+  integrations: { lucid: false }, // only needed when this application also has Lucid
   media: {
     metadataPolicy: { mode: 'deferred' },
     metadataPersister,
@@ -156,6 +157,7 @@ Then pass it to `defineConfig`:
 ```ts
 export default defineConfig({
   storage: LocalFileStorage.fromApp,
+  integrations: { lucid: false }, // only needed when this application also has Lucid
   repository: new UserMediaRepository(),
 })
 ```

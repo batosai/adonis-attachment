@@ -5,20 +5,22 @@ public assets) or your **own route** (for anything that needs authorization).
 
 ## The built-in route
 
-When you configure a `repository`, the provider registers `GET /attachments/:id/:name?` at boot.
-It resolves the attachment, reads its bytes from storage, and responds with the correct
-`content-type`.
+When Lucid is registered in the application, the package detects its `lucid.db` container
+binding and configures `LucidAttachmentRepository` automatically. The provider then registers
+`GET /attachments/:id/:name?` at boot. It resolves the attachment, reads its bytes from storage,
+and responds with the correct `content-type`.
 
 ```ts
 // config/attachment.ts
 import { defineConfig, LocalFileStorage } from '@jrmc/adonis-attachment'
-import { LucidAttachmentRepository } from '@jrmc/adonis-attachment/lucid'
 
 export default defineConfig({
   storage: LocalFileStorage.fromApp,
-  repository: new LucidAttachmentRepository(),
 })
 ```
+
+An explicit `repository` always takes precedence, allowing another ORM or persistence layer to
+serve attachments even when Lucid is installed.
 
 The `:id` is the **blob id** - for a Lucid relation, that's `link.attachmentId`:
 
@@ -45,7 +47,14 @@ const url = attachment
   : null
 ```
 
-Without a `repository`, the route is simply not registered.
+Without Lucid or an explicit `repository`, the route is not registered. To keep Lucid active in
+the application without using its attachment integration, disable the automatic integration:
+
+```ts
+integrations: {
+  lucid: false,
+}
+```
 
 ::: warning No authorization
 The built-in route is **public** - anyone with an id can fetch the file, and an unknown id

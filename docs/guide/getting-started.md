@@ -83,16 +83,16 @@ this joins it.
 
 ## 5. Display it
 
-To serve the file, enable the built-in read route by giving the package a repository:
+When Lucid is registered in the application, the package detects its `lucid.db` container
+binding and enables the built-in read route automatically. No additional attachment
+configuration is required:
 
 ```ts
 // config/attachment.ts
 import { defineConfig, LocalFileStorage } from '@jrmc/adonis-attachment'
-import { LucidAttachmentRepository } from '@jrmc/adonis-attachment/lucid'
 
 export default defineConfig({
   storage: LocalFileStorage.fromApp,
-  repository: new LucidAttachmentRepository(), // enables GET /attachments/:id/:name?
 })
 ```
 

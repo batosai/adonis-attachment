@@ -282,6 +282,17 @@ export default defineConfig({
 })
 ```
 
+Lucid is detected automatically through the `lucid.db` container binding. When present, the
+package configures the default Lucid repository, enables the read route, and can persist deferred
+metadata without additional wiring. Use `integrations.lucid` only to customize table names or to
+disable this automatic integration:
+
+```ts
+integrations: {
+  lucid: false,
+}
+```
+
 ::: warning
 Use the same `tableName` when you generate the migration **and** at runtime - the models
 are pointed at these names at boot.
@@ -289,8 +300,9 @@ are pointed at these names at boot.
 
 ## Read route & background processing
 
-- **`repository`** - provide an `AttachmentRepository` to enable `GET /attachments/:id/:name?`.
-  See [Serving files](/guide/serving-files).
+- **`repository`** - overrides the automatically detected Lucid repository, or enables
+  `GET /attachments/:id/:name?` with another persistence layer. See
+  [Serving files](/guide/serving-files).
 - **`route`** - `false` to disable the built-in route, or `{ prefix: '/media' }` to move it.
 - **`processor`** / **`queue`** - control how variant jobs run. See
   [Background processing](/guide/queues).

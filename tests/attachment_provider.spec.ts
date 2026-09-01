@@ -84,7 +84,36 @@ test.group('AttachmentProvider', (group) => {
     }
   })
 
+  test('registers the default route when Lucid is available', async ({ assert }) => {
+    const routes: string[] = []
+    const provider = new AttachmentProvider({
+      config: {
+        get() {
+          return defineConfig({ storage })
+        },
+      },
+      container: {
+        hasBinding(binding: string) {
+          return binding === 'lucid.db'
+        },
+        async make(binding: string) {
+          assert.equal(binding, 'router')
+          return {
+            get(path: string) {
+              routes.push(path)
+            },
+          }
+        },
+      },
+    } as never)
+
+    await provider.boot()
+
+    assert.deepEqual(routes, ['/attachments/:id/:name?'])
+  })
+
   test('applies configured Lucid table names during application boot', async ({ assert }) => {
+    const routes: string[] = []
     const provider = new AttachmentProvider({
       config: {
         get() {
@@ -98,8 +127,13 @@ test.group('AttachmentProvider', (group) => {
         },
       },
       container: {
-        async make() {
-          assert.fail('The router must not be resolved')
+        async make(binding: string) {
+          assert.equal(binding, 'router')
+          return {
+            get(path: string) {
+              routes.push(path)
+            },
+          }
         },
       },
     } as never)
@@ -108,6 +142,7 @@ test.group('AttachmentProvider', (group) => {
 
     assert.equal(AttachmentModel.table, 'media_attachments')
     assert.equal(AttachmentLinkModel.table, 'media_attachment_links')
+    assert.deepEqual(routes, ['/attachments/:id/:name?'])
   })
 
   test('registers the configured converter registry', async ({ assert }) => {

@@ -40,9 +40,9 @@ test.group('configure', () => {
       await readFile(join(stubsRoot, 'config/attachment.stub'), 'utf8'),
       'storage: LocalFileStorage.fromApp'
     )
-    assert.include(
+    assert.notInclude(
       await readFile(join(stubsRoot, 'config/attachment.stub'), 'utf8'),
-      'createDefaultMetadataExtractors({ binaries })'
+      'createDefaultMetadataExtractors'
     )
     assert.include(await readFile(join(stubsRoot, 'config/attachment.stub'), 'utf8'), 'binaries,')
     assert.notInclude(await readFile(join(stubsRoot, 'config/attachment.stub'), 'utf8'), 'maxBytes')

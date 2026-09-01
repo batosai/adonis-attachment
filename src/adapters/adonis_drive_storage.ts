@@ -15,6 +15,7 @@ import type {
   WriteAttachmentInput,
 } from '../core/storage.js'
 import { AttachmentError } from '../errors.js'
+import { loadOptionalDependency } from '../utils/optional_dependency.js'
 
 export type AdonisDriveDisk = {
   put(path: string, contents: Uint8Array): Promise<void>
@@ -45,6 +46,8 @@ export class AdonisDriveStorage implements AttachmentStorage {
    * Creates a Drive adapter using the default disk declared in config/drive.ts.
    */
   static async fromApp(app: ApplicationService): Promise<AdonisDriveStorage> {
+    await loadOptionalDependency('@adonisjs/drive')
+
     const config = await configProvider.resolve<{ config: { default: string } }>(
       app,
       app.config.get('drive')

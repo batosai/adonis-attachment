@@ -51,6 +51,9 @@ test.group('Attachment errors', () => {
     assert.equal(timeout.code, 'E_COMMAND_TIMEOUT')
     assert.equal(timeout.status, 504)
     assert.equal(missing.code, 'E_MISSING_PACKAGE')
-    assert.equal(missing.message, 'Missing optional dependencies: sharp, blurhash')
+    assert.equal(
+      missing.message,
+      'Missing optional dependencies: sharp, blurhash. Install sharp and blurhash to use this feature.'
+    )
   })
 })

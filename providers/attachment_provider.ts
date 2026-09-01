@@ -10,6 +10,7 @@ import { AttachmentService } from '../src/core/attachment_service.js'
 import { AttachmentsController } from '../src/controllers/attachments_controller.js'
 import { AttachmentManager } from '../src/sources/attachment_manager.js'
 import { AdonisAttachmentEventEmitter } from '../src/events/adonis_attachment_event_emitter.js'
+import { loadOptionalDependency } from '../src/utils/optional_dependency.js'
 
 import type { ApplicationService } from '@adonisjs/core/types'
 import type { ResolvedAttachmentConfig } from '../src/define_config.js'
@@ -129,7 +130,9 @@ async function applyLucidConfig(config: ResolvedAttachmentConfig): Promise<void>
     return
   }
 
-  const { configureLucidAttachmentTables } =
-    await import('../src/integrations/lucid/schema/configure_lucid_attachment_tables.js')
+  const { configureLucidAttachmentTables } = await loadOptionalDependency(
+    '@adonisjs/lucid',
+    () => import('../src/integrations/lucid/schema/configure_lucid_attachment_tables.js')
+  )
   configureLucidAttachmentTables(lucid.tableName)
 }

@@ -6,6 +6,7 @@
  */
 
 import { MissingOptionalDependencyError } from '../errors.js'
+import { loadOptionalDependency } from '../utils/optional_dependency.js'
 
 export type BlurhashComponent = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
 
@@ -85,11 +86,9 @@ export function resolveBlurhashComponents(
 }
 
 async function loadGenerator(): Promise<BlurhashGenerator> {
-  const sharpSpecifier = 'sharp'
-  const blurhashSpecifier = 'blurhash'
   const [sharpModule, blurhashModule] = await Promise.all([
-    import(sharpSpecifier) as Promise<{ default?: unknown }>,
-    import(blurhashSpecifier) as Promise<{ encode?: unknown }>,
+    loadOptionalDependency<{ default?: unknown }>('sharp'),
+    loadOptionalDependency<{ encode?: unknown }>('blurhash'),
   ])
 
   if (typeof sharpModule.default !== 'function' || typeof blurhashModule.encode !== 'function') {

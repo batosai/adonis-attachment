@@ -7,6 +7,7 @@
 
 import type { AttachmentMetadata, MediaMetadataExtractor } from './media_metadata.js'
 import { MissingOptionalDependencyError } from '../errors.js'
+import { loadOptionalDependency } from '../utils/optional_dependency.js'
 
 export type ExifReaderTag = {
   value?: unknown
@@ -48,8 +49,7 @@ async function resolveReader(source: ExifMetadataExtractorOptions['reader']): Pr
     return source
   }
 
-  const specifier = 'exifreader'
-  const module = await import(specifier) as { default?: unknown }
+  const module = await loadOptionalDependency<{ default?: unknown }>('exifreader')
   const reader = module.default ?? module
 
   if (!isExifReader(reader)) {

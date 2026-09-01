@@ -13,16 +13,20 @@ column, and owner each value belongs to.
 ## Migration checklist
 
 1. **Create the new schema.**
+
    ```sh
    node ace make:attachments-table
    node ace migration:run
    ```
+
    The stub delegates the blob and link definitions to `AttachmentSchemaService`.
 
 2. **Generate a data-migration script.**
+
    ```sh
    node ace make:attachment-v5-migration
    ```
+
    This renders a script into `database/scripts`. Use `--disk=s3` or
    `--folder=...` to change defaults.
 
@@ -40,8 +44,8 @@ variant blurhashes, and the relationship between an original and its variants. I
 move files in storage; only database rows change.
 
 The v5 `meta` object is copied unchanged to the v6 `metadata` column for both originals and
-variants. Configure `createDefaultMetadataExtractors()` for newly uploaded files when
-you want to keep the same EXIF, video, and PDF metadata shape after migration.
+variants. Newly uploaded files use the same default EXIF, video, and PDF metadata profile
+whenever `meta: true` is enabled; no extractor configuration is required.
 
 ## Existing v6 tables
 

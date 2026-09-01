@@ -268,6 +268,34 @@ test.group('defineConfig', () => {
     assert.equal(resolved.metadataExtractors, extractors)
   })
 
+  test('registers the default metadata extractors when no override is configured', async ({ assert }) => {
+    const storage: AttachmentStorage = {
+      async write() {},
+      async read() {
+        return new Uint8Array()
+      },
+      async remove() {},
+    }
+
+    const resolved = await defineConfig({ storage }).resolver({} as never)
+
+    assert.lengthOf(resolved.metadataExtractors!, 3)
+  })
+
+  test('allows an empty metadata override to disable the default extractors', async ({ assert }) => {
+    const storage: AttachmentStorage = {
+      async write() {},
+      async read() {
+        return new Uint8Array()
+      },
+      async remove() {},
+    }
+
+    const resolved = await defineConfig({ storage, media: { metadata: [] } }).resolver({} as never)
+
+    assert.deepEqual(resolved.metadataExtractors, [])
+  })
+
   test('requires a metadata persister for deferred extraction outside Lucid', async ({ assert }) => {
     const storage: AttachmentStorage = {
       async write() {},

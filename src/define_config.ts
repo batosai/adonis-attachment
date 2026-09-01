@@ -26,6 +26,8 @@ import type { AttachmentPersistenceOptions } from './core/attachment_options.js'
 import type { MediaMetadataExtractor } from './media/media_metadata.js'
 import type { AttachmentBinariesConfig } from './media/binary_config.js'
 import type { AttachmentEventEmitter } from './events/attachment_events.js'
+import { createDefaultMetadataExtractors } from './media/default_metadata.js'
+import { loadOptionalDependency } from './utils/optional_dependency.js'
 import {
   ConfiguredVariantConverterRegistry,
   type ConverterConfigMap,
@@ -128,9 +130,10 @@ export function defineConfig<const KnownConverters extends ConverterConfigMap = 
           ...(config.queueConcurrency ? { concurrency: config.queueConcurrency } : {}),
         })
 
-    const metadataExtractors = config.media?.metadata
-      ? await resolveIntegration(config.media.metadata, app)
-      : undefined
+    const metadataExtractors =
+      config.media?.metadata !== undefined
+        ? await resolveIntegration(config.media.metadata, app)
+        : createDefaultMetadataExtractors(config.media?.binaries ? { binaries: config.media.binaries } : {})
     const metadataPersister = config.media?.metadataPersister
       ? await resolveIntegration(config.media.metadataPersister, app)
       : undefined
@@ -159,7 +162,7 @@ export function defineConfig<const KnownConverters extends ConverterConfigMap = 
         : {}),
       ...(config.defaults ? { defaults: config.defaults } : {}),
       ...(config.sources ? { sources: config.sources } : {}),
-      ...(metadataExtractors ? { metadataExtractors } : {}),
+      metadataExtractors,
       ...(config.media?.metadataPolicy?.mode ? { metadataMode: config.media.metadataPolicy.mode } : {}),
       ...(config.media?.metadataPolicy?.variants !== undefined ? { metadataVariants: config.media.metadataPolicy.variants } : {}),
       ...(resolvedMetadataPersister ? { metadataPersister: resolvedMetadataPersister } : {}),
@@ -202,8 +205,10 @@ async function resolveLucidMetadataPersister(
     return undefined
   }
 
-  const { LucidAttachmentMetadataPersister } =
-    await import('./integrations/lucid/persistence/lucid_attachment_metadata_persister.js')
+  const { LucidAttachmentMetadataPersister } = await loadOptionalDependency(
+    '@adonisjs/lucid',
+    () => import('./integrations/lucid/persistence/lucid_attachment_metadata_persister.js')
+  )
   return new LucidAttachmentMetadataPersister()
 }
 

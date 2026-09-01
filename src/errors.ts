@@ -105,10 +105,14 @@ export class PersistedAttachmentNotFoundError extends AttachmentError {
 }
 
 export class MissingOptionalDependencyError extends AttachmentError {
-  constructor(packages: string | readonly string[]) {
+  constructor(packages: string | readonly string[], options: ErrorOptions = {}) {
     const names = Array.isArray(packages) ? packages : [packages]
-    super(`Missing optional ${names.length === 1 ? 'dependency' : 'dependencies'}: ${names.join(', ')}`, {
-      code: 'E_MISSING_PACKAGE',
-    })
+    super(
+      `Missing optional ${names.length === 1 ? 'dependency' : 'dependencies'}: ${names.join(', ')}. Install ${names.join(' and ')} to use this feature.`,
+      {
+        ...options,
+        code: 'E_MISSING_PACKAGE',
+      }
+    )
   }
 }

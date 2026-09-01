@@ -14,6 +14,7 @@ import {
 } from '../media/binaries.js'
 import { createSharpVariantConverter, type SharpFactory, type SharpResizeOptions } from '../media/sharp.js'
 import { MissingOptionalDependencyError } from '../errors.js'
+import { loadOptionalDependency } from '../utils/optional_dependency.js'
 
 export type AutodetectConverterOptions = ConverterOptions & {
   runner?: CommandRunner
@@ -152,8 +153,7 @@ function isOfficeDocument(mimeType: string): boolean {
 }
 
 async function loadSharp(): Promise<SharpFactory> {
-  const specifier = 'sharp'
-  const module = await import(specifier) as { default?: unknown }
+  const module = await loadOptionalDependency<{ default?: unknown }>('sharp')
 
   if (typeof module.default !== 'function') {
     throw new MissingOptionalDependencyError('sharp')

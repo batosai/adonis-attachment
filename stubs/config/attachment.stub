@@ -6,7 +6,6 @@ import {
   LocalFileStorage,
   type InferConverters,
 } from '@jrmc/adonis-attachment'
-import { createDefaultMetadataExtractors } from '@jrmc/adonis-attachment/media/metadata'
 
 const binaries = {
   // ffmpeg: { command: '/opt/media/bin/ffmpeg', timeout: 15_000 },
@@ -24,7 +23,6 @@ const attachmentConfig = defineConfig({
   storage: LocalFileStorage.fromApp,
   media: {
     binaries,
-    metadata: createDefaultMetadataExtractors({ binaries }),
     // metadataPolicy: { mode: 'deferred', variants: false },
   },
   // converters: {

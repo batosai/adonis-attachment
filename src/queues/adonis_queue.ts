@@ -6,6 +6,7 @@
  */
 
 import type { AttachmentJob, AttachmentQueue } from '../core/queue.js'
+import { loadOptionalDependency } from '../utils/optional_dependency.js'
 
 export type AdonisQueueDispatcher = {
   toQueue(name: string): AdonisQueueDispatcher
@@ -27,6 +28,7 @@ export type AdonisAttachmentQueueOptions = {
 export class AdonisAttachmentQueue implements AttachmentQueue {
   readonly #job: AdonisAttachmentJob
   readonly #queue: string | undefined
+  #dependency: Promise<unknown> | undefined
 
   constructor(options: AdonisAttachmentQueueOptions) {
     this.#job = options.job
@@ -34,6 +36,9 @@ export class AdonisAttachmentQueue implements AttachmentQueue {
   }
 
   async enqueue(job: AttachmentJob): Promise<void> {
+    this.#dependency ??= loadOptionalDependency('@adonisjs/queue')
+    await this.#dependency
+
     const dispatcher = this.#job.dispatch(job)
     await (this.#queue ? dispatcher.toQueue(this.#queue) : dispatcher).run()
   }

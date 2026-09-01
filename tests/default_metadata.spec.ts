@@ -7,7 +7,7 @@
 
 import { test } from '@japa/runner'
 
-import { createV5CompatibleMetadataExtractors } from '../src/media/v5_metadata.js'
+import { createDefaultMetadataExtractors } from '../src/media/default_metadata.js'
 import type { CommandExecution, CommandRunner } from '../src/media/binaries.js'
 import type { Attachment } from '../src/core/attachment.js'
 
@@ -25,22 +25,22 @@ class FakeRunner implements CommandRunner {
   }
 }
 
-test.group('v5-compatible metadata profile', () => {
-  test('registers every v5 metadata source by default', ({ assert }) => {
-    const extractors = createV5CompatibleMetadataExtractors()
+test.group('default metadata profile', () => {
+  test('registers every metadata source by default', ({ assert }) => {
+    const extractors = createDefaultMetadataExtractors()
 
     assert.lengthOf(extractors, 3)
   })
 
   test('allows individual metadata sources to be disabled', ({ assert }) => {
-    const extractors = createV5CompatibleMetadataExtractors({ exif: false, pdfinfo: false })
+    const extractors = createDefaultMetadataExtractors({ exif: false, pdfinfo: false })
 
     assert.lengthOf(extractors, 1)
   })
 
   test('reuses shared ffprobe binary configuration while allowing local overrides', async ({ assert }) => {
     const runner = new FakeRunner()
-    const [extractor] = createV5CompatibleMetadataExtractors({
+    const [extractor] = createDefaultMetadataExtractors({
       exif: false,
       pdfinfo: false,
       binaries: { ffprobe: { command: '/opt/media/ffprobe', timeout: 5_000 } },

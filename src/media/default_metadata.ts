@@ -10,7 +10,7 @@ import { createExifMetadataExtractor, type ExifMetadataExtractorOptions } from '
 import type { MediaMetadataExtractor } from './media_metadata.js'
 import type { AttachmentBinariesConfig } from './binary_config.js'
 
-export type V5CompatibleMetadataExtractorOptions = {
+export type DefaultMetadataExtractorOptions = {
   exif?: false | ExifMetadataExtractorOptions
   ffprobe?: false | FfprobeMetadataExtractorOptions
   pdfinfo?: false | PdfInfoMetadataExtractorOptions
@@ -18,11 +18,11 @@ export type V5CompatibleMetadataExtractorOptions = {
 }
 
 /**
- * Creates the v5 metadata profile: EXIF for images, ffprobe for media, and
+ * Creates the default metadata profile: EXIF for images, ffprobe for media, and
  * pdfinfo for PDFs. Each extractor can be disabled or pointed at a custom binary.
  */
-export function createV5CompatibleMetadataExtractors(
-  options: V5CompatibleMetadataExtractorOptions = {}
+export function createDefaultMetadataExtractors(
+  options: DefaultMetadataExtractorOptions = {}
 ): readonly MediaMetadataExtractor[] {
   return [
     ...(options.exif === false ? [] : [createExifMetadataExtractor(options.exif)]),

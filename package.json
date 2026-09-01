@@ -80,8 +80,8 @@
       "default": "./build/src/media/blurhash.js"
     },
     "./media/metadata": {
-      "types": "./build/src/media/v5_metadata.d.ts",
-      "default": "./build/src/media/v5_metadata.js"
+      "types": "./build/src/media/default_metadata.d.ts",
+      "default": "./build/src/media/default_metadata.js"
     },
     "./media/binaries": {
       "types": "./build/src/media/binaries.d.ts",

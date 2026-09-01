@@ -40,7 +40,7 @@ variant blurhashes, and the relationship between an original and its variants. I
 move files in storage; only database rows change.
 
 The v5 `meta` object is copied unchanged to the v6 `metadata` column for both originals and
-variants. Configure `createV5CompatibleMetadataExtractors()` for newly uploaded files when
+variants. Configure `createDefaultMetadataExtractors()` for newly uploaded files when
 you want to keep the same EXIF, video, and PDF metadata shape after migration.
 
 ## Existing v6 tables

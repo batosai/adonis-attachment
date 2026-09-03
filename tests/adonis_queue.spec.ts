@@ -16,10 +16,17 @@ import {
 } from '../index.js'
 
 test.group('AdonisAttachmentQueue', () => {
+  test('requires a dispatchable Adonis job', ({ assert }) => {
+    assert.throws(
+      () => new AdonisAttachmentQueue({ job: undefined as never }),
+      'The Adonis attachment queue requires a job with a dispatch method'
+    )
+  })
+
   test('dispatches an attachment job to the configured queue', async ({ assert }) => {
     const calls: string[] = []
     const queue = new AdonisAttachmentQueue({
-      queue: 'attachments',
+      queueName: 'attachments',
       job: {
         dispatch(payload) {
           calls.push(`dispatch:${payload.attachmentId}`)
@@ -63,6 +70,33 @@ test.group('AdonisAttachmentQueue', () => {
     assert.deepEqual(calls, ['run'])
   })
 
+  test('gives the job queue precedence over the configured queue name', async ({ assert }) => {
+    const calls: string[] = []
+    const queue = new AdonisAttachmentQueue({
+      queueName: 'attachments',
+      job: {
+        options: {
+          queue: 'priority-attachments',
+        },
+        dispatch() {
+          calls.push('dispatch')
+          return {
+            toQueue() {
+              throw new Error('should not override the job queue')
+            },
+            async run() {
+              calls.push('run')
+            },
+          }
+        },
+      },
+    })
+
+    await queue.enqueue({ type: 'generate-variants', attachmentId: 'attachment-id' })
+
+    assert.deepEqual(calls, ['dispatch', 'run'])
+  })
+
   test('preserves the serialized payload through an external worker', async ({ assert }) => {
     const attachment: Attachment = {
       id: 'attachment-id',
@@ -89,7 +123,7 @@ test.group('AdonisAttachmentQueue', () => {
     })
     let payload: AttachmentJob | undefined
     const queue = new AdonisAttachmentQueue({
-      queue: 'attachments',
+      queueName: 'attachments',
       job: {
         dispatch(job) {
           payload = JSON.parse(JSON.stringify(job)) as AttachmentJob

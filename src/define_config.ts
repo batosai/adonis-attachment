@@ -6,7 +6,14 @@
  */
 
 import { configProvider } from '@adonisjs/core'
-import { MemoryAttachmentQueue } from './queues/memory_queue.js'
+import {
+  MemoryAttachmentQueue,
+  type AttachmentQueueFailureHandler,
+} from './queues/memory_queue.js'
+import {
+  AdonisAttachmentQueue,
+  type AdonisAttachmentJob,
+} from './queues/adonis_queue.js'
 import { AttachmentError } from './errors.js'
 import {
   resolveAttachmentTableNames,
@@ -70,11 +77,27 @@ export type AttachmentEventsConfig = Integration<AttachmentEventEmitter>
 /** v5-style named converter declarations, resolved lazily when a job needs one. */
 export type AttachmentConvertersConfig = ConverterConfigMap
 
+export type MemoryAttachmentQueueConfig = {
+  driver: 'memory'
+  concurrency?: number
+  onFailure?: AttachmentQueueFailureHandler
+}
+
+export type AdonisAttachmentQueueConfig = {
+  driver: 'adonis'
+  job: AdonisAttachmentJob
+  queueName?: string
+}
+
+export type AttachmentQueueConfig =
+  | MemoryAttachmentQueueConfig
+  | AdonisAttachmentQueueConfig
+
 export type AttachmentConfig<KnownConverters extends ConverterConfigMap = ConverterConfigMap> = {
   /** Overrides the storage default. Falls back to `fs` when no adapter provides one. */
   defaultDisk?: string
   storage: Integration<AttachmentStorage>
-  queue?: Integration<AttachmentQueue>
+  queue?: AttachmentQueueConfig | Integration<AttachmentQueue>
   jobHandler?: Integration<AttachmentJobHandler>
   processor?: Integration<AttachmentJobProcessor>
   repository?: Integration<AttachmentRepository>
@@ -86,7 +109,6 @@ export type AttachmentConfig<KnownConverters extends ConverterConfigMap = Conver
   media?: AttachmentMediaConfig
   events?: AttachmentEventsConfig
   converters?: KnownConverters
-  queueConcurrency?: number
   createId?: () => string
 }
 
@@ -120,16 +142,12 @@ export function defineConfig<const KnownConverters extends ConverterConfigMap = 
     const processor = config.processor
       ? await resolveIntegration(config.processor, app)
       : undefined
-    const queue = config.queue
-      ? await resolveIntegration(config.queue, app)
-      : new MemoryAttachmentQueue({
-          handler: config.jobHandler
-            ? await resolveIntegration(config.jobHandler, app)
-            : processor
-              ? (job) => processor.process(job)
-            : async () => {},
-          ...(config.queueConcurrency ? { concurrency: config.queueConcurrency } : {}),
-        })
+    const jobHandler: AttachmentJobHandler = config.jobHandler
+      ? await resolveIntegration(config.jobHandler, app)
+      : processor
+        ? (job) => processor.process(job)
+        : async () => {}
+    const queue = await resolveQueue(config.queue, app, jobHandler)
 
     const metadataExtractors =
       config.media?.metadata !== undefined
@@ -188,6 +206,47 @@ export function defineConfig<const KnownConverters extends ConverterConfigMap = 
       ...(config.createId ? { createId: config.createId } : {}),
     }
   })
+}
+
+async function resolveQueue(
+  config: AttachmentConfig['queue'],
+  app: ApplicationService,
+  handler: AttachmentJobHandler
+): Promise<AttachmentQueue> {
+  if (!config) {
+    return new MemoryAttachmentQueue({ handler })
+  }
+
+  const resolved = typeof config === 'function'
+    ? await resolveIntegration(config, app)
+    : config
+
+  if (isAttachmentQueue(resolved)) {
+    return resolved
+  }
+
+  switch (resolved.driver) {
+    case 'memory':
+      return new MemoryAttachmentQueue({
+        handler,
+        ...(resolved.concurrency !== undefined ? { concurrency: resolved.concurrency } : {}),
+        ...(resolved.onFailure ? { onFailure: resolved.onFailure } : {}),
+      })
+    case 'adonis':
+      return new AdonisAttachmentQueue({
+        job: resolved.job,
+        ...(resolved.queueName ? { queueName: resolved.queueName } : {}),
+      })
+    default:
+      throw new AttachmentError(
+        `Unknown attachment queue driver: ${String((resolved as { driver?: unknown }).driver)}`,
+        { code: 'E_INVALID_ATTACHMENT_CONFIG' }
+      )
+  }
+}
+
+function isAttachmentQueue(value: AttachmentQueue | AttachmentQueueConfig): value is AttachmentQueue {
+  return 'enqueue' in value && typeof value.enqueue === 'function'
 }
 
 function toAutodetectOptions(binaries: AttachmentBinariesConfig | undefined) {

@@ -36,6 +36,9 @@ export {
   type AttachmentMediaConfig,
   type AttachmentEventsConfig,
   type AttachmentConvertersConfig,
+  type AttachmentQueueConfig,
+  type MemoryAttachmentQueueConfig,
+  type AdonisAttachmentQueueConfig,
   type AttachmentConfig,
   type InferConverters,
   type LucidAttachmentConfig,
@@ -70,7 +73,10 @@ export {
   type VariantConversionInput,
   type VariantConversionOutput,
 } from "./src/variants/variant_converter.js";
-export { MemoryAttachmentQueue } from "./src/queues/memory_queue.js";
+export {
+  MemoryAttachmentQueue,
+  type AttachmentQueueFailureHandler,
+} from "./src/queues/memory_queue.js";
 export {
   AttachmentManager,
   AttachmentSourceError,

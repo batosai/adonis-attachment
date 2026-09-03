@@ -11,6 +11,7 @@ import { test } from '@japa/runner'
 
 import {
   AdonisDriveStorage,
+  AdonisAttachmentQueue,
   AttachmentJobProcessor,
   defineConfig,
   MemoryAttachmentQueue,
@@ -163,11 +164,68 @@ test.group('defineConfig', () => {
       },
       async remove() {},
     }
-    const config = defineConfig({ defaultDisk: 'public', storage, queueConcurrency: 2 })
+    const config = defineConfig({
+      defaultDisk: 'public',
+      storage,
+      queue: { driver: 'memory', concurrency: 2 },
+    })
 
     const resolved = await config.resolver({} as never)
 
     assert.instanceOf(resolved.queue, MemoryAttachmentQueue)
+  })
+
+  test('resolves the Adonis queue driver configuration', async ({ assert }) => {
+    const storage: AttachmentStorage = {
+      async write() {},
+      async read() {
+        return new Uint8Array()
+      },
+      async remove() {},
+    }
+    const calls: string[] = []
+    const resolved = await defineConfig({
+      storage,
+      queue: {
+        driver: 'adonis',
+        queueName: 'attachments',
+        job: {
+          dispatch() {
+            return {
+              toQueue(name) {
+                calls.push(name)
+                return this
+              },
+              async run() {
+                calls.push('run')
+              },
+            }
+          },
+        },
+      },
+    }).resolver({} as never)
+
+    assert.instanceOf(resolved.queue, AdonisAttachmentQueue)
+    await resolved.queue.enqueue({ type: 'generate-variants', attachmentId: 'attachment-id' })
+    assert.deepEqual(calls, ['attachments', 'run'])
+  })
+
+  test('rejects an unknown queue driver at runtime', async ({ assert }) => {
+    const storage: AttachmentStorage = {
+      async write() {},
+      async read() {
+        return new Uint8Array()
+      },
+      async remove() {},
+    }
+
+    await assert.rejects(
+      () => defineConfig({
+        storage,
+        queue: { driver: 'unknown' } as never,
+      }).resolver({} as never),
+      'Unknown attachment queue driver: unknown'
+    )
   })
 
   test('preserves the configured attachment event emitter', async ({ assert }) => {
@@ -545,7 +603,12 @@ test.group('defineConfig', () => {
     processor.process = async (job) => {
       processed.push(job)
     }
-    const config = defineConfig({ defaultDisk: 'public', storage, processor })
+    const config = defineConfig({
+      defaultDisk: 'public',
+      storage,
+      processor,
+      queue: { driver: 'memory', concurrency: 1 },
+    })
     const resolved = await config.resolver({} as never)
 
     await resolved.queue.enqueue({ type: 'generate-variants', attachmentId: 'attachment-id' })

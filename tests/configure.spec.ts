@@ -45,6 +45,10 @@ test.group('configure', () => {
       'createDefaultMetadataExtractors'
     )
     assert.include(await readFile(join(stubsRoot, 'config/attachment.stub'), 'utf8'), 'binaries,')
+    assert.include(
+      await readFile(join(stubsRoot, 'config/attachment.stub'), 'utf8'),
+      "queue: { driver: 'memory', concurrency: 2 }"
+    )
     assert.notInclude(await readFile(join(stubsRoot, 'config/attachment.stub'), 'utf8'), 'maxBytes')
   })
 })

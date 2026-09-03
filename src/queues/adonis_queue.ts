@@ -6,6 +6,7 @@
  */
 
 import type { AttachmentJob, AttachmentQueue } from '../core/queue.js'
+import { AttachmentConfigurationError } from '../errors.js'
 import { loadOptionalDependency } from '../utils/optional_dependency.js'
 
 export type AdonisQueueDispatcher = {
@@ -14,12 +15,15 @@ export type AdonisQueueDispatcher = {
 }
 
 export type AdonisAttachmentJob = {
+  options?: {
+    queue?: string
+  }
   dispatch(payload: AttachmentJob): AdonisQueueDispatcher
 }
 
 export type AdonisAttachmentQueueOptions = {
   job: AdonisAttachmentJob
-  queue?: string
+  queueName?: string
 }
 
 /**
@@ -27,12 +31,18 @@ export type AdonisAttachmentQueueOptions = {
  */
 export class AdonisAttachmentQueue implements AttachmentQueue {
   readonly #job: AdonisAttachmentJob
-  readonly #queue: string | undefined
+  readonly #queueName: string | undefined
   #dependency: Promise<unknown> | undefined
 
   constructor(options: AdonisAttachmentQueueOptions) {
+    if (!options.job || typeof options.job.dispatch !== 'function') {
+      throw new AttachmentConfigurationError(
+        'The Adonis attachment queue requires a job with a dispatch method'
+      )
+    }
+
     this.#job = options.job
-    this.#queue = options.queue
+    this.#queueName = options.queueName
   }
 
   async enqueue(job: AttachmentJob): Promise<void> {
@@ -40,6 +50,7 @@ export class AdonisAttachmentQueue implements AttachmentQueue {
     await this.#dependency
 
     const dispatcher = this.#job.dispatch(job)
-    await (this.#queue ? dispatcher.toQueue(this.#queue) : dispatcher).run()
+    const hasJobQueue = Boolean(this.#job.options?.queue)
+    await (!hasJobQueue && this.#queueName ? dispatcher.toQueue(this.#queueName) : dispatcher).run()
   }
 }

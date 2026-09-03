@@ -8,10 +8,15 @@
 import type { AttachmentJob, AttachmentJobHandler, AttachmentQueue } from '../core/queue.js'
 import { AttachmentError } from '../errors.js'
 
+export type AttachmentQueueFailureHandler = (
+  job: AttachmentJob,
+  error: unknown
+) => void | Promise<void>
+
 export type MemoryAttachmentQueueOptions = {
   handler: AttachmentJobHandler
   concurrency?: number
-  onFailure?: (job: AttachmentJob, error: unknown) => void | Promise<void>
+  onFailure?: AttachmentQueueFailureHandler
 }
 
 /**
@@ -19,7 +24,7 @@ export type MemoryAttachmentQueueOptions = {
  */
 export class MemoryAttachmentQueue implements AttachmentQueue {
   readonly #handler: AttachmentJobHandler
-  readonly #onFailure: ((job: AttachmentJob, error: unknown) => void | Promise<void>) | undefined
+  readonly #onFailure: AttachmentQueueFailureHandler | undefined
   readonly #concurrency: number
   readonly #pending: AttachmentJob[] = []
   #active = 0

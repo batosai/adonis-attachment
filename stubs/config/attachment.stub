@@ -21,6 +21,7 @@ const binaries = {
  */
 const attachmentConfig = defineConfig({
   storage: LocalFileStorage.fromApp,
+  // queue: { driver: 'memory', concurrency: 2 },
   media: {
     binaries,
     // metadataPolicy: { mode: 'deferred', variants: false },

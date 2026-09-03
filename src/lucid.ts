@@ -24,6 +24,7 @@ export const {
   LucidAttachmentLifecycleService,
   LucidVariantGenerationService,
   PersistedAttachmentNotFoundError,
+  createLucidAttachmentProcessor,
   createAttachmentOwnerKey,
   createAttachmentsTableStubState,
   migrateLegacyAttachment,

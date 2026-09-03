@@ -76,8 +76,8 @@ same structured `error` object as a failed variant event.
 
 Variant and deferred-metadata events occur where the job executes. Declare an adapter in
 the attachment configuration to replace the default Adonis emitter; `defineConfig` gives it
-to the configured `AttachmentJobProcessor`. This works for the memory queue and for a
-separate `@adonisjs/queue` worker.
+to the configured or automatically created Lucid processor. A separate `@adonisjs/queue`
+worker must give the same adapter to its own processor.
 
 ```ts
 import emitter from '@adonisjs/core/services/emitter'

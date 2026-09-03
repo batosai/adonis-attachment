@@ -175,6 +175,68 @@ test.group('defineConfig', () => {
     assert.instanceOf(resolved.queue, MemoryAttachmentQueue)
   })
 
+  test('uses the default Lucid processor with implicit and configured memory queues', async ({ assert }) => {
+    const storage: AttachmentStorage = {
+      async write() {},
+      async read() {
+        return new Uint8Array()
+      },
+      async remove() {},
+    }
+    const processed: string[] = []
+    const app = {
+      container: {
+        hasBinding(binding: string) {
+          return binding === 'lucid.db'
+        },
+        async make(binding: string) {
+          assert.equal(binding, 'jrmc.attachment')
+          return {
+            async extractAndPersistMetadata(attachment: Attachment) {
+              processed.push(attachment.id)
+            },
+          }
+        },
+      },
+    }
+
+    for (const queue of [undefined, { driver: 'memory' as const, concurrency: 2 }]) {
+      const resolved = await defineConfig({
+        storage,
+        ...(queue ? { queue } : {}),
+      }).resolver(app as never)
+
+      await resolved.queue.enqueue({
+        type: 'extract-metadata',
+        attachmentId: pdf.id,
+        attachment: pdf,
+      })
+      await (resolved.queue as MemoryAttachmentQueue).drain()
+    }
+
+    assert.deepEqual(processed, [pdf.id, pdf.id])
+  })
+
+  test('rejects memory jobs without Lucid or a configured processor', async ({ assert }) => {
+    const storage: AttachmentStorage = {
+      async write() {},
+      async read() {
+        return new Uint8Array()
+      },
+      async remove() {},
+    }
+    const resolved = await defineConfig({ storage }).resolver({} as never)
+
+    await assert.rejects(
+      () =>
+        resolved.queue.enqueue({
+          type: 'generate-variants',
+          attachmentId: pdf.id,
+        }),
+      'The in-memory attachment queue requires a processor or jobHandler when Lucid is not available'
+    )
+  })
+
   test('resolves the Adonis queue driver configuration', async ({ assert }) => {
     const storage: AttachmentStorage = {
       async write() {},
@@ -609,11 +671,48 @@ test.group('defineConfig', () => {
       processor,
       queue: { driver: 'memory', concurrency: 1 },
     })
-    const resolved = await config.resolver({} as never)
+    const resolved = await config.resolver({
+      container: {
+        hasBinding(binding: string) {
+          return binding === 'lucid.db'
+        },
+      },
+    } as never)
 
     await resolved.queue.enqueue({ type: 'generate-variants', attachmentId: 'attachment-id' })
     await (resolved.queue as MemoryAttachmentQueue).drain()
 
     assert.deepEqual(processed, [{ type: 'generate-variants', attachmentId: 'attachment-id' }])
+  })
+
+  test('gives jobHandler precedence over the default Lucid processor', async ({ assert }) => {
+    const storage: AttachmentStorage = {
+      async write() {},
+      async read() {
+        return new Uint8Array()
+      },
+      async remove() {},
+    }
+    const processed: AttachmentJob[] = []
+    const resolved = await defineConfig({
+      storage,
+      jobHandler: () => async (job: AttachmentJob) => {
+        processed.push(job)
+      },
+    }).resolver({
+      container: {
+        hasBinding(binding: string) {
+          return binding === 'lucid.db'
+        },
+      },
+    } as never)
+
+    await resolved.queue.enqueue({
+      type: 'generate-variants',
+      attachmentId: pdf.id,
+    })
+    await (resolved.queue as MemoryAttachmentQueue).drain()
+
+    assert.deepEqual(processed, [{ type: 'generate-variants', attachmentId: pdf.id }])
   })
 })

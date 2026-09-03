@@ -54,6 +54,10 @@ export {
   type LucidVariantGenerationServiceOptions,
 } from "./persistence/lucid_variant_generation_service.js";
 export {
+  createLucidAttachmentProcessor,
+  type CreateLucidAttachmentProcessorOptions,
+} from "./create_lucid_attachment_processor.js";
+export {
   createAttachmentOwnerKey,
   type AttachmentOwner,
 } from "./relations/attachment_owner.js";

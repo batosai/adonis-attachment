@@ -14,7 +14,10 @@ import {
   AdonisAttachmentQueue,
   type AdonisAttachmentJob,
 } from './queues/adonis_queue.js'
-import { AttachmentError } from './errors.js'
+import {
+  AttachmentError,
+  AttachmentProcessorNotConfiguredError,
+} from './errors.js'
 import {
   resolveAttachmentTableNames,
   type AttachmentTableNames,
@@ -24,7 +27,7 @@ import type { ApplicationService, ConfigProvider } from '@adonisjs/core/types'
 import type { AttachmentServiceOptions } from './core/attachment_service.js'
 import type { AttachmentMetadataMode } from './core/attachment_service.js'
 import type { AttachmentMetadataPersister } from './core/attachment_metadata_persister.js'
-import type { AttachmentJobProcessor } from './core/attachment_job_processor.js'
+import { AttachmentJobProcessor } from './core/attachment_job_processor.js'
 import type { AttachmentRepository } from './core/attachment_repository.js'
 import type { AttachmentJobHandler, AttachmentQueue } from './core/queue.js'
 import type { AttachmentStorage } from './core/storage.js'
@@ -98,7 +101,9 @@ export type AttachmentConfig<KnownConverters extends ConverterConfigMap = Conver
   defaultDisk?: string
   storage: Integration<AttachmentStorage>
   queue?: AttachmentQueueConfig | Integration<AttachmentQueue>
+  /** Overrides every processor, including the automatic Lucid memory processor. */
   jobHandler?: Integration<AttachmentJobHandler>
+  /** Overrides the processor automatically created for an in-memory Lucid integration. */
   processor?: Integration<AttachmentJobProcessor>
   repository?: Integration<AttachmentRepository>
   /** Lowest-priority defaults for file persistence. */
@@ -139,16 +144,6 @@ export function defineConfig<const KnownConverters extends ConverterConfigMap = 
   return configProvider.create(async (app) => {
     const storage = await resolveIntegration(config.storage, app)
     const lucid = resolveLucidIntegration(app, config.integrations?.lucid)
-    const processor = config.processor
-      ? await resolveIntegration(config.processor, app)
-      : undefined
-    const jobHandler: AttachmentJobHandler = config.jobHandler
-      ? await resolveIntegration(config.jobHandler, app)
-      : processor
-        ? (job) => processor.process(job)
-        : async () => {}
-    const queue = await resolveQueue(config.queue, app, jobHandler)
-
     const metadataExtractors =
       config.media?.metadata !== undefined
         ? await resolveIntegration(config.media.metadata, app)
@@ -164,6 +159,23 @@ export function defineConfig<const KnownConverters extends ConverterConfigMap = 
         ? await resolveLucidRepository()
         : undefined
     const events = config.events ? await resolveIntegration(config.events, app) : undefined
+    const converters = config.converters
+      ? new ConfiguredVariantConverterRegistry(config.converters, {
+          autodetect: toAutodetectOptions(config.media?.binaries),
+        })
+      : undefined
+    const configuredProcessor = config.processor ? await resolveIntegration(config.processor, app) : undefined
+    const processor =
+      configuredProcessor ??
+      (!config.jobHandler && usesConfiguredMemoryQueue(config.queue) && lucid && repository
+        ? await createDefaultLucidProcessor(app, repository, converters)
+        : undefined)
+    const jobHandler: AttachmentJobHandler | undefined = config.jobHandler
+      ? await resolveIntegration(config.jobHandler, app)
+      : processor
+        ? (job) => processor.process(job)
+        : undefined
+    const queue = await resolveQueue(config.queue, app, jobHandler)
 
     if (processor && events) {
       processor.setEventEmitter(events)
@@ -189,13 +201,7 @@ export function defineConfig<const KnownConverters extends ConverterConfigMap = 
       ...(config.media?.metadataPolicy?.variants !== undefined ? { metadataVariants: config.media.metadataPolicy.variants } : {}),
       ...(resolvedMetadataPersister ? { metadataPersister: resolvedMetadataPersister } : {}),
       ...(events ? { events } : {}),
-      ...(config.converters
-        ? {
-            converters: new ConfiguredVariantConverterRegistry(config.converters, {
-              autodetect: toAutodetectOptions(config.media?.binaries),
-            }),
-          }
-        : {}),
+      ...(converters ? { converters } : {}),
       ...(lucid
         ? {
             integrations: {
@@ -211,10 +217,10 @@ export function defineConfig<const KnownConverters extends ConverterConfigMap = 
 async function resolveQueue(
   config: AttachmentConfig['queue'],
   app: ApplicationService,
-  handler: AttachmentJobHandler
+  handler: AttachmentJobHandler | undefined
 ): Promise<AttachmentQueue> {
   if (!config) {
-    return new MemoryAttachmentQueue({ handler })
+    return createMemoryQueue(handler)
   }
 
   const resolved = typeof config === 'function'
@@ -227,8 +233,7 @@ async function resolveQueue(
 
   switch (resolved.driver) {
     case 'memory':
-      return new MemoryAttachmentQueue({
-        handler,
+      return createMemoryQueue(handler, {
         ...(resolved.concurrency !== undefined ? { concurrency: resolved.concurrency } : {}),
         ...(resolved.onFailure ? { onFailure: resolved.onFailure } : {}),
       })
@@ -243,6 +248,52 @@ async function resolveQueue(
         { code: 'E_INVALID_ATTACHMENT_CONFIG' }
       )
   }
+}
+
+function createMemoryQueue(
+  handler: AttachmentJobHandler | undefined,
+  options: Omit<MemoryAttachmentQueueConfig, 'driver'> = {}
+): MemoryAttachmentQueue {
+  if (!handler) {
+    return new UnconfiguredMemoryAttachmentQueue(options)
+  }
+
+  return new MemoryAttachmentQueue({ handler, ...options })
+}
+
+class UnconfiguredMemoryAttachmentQueue extends MemoryAttachmentQueue {
+  constructor(options: Omit<MemoryAttachmentQueueConfig, 'driver'>) {
+    super({ handler: async () => {}, ...options })
+  }
+
+  override enqueue(): Promise<void> {
+    return Promise.reject(new AttachmentProcessorNotConfiguredError())
+  }
+}
+
+function usesConfiguredMemoryQueue(config: AttachmentConfig['queue']): boolean {
+  if (config === undefined) {
+    return true
+  }
+
+  return typeof config === 'object' && !isAttachmentQueue(config) && config.driver === 'memory'
+}
+
+async function createDefaultLucidProcessor(
+  app: ApplicationService,
+  repository: AttachmentRepository,
+  converters: VariantConverterRegistry | undefined
+): Promise<AttachmentJobProcessor> {
+  const { createLucidAttachmentProcessor } = await loadOptionalDependency(
+    '@adonisjs/lucid',
+    () => import('./integrations/lucid/create_lucid_attachment_processor.js')
+  )
+  const resolvedConverters = converters ?? new ConfiguredVariantConverterRegistry({})
+
+  return createLucidAttachmentProcessor(app, {
+    repository,
+    converters: resolvedConverters,
+  })
 }
 
 function isAttachmentQueue(value: AttachmentQueue | AttachmentQueueConfig): value is AttachmentQueue {

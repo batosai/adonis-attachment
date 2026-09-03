@@ -9,17 +9,19 @@ when you need to.
 
 ## In-memory queue (default)
 
-If you configure nothing, `MemoryAttachmentQueue` runs jobs **in the same process**. Give
-it a `processor` and it will handle every job inline - great for development, tests, and
-simple deployments. The default concurrency is `1`; declare the memory driver only when you
-need to change it or install a failure handler.
+If you configure nothing, `MemoryAttachmentQueue` runs jobs **in the same process** - great
+for development, tests, and simple deployments. When Lucid is detected, the package also
+builds the processor automatically from the Lucid repository, configured converters, metadata
+service, and variant store. Neither `queue` nor `processor` is required in that case.
+
+The default concurrency is `1`; declare the memory driver only when you need to change it or
+install a failure handler:
 
 ```ts
 import { defineConfig, LocalFileStorage } from '@jrmc/adonis-attachment'
 
 export default defineConfig({
   storage: LocalFileStorage.fromApp,
-  processor: attachmentProcessor, // an AttachmentJobProcessor
   queue: {
     driver: 'memory',
     concurrency: 2,
@@ -34,46 +36,29 @@ export default defineConfig({
 receives both the failed job and the original error. Without this callback, the in-memory queue
 finishes the failed job silently, so production applications should report failures explicitly.
 
-### Building the processor
+Outside Lucid, the package cannot infer how originals and generated variants are persisted.
+Configure `processor` or `jobHandler` before scheduling a memory job; otherwise `enqueue`
+rejects with `E_ATTACHMENT_PROCESSOR_NOT_CONFIGURED`. An explicit `processor` or `jobHandler`
+also overrides the automatic Lucid processor.
 
-`AttachmentJobProcessor` needs a repository (to load the original) and a variant generator.
-Because the generator often needs `jrmc.attachment` from the container, you can pass it as
-an **async factory** - it's resolved lazily on the first job, avoiding a boot-time cycle:
+### Creating the Lucid processor for a worker
+
+An external worker does not use the memory queue's automatic processor. Create its processor
+once in an application module with the Lucid-specific factory:
 
 ```ts
-import {
-  AttachmentJobProcessor,
-  VariantGenerationService,
-  attachmentConverters,
-} from '@jrmc/adonis-attachment'
-import {
-  LucidAttachmentRepository,
-  LucidAttachmentStore,
-  LucidVariantGenerationService,
-} from '@jrmc/adonis-attachment/lucid'
+// app/attachments/lucid_processor.ts
+import app from '@adonisjs/core/services/app'
+import { createLucidAttachmentProcessor } from '@jrmc/adonis-attachment/lucid'
 
-const processor = new AttachmentJobProcessor({
-  attachments: new LucidAttachmentRepository(),
-  metadata: {
-    async extractAndPersistMetadata(attachment) {
-      const attachments = await app.container.make('jrmc.attachment')
-      await attachments.extractAndPersistMetadata(attachment)
-    },
-  },
-  async variants() {
-    const attachments = await app.container.make('jrmc.attachment')
-
-    return new LucidVariantGenerationService({
-      attachments,
-      generator: new VariantGenerationService({ attachments, converters: attachmentConverters }),
-      store: new LucidAttachmentStore(),
-    })
-  },
-})
+export default createLucidAttachmentProcessor(app)
 ```
 
-To emit lifecycle events from this worker, pass the same event adapter configured for the
-package as `events`. See [Events](/guide/events#workers-and-external-queues).
+The factory resolves the configured attachment service and converters lazily, and wires the
+Lucid repository and variant store. Its name and import path make the persistence dependency
+explicit. For another ORM, build a generic `AttachmentJobProcessor` with that ORM's repository
+and variant persistence. To replace lifecycle events, pass `{ events }` as the second argument.
+See [Events](/guide/events#workers-and-external-queues).
 
 ## A real worker with `@adonisjs/queue`
 
@@ -108,7 +93,7 @@ Your job owns dependency injection and simply forwards its payload to the proces
 ```ts
 import { Job } from '@adonisjs/queue'
 import type { AttachmentJob } from '@jrmc/adonis-attachment'
-import attachmentProcessor from '#services/attachment_processor'
+import attachmentProcessor from '#attachments/lucid_processor'
 
 export default class GenerateAttachmentVariants extends Job<AttachmentJob> {
   async execute() {
@@ -129,7 +114,7 @@ standard configuration factory:
 
 ```ts
 import { MemoryAttachmentQueue, defineConfig, LocalFileStorage } from '@jrmc/adonis-attachment'
-import attachmentProcessor from '#services/attachment_processor'
+import attachmentProcessor from '#attachments/lucid_processor'
 
 export default defineConfig({
   storage: LocalFileStorage.fromApp,

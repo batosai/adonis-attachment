@@ -51,4 +51,5 @@ test('keeps Lucid exports out of the package root', async ({ assert }) => {
   assert.notInclude(rootSource, 'integrations/lucid')
   assert.isFunction(lucidExports.attachment)
   assert.isFunction(lucidExports.attachmentRelation)
+  assert.isFunction(lucidExports.createLucidAttachmentProcessor)
 })

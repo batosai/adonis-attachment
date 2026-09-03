@@ -10,6 +10,7 @@ import { test } from '@japa/runner'
 import {
   AttachmentError,
   AttachmentNotFoundError,
+  AttachmentProcessorNotConfiguredError,
   AttachmentSourceError,
   MissingOptionalDependencyError,
   UnknownVariantConverterError,
@@ -31,11 +32,14 @@ test.group('Attachment errors', () => {
   test('uses subclass error codes and statuses', ({ assert }) => {
     const notFound = new AttachmentNotFoundError('attachment-id')
     const converter = new UnknownVariantConverterError('thumbnail')
+    const processor = new AttachmentProcessorNotConfiguredError()
 
     assert.equal(notFound.code, 'E_ATTACHMENT_NOT_FOUND')
     assert.equal(notFound.status, 404)
     assert.equal(converter.code, 'E_UNKNOWN_VARIANT_CONVERTER')
     assert.equal(converter.status, 422)
+    assert.equal(processor.code, 'E_ATTACHMENT_PROCESSOR_NOT_CONFIGURED')
+    assert.equal(processor.status, 500)
   })
 
   test('preserves causes and command execution details', ({ assert }) => {

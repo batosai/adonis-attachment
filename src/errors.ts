@@ -53,6 +53,16 @@ export class AttachmentConfigurationError extends AttachmentError {
   static code = 'E_ATTACHMENT_CONFIGURATION'
 }
 
+/** Raised when the in-memory queue is used without a job processor. */
+export class AttachmentProcessorNotConfiguredError extends AttachmentConfigurationError {
+  static code = 'E_ATTACHMENT_PROCESSOR_NOT_CONFIGURED'
+
+  constructor() {
+    super('The in-memory attachment queue requires a processor or jobHandler when Lucid is not available')
+    this.name = 'AttachmentProcessorNotConfiguredError'
+  }
+}
+
 export class AttachmentNotFoundError extends AttachmentError {
   constructor(attachmentId: string) {
     super(`Attachment "${attachmentId}" was not found`, {

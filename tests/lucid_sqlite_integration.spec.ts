@@ -8,7 +8,9 @@
 import type { Database } from '@adonisjs/lucid/database'
 import { test } from '@japa/runner'
 
+import { defineConfig, MemoryAttachmentQueue, type AttachmentStorage } from '../index.js'
 import type { Attachment } from '../src/core/attachment.js'
+import { createLucidAttachmentProcessor } from '../src/integrations/lucid/create_lucid_attachment_processor.js'
 import { AttachmentLinkModel } from '../src/integrations/lucid/models/attachment_link_model.js'
 import { AttachmentModel } from '../src/integrations/lucid/models/attachment_model.js'
 import { LucidAttachmentLifecycleService } from '../src/integrations/lucid/persistence/lucid_attachment_lifecycle_service.js'
@@ -74,6 +76,128 @@ test.group('Lucid SQLite integration', (group) => {
     assert.equal(variant.toAttachment().blurhash, 'LEHV6nWB2yk8pyo0adR*.7kCMdnj')
     assert.equal(persisted?.original.id, original.id)
     assert.deepEqual(persisted?.variants.map((row) => row.id), ['variant-id'])
+  })
+
+  test('processes variants with the default Lucid memory processor', async ({ assert }) => {
+    const store = new LucidAttachmentStore()
+    const original = await store.createOriginal(owner, makeAttachment('original-id', 'users/42/avatar.jpg'))
+    const storage: AttachmentStorage = {
+      async write() {},
+      async read() {
+        return new Uint8Array()
+      },
+      async remove() {},
+    }
+    const attachmentService = {
+      async read() {
+        return new Uint8Array([1, 2, 3])
+      },
+      async create() {
+        return makeAttachment('variant-id', 'users/42/thumbnail.webp')
+      },
+      async remove() {},
+    }
+    const app = {
+      container: {
+        hasBinding(binding: string) {
+          return binding === 'lucid.db'
+        },
+        async make(binding: string) {
+          assert.equal(binding, 'jrmc.attachment')
+          return attachmentService
+        },
+      },
+    }
+    const resolved = await defineConfig({
+      storage,
+      converters: {
+        thumbnail: {
+          converter: async () => ({
+            default: {
+              key: 'ignored',
+              async convert() {
+                return {
+                  body: new Uint8Array([4, 5, 6]),
+                  fileName: 'thumbnail.webp',
+                  mimeType: 'image/webp',
+                }
+              },
+            },
+          }),
+        },
+      },
+    }).resolver(app as never)
+
+    await resolved.queue.enqueue({
+      type: 'generate-variants',
+      attachmentId: original.attachmentId,
+      variantKeys: ['thumbnail'],
+    })
+    await (resolved.queue as MemoryAttachmentQueue).drain()
+
+    const variant = await AttachmentModel.query()
+      .where('parent_id', original.attachmentId)
+      .where('variant_key', 'thumbnail')
+      .firstOrFail()
+    assert.equal(variant.id, 'variant-id')
+    assert.equal(variant.path, 'users/42/thumbnail.webp')
+  })
+
+  test('creates a standalone Lucid processor for external workers', async ({ assert }) => {
+    const store = new LucidAttachmentStore()
+    const original = await store.createOriginal(owner, makeAttachment('original-id', 'users/42/avatar.jpg'))
+    const attachmentService = {
+      async read() {
+        return new Uint8Array([1, 2, 3])
+      },
+      async create() {
+        return makeAttachment('worker-variant-id', 'users/42/worker-thumbnail.webp')
+      },
+      async remove() {},
+    }
+    const converter = {
+      key: 'thumbnail',
+      async convert() {
+        return {
+          body: new Uint8Array([4, 5, 6]),
+          fileName: 'worker-thumbnail.webp',
+          mimeType: 'image/webp',
+        }
+      },
+    }
+    const processor = createLucidAttachmentProcessor({
+      container: {
+        async make(binding: string) {
+          if (binding === 'jrmc.attachment') {
+            return attachmentService
+          }
+          if (binding === 'jrmc.attachment.converters') {
+            return {
+              async keys() {
+                return ['thumbnail']
+              },
+              async get(key: string) {
+                return key === 'thumbnail' ? converter : undefined
+              },
+            }
+          }
+          throw new Error(`Unexpected container binding: ${binding}`)
+        },
+      },
+    } as never)
+
+    await processor.process({
+      type: 'generate-variants',
+      attachmentId: original.attachmentId,
+      variantKeys: ['thumbnail'],
+    })
+
+    const variant = await AttachmentModel.query()
+      .where('parent_id', original.attachmentId)
+      .where('variant_key', 'thumbnail')
+      .firstOrFail()
+    assert.equal(variant.id, 'worker-variant-id')
+    assert.equal(variant.path, 'users/42/worker-thumbnail.webp')
   })
 
   test('returns null when no attachment exists for the owner field', async ({ assert }) => {

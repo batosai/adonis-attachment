@@ -3,6 +3,10 @@
 The Lucid integration is optional, but it's the most convenient way to tie files to your
 records. It offers **two modes** - pick per field:
 
+It also exports `createLucidAttachmentProcessor` for external queue workers. The default
+in-memory queue creates this processor automatically; see
+[Background processing](/guide/queues#creating-the-lucid-processor-for-a-worker).
+
 | Mode | Storage | Best for |
 | --- | --- | --- |
 | **Relation** (`@attachmentRelation` / `@attachmentsRelation`) | `attachments` + `attachment_links` tables | Ownership, collections, variants, blob reuse |

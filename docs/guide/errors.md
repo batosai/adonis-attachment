@@ -29,6 +29,7 @@ try {
 | `InvalidConverterModuleError` | `E_INVALID_CONVERTER_MODULE` | 500 | A configured converter module has an unsupported export. |
 | `DeferredMetadataNotConfiguredError` | `E_METADATA_NOT_CONFIGURED` | 500 | Deferred metadata has no extractors or persister. |
 | `DeferredMetadataProcessorNotConfiguredError` | `E_METADATA_PROCESSOR_NOT_CONFIGURED` | 500 | A worker has no metadata processor. |
+| `AttachmentProcessorNotConfiguredError` | `E_ATTACHMENT_PROCESSOR_NOT_CONFIGURED` | 500 | The memory queue has no processor and Lucid is unavailable. |
 | `PersistedAttachmentNotFoundError` | `E_PERSISTED_ATTACHMENT_NOT_FOUND` | 404 | A variant job targets a blob that no longer exists. |
 | `CommandExecutionError` | `E_COMMAND_EXECUTION_FAILED` | 500 | An external binary exits unsuccessfully. |
 | `CommandTimeoutError` | `E_COMMAND_TIMEOUT` | 504 | An external binary exceeds its configured timeout. |

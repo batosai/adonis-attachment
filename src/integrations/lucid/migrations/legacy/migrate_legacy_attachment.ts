@@ -34,7 +34,6 @@ import {
   createAttachmentOwnerKey,
   type AttachmentOwner,
 } from "../../relations/attachment_owner.js";
-import type { Attachment } from "../../../../core/attachment.js";
 import { AttachmentError } from "../../../../errors.js";
 
 export type { AttachmentOwner } from "../../relations/attachment_owner.js";
@@ -74,11 +73,6 @@ export type MigrateLegacyAttachmentOptions = {
   defaultDisk: string;
   createId: () => string;
 };
-
-export type MigrateLegacyAttachmentColumnOptions = Omit<
-  MigrateLegacyAttachmentOptions,
-  "owner"
->;
 
 /**
  * Converts one v5 JSON attachment document into blob and polymorphic-link rows.
@@ -126,39 +120,6 @@ export function migrateLegacyAttachment(
         attachmentId: id,
       },
     ],
-  };
-}
-
-/**
- * Converts one v5 JSON value for a retained single attachment column. Legacy
- * variants require the polymorphic table and therefore cannot be kept here.
- */
-export function migrateLegacyAttachmentColumn(
-  value: LegacyAttachment | string,
-  options: MigrateLegacyAttachmentColumnOptions,
-): Attachment {
-  const attachment =
-    typeof value === "string" ? parseLegacyAttachment(value) : value;
-
-  if (attachment.variants?.length) {
-    throw new AttachmentError(
-      "Legacy attachments with variants must migrate to the polymorphic table",
-      { code: "E_LEGACY_VARIANTS_REQUIRE_RELATIONS", status: 422 },
-    );
-  }
-
-  const originalName = attachment.originalName ?? attachment.name;
-
-  return {
-    id: options.createId(),
-    disk: attachment.disk ?? options.defaultDisk,
-    path: attachment.path ?? attachment.name,
-    name: attachment.name,
-    originalName,
-    mimeType: attachment.mimeType,
-    extname: attachment.extname,
-    size: attachment.size,
-    ...(attachment.meta ? { metadata: attachment.meta } : {}),
   };
 }
 

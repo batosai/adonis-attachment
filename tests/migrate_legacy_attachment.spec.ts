@@ -7,10 +7,7 @@
 
 import { test } from "@japa/runner";
 
-import {
-  migrateLegacyAttachment,
-  migrateLegacyAttachmentColumn,
-} from "../src/integrations/lucid/index.js";
+import { migrateLegacyAttachment } from "../src/integrations/lucid/index.js";
 import { createAttachmentOwnerKey } from "../src/integrations/lucid/relations/attachment_owner.js";
 
 const legacyMetadata = {
@@ -127,61 +124,6 @@ test.group("migrateLegacyAttachment", () => {
           createId: () => "attachment-id",
         }),
       "Legacy attachment value must be valid JSON",
-    );
-  });
-
-  test("converts a v5 document for a retained single attachment column", ({
-    assert,
-  }) => {
-    const attachment = migrateLegacyAttachmentColumn(
-      {
-        name: "avatar.jpg",
-        originalName: "profile.jpg",
-        size: 42,
-        extname: "jpg",
-        mimeType: "image/jpeg",
-        meta: legacyMetadata,
-      },
-      { defaultDisk: "public", createId: () => "attachment-id" },
-    );
-
-    assert.deepEqual(attachment, {
-      id: "attachment-id",
-      disk: "public",
-      path: "avatar.jpg",
-      name: "avatar.jpg",
-      originalName: "profile.jpg",
-      mimeType: "image/jpeg",
-      extname: "jpg",
-      size: 42,
-      metadata: legacyMetadata,
-    });
-  });
-
-  test("rejects legacy variants for a retained single attachment column", ({
-    assert,
-  }) => {
-    assert.throws(
-      () =>
-        migrateLegacyAttachmentColumn(
-          {
-            name: "avatar.jpg",
-            size: 42,
-            extname: "jpg",
-            mimeType: "image/jpeg",
-            variants: [
-              {
-                key: "thumbnail",
-                name: "thumbnail.jpg",
-                size: 10,
-                extname: "jpg",
-                mimeType: "image/jpeg",
-              },
-            ],
-          },
-          { defaultDisk: "public", createId: () => "attachment-id" },
-        ),
-      "Legacy attachments with variants must migrate to the polymorphic table",
     );
   });
 });

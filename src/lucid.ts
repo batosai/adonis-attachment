@@ -13,6 +13,7 @@ export const {
   resolveAttachmentTableNames,
   AttachmentSchemaService,
   attachment,
+  attachments,
   attachmentRelation,
   attachmentsRelation,
   AttachmentRelation,
@@ -28,7 +29,6 @@ export const {
   createAttachmentOwnerKey,
   createAttachmentsTableStubState,
   migrateLegacyAttachment,
-  migrateLegacyAttachmentColumn,
   migrateLegacyAttachmentRecords,
   createLegacyAttachmentMigrationStubState,
 } = lucid

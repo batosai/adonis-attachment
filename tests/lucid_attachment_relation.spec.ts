@@ -11,8 +11,8 @@ import { BaseModel, column } from "@adonisjs/lucid/orm";
 import { test } from "@japa/runner";
 
 import {
-  attachmentRelation,
-  attachmentsRelation,
+  attachment,
+  attachments,
   AttachmentRegenerator,
   type AttachmentCollectionRelation,
   type AttachmentRelation,
@@ -33,7 +33,7 @@ class RelationUser extends BaseModel {
   @column()
   declare name: string;
 
-  @attachmentRelation({
+  @attachment({
     disk: "decorator",
     folder: ({ model }) => `avatars/${(model as RelationUser).id}`,
     rename: false,
@@ -41,7 +41,7 @@ class RelationUser extends BaseModel {
   })
   declare avatar: AttachmentRelation;
 
-  @attachmentsRelation({
+  @attachments({
     folder: ({ model }) => `gallery/${(model as RelationUser).id}`,
     rename: false,
   })
@@ -49,7 +49,7 @@ class RelationUser extends BaseModel {
 }
 
 let database: Database;
-let attachments: AttachmentService;
+let attachmentService: AttachmentService;
 let removed: string[];
 let writes: Array<{ disk: string; path: string }>;
 let queued: GenerateVariantsJob[];
@@ -59,7 +59,7 @@ function createDraft(
   name: string,
   options: Parameters<AttachmentService["createDraft"]>[1] = {},
 ) {
-  return attachments.createDraft(
+  return attachmentService.createDraft(
     {
       body: Buffer.from(name),
       originalName: name,
@@ -106,7 +106,7 @@ test.group("Lucid attachment relations", (group) => {
     writes = [];
     queued = [];
     nextId = 0;
-    attachments = new AttachmentService({
+    attachmentService = new AttachmentService({
       defaultDisk: "fs",
       defaults: { disk: "config", folder: "config" },
       createId: () => `attachment-${++nextId}`,
@@ -139,7 +139,7 @@ test.group("Lucid attachment relations", (group) => {
             throw new Error(`Unexpected binding: ${binding}`);
           }
 
-          return attachments;
+          return attachmentService;
         },
       },
     } as never);
@@ -370,7 +370,7 @@ test.group("Lucid attachment relations", (group) => {
     assert,
   }) => {
     const scheduled: AttachmentJob[] = [];
-    attachments = new AttachmentService({
+    attachmentService = new AttachmentService({
       defaultDisk: "fs",
       defaults: { variants: ["config"] },
       createId: () => `attachment-${++nextId}`,

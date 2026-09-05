@@ -19,10 +19,8 @@ export {
   type AttachmentSchemaServiceOptions,
 } from "./schema/attachment_schema_service.js";
 export {
-  attachment,
-  type LucidAttachmentOptions,
-} from "./column/attachment_column.js";
-export {
+  attachmentRelation as attachment,
+  attachmentsRelation as attachments,
   attachmentRelation,
   attachmentsRelation,
   AttachmentRelation,
@@ -68,11 +66,9 @@ export {
 } from "./schema/attachments_table_stub.js";
 export {
   migrateLegacyAttachment,
-  migrateLegacyAttachmentColumn,
   type LegacyAttachment,
   type LegacyVariant,
   type MigrateLegacyAttachmentOptions,
-  type MigrateLegacyAttachmentColumnOptions,
   type MigratedAttachmentBlob,
   type MigratedAttachmentLink,
   type MigratedAttachmentRows,

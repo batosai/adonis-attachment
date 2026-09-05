@@ -8,16 +8,19 @@ test.group('resolveAttachmentPersistenceOptions', () => {
       {
         disk: 'fs',
         folder: 'attachments',
+        normalizeFileName: true,
         meta: true,
         variants: ['thumbnail'],
       },
       {
         disk: 's3',
         folder: 'avatars',
+        normalizeFileName: false,
         preComputeUrl: true,
       },
       {
         folder: 'imports',
+        normalizeFileName: true,
         variants: ['preview'],
       }
     )
@@ -25,6 +28,7 @@ test.group('resolveAttachmentPersistenceOptions', () => {
     assert.deepEqual(resolved, {
       disk: 's3',
       folder: 'imports',
+      normalizeFileName: true,
       meta: true,
       preComputeUrl: true,
       variants: ['preview'],
@@ -33,11 +37,11 @@ test.group('resolveAttachmentPersistenceOptions', () => {
 
   test('allows an upper layer to clear an inherited option', ({ assert }) => {
     const resolved = resolveAttachmentPersistenceOptions(
-      { disk: 'fs', variants: ['thumbnail'], preComputeUrl: true },
+      { disk: 'fs', variants: ['thumbnail'], preComputeUrl: true, normalizeFileName: true },
       { variants: null },
-      { preComputeUrl: null }
+      { preComputeUrl: null, normalizeFileName: false }
     )
 
-    assert.deepEqual(resolved, { disk: 'fs' })
+    assert.deepEqual(resolved, { disk: 'fs', normalizeFileName: false })
   })
 })

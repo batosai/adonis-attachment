@@ -206,6 +206,7 @@ function toPersistenceOptions(options: AttachmentSourceOptions): AttachmentPersi
     ...(options.disk !== undefined ? { disk: options.disk } : {}),
     ...(options.folder !== undefined ? { folder: options.folder } : {}),
     ...(options.rename !== undefined ? { rename: options.rename } : {}),
+    ...(options.normalizeFileName !== undefined ? { normalizeFileName: options.normalizeFileName } : {}),
     ...(options.meta !== undefined ? { meta: options.meta } : {}),
     ...(options.preComputeUrl !== undefined ? { preComputeUrl: options.preComputeUrl } : {}),
     ...(options.variants !== undefined ? { variants: options.variants } : {}),

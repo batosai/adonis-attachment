@@ -21,6 +21,8 @@ export type AttachmentPersistenceOptions<Model = unknown> = {
   disk?: string | null
   folder?: AttachmentFolder<Model> | null
   rename?: AttachmentRename<Model> | null
+  /** Normalizes user-supplied storage names to a portable ASCII filename. Defaults to true. */
+  normalizeFileName?: boolean | null
   meta?: boolean | null
   preComputeUrl?: boolean | null
   variants?: readonly AttachmentVariantKey[] | null
@@ -30,6 +32,7 @@ export type ResolvedAttachmentPersistenceOptions<Model = unknown> = {
   disk?: string
   folder?: AttachmentFolder<Model>
   rename?: AttachmentRename<Model>
+  normalizeFileName?: boolean
   meta?: boolean
   preComputeUrl?: boolean
   variants?: readonly AttachmentVariantKey[]
@@ -46,6 +49,7 @@ export function resolveAttachmentPersistenceOptions<Model = unknown>(
     ...resolveOption('disk', layers),
     ...resolveOption('folder', layers),
     ...resolveOption('rename', layers),
+    ...resolveOption('normalizeFileName', layers),
     ...resolveOption('meta', layers),
     ...resolveOption('preComputeUrl', layers),
     ...resolveOption('variants', layers),

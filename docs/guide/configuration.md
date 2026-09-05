@@ -68,12 +68,14 @@ export default defineConfig({
   defaults: {
     folder: 'uploads',
     rename: true,          // store under a generated name instead of the client name
+    normalizeFileName: true, // make supplied filenames portable across storage backends
     variants: ['thumbnail'],
   },
 })
 ```
 
-Available options: `disk`, `folder`, `rename`, `meta`, `preComputeUrl`, `variants`.
+Available options: `disk`, `folder`, `rename`, `normalizeFileName`, `meta`, `preComputeUrl`,
+`variants`.
 `meta` activates the default metadata extractors during `persist()`. With Lucid column
 attachments and relations, `preComputeUrl` calculates the public URL after Lucid reads a
 model and keeps it only in memory. With Lucid relations, `variants` schedules the listed keys
@@ -83,8 +85,13 @@ persistence options.
 ### Folder and rename defaults
 
 `folder` accepts a relative path or an async callback. `rename` accepts `true`, `false`, or a
-callback that returns the stored filename. Defaults may use V5-style `:attribute` parameters,
+callback that returns the stored filename. `normalizeFileName` defaults to `true` and makes
+names supplied by `rename: false` or a callback portable across storage backends. Defaults may
+use V5-style `:attribute` parameters,
 which are resolved only when a model context exists, such as a Lucid decorator or relation:
+
+Set `normalizeFileName: false` only when the selected storage backend accepts the supplied
+filename unchanged.
 
 ```ts
 defaults: {

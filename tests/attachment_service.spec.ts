@@ -125,6 +125,44 @@ test('keeps drafts in memory until persist resolves their contextual options', a
   }])
 })
 
+test('normalizes user supplied storage names while preserving the original name', async ({ assert }) => {
+  const storage = new FakeStorage()
+  const service = new AttachmentService({
+    storage,
+    queue: new FakeQueue(),
+    defaultDisk: 'public',
+    createId: () => 'attachment-id',
+  })
+
+  const attachment = await service.createDraft({
+    body: new Uint8Array([1]),
+    originalName: 'Capture d’écran du 2026-06-27 15-28-50.png',
+  }, { rename: false }).persist()
+
+  assert.equal(attachment.originalName, 'Capture d’écran du 2026-06-27 15-28-50.png')
+  assert.equal(attachment.name, 'capture-d-ecran-du-2026-06-27-15-28-50.png')
+  assert.equal(attachment.path, 'capture-d-ecran-du-2026-06-27-15-28-50.png')
+  assert.deepEqual(storage.writes.map(({ path }) => path), [attachment.path])
+})
+
+test('allows applications to keep a user supplied storage name', async ({ assert }) => {
+  const service = new AttachmentService({
+    storage: new FakeStorage(),
+    queue: new FakeQueue(),
+    defaultDisk: 'public',
+    createId: () => 'attachment-id',
+  })
+  const originalName = 'Capture d’écran.png'
+
+  const attachment = await service.createDraft({
+    body: new Uint8Array([1]),
+    originalName,
+  }, { rename: false, normalizeFileName: false }).persist()
+
+  assert.equal(attachment.name, originalName)
+  assert.equal(attachment.path, originalName)
+})
+
 test('resolves v5-style model path parameters in folders and custom names', async ({ assert }) => {
   const storage = new FakeStorage()
   const service = new AttachmentService({

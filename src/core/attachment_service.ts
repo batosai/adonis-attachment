@@ -33,6 +33,7 @@ import {
   type AttachmentEventEmitter,
 } from '../events/attachment_events.js'
 import string from '@adonisjs/core/helpers/string'
+import { extname } from 'node:path'
 
 export type AttachmentServiceOptions = {
   storage: AttachmentStorage
@@ -116,7 +117,7 @@ export class AttachmentService {
       draft.options
     )
     const folder = await resolveFolder(options.folder, context)
-    const name = await resolveName(options.rename, context)
+    const name = await resolveName(options.rename, context, options.normalizeFileName !== false)
     let attachment = this.#factory.create(source, {
       id: draft.id,
       ...(options.disk ? { disk: options.disk } : {}),
@@ -305,13 +306,19 @@ async function resolveFolder(
 
 async function resolveName(
   rename: AttachmentRename | undefined,
-  context: AttachmentPersistenceContext
+  context: AttachmentPersistenceContext,
+  normalizeFileName: boolean
 ): Promise<string | undefined> {
+  let value: string | undefined
+
   if (typeof rename === 'function') {
-    return resolvePathParameters(await rename(context), context.model)
+    value = await rename(context)
+  } else {
+    value = rename === false ? context.originalName : undefined
   }
 
-  return resolvePathParameters(rename === false ? context.originalName : undefined, context.model)
+  const resolved = resolvePathParameters(value, context.model)
+  return resolved && normalizeFileName ? normalizeStorageName(resolved) : resolved
 }
 
 /** Preserves v5 `:attribute` path parameters for string-valued model attributes. */
@@ -339,4 +346,30 @@ function getModelAttribute(model: object, attributeName: string): unknown {
   }
 
   return (model as Record<string, unknown>)[attributeName]
+}
+
+/**
+ * Produces a portable object key while keeping the client-supplied originalName untouched.
+ * Flydrive accepts only a limited ASCII set and rejects accented characters and apostrophes.
+ */
+function normalizeStorageName(name: string): string {
+  if (name.includes('/') || name.includes('\\')) {
+    return name
+  }
+
+  const extension = extname(name)
+  const stem = extension ? name.slice(0, -extension.length) : name
+  const normalizedStem = normalizeStorageSegment(stem) || 'attachment'
+  const normalizedExtension = extension ? normalizeStorageSegment(extension.slice(1)) : ''
+
+  return normalizedExtension ? `${normalizedStem}.${normalizedExtension}` : normalizedStem
+}
+
+function normalizeStorageSegment(value: string): string {
+  return value
+    .normalize('NFKD')
+    .replace(/\p{Mark}/gu, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9!._-]+/g, '-')
+    .replace(/^-+|-+$/g, '')
 }

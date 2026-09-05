@@ -79,8 +79,9 @@ await attachmentManager.createFromFile(request.file('avatar')!, {
 ### Folder and rename
 
 `folder` is either a static relative path or a callback. `rename` is `true` (the default,
-generates an id-based name), `false` (keeps the client name), or a callback returning the
-stored filename. Both callbacks receive `{ model, field, originalName }` and may be async.
+generates an id-based name), `false` (derives the stored name from the client name), or a
+callback returning the stored filename. Both callbacks receive `{ model, field, originalName }`
+and may be async.
 
 ```ts
 const draft = await attachmentManager.createFromFile(request.file('avatar')!, {
@@ -103,12 +104,12 @@ unless you persist the draft with an explicit model context.
 
 ## Good to know
 
-- **Adonis Drive filenames**: Drive (via Flydrive) accepts only ASCII letters and digits,
-  spaces, `/`, `.`, `_`, `-`, and `!` in an object key. With `rename: false`, the original
-  client filename becomes the key, so names containing accented characters or typographic
-  punctuation, such as `Capture d’écran.png`, fail with `E_UNALLOWED_CHARACTERS`. Keep
-  `rename: true` (the default), or use a `rename` callback that converts the filename to a
-  storage-safe ASCII name while retaining `originalName` for display.
+- **Storage-safe filenames**: Names derived with `rename: false` or returned by a `rename`
+  callback are normalized before storage by default: accents are transliterated, punctuation
+  and spaces become hyphens, and the extension is retained. For example,
+  `Capture d’écran.png` becomes `capture-d-ecran.png`. The unmodified client name remains in
+  `originalName` for display. This keeps keys compatible with Adonis Drive and Flydrive. Set
+  `normalizeFileName: false` to keep the supplied storage name; Drive may then reject it.
 - **Size limits** are opt-in. Set a global `sources.maxBytes` in config, and/or a per-call
   `maxBytes`; the smaller of the two applies.
 - **MIME types** from URLs come from the `content-type` header when present, otherwise

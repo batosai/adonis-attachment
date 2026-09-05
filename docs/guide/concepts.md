@@ -32,9 +32,9 @@ Why the two-step dance? So the caller (or an integration like Lucid) controls **
 when** the file hits storage - for example, only when the model is actually saved.
 
 ::: tip You rarely call persist() yourself with Lucid
-The `@attachment()` decorator and the relations call `persist()` for you at the right
-moment. You call it manually only in the [custom persistence](/guide/custom-persistence)
-flow.
+The `@attachment()` and `@attachments()` relation decorators call `persist()` for you at
+the right moment. You call it manually only in the
+[custom persistence](/guide/custom-persistence) flow.
 :::
 
 ## 3. Storage is a boundary
@@ -50,13 +50,11 @@ This is why switching from local files to S3 is a one-line config change.
 
 ## 4. Persistence is your choice
 
-The package deliberately does **not** decide how you store the `Attachment` value in your
-database. Two supported paths:
+The package deliberately does **not** require Lucid. Two persistence paths are supported:
 
 | Approach | When to use it |
 | --- | --- |
-| **Lucid relations** (`attachments` + `attachment_links` tables) | Database-backed ownership, collections, and variants. See [With Lucid](/guide/lucid). |
-| **Lucid JSON column** (`@attachment()`) | One file per column, stored inline as JSON. Simple cases. |
+| **Lucid relations** (`@attachment()` / `@attachments()`) | Database-backed ownership, collections, and variants. See [With Lucid](/guide/lucid). |
 | **Custom** (any ORM / data store) | You keep the id, disk, path... in your own schema. See [custom persistence](/guide/custom-persistence). |
 
 ### The blob vs. link split (Lucid)

@@ -303,7 +303,9 @@ automatically after the blob and link are committed. Per-call manager options ta
 over decorator and configuration options:
 
 ```ts
-@attachmentRelation({ variants: ['thumbnail'] })
+import { attachment, type AttachmentRelation } from '@jrmc/adonis-attachment/lucid'
+
+@attachment({ variants: ['thumbnail'] })
 declare avatar: AttachmentRelation
 
 user.avatar.set(draft)

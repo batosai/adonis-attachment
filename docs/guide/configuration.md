@@ -76,11 +76,10 @@ export default defineConfig({
 
 Available options: `disk`, `folder`, `rename`, `normalizeFileName`, `meta`, `preComputeUrl`,
 `variants`.
-`meta` activates the default metadata extractors during `persist()`. With Lucid column
-attachments and relations, `preComputeUrl` calculates the public URL after Lucid reads a
-model and keeps it only in memory. With Lucid relations, `variants` schedules the listed keys
-after the blob and its link are committed. It is resolved with the same priority as the other
-persistence options.
+`meta` activates the default metadata extractors during `persist()`. With Lucid relations,
+`preComputeUrl` calculates the public URL when the relation is read and keeps it only in
+memory. With Lucid relations, `variants` schedules the listed keys after the blob and its link
+are committed. It is resolved with the same priority as the other persistence options.
 
 ### Folder and rename defaults
 
@@ -107,14 +106,14 @@ for callbacks and standalone behavior.
 ## URLs
 
 Use `attachmentService` to resolve URLs from any persisted attachment. Public URLs can be
-pre-calculated on Lucid column reads with `preComputeUrl: true`; signed URLs are always
+pre-calculated on Lucid relation reads with `preComputeUrl: true`; signed URLs are always
 generated on demand and are never cached or stored.
 
 ```ts
 import { attachmentService } from '@jrmc/adonis-attachment'
 
-const url = await attachmentService.getUrl(user.avatar!)
-const signedUrl = await attachmentService.getSignedUrl(user.avatar!, {
+const url = await attachmentService.getUrl(attachment)
+const signedUrl = await attachmentService.getSignedUrl(attachment, {
   expiresIn: '15m',
 })
 ```
@@ -218,7 +217,7 @@ media: {
 need their own metadata. In deferred mode, configure the metadata processor shown in
 [Background processing](/guide/queues) so workers handle `extract-metadata` jobs.
 
-With custom persistence or a legacy JSON column, call
+With custom persistence, call
 `AttachmentService.scheduleMetadataExtraction(attachment)` only after the record that owns the
 attachment has committed. This prevents a worker from updating a record that does not exist yet.
 See the [complete custom-persistence example](/guide/custom-persistence#deferred-metadata).

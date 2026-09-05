@@ -33,13 +33,13 @@ node ace migration:run
 ```ts
 // app/models/user.ts
 import { BaseModel, column } from '@adonisjs/lucid/orm'
-import { attachmentRelation, type AttachmentRelation } from '@jrmc/adonis-attachment/lucid'
+import { attachment, type AttachmentRelation } from '@jrmc/adonis-attachment/lucid'
 
 export default class User extends BaseModel {
   @column({ isPrimary: true })
   declare id: string
 
-  @attachmentRelation({
+  @attachment({
     folder: ({ model }) => `users/${model?.id}/avatar`,
   })
   declare avatar: AttachmentRelation

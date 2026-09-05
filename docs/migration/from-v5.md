@@ -1,7 +1,7 @@
 # Migrate from v5
 
 v6 is a **breaking release**. The biggest change: attachments are no longer stored as
-nested JSON inside the parent model by default. They live in dedicated tables - a blob
+nested JSON inside the parent model. They live in dedicated tables - a blob
 table and a polymorphic link table - which unlocks collections, variants, and blob reuse.
 
 ::: warning Plan for a data migration
@@ -47,6 +47,26 @@ The v5 `meta` object is copied unchanged to the v6 `metadata` column for both or
 variants. Newly uploaded files use the same default EXIF, video, and PDF metadata profile
 whenever `meta: true` is enabled; no extractor configuration is required.
 
+## Update model decorators
+
+`@attachment()` now declares a singular relation instead of a JSON column. Keep the decorator
+name, but change the property type and use the relation methods:
+
+```ts
+import { attachment, type AttachmentRelation } from '@jrmc/adonis-attachment/lucid'
+
+@attachment()
+declare avatar: AttachmentRelation
+
+user.avatar.set(draft)
+await user.save()
+```
+
+Use `@attachments()` with `AttachmentCollectionRelation` for collections. The explicit
+`@attachmentRelation()` and `@attachmentsRelation()` names remain available as aliases.
+`serializeAs` no longer applies: relation accessors are not Lucid columns and are not
+serialized automatically.
+
 ## Existing v6 tables
 
 Tables created before blurhash support need a nullable column before variants can persist a
@@ -69,25 +89,3 @@ export default class AddBlurhashToAttachments extends BaseSchema {
 
 Pass `{ tableName: 'media_attachments' }` to the service when the blob table uses a custom
 name. Newly generated attachment-table migrations already include the column.
-
-## Keeping a single JSON column
-
-If a field only ever holds **one file with no variants**, you can keep the v5-style JSON
-column with `@attachment()` instead of migrating to the relation tables. Each legacy value
-needs a fresh attachment id:
-
-```ts
-import { randomUUID } from 'node:crypto'
-import { migrateLegacyAttachmentColumn } from '@jrmc/adonis-attachment/lucid'
-
-const avatar = migrateLegacyAttachmentColumn(user.avatar, {
-  defaultDisk: 'public',
-  createId: randomUUID,
-})
-
-user.avatar = avatar
-await user.save()
-```
-
-Values that contain variants must move to the relation tables - the column mode represents
-one file only.

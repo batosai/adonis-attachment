@@ -1,18 +1,17 @@
 # Storing with Lucid
 
 The Lucid integration is optional, but it's the most convenient way to tie files to your
-records. It offers **two modes** - pick per field:
+records. Attachments are represented by polymorphic relations backed by the package tables.
 
 It also exports `createLucidAttachmentProcessor` for external queue workers. The default
 in-memory queue creates this processor automatically; see
 [Background processing](/guide/queues#creating-the-lucid-processor-for-a-worker).
 
-| Mode | Storage | Best for |
-| --- | --- | --- |
-| **Relation** (`@attachmentRelation` / `@attachmentsRelation`) | `attachments` + `attachment_links` tables | Ownership, collections, variants, blob reuse |
-| **JSON column** (`@attachment`) | one JSON column on your model | A single file, simplest possible setup |
+Use `@attachment()` for one file and `@attachments()` for an ordered collection.
+`@attachmentRelation()` and `@attachmentsRelation()` remain available as equivalent,
+explicit names.
 
-## Set up the tables (relation mode)
+## Set up the tables
 
 ```sh
 node ace make:attachments-table
@@ -26,17 +25,17 @@ This creates two tables (see [Core concepts](/guide/concepts#the-blob-vs-link-sp
 - **`attachment_links`** - the polymorphic links (`attachable_type`, `attachable_id`,
   `field`, `owner_key`, `position`, `attachment_id`).
 
-## Single attachment - `@attachmentRelation`
+## Single attachment - `@attachment`
 
 ```ts
 import { BaseModel, column } from '@adonisjs/lucid/orm'
-import { attachmentRelation, type AttachmentRelation } from '@jrmc/adonis-attachment/lucid'
+import { attachment, type AttachmentRelation } from '@jrmc/adonis-attachment/lucid'
 
 export default class User extends BaseModel {
   @column({ isPrimary: true })
   declare id: string
 
-  @attachmentRelation({
+  @attachment({
     folder: ({ model }) => `users/${model?.id}/avatar`,
     rename: false,
   })
@@ -84,7 +83,7 @@ The link's `attachable_type` defaults to the model's `static table`. Pin a stabl
 you rename tables:
 
 ```ts
-@attachmentRelation({ type: 'user' })
+@attachment({ type: 'user' })
 declare avatar: AttachmentRelation
 ```
 
@@ -95,7 +94,7 @@ value is read from the model, then lowercased and slugified before insertion. On
 attributes are substituted; an unknown or non-string parameter stays unchanged.
 
 ```ts
-@attachmentRelation({
+@attachment({
   folder: 'uploads/:name/avatars',
   rename: () => ':name-avatar.jpg',
 })
@@ -103,24 +102,39 @@ declare avatar: AttachmentRelation
 ```
 
 For `name = 'Jane Doe'`, this writes to
-`uploads/jane-doe/avatars/jane-doe-avatar.jpg`. Avoid an auto-increment `:id` in a
-column attachment created during the model's first save, because the identifier is not yet
-available. Relation attachments are staged until after the owner is saved, so `:id` is safe
-there.
+`uploads/jane-doe/avatars/jane-doe-avatar.jpg`. Attachments are staged until after the owner
+is saved, so an auto-increment `:id` is available when paths are resolved.
 
-## Many attachments - `@attachmentsRelation`
+### Public URLs
+
+Enable `preComputeUrl` to resolve a public URL when `get()`, `all()`, or `variants()` reads
+the relation. The URL is kept in memory on the loaded attachment model and is never stored:
+
+```ts
+@attachment({ preComputeUrl: true })
+declare avatar: AttachmentRelation
+
+const link = await user.avatar.get()
+const url = link?.attachment.url
+```
+
+The configured storage must provide a public URL, such as Adonis Drive or
+`LocalFileStorage` with `baseUrl`. Signed URLs are always generated explicitly through
+`attachmentService.getSignedUrl()` because they expire.
+
+## Many attachments - `@attachments`
 
 An **ordered** collection. Each item is a link row with a `position` and a `null`
 `owner_key`.
 
 ```ts
-import { attachmentsRelation, type AttachmentCollectionRelation } from '@jrmc/adonis-attachment/lucid'
+import { attachments, type AttachmentCollectionRelation } from '@jrmc/adonis-attachment/lucid'
 
 export default class Post extends BaseModel {
   @column({ isPrimary: true })
   declare id: string
 
-  @attachmentsRelation({
+  @attachments({
     folder: ({ model }) => `posts/${model?.id}/gallery`,
   })
   declare gallery: AttachmentCollectionRelation
@@ -204,8 +218,8 @@ links (and any blobs that become unreferenced).
 
 ## Regenerate variants
 
-Regeneration is available only for relation-mode attachments. It generates the requested
-variants again from each original, then replaces the existing variant with the same key.
+Regeneration generates the requested variants again from each original, then replaces the
+existing variant with the same key.
 
 For one relation or one collection, call the accessor directly:
 
@@ -236,67 +250,6 @@ const result = await new AttachmentRegenerator()
 
 Use `.row(user, options).run()` when a single persisted model must be regenerated. The
 `attributes` option is validated against the model's declared attachment relations.
-
-## Single JSON column - `@attachment`
-
-For the simplest case - one file, stored inline as JSON on your model's own table - use the
-column decorator. No `attachments`/`attachment_links` tables involved.
-
-```ts
-// migration: table.json('avatar').nullable()
-
-import { attachment, type Attachment } from '@jrmc/adonis-attachment/lucid'
-
-export default class User extends BaseModel {
-  @column({ isPrimary: true })
-  declare id: string
-
-  @attachment({ folder: ({ model }) => `users/${model?.id}` })
-  declare avatar: Attachment | null
-}
-```
-
-Assign and save - the decorator persists the file during `save()`:
-
-```ts
-user.avatar = await attachmentManager.createFromFile(request.file('avatar')!)
-await user.save()
-```
-
-It removes a new file if the save fails, removes the old file when a value is replaced, and
-removes the file when the row is deleted. It stores **one file per column** - for
-collections, variants, or the built-in read route, use relation mode.
-
-### Column serialization
-
-`@attachment()` follows Lucid's `serializeAs` convention. It changes only the key returned
-by `model.serialize()`; the property name used in application code remains unchanged. Set it
-to `null` to keep the attachment out of serialized model output.
-
-```ts
-@attachment({ serializeAs: 'profileImage' })
-declare avatar: Attachment | null
-
-@attachment({ serializeAs: null })
-declare internalDocument: Attachment | null
-```
-
-This option applies to the JSON-column decorator. Relations expose explicit accessors and
-are not Lucid columns.
-
-### Public URLs
-
-Enable `preComputeUrl` to calculate a public URL each time Lucid hydrates the model. The URL
-is available as `attachment.url` in memory and is never written into the JSON column.
-
-```ts
-@attachment({ preComputeUrl: true })
-declare avatar: Attachment | null
-```
-
-The configured storage must provide a public URL, such as Adonis Drive or
-`LocalFileStorage` with `baseUrl`. Signed URLs are always generated explicitly through
-`attachmentService.getSignedUrl()` because they expire.
 
 ## Reading with variants
 

@@ -337,7 +337,7 @@ const generator = new VariantGenerationService({
 ```
 
 The automatic Lucid workflow above already handles this wiring. For custom low-level
-orchestration with **Lucid**, wrap it so each variant becomes a row in the `attachments` table
+orchestration with **Lucid**, wrap it so each variant becomes a row in the `adonis_attachments` table
 (`parent_id` pointing at the original blob):
 
 ```ts

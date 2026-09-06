@@ -16,7 +16,7 @@ export type AttachmentTableNames = {
 /**
  * Resolves the blob and polymorphic-link table names from one base table name.
  */
-export function resolveAttachmentTableNames(tableName = 'attachments'): AttachmentTableNames {
+export function resolveAttachmentTableNames(tableName = 'adonis_attachments'): AttachmentTableNames {
   if (!/^[a-z][a-z0-9_]*$/.test(tableName)) {
     throw new AttachmentError('Lucid attachment table names must be snake_case identifiers', {
       code: 'E_INVALID_ATTACHMENT_TABLE_NAME',

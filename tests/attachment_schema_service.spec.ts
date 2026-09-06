@@ -44,9 +44,9 @@ test.group('AttachmentSchemaService', (group) => {
     await service.dropTables()
     await service.createTables()
 
-    assert.isTrue(await database.connection().schema.hasTable('attachments'))
-    assert.isTrue(await database.connection().schema.hasTable('attachment_links'))
-    assert.isTrue(await database.connection().schema.hasColumn('attachments', 'blurhash'))
+    assert.isTrue(await database.connection().schema.hasTable('adonis_attachments'))
+    assert.isTrue(await database.connection().schema.hasTable('adonis_attachment_links'))
+    assert.isTrue(await database.connection().schema.hasColumn('adonis_attachments', 'blurhash'))
     assert.isFalse(await database.connection().schema.hasTable('attachments_links'))
   })
 

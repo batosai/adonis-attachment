@@ -100,7 +100,7 @@ test.group("Lucid attachment relations", (group) => {
   });
 
   group.each.setup(async () => {
-    await database.from("attachments").delete();
+    await database.from("adonis_attachments").delete();
     await database.from("relation_users").delete();
     removed = [];
     writes = [];

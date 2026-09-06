@@ -16,7 +16,7 @@ import type { AttachmentMetadata } from '../../../media/media_metadata.js'
  * Applications may extend this model to add their own scopes and serialization rules.
  */
 export class AttachmentModel extends BaseModel {
-  static table = 'attachments'
+  static table = 'adonis_attachments'
   static selfAssignPrimaryKey = true
 
   @column({ isPrimary: true })

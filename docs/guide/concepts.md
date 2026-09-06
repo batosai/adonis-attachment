@@ -62,9 +62,9 @@ The package deliberately does **not** require Lucid. Two persistence paths are s
 With relations, the package uses **two tables**, and understanding why makes everything
 else obvious:
 
-- **`attachments`** stores the **blob** - the actual file data. Originals *and* their
+- **`adonis_attachments`** stores the **blob** - the actual file data. Originals *and* their
   image variants live here.
-- **`attachment_links`** stores the **link** - the fact that *this record*, on *this
+- **`adonis_attachment_links`** stores the **link** - the fact that *this record*, on *this
   field*, owns *that blob*.
 
 ```mermaid

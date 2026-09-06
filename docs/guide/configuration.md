@@ -318,13 +318,13 @@ export default defineConfig({
 
 ## Lucid table names
 
-By default the Lucid integration uses `attachments` (blobs) and `attachment_links`
+By default the Lucid integration uses `adonis_attachments` (blobs) and `adonis_attachment_links`
 (links). The link table name is always derived from the blob table name with
 `string.singular`:
 
 | `tableName` | link table |
 | --- | --- |
-| `attachments` | `attachment_links` |
+| `adonis_attachments` | `adonis_attachment_links` |
 | `media_attachments` | `media_attachment_links` |
 
 ```ts
@@ -350,6 +350,8 @@ integrations: {
 ::: warning
 Use the same `tableName` when you generate the migration **and** at runtime - the models
 are pointed at these names at boot.
+Changing configuration does not rename existing tables. To keep an existing `attachments`
+and `attachment_links` schema, explicitly set `integrations.lucid.tableName: 'attachments'`.
 :::
 
 ## Read route & background processing

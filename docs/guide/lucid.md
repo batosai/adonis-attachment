@@ -20,9 +20,9 @@ node ace migration:run
 
 This creates two tables (see [Core concepts](/guide/concepts#the-blob-vs-link-split-lucid)):
 
-- **`attachments`** - the blobs (file data). Holds originals *and* variants
+- **`adonis_attachments`** - the blobs (file data). Holds originals *and* variants
   (`parent_id` / `variant_key`).
-- **`attachment_links`** - the polymorphic links (`attachable_type`, `attachable_id`,
+- **`adonis_attachment_links`** - the polymorphic links (`attachable_type`, `attachable_id`,
   `field`, `owner_key`, `position`, `attachment_id`).
 
 ## Single attachment - `@attachment`

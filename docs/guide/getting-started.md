@@ -20,8 +20,8 @@ package commands. The default config stores files on the **local filesystem** un
 
 ## 2. Create the attachment tables
 
-The Lucid integration keeps file data in an `attachments` table and ownership links in an
-`attachment_links` table (more on that in [Core concepts](/guide/concepts)).
+The Lucid integration keeps file data in an `adonis_attachments` table and ownership links in an
+`adonis_attachment_links` table (more on that in [Core concepts](/guide/concepts)).
 
 ```sh
 node ace make:attachments-table

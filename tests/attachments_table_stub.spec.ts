@@ -9,6 +9,28 @@ import { stubsRoot } from '../stubs/main.js'
 import { createAttachmentsTableStubState } from '../src/integrations/lucid/schema/attachments_table_stub.js'
 
 test.group('attachments table migration stub', () => {
+  test('uses the prefixed default when no table is configured', async ({ assert }) => {
+    let generated: Record<string, unknown> | undefined
+    await MakeAttachmentsTable.prototype.run.call({
+      parsed: { flags: {} },
+      app: {
+        makePath: (path: string) => `/app/${path}`,
+        config: { get() { return undefined } },
+      },
+      async createCodemods() {
+        return {
+          async makeUsingStub(_root: string, _path: string, state: Record<string, unknown>) {
+            generated = state
+          },
+        }
+      },
+      logger: { success() {} },
+    } as never)
+    assert.equal(generated?.tableName, 'adonis_attachments')
+    assert.equal(generated?.className, 'AdonisAttachments')
+    assert.match(String(generated?.destination), /_create_adonis_attachments_table\.ts$/)
+  })
+
   test('prepares a timestamped destination and template state', ({ assert }) => {
     const state = createAttachmentsTableStubState({
       directory: '/app/database/migrations',

@@ -17,7 +17,7 @@ import { AttachmentConfigurationError } from '../../../errors.js'
  * Polymorphic relation between an application record and an attachment blob.
  */
 export class AttachmentLinkModel extends BaseModel {
-  static table = 'attachment_links'
+  static table = 'adonis_attachment_links'
   static selfAssignPrimaryKey = true
 
   @column({ isPrimary: true })

@@ -40,5 +40,5 @@ async function configuredTableName(app: BaseCommand['app']): Promise<string> {
   const attachmentConfig = app.config.get('attachment')
   const config = await configProvider.resolve<ResolvedAttachmentConfig>(app, attachmentConfig)
 
-  return config?.integrations?.lucid?.tableName ?? 'attachments'
+  return config?.integrations?.lucid?.tableName ?? 'adonis_attachments'
 }

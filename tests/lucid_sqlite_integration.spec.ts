@@ -41,8 +41,8 @@ test.group('Lucid SQLite integration', (group) => {
   })
 
   group.each.setup(async () => {
-    await database.from('attachment_links').delete()
-    await database.from('attachments').delete()
+    await database.from('adonis_attachment_links').delete()
+    await database.from('adonis_attachments').delete()
   })
 
   group.teardown(async () => {

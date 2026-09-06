@@ -19,8 +19,8 @@ test.group('Lucid attachment table names', (group) => {
 
   test('derives the polymorphic link table from the singular base table name', ({ assert }) => {
     assert.deepEqual(resolveAttachmentTableNames(), {
-      tableName: 'attachments',
-      linksTableName: 'attachment_links',
+      tableName: 'adonis_attachments',
+      linksTableName: 'adonis_attachment_links',
     })
     assert.deepEqual(resolveAttachmentTableNames('media_attachments'), {
       tableName: 'media_attachments',

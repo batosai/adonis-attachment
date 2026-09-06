@@ -30,7 +30,7 @@ La documentation contient un flux de persistence personnalisee avec un `Attachme
 - `defineConfig` : resout le stockage et la queue au boot Adonis, en direct ou depuis le conteneur applicatif. Sans queue externe, il utilise `MemoryAttachmentQueue`.
 - `configure` : enregistre le provider et la commande `make:attachments-table` dans l'application Adonis.
 - `AttachmentRepository` : lit un attachment pour un worker, sans imposer de mecanisme de persistence.
-- `AttachmentSchemaService` : definit et fait evoluer les tables Lucid `attachments` et `attachment_links` sans dupliquer leur structure dans les migrations applicatives.
+- `AttachmentSchemaService` : definit et fait evoluer les tables Lucid `adonis_attachments` et `adonis_attachment_links` sans dupliquer leur structure dans les migrations applicatives.
 - `AttachmentJobProcessor` : resout un job puis appelle le generateur de variants configure.
 
 Un adaptateur `@adonisjs/queue` devra implementer le meme contrat. Le job Adonis appelle `AttachmentJobProcessor.process(this.payload)` dans sa methode `execute`. Cette limite permet de garder les jobs Adonis dans l'application, ou ils peuvent etre auto-decouverts et injectes par le conteneur.
@@ -53,15 +53,15 @@ Pour les relations Lucid, l'option `variants` est resolue selon la priorite mana
 
 ## Modele Lucid cible
 
-Le mode table dediee separe le blob du fichier et son rattachement. La table `attachments` contient les blobs. La table `attachment_links` contient la relation polymorphe avec les modeles applicatifs. Un variant est un blob dont `parent_id` designe le blob original.
+Le mode table dediee separe le blob du fichier et son rattachement. La table `adonis_attachments` contient les blobs. La table `adonis_attachment_links` contient la relation polymorphe avec les modeles applicatifs. Un variant est un blob dont `parent_id` designe le blob original.
 
 | Table | Colonnes | Role |
 | --- | --- | --- |
-| `attachments` | `id`, `disk`, `path`, `name`, `original_name`, `mime_type`, `extname`, `size`, `metadata` | blob immutable et metadonnees du fichier |
-| `attachments` | `parent_id`, `variant_key` | lien et cle unique des variants d'un blob original |
-| `attachment_links` | `id`, `attachment_id` | lien applicatif vers un blob |
-| `attachment_links` | `attachable_type`, `attachable_id`, `field` | owner polymorphe et nom logique, par exemple `avatar` |
-| `attachment_links` | `owner_key`, `position` | unicite d'une relation singuliere ou ordre d'une collection |
+| `adonis_attachments` | `id`, `disk`, `path`, `name`, `original_name`, `mime_type`, `extname`, `size`, `metadata` | blob immutable et metadonnees du fichier |
+| `adonis_attachments` | `parent_id`, `variant_key` | lien et cle unique des variants d'un blob original |
+| `adonis_attachment_links` | `id`, `attachment_id` | lien applicatif vers un blob |
+| `adonis_attachment_links` | `attachable_type`, `attachable_id`, `field` | owner polymorphe et nom logique, par exemple `avatar` |
+| `adonis_attachment_links` | `owner_key`, `position` | unicite d'une relation singuliere ou ordre d'une collection |
 
 Contraintes a prevoir dans la migration Lucid : unicite de `attachment_links.owner_key` pour les relations singulieres, index sur `(attachable_type, attachable_id, field)` et `attachment_id`, index sur `attachments.parent_id`, et unicite de `(parent_id, variant_key)` lorsque `parent_id` est defini.
 

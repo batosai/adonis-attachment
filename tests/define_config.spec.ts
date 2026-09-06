@@ -556,8 +556,8 @@ test.group('defineConfig', () => {
 
     assert.instanceOf(resolved.repository, LucidAttachmentRepository)
     assert.deepEqual(resolved.integrations?.lucid, {
-      tableName: 'attachments',
-      linksTableName: 'attachment_links',
+      tableName: 'adonis_attachments',
+      linksTableName: 'adonis_attachment_links',
     })
   })
 

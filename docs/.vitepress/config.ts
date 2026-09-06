@@ -21,6 +21,7 @@ export default withMermaid(
               { text: 'Installation', link: '/guide/installation' },
               { text: 'Quickstart', link: '/guide/getting-started' },
               { text: 'Core concepts', link: '/guide/concepts' },
+              { text: 'Agent skills', link: '/guide/agent-skills' },
             ],
           },
           {

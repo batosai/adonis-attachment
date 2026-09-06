@@ -64,14 +64,19 @@ acceptable as public identifiers.
 
 ## Your own protected route
 
+First set `route: false` in `config/attachment.ts`. Adding an authorized controller does
+not disable the public built-in route: leaving it enabled would bypass your authorization.
+Also ensure the storage does not expose these private files through a public static URL.
+
 For private files, authorize first, then reuse the same building blocks the built-in route
 uses - `AttachmentRepository.findById` and `AttachmentService.read`:
 
 ```ts
 import type { HttpContext } from '@adonisjs/core/http'
+import app from '@adonisjs/core/services/app'
 
 export default class FilesController {
-  async show({ params, response, auth, bouncer }: HttpContext) {
+  async show({ params, response, bouncer }: HttpContext) {
     const repository = await app.container.make('jrmc.attachment.repository')
     const service = await app.container.make('jrmc.attachment')
 
@@ -88,5 +93,10 @@ export default class FilesController {
 ```
 
 Cache headers, download disposition, and signed URLs are yours to add as needed.
+
+This example assumes Bouncer is configured and your application defines the `viewFile`
+ability. Register the controller on an authenticated route using your application's auth
+middleware. A signed storage URL grants temporary access; authorize the caller before
+issuing it, too.
 
 **Next:** [Background processing](/guide/queues).

@@ -3,7 +3,8 @@
 {{#var fileName = string(entity.name).snakeCase().suffix('_converter').ext('.ts').toString()}}
 {{{ exports({ to: app.makePath('app/converters', entity.path, fileName) }) }}}
 
-import Converter, {
+import {
+  Converter,
   type ConverterAttributes,
 } from '@jrmc/adonis-attachment'
 

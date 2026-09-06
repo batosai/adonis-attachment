@@ -103,7 +103,13 @@ declare avatar: AttachmentRelation
 
 For `name = 'Jane Doe'`, this writes to
 `uploads/jane-doe/avatars/jane-doe-avatar.jpg`. Attachments are staged until after the owner
-is saved, so an auto-increment `:id` is available when paths are resolved.
+is saved. For a numeric auto-increment ID, use a callback instead: string interpolation
+parameters do not substitute numbers.
+
+```ts
+@attachment({ folder: ({ model }) => `users/${model?.id}/avatars` })
+declare avatar: AttachmentRelation
+```
 
 ### Public URLs
 

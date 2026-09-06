@@ -33,5 +33,7 @@ test.group('make:converter', () => {
     assert.include(stub, "app.makePath('app/converters'")
     assert.include(stub, 'extends Converter')
     assert.include(stub, 'async handle')
+    assert.include(stub, 'import {\n  Converter,')
+    assert.notInclude(stub, 'import Converter,')
   })
 })

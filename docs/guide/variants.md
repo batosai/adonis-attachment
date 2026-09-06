@@ -43,7 +43,8 @@ options. It returns the generated file, or `undefined` when this source should n
 that variant.
 
 ```ts
-import Converter, {
+import {
+  Converter,
   type ConverterAttributes,
   type ConverterOptions,
 } from '@jrmc/adonis-attachment'
@@ -148,7 +149,8 @@ An application converter can define and consume its own options. Use `Converter<
 inside the converter, and `ConverterConfig<Options>` to validate its configuration:
 
 ```ts
-import Converter, {
+import {
+  Converter,
   type ConverterAttributes,
   type ConverterConfig,
   type ConverterOptions,

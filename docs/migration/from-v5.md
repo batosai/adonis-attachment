@@ -174,26 +174,3 @@ Use `@attachments()` with `AttachmentCollectionRelation` for collections. The ex
 `@attachmentRelation()` and `@attachmentsRelation()` names remain available as aliases.
 `serializeAs` no longer applies: relation accessors are not Lucid columns and are not
 serialized automatically.
-
-## Existing v6 tables
-
-Tables created before blurhash support need a nullable column before variants can persist a
-hash. Create a normal Lucid migration and delegate that change to the schema service:
-
-```ts
-import { BaseSchema } from '@adonisjs/lucid/schema'
-import { AttachmentSchemaService } from '@jrmc/adonis-attachment/lucid'
-
-export default class AddBlurhashToAttachments extends BaseSchema {
-  async up() {
-    await new AttachmentSchemaService(this.db.getWriteClient()).addBlurhashColumn()
-  }
-
-  async down() {
-    await new AttachmentSchemaService(this.db.getWriteClient()).dropBlurhashColumn()
-  }
-}
-```
-
-Pass `{ tableName: 'media_attachments' }` to the service when the blob table uses a custom
-name. Newly generated attachment-table migrations already include the column.

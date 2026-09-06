@@ -7,6 +7,46 @@ a worker later resolves the original and runs your converters.
 You choose how that job runs. Start with the in-memory queue and graduate to a real worker
 when you need to.
 
+## Named connections
+
+Declare several queue connections and select the one used by all attachment jobs:
+
+```ts
+import { defineConfig, LocalFileStorage } from '@jrmc/adonis-attachment'
+import GenerateAttachmentVariants from '#jobs/generate_attachment_variants'
+
+export default defineConfig({
+  storage: LocalFileStorage.fromApp,
+  queue: {
+    default: 'memory',
+    connections: {
+      memory: { driver: 'memory', concurrency: 1 },
+      background: {
+        driver: 'adonis',
+        job: GenerateAttachmentVariants,
+        queueName: 'attachments',
+      },
+    },
+  },
+})
+```
+
+`default` is typed from the declared connection keys. An unknown or missing default fails
+configuration resolution at application boot with `E_INVALID_ATTACHMENT_CONFIG`; it does
+not silently fall back to memory. Omitting `queue` entirely still selects the built-in memory queue.
+
+Only the selected connection is initialized. A connection can be a driver configuration,
+a queue instance, or a factory receiving the Adonis application. For the memory driver,
+automatic Lucid processing and the `processor` / `jobHandler` overrides remain unchanged.
+Queue instances and factories own their handler wiring, as with the direct configuration.
+
+The selected connection handles both variant and metadata jobs. `background` is a connection
+name within this package; `queueName: 'attachments'` is the destination within Adonis Queue.
+This does not add per-attachment routing or change the native job's queue-name precedence.
+
+The existing short form (`queue: { driver: 'memory', concurrency: 2 }`), direct instances,
+and application factories remain supported.
+
 ## In-memory queue (default)
 
 Pending jobs are not durable: a process restart loses them, and failed jobs are not

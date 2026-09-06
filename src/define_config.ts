@@ -96,11 +96,23 @@ export type AttachmentQueueConfig =
   | MemoryAttachmentQueueConfig
   | AdonisAttachmentQueueConfig
 
-export type AttachmentConfig<KnownConverters extends ConverterConfigMap = ConverterConfigMap> = {
+export type AttachmentQueueConnection = AttachmentQueueConfig | Integration<AttachmentQueue>
+
+export type AttachmentQueueConnections = Record<string, AttachmentQueueConnection>
+
+export type NamedAttachmentQueueConfig<Connections extends AttachmentQueueConnections = AttachmentQueueConnections> = {
+  default: NoInfer<Extract<keyof Connections, string>>
+  connections: Connections
+}
+
+export type AttachmentConfig<
+  KnownConverters extends ConverterConfigMap = ConverterConfigMap,
+  KnownQueues extends AttachmentQueueConnections = AttachmentQueueConnections,
+> = {
   /** Overrides the storage default. Falls back to `fs` when no adapter provides one. */
   defaultDisk?: string
   storage: Integration<AttachmentStorage>
-  queue?: AttachmentQueueConfig | Integration<AttachmentQueue>
+  queue?: AttachmentQueueConnection | NamedAttachmentQueueConfig<KnownQueues>
   /** Overrides every processor, including the automatic Lucid memory processor. */
   jobHandler?: Integration<AttachmentJobHandler>
   /** Overrides the processor automatically created for an in-memory Lucid integration. */
@@ -138,10 +150,14 @@ export type InferConverters<Config> = Config extends ConfigProvider<
 /**
  * Defers resolution of optional Adonis integrations until application boot.
  */
-export function defineConfig<const KnownConverters extends ConverterConfigMap = {}>(
-  config: AttachmentConfig<KnownConverters>
+export function defineConfig<
+  const KnownConverters extends ConverterConfigMap = {},
+  const KnownQueues extends AttachmentQueueConnections = AttachmentQueueConnections,
+>(
+  config: AttachmentConfig<KnownConverters, KnownQueues>
 ): ConfigProvider<ResolvedAttachmentConfig<KnownConverters>> {
   return configProvider.create(async (app) => {
+    const selectedQueue = selectQueue(config.queue)
     const storage = await resolveIntegration(config.storage, app)
     const lucid = resolveLucidIntegration(app, config.integrations?.lucid)
     const metadataExtractors =
@@ -167,7 +183,7 @@ export function defineConfig<const KnownConverters extends ConverterConfigMap = 
     const configuredProcessor = config.processor ? await resolveIntegration(config.processor, app) : undefined
     const processor =
       configuredProcessor ??
-      (!config.jobHandler && usesConfiguredMemoryQueue(config.queue) && lucid && repository
+      (!config.jobHandler && usesConfiguredMemoryQueue(selectedQueue) && lucid && repository
         ? await createDefaultLucidProcessor(app, repository, converters)
         : undefined)
     const jobHandler: AttachmentJobHandler | undefined = config.jobHandler
@@ -175,7 +191,7 @@ export function defineConfig<const KnownConverters extends ConverterConfigMap = 
       : processor
         ? (job) => processor.process(job)
         : undefined
-    const queue = await resolveQueue(config.queue, app, jobHandler)
+    const queue = await resolveQueue(selectedQueue, app, jobHandler)
 
     if (processor && events) {
       processor.setEventEmitter(events)
@@ -214,18 +230,47 @@ export function defineConfig<const KnownConverters extends ConverterConfigMap = 
   })
 }
 
+function selectQueue(config: unknown): AttachmentQueueConnection | undefined {
+  if (config === undefined) return undefined
+
+  if (typeof config === 'object' && config !== null && ('connections' in config || 'default' in config)) {
+    const named = config as NamedAttachmentQueueConfig
+    if (
+      typeof named.default !== 'string' || named.default.length === 0 ||
+      typeof named.connections !== 'object' || named.connections === null ||
+      Array.isArray(named.connections) ||
+      !Object.hasOwn(named.connections, named.default) ||
+      named.connections[named.default] === undefined
+    ) {
+      throw new AttachmentError(
+        `Invalid attachment queue default: ${String(named.default)}. It must name a declared connection.`,
+        { code: 'E_INVALID_ATTACHMENT_CONFIG' }
+      )
+    }
+    return named.connections[named.default]
+  }
+
+  return config as AttachmentQueueConnection
+}
+
 async function resolveQueue(
-  config: AttachmentConfig['queue'],
+  config: AttachmentQueueConnection | undefined,
   app: ApplicationService,
   handler: AttachmentJobHandler | undefined
 ): Promise<AttachmentQueue> {
-  if (!config) {
+  if (config === undefined) {
     return createMemoryQueue(handler)
   }
 
   const resolved = typeof config === 'function'
     ? await resolveIntegration(config, app)
     : config
+
+  if (typeof resolved !== 'object' || resolved === null) {
+    throw new AttachmentError('Invalid attachment queue connection: expected a driver or queue instance', {
+      code: 'E_INVALID_ATTACHMENT_CONFIG',
+    })
+  }
 
   if (isAttachmentQueue(resolved)) {
     return resolved
@@ -271,12 +316,12 @@ class UnconfiguredMemoryAttachmentQueue extends MemoryAttachmentQueue {
   }
 }
 
-function usesConfiguredMemoryQueue(config: AttachmentConfig['queue']): boolean {
+function usesConfiguredMemoryQueue(config: AttachmentQueueConnection | undefined): boolean {
   if (config === undefined) {
     return true
   }
 
-  return typeof config === 'object' && !isAttachmentQueue(config) && config.driver === 'memory'
+  return typeof config === 'object' && config !== null && !isAttachmentQueue(config) && config.driver === 'memory'
 }
 
 async function createDefaultLucidProcessor(

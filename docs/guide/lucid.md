@@ -218,6 +218,10 @@ When a replacement would reuse the previous file's storage path (for example wit
 same; use the returned attachment's `path` or URL. Stage the draft on the relation before
 persisting it so the integration can protect the previous file before any write.
 
+Lucid retains draft bytes until persistence succeeds (or until the transaction commits).
+After an insertion failure or rollback, cleanup restores the draft to an unpersisted state,
+so it can be retried. After rollback, reload the owner and stage the draft again on its relation.
+
 Deleting the owning record triggers an `after('delete')` hook that removes all of its
 links (and any blobs that become unreferenced).
 

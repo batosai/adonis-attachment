@@ -69,11 +69,12 @@ export class LucidAttachmentLifecycleService {
 
     try {
       original = await this.#store.createOriginal(owner, persisted.attachment)
-      this.#removeOnRollback(owner, [persisted.attachment])
     } catch (error) {
-      await this.#removeStoredFile(persisted.attachment)
+      await this.#discardPersisted(persisted)
       throw error
     }
+
+    this.#completePersistence(owner, persisted)
 
     await this.#scheduleVariants(owner, persisted, options)
     await this.#scheduleMetadata(owner, persisted, options)
@@ -100,7 +101,7 @@ export class LucidAttachmentLifecycleService {
       current = await this.#store.createOriginal(owner, persisted.attachment)
     } catch (error) {
       await this.#store.restoreOwner(previous).catch(() => undefined)
-      await this.#removeStoredFile(persisted.attachment)
+      await this.#discardPersisted(persisted)
       throw error
     }
 
@@ -110,11 +111,11 @@ export class LucidAttachmentLifecycleService {
     } catch (error) {
       await this.#store.remove(current).catch(() => undefined)
       await this.#store.restoreOwner(previous).catch(() => undefined)
-      await this.#removeStoredFile(current.toAttachment())
+      await this.#discardPersisted(persisted)
       throw error
     }
 
-    this.#removeOnRollback(owner, [current.toAttachment()])
+    this.#completePersistence(owner, persisted)
     await this.#scheduleVariants(owner, persisted, options)
     await this.#scheduleMetadata(owner, persisted, options)
 
@@ -152,6 +153,7 @@ export class LucidAttachmentLifecycleService {
     options?: AttachmentPersistenceOptions<any>
   ): Promise<AttachmentLinkModel> {
     const created = await this.#add(owner, input, position, options)
+    this.#completePersistence(owner, created.persisted)
     await this.#scheduleVariants(owner, created.persisted, options)
     await this.#scheduleMetadata(owner, created.persisted, options)
 
@@ -173,10 +175,9 @@ export class LucidAttachmentLifecycleService {
         persisted.attachment,
         position
       )
-      this.#removeOnRollback(owner, [persisted.attachment])
       return { item, persisted }
     } catch (error) {
-      await this.#removeStoredFile(persisted.attachment)
+      await this.#discardPersisted(persisted)
       throw error
     }
   }
@@ -229,8 +230,15 @@ export class LucidAttachmentLifecycleService {
         protectedFiles.push(created.at(-1)!.persisted.attachment)
       }
     } catch (error) {
-      await Promise.all(created.map(({ item }) => this.#detachCollectionItem(owner, item)))
+      await Promise.all(created.map(async ({ item, persisted }) => {
+        await this.#collectionStore().removeCollectionItem(owner, item)
+        await this.#discardPersisted(persisted)
+      }))
       throw error
+    }
+
+    for (const { persisted } of created) {
+      this.#completePersistence(owner, persisted)
     }
 
     for (const item of previous) {
@@ -261,11 +269,19 @@ export class LucidAttachmentLifecycleService {
     await this.#afterCommit(owner, () => this.#removeStoredFiles(attachments))
   }
 
-  #removeOnRollback(owner: AttachmentOwner, attachments: readonly Attachment[]): void {
+  async #discardPersisted(persisted: PersistedAttachment): Promise<void> {
+    await this.#removeStoredFile(persisted.attachment)
+    persisted.checkpoint?.rollback()
+  }
+
+  #completePersistence(owner: AttachmentOwner, persisted: PersistedAttachment): void {
     const transaction = getOwnerTransaction(owner)
 
     if (transaction) {
-      transaction.after('rollback', () => this.#removeStoredFiles(attachments))
+      transaction.after('rollback', () => this.#discardPersisted(persisted))
+      transaction.after('commit', () => persisted.checkpoint?.release())
+    } else {
+      persisted.checkpoint?.release()
     }
   }
 
@@ -349,34 +365,29 @@ export class LucidAttachmentLifecycleService {
     options?: AttachmentPersistenceOptions<any>,
     protectedLocations?: readonly Attachment[]
   ): Promise<PersistedAttachment> {
-    if (isAttachmentDraft(input)) {
-      if (input.isPersisted && protectedLocations?.some((file) => file.disk === input.disk && file.path === input.path)) {
+    const draft = isAttachmentDraft(input) ? input : this.#attachments.createDraft?.(input)
+    if (draft) {
+      if (draft.isPersisted && protectedLocations?.some((file) => file.disk === draft.disk && file.path === draft.path)) {
         throw new AttachmentConflictError('Replacement drafts must be staged before persisting a conflicting file')
       }
-      return {
-        draft: input,
-        attachment: await input.persist({
-          ...(options ? { options } : {}),
-          context: { model: owner.model, field: owner.field },
-          ...(protectedLocations ? { protectedLocations } : {}),
-        }),
+      const checkpoint = draft.retainForRollback()
+      try {
+        return {
+          draft,
+          checkpoint,
+          attachment: await draft.persist({
+            ...(options ? { options } : {}),
+            context: { model: owner.model, field: owner.field },
+            ...(protectedLocations ? { protectedLocations } : {}),
+          }),
+        }
+      } catch (error) {
+        checkpoint.release()
+        throw error
       }
     }
 
-    if (this.#attachments.createDraft) {
-      const draft = this.#attachments.createDraft(input)
-
-      return {
-        draft,
-        attachment: await draft.persist({
-          ...(options ? { options } : {}),
-          context: { model: owner.model, field: owner.field },
-          ...(protectedLocations ? { protectedLocations } : {}),
-        }),
-      }
-    }
-
-    return { attachment: await this.#attachments.create(input) }
+    return { attachment: await this.#attachments.create(input as CreateAttachmentInput) }
   }
 
   async #scheduleVariants(
@@ -433,6 +444,7 @@ export class LucidAttachmentLifecycleService {
 type PersistedAttachment = {
   attachment: Attachment
   draft?: AttachmentDraft
+  checkpoint?: ReturnType<AttachmentDraft['retainForRollback']>
 }
 
 function getOwnerTransaction(owner: AttachmentOwner): {

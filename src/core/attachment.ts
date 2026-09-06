@@ -118,6 +118,22 @@ export class AttachmentDraft implements Attachment {
     return this.#options
   }
 
+  /** Internal integration checkpoint. Release it on commit, restore it after file cleanup. */
+  retainForRollback(): { release(): void; rollback(): void } {
+    let source = this.#source
+    return {
+      release() { source = undefined },
+      rollback: () => {
+        if (source) {
+          this.#source = source
+          this.#persisted = false
+          this.#persisting = undefined
+          source = undefined
+        }
+      },
+    }
+  }
+
   persist(request?: AttachmentPersistRequest<any>): Promise<Attachment> {
     if (this.#persisted) {
       return Promise.resolve(this)

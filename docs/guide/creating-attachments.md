@@ -85,7 +85,7 @@ and may be async.
 
 ```ts
 const draft = await attachmentManager.createFromFile(request.file('avatar')!, {
-  folder: ({ model }) => `users/${model?.id}/avatar`,
+  folder: () => `users/${user.id}/avatar`,
   rename: ({ originalName }) => `profile-${originalName}`,
 })
 ```
@@ -101,6 +101,10 @@ rename: () => ':name-avatar.jpg'
 For `name = 'Jane Doe'`, this produces `uploads/jane-doe/avatars/jane-doe-avatar.jpg`.
 Lucid supplies the model automatically. For standalone use, `:attribute` is not replaced
 unless you persist the draft with an explicit model context.
+
+The manager does not infer your model type. The example above closes over an already
+loaded `user`; for a new Lucid owner whose ID is assigned on save, put the model-dependent
+callback on the [relation decorator](/guide/lucid#paths-from-model-attributes) instead.
 
 ## Good to know
 

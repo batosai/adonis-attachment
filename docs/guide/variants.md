@@ -2,8 +2,8 @@
 
 A **variant** is a derived file - a thumbnail, a resized image, a reformatted version -
 generated from the bytes of an original attachment. The package handles the plumbing
-(reading the original, storing the result, persisting the row); **you provide the
-transformation**.
+(reading the original, storing the result, and with Lucid, persisting the row).
+Built-in converters cover common formats; custom converters are optional.
 
 ## Declare converters
 
@@ -32,7 +32,47 @@ declare module '@jrmc/adonis-attachment' {
 }
 ```
 
-Generate the class with:
+## First thumbnail with Lucid
+
+Install `sharp` with `npm install sharp`, then use the configuration above. No converter
+class or external queue is required for this image example.
+
+Enable the configured key on your model's relation:
+
+```ts
+import { attachment, type AttachmentRelation } from '@jrmc/adonis-attachment/lucid'
+
+@attachment({ variants: ['thumbnail'] })
+declare avatar: AttachmentRelation
+```
+
+Upload using the [quickstart controller](/guide/getting-started).
+Saving the user enqueues generation automatically. The default memory queue processes it
+in the application process; completion is not guaranteed when the upload response arrives.
+
+In the action that displays the user, prefer the thumbnail when available:
+
+```ts
+const link = await user.avatar.get()
+const variants = await user.avatar.variants()
+const thumbnail = variants.find((variant) => variant.variantKey === 'thumbnail')
+const displayed = thumbnail ?? link?.attachment
+const avatarUrl = displayed
+  ? `/attachments/${displayed.id}/${encodeURIComponent(displayed.name)}`
+  : null
+
+return view.render('users/show', { user, avatarUrl })
+```
+
+This uses the public built-in route and the quickstart Edge template. Refresh after
+processing to see the thumbnail. Private files need an [authorized route](/guide/serving-files#your-own-protected-route).
+If the original remains displayed, inspect queue failures as described in
+[Background processing](/guide/queues). To rebuild an existing thumbnail, call
+`await user.avatar.regenerateVariants(['thumbnail'])`.
+
+## Custom converter classes
+
+Only generate a class when the autodetected behavior does not meet your needs:
 
 ```sh
 node ace make:converter thumbnail
@@ -55,14 +95,21 @@ type ThumbnailOptions = ConverterOptions & {
 
 export default class ThumbnailConverter extends Converter<ThumbnailOptions> {
   async handle({ body, options }: ConverterAttributes<ThumbnailOptions>) {
+    const { default: sharp } = await import('sharp')
     return {
-      body,
+      body: await sharp(body).rotate().resize({ width: options.width }).webp().toBuffer(),
       fileName: `thumbnail-${String(options.width)}.webp`,
       mimeType: 'image/webp',
     }
   }
 }
 ```
+
+Register this class with `{ converter: () => import('#converters/thumbnail_converter'), width: 320 }`
+under your `converters.thumbnail` key. The generated stub initially passes bytes through;
+replace its implementation with the conversion above.
+
+## Autodetection
 
 The default converter selects the implementation from the source MIME type:
 
@@ -115,7 +162,8 @@ createFfmpegThumbnailConverter({
 
 The v5 `blurhash` converter option is preserved. Install the optional `sharp` and `blurhash`
 packages, then enable it for an image-producing converter. The hash is calculated from the
-final variant bytes and exposed as `variant.attachment.blurhash`.
+final variant bytes. With Lucid, items returned by `user.avatar.variants()` expose
+`variant.blurhash`. The low-level `generateAll()` result exposes `variant.attachment.blurhash`.
 
 ```ts
 converters: {
@@ -162,11 +210,11 @@ type WatermarkOptions = ConverterOptions & {
 }
 
 export default class WatermarkConverter extends Converter<WatermarkOptions> {
-  async handle({ body, options }: ConverterAttributes<WatermarkOptions>) {
+  async handle({ attachment, body, options }: ConverterAttributes<WatermarkOptions>) {
     return {
       body,
-      fileName: `${options.label}.png`,
-      mimeType: 'image/png',
+      fileName: `${options.label}-${attachment.name}`,
+      mimeType: attachment.mimeType,
     }
   }
 }
@@ -177,6 +225,9 @@ export const watermark = {
   options: { opacity: 0.5 },
 } satisfies ConverterConfig<WatermarkOptions>
 ```
+
+This example demonstrates option typing only: it renames the output but does not draw a
+watermark or use `opacity`. Implement the actual transformation before using it for watermarking.
 
 Declare it in the package configuration with `converters: { watermark }`. Direct properties
 and the optional `options` object are merged; properties inside `options` override direct
@@ -277,7 +328,7 @@ or timeout overrides that shared value.
 it produces `Attachment` values but doesn't record them anywhere.
 
 ```ts
-import { VariantGenerationService, attachmentConverters } from '@jrmc/adonis-attachment'
+import { VariantGenerationService, attachmentConverters, attachmentService } from '@jrmc/adonis-attachment'
 
 const generator = new VariantGenerationService({
   attachments: attachmentService, // the jrmc.attachment service
@@ -285,7 +336,8 @@ const generator = new VariantGenerationService({
 })
 ```
 
-With **Lucid**, wrap it so each variant becomes a row in the `attachments` table
+The automatic Lucid workflow above already handles this wiring. For custom low-level
+orchestration with **Lucid**, wrap it so each variant becomes a row in the `attachments` table
 (`parent_id` pointing at the original blob):
 
 ```ts

@@ -27,6 +27,7 @@ test.group('VariantGenerationService', () => {
     const generated: Attachment[] = []
     const service = new VariantGenerationService({
       attachments: {
+        async remove() {},
         async read() {
           return new Uint8Array([1, 2, 3])
         },
@@ -73,6 +74,7 @@ test.group('VariantGenerationService', () => {
   test('fails when a requested converter does not exist', async ({ assert }) => {
     const service = new VariantGenerationService({
       attachments: {
+        async remove() {},
         async read() {
           return new Uint8Array()
         },
@@ -93,6 +95,7 @@ test.group('VariantGenerationService', () => {
     let requestedMeta: boolean | undefined
     const service = new VariantGenerationService({
       attachments: {
+        async remove() {},
         async read() {
           return new Uint8Array([1])
         },
@@ -163,6 +166,7 @@ test.group('VariantGenerationService', () => {
     const requests: Array<{ body: Uint8Array; componentX: number; componentY: number }> = []
     const service = new VariantGenerationService({
       attachments: {
+        async remove() {},
         async read() {
           return new Uint8Array([1])
         },
@@ -200,6 +204,7 @@ test.group('VariantGenerationService', () => {
   test('ignores a converter that intentionally returns no variant', async ({ assert }) => {
     const service = new VariantGenerationService({
       attachments: {
+        async remove() {},
         async read() {
           return new Uint8Array()
         },

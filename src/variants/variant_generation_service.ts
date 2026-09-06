@@ -24,13 +24,13 @@ export type GeneratedVariant = {
 }
 
 export type VariantGenerationServiceOptions = {
-  attachments: Pick<AttachmentService, 'create' | 'read'> & Partial<Pick<AttachmentService, 'createDraft'>>
+  attachments: Pick<AttachmentService, 'create' | 'read' | 'remove'> & Partial<Pick<AttachmentService, 'createDraft'>>
   converters: readonly VariantConverter[] | VariantConverterRegistry
   blurhash?: BlurhashGenerator
 }
 
 export class VariantGenerationService implements VariantGenerator {
-  readonly #attachments: Pick<AttachmentService, 'create' | 'read'> & Partial<Pick<AttachmentService, 'createDraft'>>
+  readonly #attachments: VariantGenerationServiceOptions['attachments']
   readonly #converters: Map<string, VariantConverter> | undefined
   readonly #registry: VariantConverterRegistry | undefined
   readonly #blurhash: BlurhashGenerator
@@ -53,7 +53,7 @@ export class VariantGenerationService implements VariantGenerator {
     const source = await this.#attachments.read(request.attachment)
     const keys = request.variantKeys ?? await this.#keys()
 
-    const generated = await Promise.all(
+    const results = await Promise.allSettled(
       keys.map(async (key) => {
         const converter = await this.#getConverter(key)
 
@@ -81,7 +81,19 @@ export class VariantGenerationService implements VariantGenerator {
       })
     )
 
-    return generated.filter((variant): variant is GeneratedVariant => variant !== undefined)
+    const generated = results.flatMap((result) =>
+      result.status === 'fulfilled' && result.value ? [result.value] : []
+    )
+    const failure = results.find((result) => result.status === 'rejected')
+    if (failure) {
+      const cleanup = await Promise.allSettled(generated.map((variant) => this.#attachments.remove(variant.attachment)))
+      const errors = cleanup.flatMap((result) => result.status === 'rejected' ? [result.reason] : [])
+      if (errors.length) {
+        throw new AggregateError([failure.reason, ...errors], 'Variant generation and file cleanup failed')
+      }
+      throw failure.reason
+    }
+    return generated
   }
 
   #keys(): Promise<readonly string[]> {

@@ -38,8 +38,20 @@ export class LucidVariantGenerationService implements VariantGenerator {
     }
 
     const variants = await this.#generator.generateAll(request)
-    for (const variant of variants) {
-      await this.#persist(original, variant, request.meta, request.mode)
+    for (const [index, variant] of variants.entries()) {
+      try {
+        await this.#persist(original, variant, request.meta, request.mode)
+      } catch (error) {
+        // Earlier rows are persisted; only the remaining generated files are unowned.
+        const cleanup = await Promise.allSettled(variants.slice(index + 1).map((remaining) =>
+          this.#attachments.remove(remaining.attachment)
+        ))
+        const errors = cleanup.flatMap((result) => result.status === 'rejected' ? [result.reason] : [])
+        if (errors.length) {
+          throw new AggregateError([error, ...errors], 'Variant persistence and file cleanup failed')
+        }
+        throw error
+      }
     }
   }
 

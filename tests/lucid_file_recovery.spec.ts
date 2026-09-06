@@ -1,4 +1,4 @@
-import { mkdtemp, rm } from 'node:fs/promises'
+import { mkdtemp, readdir, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { Database } from '@adonisjs/lucid/database'
@@ -8,6 +8,8 @@ import { AttachmentService } from '../src/core/attachment_service.js'
 import { LucidAttachmentStore } from '../src/integrations/lucid/persistence/lucid_attachment_store.js'
 import { LucidAttachmentLifecycleService } from '../src/integrations/lucid/persistence/lucid_attachment_lifecycle_service.js'
 import { createLucidTestDatabase } from './helpers/lucid_test_database.js'
+import { VariantGenerationService } from '../src/variants/variant_generation_service.js'
+import { LucidVariantGenerationService } from '../src/integrations/lucid/persistence/lucid_variant_generation_service.js'
 
 const owner = { type: 'users', id: '42', field: 'avatar' }
 
@@ -38,6 +40,49 @@ test.group('Lucid file recovery', (group) => {
   function draft(content: string) {
     return service.createDraft({ body: Buffer.from(content), originalName: 'photo.png' }, { rename: false })
   }
+
+  test('removes variant files including late writes after a conversion failure', async ({ assert }) => {
+    const original = await lifecycle.attach(owner, draft('original'))
+    const generator = new LucidVariantGenerationService({
+      attachments: service, store,
+      generator: new VariantGenerationService({
+        attachments: service,
+        converters: [
+          { key: 'good', async convert() {
+            await new Promise((resolve) => setTimeout(resolve, 10))
+            return { body: Buffer.from('variant'), fileName: 'thumb.png', mimeType: 'image/png' }
+          } },
+          { key: 'bad', async convert() { throw new Error('converter failed') } },
+        ],
+      }),
+    })
+    await assert.rejects(() => generator.generate({ attachment: original.toAttachment() }), 'converter failed')
+    assert.deepEqual(await readdir(directory), ['photo.png'])
+    assert.isEmpty(await store.listVariants(original.attachmentId))
+  })
+
+  test('removes remaining generated files after a variant row fails to persist', async ({ assert }) => {
+    const original = await lifecycle.attach(owner, draft('original'))
+    const createVariant = store.createVariant.bind(store)
+    store.createVariant = async (...args) => {
+      if (args[1] === 'second') throw new Error('variant insert failed')
+      return createVariant(...args)
+    }
+    const generator = new LucidVariantGenerationService({
+      attachments: service, store,
+      generator: new VariantGenerationService({
+        attachments: service,
+        converters: ['first', 'second', 'third'].map((key) => ({
+          key, async convert() { return { body: Buffer.from(key), fileName: `${key}.png`, mimeType: 'image/png' } },
+        })),
+      }),
+    })
+    await assert.rejects(() => generator.generate({ attachment: original.toAttachment() }), 'variant insert failed')
+    const variants = await store.listVariants(original.attachmentId)
+    assert.deepEqual(variants.map((item) => item.variantKey), ['first'])
+    assert.sameMembers(await readdir(directory), ['photo.png', variants[0]!.name])
+    assert.equal(Buffer.from(await service.read(variants[0]!.toAttachment())).toString(), 'first')
+  })
 
   test('rewrites the same draft when retried after a database failure', async ({ assert }) => {
     const pending = draft('retry')

@@ -326,6 +326,13 @@ converters. See [Background processing](/guide/queues) to choose how that job ru
 
 ## Behavior and errors
 
+If one conversion fails, generation waits for the other conversions to settle and removes
+all files created by that failed batch. With Lucid, a database insertion failure removes
+the failed variant and any remaining unpersisted outputs; variants already saved remain
+available. Cleanup failures are reported alongside the original error in an `AggregateError`.
+Custom services passed to `VariantGenerationService` must implement `remove` as well as
+`create` and `read` so failed batches can be cleaned up.
+
 - If persisting a generated variant fails, its freshly written file is **deleted**, so no
   orphan files are left behind.
 - Requesting a key with no matching converter raises `UnknownVariantConverterError`.

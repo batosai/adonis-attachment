@@ -5,6 +5,7 @@ import {
   type InferConverters,
   type NamedAttachmentQueueConfig,
 } from '../index.js'
+import { Env } from '@adonisjs/core/env'
 
 const storage: AttachmentStorage = {
   async write() {},
@@ -26,6 +27,16 @@ const config = defineConfig({
   queue: { default: selected, connections },
   converters: { thumbnail: { resize: 320 } },
 })
+
+async function environmentConfig() {
+  const env = await Env.create(new URL('../', import.meta.url), {
+    ATTACHMENT_QUEUE: Env.schema.enum.optional(['memory', 'custom'] as const),
+  })
+  return defineConfig({
+    storage,
+    queue: { default: env.get('ATTACHMENT_QUEUE', 'memory'), connections },
+  })
+}
 
 const key: keyof InferConverters<typeof config> = 'thumbnail'
 // @ts-expect-error Queue inference must not widen converter keys.
@@ -58,3 +69,4 @@ const invalidConfig: NamedAttachmentQueueConfig<typeof connections> = {
 void key
 void invalidKey
 void invalidConfig
+void environmentConfig

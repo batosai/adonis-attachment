@@ -333,7 +333,10 @@ are pointed at these names at boot.
   `GET /attachments/:id/:name?` with another persistence layer. See
   [Serving files](/guide/serving-files).
 - **`route`** - `false` to disable the built-in route, or `{ prefix: '/media' }` to move it.
-- **`queue`** - controls where jobs run. It defaults to an in-memory queue.
+- **`queue`** - controls where jobs run. Omit it for an in-memory queue, or declare
+  `queue.connections` and a typed `queue.default` to select a connection, optionally
+  [by environment](/guide/queues#select-by-environment). The generated configuration starts
+  with the `memory` connection. The direct driver, instance, and factory forms remain supported.
 - **`processor`** - overrides the processor automatically created for an in-memory queue when
   Lucid is detected. Custom persistence must provide a processor or `jobHandler`. See
   [Background processing](/guide/queues).

@@ -7,6 +7,7 @@
 | No attachment tables | Run `node ace make:attachments-table`, then `node ace migration:run`; check `integrations.lucid.tableName` for custom names. |
 | `createFromFile` fails before persistence | Check that the upload exists, is valid, and has a temporary path. See the [validated upload example](/guide/getting-started). |
 | Original exists but thumbnail is absent | Confirm the key is enabled in `variants`, check the required media dependency, and report queue failures with `onFailure`. External queues also need a running worker. |
+| Invalid attachment queue default at boot | Check that `queue.default` matches a key in `queue.connections`. Validate `ATTACHMENT_QUEUE` with an enum when selecting by environment; no fallback is applied to an unknown name. |
 | File route returns 404 | Use the blob ID, not the link ID. Check the route prefix and repository; without Lucid or an explicit repository, no route is registered. |
 | Private file is still publicly accessible | Set `route: false` and check that the underlying storage does not also expose a public URL. |
 | Filename rejected by Drive | Keep `normalizeFileName: true`, especially with `rename: false`; see [folder and rename](/guide/creating-attachments#folder-and-rename). |

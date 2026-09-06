@@ -47,8 +47,10 @@ test.group('configure', () => {
     assert.include(await readFile(join(stubsRoot, 'config/attachment.stub'), 'utf8'), 'binaries,')
     assert.include(
       await readFile(join(stubsRoot, 'config/attachment.stub'), 'utf8'),
-      "queue: { driver: 'memory', concurrency: 2 }"
+      "memory: { driver: 'memory', concurrency: 1 }"
     )
+    assert.include(await readFile(join(stubsRoot, 'config/attachment.stub'), 'utf8'), "default: 'memory'")
+    assert.include(await readFile(join(stubsRoot, 'config/attachment.stub'), 'utf8'), 'connections: {')
     assert.notInclude(await readFile(join(stubsRoot, 'config/attachment.stub'), 'utf8'), 'maxBytes')
   })
 })

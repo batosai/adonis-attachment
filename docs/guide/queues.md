@@ -47,6 +47,62 @@ This does not add per-attachment routing or change the native job's queue-name p
 The existing short form (`queue: { driver: 'memory', concurrency: 2 }`), direct instances,
 and application factories remain supported.
 
+### Select by environment
+
+Add an optional enum to your existing `start/env.ts` schema (keep the application's other
+variables). This preserves the connection-name union instead of accepting an arbitrary string:
+
+```ts
+// Inside the schema passed to Env.create(...), using its existing Env import:
+ATTACHMENT_QUEUE: Env.schema.enum.optional(['memory', 'background'] as const),
+```
+
+Import `env` from `#start/env` in `config/attachment.ts` and use:
+
+```ts
+queue: {
+  default: env.get('ATTACHMENT_QUEUE', 'memory'),
+  connections: {
+    memory: { driver: 'memory', concurrency: 1 },
+    background: {
+      driver: 'adonis',
+      job: GenerateAttachmentVariants,
+      queueName: 'attachments',
+    },
+  },
+},
+```
+
+Set `ATTACHMENT_QUEUE=memory` locally and `ATTACHMENT_QUEUE=background` in the environment
+where you run the external worker. If omitted, the example selects memory. Restart the
+application after changing the variable: connection selection is fixed when configuration
+is resolved, not reevaluated for each upload. Keep the application's and worker's configuration
+consistent. The generated config starts with a single `memory` connection and needs no env
+schema change until you add this environment-based selection.
+
+### Lazy optional connections
+
+Selecting memory prevents initialization of the external adapter, but ordinary top-level
+imports still execute when the config module loads. To avoid importing an unused job class
+and its optional dependencies, declare that connection as a factory instead:
+
+```ts
+import { AdonisAttachmentQueue } from '@jrmc/adonis-attachment'
+
+// Inside queue.connections:
+background: async () => {
+  const { default: GenerateAttachmentVariants } = await import('#jobs/generate_attachment_variants')
+  return new AdonisAttachmentQueue({
+    job: GenerateAttachmentVariants,
+    queueName: 'attachments',
+  })
+},
+```
+
+The factory is called only if `default` selects `background`. You may also use its `app`
+argument to resolve application services. Preconstructed queue instances have already been
+initialized by your code, so use a factory when initialization itself must be deferred.
+
 ## In-memory queue (default)
 
 Pending jobs are not durable: a process restart loses them, and failed jobs are not

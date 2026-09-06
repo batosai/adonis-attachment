@@ -29,11 +29,11 @@ test.group('default metadata profile', () => {
   test('registers every metadata source by default', ({ assert }) => {
     const extractors = createDefaultMetadataExtractors()
 
-    assert.lengthOf(extractors, 3)
+    assert.lengthOf(extractors, 4)
   })
 
   test('allows individual metadata sources to be disabled', ({ assert }) => {
-    const extractors = createDefaultMetadataExtractors({ exif: false, pdfinfo: false })
+    const extractors = createDefaultMetadataExtractors({ sharp: false, exif: false, pdfinfo: false })
 
     assert.lengthOf(extractors, 1)
   })
@@ -41,6 +41,7 @@ test.group('default metadata profile', () => {
   test('reuses shared ffprobe binary configuration while allowing local overrides', async ({ assert }) => {
     const runner = new FakeRunner()
     const [extractor] = createDefaultMetadataExtractors({
+      sharp: false,
       exif: false,
       pdfinfo: false,
       binaries: { ffprobe: { command: '/opt/media/ffprobe', timeout: 5_000 } },

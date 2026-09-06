@@ -62,7 +62,7 @@ record. Object values default to singular relations; arrays default to collectio
 Empty arrays are skipped. The migration counters count originals and variants separately.
 
 The v5 `meta` object is copied unchanged to the v6 `metadata` column for both originals and
-variants. Newly uploaded files use the same default EXIF, video, and PDF metadata profile
+variants. Newly uploaded files use the default Sharp, EXIF, video, and PDF metadata profile
 whenever `meta: true` is enabled; no extractor configuration is required.
 
 ## Map and run the generated script

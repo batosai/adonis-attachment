@@ -405,7 +405,7 @@ test.group('defineConfig', () => {
 
     const resolved = await defineConfig({ storage }).resolver({} as never)
 
-    assert.lengthOf(resolved.metadataExtractors!, 3)
+    assert.lengthOf(resolved.metadataExtractors!, 4)
   })
 
   test('allows an empty metadata override to disable the default extractors', async ({ assert }) => {

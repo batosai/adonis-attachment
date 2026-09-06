@@ -9,8 +9,10 @@ import { createPdfInfoMetadataExtractor, createFfprobeMetadataExtractor, type Ff
 import { createExifMetadataExtractor, type ExifMetadataExtractorOptions } from './exif.js'
 import type { MediaMetadataExtractor } from './media_metadata.js'
 import type { AttachmentBinariesConfig } from './binary_config.js'
+import { createSharpMetadataExtractor, type SharpMetadataFactory } from './sharp.js'
 
 export type DefaultMetadataExtractorOptions = {
+  sharp?: false | SharpMetadataFactory
   exif?: false | ExifMetadataExtractorOptions
   ffprobe?: false | FfprobeMetadataExtractorOptions
   pdfinfo?: false | PdfInfoMetadataExtractorOptions
@@ -18,13 +20,14 @@ export type DefaultMetadataExtractorOptions = {
 }
 
 /**
- * Creates the default metadata profile: EXIF for images, ffprobe for media, and
+ * Creates the default metadata profile: Sharp and EXIF for images, ffprobe for media, and
  * pdfinfo for PDFs. Each extractor can be disabled or pointed at a custom binary.
  */
 export function createDefaultMetadataExtractors(
   options: DefaultMetadataExtractorOptions = {}
 ): readonly MediaMetadataExtractor[] {
   return [
+    ...(options.sharp === false ? [] : [createSharpMetadataExtractor(options.sharp)]),
     ...(options.exif === false ? [] : [createExifMetadataExtractor(options.exif)]),
     ...(options.ffprobe === false
       ? []

@@ -41,7 +41,7 @@ Installing an integration with `npm install` alone does not register its provide
 Media features have separate optional dependencies:
 
 ```sh
-npm install sharp       # image conversion
+npm install sharp       # image conversion and technical metadata (including SVG)
 npm install exifreader  # EXIF metadata when enabled
 npm install blurhash    # blurhash when enabled (also requires sharp)
 ```

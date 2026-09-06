@@ -174,10 +174,30 @@ Set `meta: true` on an attachment or in `defaults` to enable the built-in profil
 the historical metadata shape: `dimension`, `orientation`, `date`, `host`, `gps`, `duration`,
 codecs, PDF `pages`, and PDF `version`. No `media.metadata` entry is required.
 
-Install the optional `exifreader` peer dependency before extracting image EXIF and GPS data.
-If it is absent, extraction fails with `E_MISSING_PACKAGE` and names the package to install.
-The profile invokes `ffprobe` for audio/video and `pdfinfo` for PDFs only when `meta: true` is
-effective for that attachment.
+For the default image profile, install the optional dependencies:
+
+```sh
+npm install sharp exifreader
+```
+
+| Source | Default extraction | Requirement |
+| --- | --- | --- |
+| Supported raster images | Sharp technical metadata, then EXIF/GPS where supported | `sharp` and `exifreader` |
+| SVG | Sharp technical metadata, including dimensions; never EXIF | `sharp` only |
+| Audio/video | Duration, codecs, and video dimensions | `ffprobe` executable |
+| PDF | Dimensions, pages, version, and creation date | `pdfinfo` executable |
+| DOCX and other unsupported formats | No extracted metadata; the original can still be stored | None for metadata |
+
+Sharp adds `format`, `density`, `hasAlpha`, and available page/frame information. EXIF
+enriches that result with fields such as orientation description, date, software, and GPS.
+Expanded ExifReader coordinates are normalized to `gps.latitude`, `gps.longitude`, and
+`gps.altitude` automatically; no application reader wrapper or type cast is needed.
+
+Image readers are loaded only when a matching extraction runs, not when configuration is
+created. Missing required packages raise `E_MISSING_PACKAGE`; corrupt supported files and
+binary failures still raise errors. Unsupported formats are skipped rather than sent to an
+incompatible parser. In particular, `meta: true` does not imply that DOCX metadata is supported.
+The existing binary path configuration applies to `ffprobe` and `pdfinfo` unchanged.
 
 ### Advanced: override the extractors
 
@@ -201,9 +221,13 @@ export default defineConfig({
 })
 ```
 
-`command` accepts either an executable available on `PATH` or an absolute path. Set `exif`,
+`command` accepts either an executable available on `PATH` or an absolute path. Set `sharp`, `exif`,
 `ffprobe`, or `pdfinfo` to `false` to disable an extractor. Use `metadata: []` to disable all
 default extraction even when an attachment requests `meta: true`.
+
+For example, `createDefaultMetadataExtractors({ sharp: false })` keeps EXIF and the binary
+extractors but disables Sharp technical metadata, including SVG metadata. To customize
+Sharp, pass a metadata factory as `sharp`; the actual imported `sharp` function is accepted.
 
 ### Performance policy
 
@@ -261,7 +285,8 @@ export default defineConfig({
 })
 ```
 
-For image files, install `sharp` and use the optional adapter instead of writing the
+The default profile already includes Sharp. To explicitly replace the profile with only
+Sharp image metadata, use the optional adapter instead of writing the
 extractor yourself:
 
 ```ts

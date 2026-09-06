@@ -6,6 +6,8 @@
  */
 
 import type { AttachmentMetadata, MediaMetadataExtractor } from './media_metadata.js'
+import { MissingOptionalDependencyError } from '../errors.js'
+import { loadOptionalDependency } from '../utils/optional_dependency.js'
 import type { VariantConverter, VariantConversionInput } from '../variants/variant_converter.js'
 import {
   normalizeSharpFormat,
@@ -18,15 +20,15 @@ import {
 export type { SharpFormat, SharpFormatOptions, SharpOutputFormat, SharpResizeOptions } from '../converters/converter.js'
 
 export type SharpMetadata = {
-  width?: number
-  height?: number
-  format?: string
-  size?: number
-  density?: number
-  hasAlpha?: boolean
-  pages?: number
-  pageHeight?: number
-  orientation?: number
+  width?: number | undefined
+  height?: number | undefined
+  format?: string | undefined
+  size?: number | undefined
+  density?: number | undefined
+  hasAlpha?: boolean | undefined
+  pages?: number | undefined
+  pageHeight?: number | undefined
+  orientation?: number | undefined
 }
 
 export interface SharpImage {
@@ -38,6 +40,12 @@ export interface SharpImage {
 }
 
 export type SharpFactory = (input: Uint8Array) => SharpImage
+export type SharpMetadataFactory = (input: Buffer) => Pick<SharpImage, 'metadata'>
+
+const sharpMetadataMimeTypes = new Set([
+  'image/jpeg', 'image/png', 'image/webp', 'image/avif', 'image/gif',
+  'image/svg+xml', 'image/tiff', 'image/heif', 'image/heic',
+])
 
 export type SharpVariantOptions = {
   key: string
@@ -51,16 +59,26 @@ export type SharpVariantOptions = {
   transform?: (image: SharpImage, input: VariantConversionInput) => SharpImage | Promise<SharpImage>
 }
 
-/** Creates an image-only metadata extractor backed by a caller-provided Sharp factory. */
-export function createSharpMetadataExtractor(sharp: SharpFactory): MediaMetadataExtractor {
+/** Loads Sharp lazily unless the caller supplies a metadata factory. */
+export function createSharpMetadataExtractor(sharp?: SharpMetadataFactory): MediaMetadataExtractor {
+  let factory: Promise<SharpMetadataFactory> | undefined
   return {
     supports({ attachment }) {
-      return attachment.mimeType.startsWith('image/')
+      return sharpMetadataMimeTypes.has(attachment.mimeType)
     },
     async extract({ body }) {
-      return compactMetadata(await sharp(body).metadata())
+      factory ??= sharp ? Promise.resolve(sharp) : loadMetadataFactory()
+      return compactMetadata(await (await factory)(Buffer.from(body)).metadata())
     },
   }
+}
+
+async function loadMetadataFactory(): Promise<SharpMetadataFactory> {
+  const module = await loadOptionalDependency<{ default?: unknown }>('sharp')
+  if (typeof module.default !== 'function') {
+    throw new MissingOptionalDependencyError('sharp')
+  }
+  return module.default as SharpMetadataFactory
 }
 
 /** Creates a Sharp-backed converter for one configured image variant. */

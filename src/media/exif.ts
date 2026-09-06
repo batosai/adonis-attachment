@@ -14,10 +14,23 @@ export type ExifReaderTag = {
   description?: string
 }
 
-export type ExifReaderTags = Record<string, Record<string, ExifReaderTag | undefined> | undefined>
+export type ExifReaderTags = {
+  exif?: Record<string, ExifReaderTag | undefined>
+  png?: Record<string, ExifReaderTag | undefined>
+  pngFile?: Record<string, ExifReaderTag | undefined>
+  file?: Record<string, ExifReaderTag | undefined>
+  icc?: Record<string, ExifReaderTag | undefined>
+  gps?: Record<string, number | ExifReaderTag | undefined>
+  [group: string]: unknown
+}
+
+const exifMimeTypes = new Set([
+  'image/jpeg', 'image/jxl', 'image/tiff', 'image/png', 'image/heic',
+  'image/heif', 'image/avif', 'image/webp', 'image/gif',
+])
 
 export interface ExifReader {
-  load(input: Uint8Array, options?: { expanded?: boolean }): ExifReaderTags | Promise<ExifReaderTags>
+  load(input: Buffer, options: { expanded: true }): ExifReaderTags | Promise<ExifReaderTags>
 }
 
 export type ExifMetadataExtractorOptions = {
@@ -32,11 +45,11 @@ export function createExifMetadataExtractor(
 
   return {
     supports({ attachment }) {
-      return attachment.mimeType.startsWith('image/')
+      return exifMimeTypes.has(attachment.mimeType)
     },
     async extract({ body }) {
       reader ??= resolveReader(options.reader)
-      return normalizeMetadata(await (await reader).load(body, { expanded: true }))
+      return normalizeMetadata(await (await reader).load(Buffer.from(body), { expanded: true }))
     },
   }
 }
@@ -100,7 +113,7 @@ function normalizeMetadata(tags: ExifReaderTags): AttachmentMetadata | undefined
   return Object.keys(metadata).length > 0 ? metadata : undefined
 }
 
-function gpsMetadata(tags: Record<string, ExifReaderTag | undefined> | undefined): Partial<AttachmentMetadata> {
+function gpsMetadata(tags: ExifReaderTags['gps']): Partial<AttachmentMetadata> {
   const latitude = numberTag(tags?.Latitude)
   const longitude = numberTag(tags?.Longitude)
   const altitude = numberTag(tags?.Altitude)
@@ -118,8 +131,8 @@ function gpsMetadata(tags: Record<string, ExifReaderTag | undefined> | undefined
   }
 }
 
-function numberTag(tag: ExifReaderTag | undefined): number | undefined {
-  const value = tag?.value
+function numberTag(tag: ExifReaderTag | number | undefined): number | undefined {
+  const value = typeof tag === 'number' ? tag : tag?.value
   const number = typeof value === 'number' ? value : typeof value === 'string' ? Number(value) : NaN
 
   return Number.isFinite(number) ? number : undefined

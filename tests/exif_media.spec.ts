@@ -22,6 +22,32 @@ const image: Attachment = {
 }
 
 test.group('EXIF media adapter', () => {
+  test('does not claim SVG or unsupported image formats', async ({ assert }) => {
+    const extractor = createExifMetadataExtractor()
+    for (const mimeType of ['image/svg+xml', 'image/bmp', 'image/x-icon', 'application/pdf']) {
+      assert.isFalse(await extractor.supports!({ attachment: { ...image, mimeType } }))
+    }
+    for (const mimeType of ['image/jpeg', 'image/png', 'image/webp', 'image/tiff', 'image/avif']) {
+      assert.isTrue(await extractor.supports!({ attachment: { ...image, mimeType } }))
+    }
+  })
+
+  test('normalizes expanded numeric GPS including zero and negative values', async ({ assert }) => {
+    const extractor = createExifMetadataExtractor({
+      reader: { load: () => ({ gps: { Latitude: 0, Longitude: -2.25, Altitude: -35 } }) },
+    })
+    assert.deepEqual(await extractor.extract({ attachment: image, body: new Uint8Array() }), {
+      gps: { latitude: 0, longitude: -2.25, altitude: -35 },
+    })
+  })
+
+  test('omits non-finite GPS values', async ({ assert }) => {
+    const extractor = createExifMetadataExtractor({
+      reader: { load: () => ({ gps: { Latitude: NaN, Longitude: Infinity } }) },
+    })
+    assert.isUndefined(await extractor.extract({ attachment: image, body: new Uint8Array() }))
+  })
+
   test('extracts the v5 image metadata shape', async ({ assert }) => {
     const reader: ExifReader = {
       async load() {

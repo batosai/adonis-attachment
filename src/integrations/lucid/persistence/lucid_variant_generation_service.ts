@@ -15,13 +15,13 @@ import { AttachmentError } from '../../../errors.js'
 
 export type LucidVariantGenerationServiceOptions = {
   generator: Pick<VariantGenerationService, 'generateAll'>
-  attachments: Pick<AttachmentService, 'remove'> & Partial<Pick<AttachmentService, 'getMetadataMode' | 'scheduleMetadataExtraction'>>
+  attachments: Pick<AttachmentService, 'remove'> & Partial<Pick<AttachmentService, 'getMetadataMode' | 'scheduleMetadataExtraction' | 'getVariantMetadataEnabled'>>
   store: Pick<LucidAttachmentStore, 'findById' | 'createVariant'> & Partial<Pick<LucidAttachmentStore, 'replaceVariant'>>
 }
 
 export class LucidVariantGenerationService implements VariantGenerator {
   readonly #generator: Pick<VariantGenerationService, 'generateAll'>
-  readonly #attachments: Pick<AttachmentService, 'remove'> & Partial<Pick<AttachmentService, 'getMetadataMode' | 'scheduleMetadataExtraction'>>
+  readonly #attachments: LucidVariantGenerationServiceOptions['attachments']
   readonly #store: Pick<LucidAttachmentStore, 'findById' | 'createVariant'> & Partial<Pick<LucidAttachmentStore, 'replaceVariant'>>
 
   constructor(options: LucidVariantGenerationServiceOptions) {
@@ -37,10 +37,13 @@ export class LucidVariantGenerationService implements VariantGenerator {
       throw new PersistedAttachmentNotFoundError(request.attachment.id)
     }
 
-    const variants = await this.#generator.generateAll(request)
+    const meta = this.#attachments.getVariantMetadataEnabled?.(
+      undefined, request.meta !== undefined ? { meta: request.meta } : undefined
+    ) ?? request.meta
+    const variants = await this.#generator.generateAll({ ...request, ...(meta !== undefined ? { meta } : {}) })
     for (const [index, variant] of variants.entries()) {
       try {
-        await this.#persist(original, variant, request.meta, request.mode)
+        await this.#persist(original, variant, meta, request.mode)
       } catch (error) {
         // Earlier rows are persisted; only the remaining generated files are unowned.
         const cleanup = await Promise.allSettled(variants.slice(index + 1).map((remaining) =>

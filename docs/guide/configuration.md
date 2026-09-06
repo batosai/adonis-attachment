@@ -214,7 +214,10 @@ media: {
 ```
 
 `variants` defaults to `true` for v5 compatibility. Set it to `false` when thumbnails do not
-need their own metadata. In deferred mode, configure the metadata processor shown in
+need their own metadata. This disables both synchronous extraction and deferred metadata
+jobs for variants, even with `defaults.meta: true`. An explicit `meta: false` on a generation
+request also overrides the global metadata default. Originals retain their own metadata
+settings. In deferred mode, configure the metadata processor shown in
 [Background processing](/guide/queues) so workers handle `extract-metadata` jobs.
 
 With custom persistence, call

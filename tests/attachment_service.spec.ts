@@ -281,7 +281,7 @@ test('can disable metadata extraction for generated variants independently', ({ 
   })
   const draft = service.createDraft({ body: new Uint8Array(), originalName: 'avatar.jpg' })
 
-  assert.isUndefined(service.getVariantMetadataEnabled(draft, { meta: true }))
+  assert.isFalse(service.getVariantMetadataEnabled(draft, { meta: true }))
 })
 
 test('reads an attachment from the configured storage', async ({ assert }) => {

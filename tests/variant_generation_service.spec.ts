@@ -23,6 +23,31 @@ const sourceAttachment: Attachment = {
 }
 
 test.group('VariantGenerationService', () => {
+  for (const scenario of [
+    { name: 'explicit false', meta: false, metadataVariants: true, expected: 0 },
+    { name: 'disabled variant policy', meta: undefined, metadataVariants: false, expected: 0 },
+    { name: 'disabled policy over explicit true', meta: true, metadataVariants: false, expected: 0 },
+    { name: 'inherited metadata default', meta: undefined, metadataVariants: true, expected: 1 },
+  ]) {
+    test(`honors ${scenario.name} with defaults.meta enabled`, async ({ assert }) => {
+      let extractions = 0
+      const attachments = new AttachmentService({
+        defaultDisk: 'public', defaults: { meta: true }, metadataVariants: scenario.metadataVariants,
+        storage: { async read() { return Buffer.from('original') }, async write() {}, async remove() {} },
+        queue: { async enqueue() {} },
+        metadataExtractors: [{ async extract() { extractions++; return { extracted: true } } }],
+      })
+      const generator = new VariantGenerationService({
+        attachments,
+        converters: [{ key: 'thumb', async convert() {
+          return { body: Buffer.from('variant'), fileName: 'thumb.png', mimeType: 'image/png' }
+        } }],
+      })
+      await generator.generateAll({ attachment: sourceAttachment, ...(scenario.meta !== undefined ? { meta: scenario.meta } : {}) })
+      assert.equal(extractions, scenario.expected)
+    })
+  }
+
   test('converts and writes selected variants', async ({ assert }) => {
     const generated: Attachment[] = []
     const service = new VariantGenerationService({

@@ -265,7 +265,7 @@ export class AttachmentService {
       options,
       draft?.options
         ).meta
-      : undefined
+      : false
   }
 
   /** Resolves the configured strategy when metadata is enabled for a persistence operation. */

@@ -24,7 +24,7 @@ export type GeneratedVariant = {
 }
 
 export type VariantGenerationServiceOptions = {
-  attachments: Pick<AttachmentService, 'create' | 'read' | 'remove'> & Partial<Pick<AttachmentService, 'createDraft'>>
+  attachments: Pick<AttachmentService, 'create' | 'read' | 'remove'> & Partial<Pick<AttachmentService, 'createDraft' | 'getVariantMetadataEnabled'>>
   converters: readonly VariantConverter[] | VariantConverterRegistry
   blurhash?: BlurhashGenerator
 }
@@ -52,6 +52,9 @@ export class VariantGenerationService implements VariantGenerator {
   async generateAll(request: VariantGenerationRequest): Promise<GeneratedVariant[]> {
     const source = await this.#attachments.read(request.attachment)
     const keys = request.variantKeys ?? await this.#keys()
+    const meta = this.#attachments.getVariantMetadataEnabled?.(
+      undefined, request.meta !== undefined ? { meta: request.meta } : undefined
+    ) ?? request.meta
 
     const results = await Promise.allSettled(
       keys.map(async (key) => {
@@ -77,7 +80,7 @@ export class VariantGenerationService implements VariantGenerator {
           disk: request.attachment.disk,
         }
 
-        return { key, attachment: await this.#persistVariant(input, request.meta) }
+        return { key, attachment: await this.#persistVariant(input, meta) }
       })
     )
 
@@ -105,8 +108,8 @@ export class VariantGenerationService implements VariantGenerator {
   }
 
   #persistVariant(input: CreateAttachmentInput, meta: boolean | undefined): Promise<Attachment> {
-    if (meta && this.#attachments.createDraft) {
-      return this.#attachments.createDraft(input).persist({ options: { meta: true } })
+    if (meta !== undefined && this.#attachments.createDraft) {
+      return this.#attachments.createDraft(input).persist({ options: { meta } })
     }
 
     return this.#attachments.create(input)

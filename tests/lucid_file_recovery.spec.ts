@@ -41,6 +41,27 @@ test.group('Lucid file recovery', (group) => {
     return service.createDraft({ body: Buffer.from(content), originalName: 'photo.png' }, { rename: false })
   }
 
+  test('does not enqueue deferred variant metadata when its policy is disabled', async ({ assert }) => {
+    const jobs: string[] = []
+    const original = await lifecycle.attach(owner, draft('original'))
+    const attachments = new AttachmentService({
+      storage: new LocalFileStorage({ location: directory }), defaultDisk: 'fs',
+      defaults: { meta: true }, metadataMode: 'deferred', metadataVariants: false,
+      metadataExtractors: [{ async extract() { return {} } }],
+      metadataPersister: { async persistMetadata() {} },
+      queue: { async enqueue(job) { jobs.push(job.type) } },
+    })
+    const generator = new LucidVariantGenerationService({
+      attachments, store,
+      generator: new VariantGenerationService({ attachments, converters: [{ key: 'thumb', async convert() {
+        return { body: Buffer.from('variant'), fileName: 'thumb.png', mimeType: 'image/png' }
+      } }] }),
+    })
+    await generator.generate({ attachment: original.toAttachment(), meta: true })
+    assert.lengthOf(await store.listVariants(original.attachmentId), 1)
+    assert.isEmpty(jobs)
+  })
+
   test('removes variant files including late writes after a conversion failure', async ({ assert }) => {
     const original = await lifecycle.attach(owner, draft('original'))
     const generator = new LucidVariantGenerationService({

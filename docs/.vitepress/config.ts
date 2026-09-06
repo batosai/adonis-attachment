@@ -18,6 +18,7 @@ export default withMermaid(
             text: 'Get started',
             items: [
               { text: 'Introduction', link: '/guide/introduction' },
+              { text: 'Installation', link: '/guide/installation' },
               { text: 'Quickstart', link: '/guide/getting-started' },
               { text: 'Core concepts', link: '/guide/concepts' },
             ],
@@ -25,7 +26,6 @@ export default withMermaid(
           {
             text: 'Everyday usage',
             items: [
-              { text: 'Installation', link: '/guide/installation' },
               { text: 'Configuration', link: '/guide/configuration' },
               { text: 'Creating attachments', link: '/guide/creating-attachments' },
               { text: 'Image variants', link: '/guide/variants' },

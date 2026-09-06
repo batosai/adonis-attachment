@@ -60,7 +60,9 @@ most to least specific:
 createFrom*(...) options  >  decorator options  >  defaults
 ```
 
-Set an option to `null` at a higher level to explicitly disable an inherited value.
+Set an option to `null` at a higher level to clear an inherited value. This restores the
+package fallback; it is not equivalent to `false` (for example, `rename: null` restores
+generated names, while `rename: false` uses the client filename).
 
 ```ts
 export default defineConfig({
@@ -76,6 +78,24 @@ export default defineConfig({
 
 Available options: `disk`, `folder`, `rename`, `normalizeFileName`, `meta`, `preComputeUrl`,
 `variants`.
+
+| Option | Accepted value | Fallback when unset | Scope |
+| --- | --- | --- | --- |
+| `disk` | Storage disk name | Storage adapter default | Config defaults, decorator, manager |
+| `folder` | Relative path or async callback | Storage root | Config defaults, decorator, manager |
+| `rename` | Boolean or async filename callback | `true` | Config defaults, decorator, manager |
+| `normalizeFileName` | Boolean | `true` | Config defaults, decorator, manager |
+| `meta` | Boolean | Extraction not requested | Config defaults, decorator, manager |
+| `preComputeUrl` | Boolean | `false` | Same priority; consumed on Lucid relation reads |
+| `variants` | Array of configured keys | No automatic variants | Same priority; automatic scheduling with Lucid |
+| `originalName`, `mimeType` | String | Derived from the source | Manager options only |
+| `metadata` | Metadata object | No supplied metadata | Manager options only |
+| `maxBytes` | Positive integer | No size ceiling | `sources.maxBytes` and manager options |
+
+`meta` requests extraction, whereas `metadata` supplies already known values. The media
+policy controls whether extraction is synchronous, deferred, or disabled. Outside Lucid,
+the application owns database persistence and post-commit job scheduling.
+
 `meta` activates the default metadata extractors during `persist()`. With Lucid relations,
 `preComputeUrl` calculates the public URL when the relation is read and keeps it only in
 memory. With Lucid relations, `variants` schedules the listed keys after the blob and its link

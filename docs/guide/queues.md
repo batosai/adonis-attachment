@@ -9,6 +9,9 @@ when you need to.
 
 ## In-memory queue (default)
 
+Pending jobs are not durable: a process restart loses them, and failed jobs are not
+automatically retried. Use a persistent queue when those guarantees matter.
+
 If you configure nothing, `MemoryAttachmentQueue` runs jobs **in the same process** - great
 for development, tests, and simple deployments. When Lucid is detected, the package also
 builds the processor automatically from the Lucid repository, configured converters, metadata
@@ -60,12 +63,20 @@ explicit. For another ORM, build a generic `AttachmentJobProcessor` with that OR
 and variant persistence. To replace lifecycle events, pass `{ events }` as the second argument.
 See [Events](/guide/events#workers-and-external-queues).
 
+For a custom data store, see the complete
+[variant persistence wrapper and processor](/guide/custom-persistence#generating-and-persisting-variants).
+
 ## A real worker with `@adonisjs/queue`
 
 For production, dispatch jobs to `@adonisjs/queue`. `AdonisAttachmentQueue` adapts your job
 class to the package's queue interface:
 
+Install and configure the integration with `node ace add @adonisjs/queue`, then generate
+the forwarding job with `node ace make:job generate_attachment_variants`. Complete the
+queue driver's own connection and persistence setup before dispatching jobs.
+
 ```ts
+import { defineConfig, LocalFileStorage } from '@jrmc/adonis-attachment'
 import GenerateAttachmentVariants from '#jobs/generate_attachment_variants'
 
 export default defineConfig({
@@ -106,6 +117,16 @@ This keeps the package independent of how and where your workers are deployed. V
 contain an id and optional keys; metadata jobs also contain the serializable attachment target
 but never its file bytes. The worker reads the stored file before extracting metadata.
 
+Start a worker in another terminal, listening to the same queue as the configuration:
+
+```sh
+node ace queue:work --queue=attachments
+```
+
+Upload an original with `variants: ['thumbnail']`, then read the relation's `variants()`
+after processing. A missing worker leaves jobs pending. The worker needs the same database,
+storage access, configuration, optional media packages, and binary executables as the application.
+
 ## Instantiating the built-in queues directly
 
 The named drivers are the shortest configuration, but both adapters can still be instantiated
@@ -141,6 +162,36 @@ export default defineConfig({
 With direct instantiation, you are responsible for wiring the memory queue's `handler`. The
 Adonis adapter still only dispatches jobs; the job worker must invoke the processor as shown
 above.
+
+## Waiting for the memory queue in tests
+
+When constructing a memory queue in a Japa test, retain the instance and await `drain()`
+instead of waiting a fixed number of milliseconds:
+
+```ts
+import { test } from '@japa/runner'
+import { MemoryAttachmentQueue } from '@jrmc/adonis-attachment'
+
+test('processes an attachment job', async ({ assert }) => {
+  const processed: string[] = []
+  const failures: unknown[] = []
+  const queue = new MemoryAttachmentQueue({
+    handler: async (job) => {
+      if (job.type === 'generate-variants') processed.push(job.attachmentId)
+    },
+    onFailure: (_job, error) => { failures.push(error) },
+  })
+
+  await queue.enqueue({ type: 'generate-variants', attachmentId: 'original-id' })
+  await queue.drain()
+  assert.deepEqual(processed, ['original-id'])
+  assert.isEmpty(failures)
+})
+```
+
+This tests queue execution only. To test actual conversion, use your processor as the
+handler and assert the persisted variants after draining. `drain()` waits for completion
+but does not rethrow job failures, so always capture and assert `onFailure` in such tests.
 
 ## Another queue library
 

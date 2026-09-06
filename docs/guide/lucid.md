@@ -213,6 +213,11 @@ await db.transaction(async (trx) => {
 - **File deletions** from `detach`/`replace`/`remove`/`clear` are deferred until
   **commit** - a rollback keeps the previous files intact.
 
+When a replacement would reuse the previous file's storage path (for example with
+`rename: false`), its bytes are written to a unique subdirectory. The filename stays the
+same; use the returned attachment's `path` or URL. Stage the draft on the relation before
+persisting it so the integration can protect the previous file before any write.
+
 Deleting the owning record triggers an `after('delete')` hook that removes all of its
 links (and any blobs that become unreferenced).
 

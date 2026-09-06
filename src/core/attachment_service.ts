@@ -34,6 +34,7 @@ import {
 } from '../events/attachment_events.js'
 import string from '@adonisjs/core/helpers/string'
 import { extname } from 'node:path'
+import { randomUUID } from 'node:crypto'
 
 export type AttachmentServiceOptions = {
   storage: AttachmentStorage
@@ -124,6 +125,13 @@ export class AttachmentService {
       ...(folder ? { folder } : {}),
       ...(name ? { name } : {}),
     })
+
+    if (request?.protectedLocations?.some((location) =>
+      location.disk === attachment.disk && location.path === attachment.path
+    )) {
+      const directory = attachment.path.slice(0, -attachment.name.length)
+      attachment = { ...attachment, path: `${directory}${randomUUID()}/${attachment.name}` }
+    }
 
     if (options.meta && this.#metadata && this.#metadataMode === 'sync') {
       this.#emit('attachment:metadata_started', attachment)

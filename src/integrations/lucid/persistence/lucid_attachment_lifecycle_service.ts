@@ -17,7 +17,7 @@ import type { AttachmentOwner } from '../relations/attachment_owner.js'
 import { AttachmentLinkModel } from '../models/attachment_link_model.js'
 import { AttachmentModel } from '../models/attachment_model.js'
 import { LucidAttachmentStore } from './lucid_attachment_store.js'
-import { AttachmentConfigurationError } from '../../../errors.js'
+import { AttachmentConfigurationError, AttachmentConflictError } from '../../../errors.js'
 import type { AttachmentEventContext } from '../../../events/attachment_events.js'
 
 export type AttachmentFileService = Pick<AttachmentService, 'create' | 'remove'> &
@@ -91,7 +91,8 @@ export class LucidAttachmentLifecycleService {
       return this.attach(owner, input, options)
     }
 
-    const persisted = await this.#persist(owner, input, options)
+    const protectedFiles = [previous.toAttachment(), ...(await this.#store.listVariants(previous.attachmentId)).map((item) => item.toAttachment())]
+    const persisted = await this.#persist(owner, input, options, protectedFiles)
     let current: AttachmentLinkModel
 
     try {
@@ -161,9 +162,10 @@ export class LucidAttachmentLifecycleService {
     owner: AttachmentOwner,
     input: CreateAttachmentInput | AttachmentDraft,
     position: number | undefined,
-    options: AttachmentPersistenceOptions<any> | undefined
+    options: AttachmentPersistenceOptions<any> | undefined,
+    protectedLocations?: readonly Attachment[]
   ): Promise<{ item: AttachmentLinkModel; persisted: PersistedAttachment }> {
-    const persisted = await this.#persist(owner, input, options)
+    const persisted = await this.#persist(owner, input, options, protectedLocations)
 
     try {
       const item = await this.#collectionStore().createCollectionItem(
@@ -218,11 +220,13 @@ export class LucidAttachmentLifecycleService {
     options?: AttachmentPersistenceOptions<any>
   ): Promise<AttachmentLinkModel[]> {
     const previous = await this.#collectionStore().listCollection(owner)
+    const protectedFiles = previous.map((item) => item.toAttachment())
     const created: Array<{ item: AttachmentLinkModel; persisted: PersistedAttachment }> = []
 
     try {
       for (const input of inputs) {
-        created.push(await this.#add(owner, input, undefined, options))
+        created.push(await this.#add(owner, input, undefined, options, protectedFiles))
+        protectedFiles.push(created.at(-1)!.persisted.attachment)
       }
     } catch (error) {
       await Promise.all(created.map(({ item }) => this.#detachCollectionItem(owner, item)))
@@ -342,14 +346,19 @@ export class LucidAttachmentLifecycleService {
   async #persist(
     owner: AttachmentOwner,
     input: CreateAttachmentInput | AttachmentDraft,
-    options?: AttachmentPersistenceOptions<any>
+    options?: AttachmentPersistenceOptions<any>,
+    protectedLocations?: readonly Attachment[]
   ): Promise<PersistedAttachment> {
     if (isAttachmentDraft(input)) {
+      if (input.isPersisted && protectedLocations?.some((file) => file.disk === input.disk && file.path === input.path)) {
+        throw new AttachmentConflictError('Replacement drafts must be staged before persisting a conflicting file')
+      }
       return {
         draft: input,
         attachment: await input.persist({
           ...(options ? { options } : {}),
           context: { model: owner.model, field: owner.field },
+          ...(protectedLocations ? { protectedLocations } : {}),
         }),
       }
     }
@@ -362,6 +371,7 @@ export class LucidAttachmentLifecycleService {
         attachment: await draft.persist({
           ...(options ? { options } : {}),
           context: { model: owner.model, field: owner.field },
+          ...(protectedLocations ? { protectedLocations } : {}),
         }),
       }
     }

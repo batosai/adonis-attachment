@@ -33,6 +33,8 @@ export type Attachment = Readonly<{
 export type AttachmentPersistRequest<Model = any> = {
   options?: AttachmentPersistenceOptions<Model>
   context?: Omit<AttachmentPersistenceContext<Model>, 'originalName'>
+  /** Existing files that must survive replacement until the owning transaction commits. */
+  protectedLocations?: readonly Pick<Attachment, 'disk' | 'path'>[]
 }
 
 export type AttachmentDraftPersistence = (

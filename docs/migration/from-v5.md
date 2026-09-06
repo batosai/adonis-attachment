@@ -43,6 +43,22 @@ batches (100 per transaction by default). It preserves file paths, disk names, m
 variant blurhashes, and the relationship between an original and its variants. It does not
 move files in storage; only database rows change.
 
+For a v5 collection, yield its JSON array as a single record. Serialized JSON arrays are
+also accepted. Each original receives a collection link with a null `owner_key` and its
+zero-based position; each original's variants remain attached to that original.
+
+```ts
+yield {
+  owner: { type: 'users', id: String(user.id), field: 'gallery' },
+  kind: 'many',
+  value: user.gallery,
+}
+```
+
+To yield collection items individually, supply `kind: 'many'` and `position` on every
+record. Object values default to singular relations; arrays default to collections.
+Empty arrays are skipped. The migration counters count originals and variants separately.
+
 The v5 `meta` object is copied unchanged to the v6 `metadata` column for both originals and
 variants. Newly uploaded files use the same default EXIF, video, and PDF metadata profile
 whenever `meta: true` is enabled; no extractor configuration is required.

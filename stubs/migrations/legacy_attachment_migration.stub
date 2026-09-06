@@ -33,6 +33,9 @@ async function main(): Promise<void> {
 async function* legacyAttachmentRecords(): AsyncGenerator<LegacyAttachmentMigrationRecord> {
   // Iterate over the legacy model and yield one value per attachment field.
   // Example owner: { type: 'users', id: user.id.toString(), field: 'avatar' }
+  // For a collection, yield { owner, kind: 'many', value: user.gallery }.
+  // Arrays (including serialized JSON arrays) preserve their item order and variants.
+  // When yielding items separately, set kind: 'many' and position on every record.
   throw new Error('Implement legacyAttachmentRecords before running this script')
 }
 

@@ -15,7 +15,9 @@ import {
 
 export type LegacyAttachmentMigrationRecord = {
   owner: AttachmentOwner
-  value: LegacyAttachment | string | null | undefined
+  value: LegacyAttachment | readonly LegacyAttachment[] | string | null | undefined
+  kind?: 'one' | 'many'
+  position?: number
 }
 
 export type LegacyAttachmentMigrationWriter = {
@@ -69,10 +71,16 @@ export async function migrateLegacyAttachmentRecords(
       owner: record.owner,
       defaultDisk: options.defaultDisk,
       createId: options.createId,
+      ...(record.kind ? { kind: record.kind } : {}),
+      ...(record.position !== undefined ? { position: record.position } : {}),
     })
 
-    result.attachments += 1
-    result.variants += rows.blobs.length - 1
+    if (rows.links.length === 0) {
+      result.skipped += 1
+      continue
+    }
+    result.attachments += rows.links.length
+    result.variants += rows.blobs.length - rows.links.length
     batch.blobs.push(...rows.blobs)
     batch.links.push(...rows.links)
 

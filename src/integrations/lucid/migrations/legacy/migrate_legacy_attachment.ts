@@ -72,6 +72,9 @@ export type MigrateLegacyAttachmentOptions = {
   owner: AttachmentOwner;
   defaultDisk: string;
   createId: () => string;
+  kind?: 'one' | 'many';
+  /** Starting position for a collection value, or position of an individual collection item. */
+  position?: number;
 };
 
 /**
@@ -79,11 +82,27 @@ export type MigrateLegacyAttachmentOptions = {
  * Callers can run it from an Ace command, another ORM migration, or a one-off script.
  */
 export function migrateLegacyAttachment(
-  value: LegacyAttachment | string,
+  value: LegacyAttachment | readonly LegacyAttachment[] | string,
   options: MigrateLegacyAttachmentOptions,
 ): MigratedAttachmentRows {
-  const attachment =
+  const parsed =
     typeof value === "string" ? parseLegacyAttachment(value) : value;
+  if (options.position !== undefined && (!Number.isSafeInteger(options.position) || options.position < 0)) {
+    throw new AttachmentError('Legacy attachment position must be a non-negative integer', { code: 'E_INVALID_LEGACY_ATTACHMENT' });
+  }
+  if (Array.isArray(parsed)) {
+    if (options.kind === 'one') {
+      throw new AttachmentError('Legacy attachment arrays require a collection relation', { code: 'E_INVALID_LEGACY_ATTACHMENT' });
+    }
+    const rows: MigratedAttachmentRows = { blobs: [], links: [] };
+    parsed.forEach((item, index) => {
+      const migrated = migrateLegacyAttachment(item, { ...options, kind: 'many', position: (options.position ?? 0) + index });
+      rows.blobs.push(...migrated.blobs);
+      rows.links.push(...migrated.links);
+    });
+    return rows;
+  }
+  const attachment = parsed as LegacyAttachment;
   const id = options.createId();
   const originalName = attachment.originalName ?? attachment.name;
   const original = toBlob({
@@ -115,8 +134,8 @@ export function migrateLegacyAttachment(
         attachableType: options.owner.type,
         attachableId: options.owner.id,
         field: options.owner.field,
-        ownerKey: createAttachmentOwnerKey(options.owner),
-        position: null,
+        ownerKey: options.kind === 'many' ? null : createAttachmentOwnerKey(options.owner),
+        position: options.kind === 'many' ? options.position ?? 0 : null,
         attachmentId: id,
       },
     ],

@@ -85,6 +85,12 @@ test.group('named attachment queues', () => {
     assert.strictEqual(resolved.queue, queue)
   })
 
+  test('does not interpret a custom queue instance configuration as named connections', async ({ assert }) => {
+    const queue = { default: 'native-queue', connections: {}, async enqueue() {} }
+    const resolved = await defineConfig({ storage, queue }).resolver({} as never)
+    assert.strictEqual(resolved.queue, queue)
+  })
+
   test('selects the Adonis driver and preserves its destination', async ({ assert }) => {
     const calls: string[] = []
     const resolved = await defineConfig({

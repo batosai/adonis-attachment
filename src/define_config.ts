@@ -232,6 +232,7 @@ export function defineConfig<
 
 function selectQueue(config: unknown): AttachmentQueueConnection | undefined {
   if (config === undefined) return undefined
+  if (isAttachmentQueue(config)) return config
 
   if (typeof config === 'object' && config !== null && ('connections' in config || 'default' in config)) {
     const named = config as NamedAttachmentQueueConfig
@@ -341,8 +342,8 @@ async function createDefaultLucidProcessor(
   })
 }
 
-function isAttachmentQueue(value: AttachmentQueue | AttachmentQueueConfig): value is AttachmentQueue {
-  return 'enqueue' in value && typeof value.enqueue === 'function'
+function isAttachmentQueue(value: unknown): value is AttachmentQueue {
+  return typeof value === 'object' && value !== null && 'enqueue' in value && typeof value.enqueue === 'function'
 }
 
 function toAutodetectOptions(binaries: AttachmentBinariesConfig | undefined) {

@@ -10,7 +10,7 @@ import {
   type LegacyAttachmentMigrationRecord,
 } from '@jrmc/adonis-attachment/lucid'
 
-async function main(): Promise<void> {
+export default async function migrateAttachments(): Promise<void> {
   const result = await migrateLegacyAttachmentRecords({
     records: legacyAttachmentRecords(),
     defaultDisk: '{{ defaultDisk }}',
@@ -38,5 +38,3 @@ async function* legacyAttachmentRecords(): AsyncGenerator<LegacyAttachmentMigrat
   // When yielding items separately, set kind: 'many' and position on every record.
   throw new Error('Implement legacyAttachmentRecords before running this script')
 }
-
-void main()

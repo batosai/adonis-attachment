@@ -36,6 +36,8 @@ test.group('legacy attachment migration stub', () => {
     assert.include(stub, "defaultDisk: '{{ defaultDisk }}'")
     assert.include(stub, 'migrateLegacyAttachmentRecords')
     assert.include(stub, 'AttachmentLinkModel.createMany(rows.links')
+    assert.include(stub, 'export default async function migrateAttachments()')
+    assert.notInclude(stub, 'void main()')
   })
 
   test('uses the package stub from the Ace command', async ({ assert }) => {

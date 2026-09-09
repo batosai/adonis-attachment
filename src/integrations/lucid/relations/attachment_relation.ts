@@ -6,7 +6,8 @@
  */
 
 import app from "@adonisjs/core/services/app";
-import type { LucidRow } from "@adonisjs/lucid/types/model";
+import type { LucidRow, LucidModel } from "@adonisjs/lucid/types/model";
+import { attachmentTransaction, afterAttachmentRollback } from "../persistence/attachment_transaction.js";
 import type { AttachmentVariantKey } from "../../../../index.js";
 
 import type {
@@ -163,6 +164,12 @@ export class AttachmentRelation {
   }
 
   async persist(): Promise<AttachmentLinkModel | null> {
+    if (!this.#pending) return this.get();
+    this.#owner();
+    return withModelTransaction(this.#row, () => this.#persist());
+  }
+
+  async #persist(): Promise<AttachmentLinkModel | null> {
     const pending = this.#pending;
 
     if (!pending) {
@@ -200,6 +207,7 @@ export class AttachmentRelation {
     }
 
     this.#pending = undefined;
+    afterAttachmentRollback(this.#row.$trx!, () => { this.#pending ??= pending; });
     return result;
   }
 
@@ -359,6 +367,12 @@ export class AttachmentCollectionRelation {
   }
 
   async persist(): Promise<AttachmentLinkModel[]> {
+    if (!this.hasPending) return this.all();
+    this.#owner();
+    return withModelTransaction(this.#row, () => this.#persist());
+  }
+
+  async #persist(): Promise<AttachmentLinkModel[]> {
     if (this.#pending.length === 0) {
       return this.all();
     }
@@ -366,34 +380,38 @@ export class AttachmentCollectionRelation {
     const lifecycle = await this.#lifecycle();
     const owner = this.#owner();
 
-    while (this.#pending.length > 0) {
-      const operation = this.#pending[0]!;
+    const pending = [...this.#pending];
+    afterAttachmentRollback(this.#row.$trx!, () => { this.#pending = pending; });
 
-      switch (operation.type) {
-        case "add":
-          await lifecycle.add(owner, operation.input, operation.position, this.#definition.options);
-          break;
-        case "addExisting":
-          await lifecycle.addExisting(owner, operation.attachmentId, operation.position);
-          break;
-        case "remove":
-          await lifecycle.removeCollectionItem(owner, operation.id);
-          break;
-        case "clear":
-          await lifecycle.clearCollection(owner);
-          break;
-        case "replaceAll":
-          await lifecycle.replaceCollection(owner, operation.inputs, this.#definition.options);
-          break;
-        case "move":
-          await lifecycle.moveCollectionItem(owner, operation.id, operation.position);
-          break;
+    return lifecycle.transaction(owner, async (lifecycle) => {
+      while (this.#pending.length > 0) {
+        const operation = this.#pending[0]!;
+
+        switch (operation.type) {
+          case "add":
+            await lifecycle.add(owner, operation.input, operation.position, this.#definition.options);
+            break;
+          case "addExisting":
+            await lifecycle.addExisting(owner, operation.attachmentId, operation.position);
+            break;
+          case "remove":
+            await lifecycle.removeCollectionItem(owner, operation.id);
+            break;
+          case "clear":
+            await lifecycle.clearCollection(owner);
+            break;
+          case "replaceAll":
+            await lifecycle.replaceCollection(owner, operation.inputs, this.#definition.options);
+            break;
+          case "move":
+            await lifecycle.moveCollectionItem(owner, operation.id, operation.position);
+            break;
+        }
+
+        this.#pending.shift();
       }
-
-      this.#pending.shift();
-    }
-
-    return lifecycle.listCollection(owner);
+      return lifecycle.listCollection(owner);
+    });
   }
 
   async #lifecycle(): Promise<LucidAttachmentLifecycleService> {
@@ -434,6 +452,10 @@ function defineRelation<Model>(
 
     if (!deleteHooks.has(Model)) {
       deleteHooks.add(Model);
+      const deleteRow = Model.prototype.delete;
+      Model.prototype.delete = async function(this: AttachmentRelationRow) {
+        return withModelTransaction(this, () => deleteRow.call(this));
+      };
       Model.after("delete", async (row) => {
         for (const definition of relationDefinitions.get(Model)?.values() ?? []) {
           const lifecycle = new LucidAttachmentLifecycleService(
@@ -514,14 +536,44 @@ function wrapSave(Model: AttachmentRelationRow["constructor"]): void {
   const save = Model.prototype.save;
 
   Model.prototype.save = (async function saveWithAttachmentRelations(this: AttachmentRelationRow) {
-    const result = await save.call(this);
+    const persist = async () => {
+      const result = await save.call(this);
 
-    for (const relation of relationInstances.get(this)?.values() ?? []) {
-      if (relation.hasPending) {
-        await relation.persist();
+      for (const relation of relationInstances.get(this)?.values() ?? []) {
+        if (relation.hasPending) {
+          await relation.persist();
+        }
       }
-    }
 
-    return result;
+      return result;
+    };
+    if (![...(relationInstances.get(this)?.values() ?? [])].some((relation) => relation.hasPending)) {
+      return persist();
+    }
+    return withModelTransaction(this, persist);
   }) as typeof Model.prototype.save;
+}
+
+async function withModelTransaction<T>(row: AttachmentRelationRow, callback: () => Promise<T>): Promise<T> {
+  const Model = row.constructor as unknown as LucidModel;
+  const parent = row.$trx;
+  const state = {
+    attributes: { ...row.$attributes }, original: { ...row.$original },
+    persisted: row.$isPersisted, local: row.$isLocal, deleted: row.$isDeleted,
+  };
+  try {
+    return await attachmentTransaction(Model.$adapter.modelClient(row), async (transaction) => {
+      row.useTransaction(transaction);
+      afterAttachmentRollback(transaction, () => {
+        row.$attributes = state.attributes;
+        row.$original = state.original;
+        row.$isPersisted = state.persisted;
+        row.$isLocal = state.local;
+        row.$isDeleted = state.deleted;
+      });
+      return callback();
+    });
+  } finally {
+    if (parent) row.useTransaction(parent);
+  }
 }

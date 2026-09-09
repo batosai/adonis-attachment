@@ -12,6 +12,8 @@ export type AttachmentOwner<Model = unknown> = {
   id: string
   field: string
   model?: Model
+  /** Existing row to lock when using the store without a Lucid owner model. */
+  lock?: { table: string; column: string; value: string | number }
 }
 
 /**

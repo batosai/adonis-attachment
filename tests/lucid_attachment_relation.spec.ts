@@ -100,6 +100,7 @@ test.group("Lucid attachment relations", (group) => {
   });
 
   group.each.setup(async () => {
+    await database.from("adonis_attachment_links").delete();
     await database.from("adonis_attachments").delete();
     await database.from("relation_users").delete();
     removed = [];
@@ -337,6 +338,54 @@ test.group("Lucid attachment relations", (group) => {
       () => user.avatar.get(),
       /require a persisted Lucid model/,
     );
+  });
+
+  test("rolls back a new owner and all staged fields when a later attachment fails", async ({ assert }) => {
+    const user = new RelationUser();
+    user.id = 'atomic-user';
+    user.name = 'atomic-user';
+    const draft = createDraft('gallery.txt');
+    user.gallery.add(draft);
+    user.avatar.attachExisting('missing-blob');
+    await assert.rejects(() => user.save(), /was not found/);
+    assert.isNull(await RelationUser.find('atomic-user'));
+    assert.isEmpty(await AttachmentModel.all());
+    assert.isFalse(user.$isPersisted);
+    assert.isFalse(draft.isPersisted);
+    assert.isTrue(user.gallery.hasPending);
+    assert.isTrue(user.avatar.hasPending);
+    user.avatar.set(createDraft('avatar.txt'));
+    await user.save();
+    assert.lengthOf(await user.gallery.all(), 1);
+    assert.isNotNull(await user.avatar.get());
+  });
+
+  test("keeps owner updates atomic when an attachment failure is caught inside a transaction", async ({ assert }) => {
+    const user = await createUser();
+    await database.transaction(async (trx) => {
+      user.useTransaction(trx);
+      user.name = 'changed';
+      user.avatar.attachExisting('missing-blob');
+      await assert.rejects(() => user.save(), /was not found/);
+    });
+    assert.equal((await RelationUser.findOrFail(user.id)).name, user.id);
+    assert.isTrue(user.avatar.hasPending);
+  });
+
+  test("rolls back owner deletion when attachment deletion fails", async ({ assert }) => {
+    const user = await createUser();
+    user.avatar.set(createDraft('avatar.txt'));
+    await user.save();
+    await database.rawQuery("CREATE TRIGGER fail_delete BEFORE DELETE ON adonis_attachment_links BEGIN SELECT RAISE(ABORT, 'delete failed'); END");
+    try {
+      await assert.rejects(() => user.delete(), /delete failed/);
+      assert.isNotNull(await RelationUser.find(user.id));
+      assert.isFalse(user.$isDeleted);
+      assert.isNotNull(await user.avatar.get());
+      assert.isEmpty(removed);
+    } finally {
+      await database.rawQuery('DROP TRIGGER fail_delete');
+    }
   });
 
   test("uses the owner transaction and cleans up a new file after rollback", async ({

@@ -25,6 +25,34 @@ This creates two tables (see [Core concepts](/guide/concepts#the-blob-vs-link-sp
 - **`adonis_attachment_links`** - the polymorphic links (`attachable_type`, `attachable_id`,
   `field`, `owner_key`, `position`, `attachment_id`).
 
+Referenced blobs are protected by a restrictive foreign key. Delete links through the
+relation API before deleting an unreferenced blob; deleting a blob directly must not erase
+another owner's links. Only original blobs can be reused with `attachExisting`/`addExisting`.
+
+### Upgrade an existing v6 schema
+
+Older v6 tables used cascading deletion for `attachment_id`. Add a migration to replace
+that foreign key, preserving both tables and their data:
+
+```ts
+import { BaseSchema } from '@adonisjs/lucid/schema'
+import { AttachmentSchemaService } from '@jrmc/adonis-attachment/lucid'
+
+export default class extends BaseSchema {
+  async up() {
+    await new AttachmentSchemaService(this.db.getWriteClient()).protectReferencedBlobs()
+  }
+
+  async down() {
+    await new AttachmentSchemaService(this.db.getWriteClient()).restoreCascadingBlobDeletion()
+  }
+}
+```
+
+For custom table names, pass `{ tableName: 'media_attachments' }` as the second constructor
+argument. Fresh installations already use the protected foreign key. No lock table or
+additional dependency is needed.
+
 ## Single attachment - `@attachment`
 
 ```ts
@@ -73,8 +101,10 @@ await user.save()
 Relation mutations are staged on the model and applied only after `save()` succeeds - so
 you can even stage an attachment before the record exists, and it is written once the
 insert completes. To flush without a full `save()`, call `await user.avatar.persist()`;
-that path does require an already persisted owner. If `save()` fails, no file or relation
-row is written and the staged mutation remains available for a later retry.
+that path does require an already persisted owner. A failure before commit rolls back the
+model and attachment rows, cleans up new files, and retains staged mutations for retry.
+An `AttachmentPostCommitError` instead means the database changes have already committed;
+do not replay the mutation or delete its newly referenced files.
 :::
 
 ### Custom polymorphic type
@@ -202,6 +232,11 @@ content-based deduplication - reuse is always explicit.
 
 ## Transactions
 
+`save()` with staged attachments, explicit relation `persist()`, and model `delete()` run
+transactionally. A failure in a later attachment field also rolls back earlier fields and
+the owner write. Existing transactions are joined through savepoints, so catching a failed
+operation inside your transaction does not retain its partial SQL writes.
+
 When your model runs inside a Lucid transaction, the staged mutations flushed on `save()`
 **join it** automatically:
 
@@ -226,10 +261,147 @@ persisting it so the integration can protect the previous file before any write.
 
 Lucid retains draft bytes until persistence succeeds (or until the transaction commits).
 After an insertion failure or rollback, cleanup restores the draft to an unpersisted state,
-so it can be retried. After rollback, reload the owner and stage the draft again on its relation.
+so it can be retried. Staged mutations are restored on rollback; do not append the same
+collection inputs a second time to that instance. Reloading the owner clears the need to
+reuse its in-memory transaction state; stage inputs on a fresh instance when doing so.
 
 Deleting the owning record triggers an `after('delete')` hook that removes all of its
 links (and any blobs that become unreferenced).
+Bulk query-builder deletes and raw SQL bypass model hooks; they must arrange owner-link
+cleanup explicitly.
+
+### Concurrent mutations
+
+Relation mutations lock the existing owner row before reading and changing attachment
+state. PostgreSQL/MySQL use row locks; SQLite reserves its writer with an initial write.
+An empty collection is protected too, because its owner already exists. Operations on
+different fields of the same owner may wait for each other. Keep transactions short;
+file persistence currently happens while the transaction is open.
+
+Standalone `LucidAttachmentStore` and `LucidAttachmentLifecycleService` mutations also
+open transactions. Supply `owner.model` for a Lucid owner, or identify an existing row
+without requiring a model:
+
+```ts
+const owner = {
+  type: 'users', id: String(userId), field: 'gallery',
+  lock: { table: 'users', column: 'id', value: userId },
+}
+await store.createCollectionItem(owner, attachment)
+// When calling remove directly, supply the same owner descriptor:
+await store.remove(link, owner)
+```
+
+The lock descriptor is trusted server configuration and must identify the same owner row
+for every writer. SQLite also supports owners without a model or lock descriptor by
+reserving its database writer. Other engines reject that configuration before mutation:
+there is no portable existing row to lock for a completely external, empty collection.
+Reads and variant generation do not need an owner descriptor. Lock timeouts, deadlocks,
+or serialization errors can still require retrying the surrounding transaction.
+
+### Database integration tests
+
+From the package checkout, run the dedicated server suite with Docker or Podman:
+
+```sh
+npm run test:databases
+# Or on a machine using Podman:
+CONTAINER_RUNTIME=podman npm run test:databases
+# All implemented targets, or a specific selection:
+CONTAINER_RUNTIME=podman npm run test:databases -- all
+CONTAINER_RUNTIME=podman npm run test:databases -- mariadb sqlite3 libsql libsql-server
+```
+
+By default, the runner starts disposable PostgreSQL 18.4 and MySQL 8.4 containers, binds random
+localhost ports, and removes its containers and anonymous volumes after each run.
+Images remain cached. It does not connect to an application's database. Test drivers
+are development dependencies, not additional runtime dependencies.
+
+The same 11 tests run on each server: schema creation and foreign-key upgrades,
+blob/JSON/BIGINT round trips, collection ordering, concurrent inserts using either an
+existing Lucid owner or `owner.lock`, singular uniqueness, shared blobs, concurrent
+variant replacement, nested rollback, and effects deferred to the outer transaction.
+PostgreSQL, MySQL, and MariaDB concurrent tests use a pool of up to eight connections.
+The SQLite-family matrix uses one connection: its simultaneous calls test transaction
+sequencing, not contention between independent clients. The default suite additionally
+tests `better-sqlite3` with two workers and separate connections to one file.
+
+Additional targets are `mariadb` (11.4 image), `better-sqlite3`, `sqlite3`, `libsql`
+(local `file:` mode, which delegates to `sqlite3`), and `libsql-server` (a real HTTP
+server using `ghcr.io/tursodatabase/libsql-server:latest`). The LibSQL server image is
+not version-pinned; the suite reports the SQL engine version on each run. It does not
+validate Turso's managed service, replicas, or distributed writes.
+
+This suite has passed on PostgreSQL 18.4, MySQL 8.4.11 (InnoDB), and MariaDB 11.4.13,
+with their default isolation levels. The default `npm test` suite remains independent of containers and
+covers SQLite and the other package features. These targeted server tests do not certify
+every feature on every database: other engines, network failures, process crashes,
+and alternative isolation levels require separate validation.
+
+SQLite foreign-key enforcement must be enabled on **every connection**, before opening
+transactions. The `sqlite3` driver does not enable it by default. The single-connection
+test harness runs `PRAGMA foreign_keys = ON`; applications should configure their pool's
+`afterCreate` hook (for the callback-based `sqlite3` driver):
+
+```ts
+pool: {
+  afterCreate(connection, done) {
+    connection.run('PRAGMA foreign_keys = ON', (error) => done(error, connection))
+  },
+},
+```
+
+Without foreign-key enforcement, the schema's `RESTRICT` and `CASCADE` protections do
+not apply. Verify `PRAGMA foreign_keys` returns `1` on the actual application connection.
+
+SQL Server and Oracle can be tested explicitly after accepting the applicable licenses:
+
+```sh
+CONTAINER_RUNTIME=podman npm run test:databases -- mssql oracle
+```
+
+These two targets are excluded from `-- all`: selecting `mssql` starts SQL Server
+Developer with `ACCEPT_EULA=Y`; selecting `oracle` runs Oracle Database Free under its
+license terms. Both use disposable containers, random localhost ports, and test-only
+credentials. Oracle gets a dedicated user and tablespace; SQL Server gets a dedicated
+test database. The tags are `2022-latest` and `latest-lite`, respectively; actual server
+versions are printed during the run.
+
+**Neither engine is currently compatible with the generated attachment schema.**
+Real-server runs reproduced these blockers:
+
+| Engine tested | Schema failure |
+| --- | --- |
+| SQL Server 2022 Developer 16.0.4275.2 | The self-referencing `parent_id` foreign key with `ON DELETE CASCADE` is rejected as a potential cycle or multiple cascade path. |
+| Oracle AI Database 26ai Free 23.26.3.0.0 | The link foreign key's `ON DELETE RESTRICT` fails with `ORA-02000: missing CASCADE keyword`. |
+
+The setup failure is reported as a failed run, not skipped or accepted. The 11 functional
+tests cannot execute until schema compatibility is implemented. Do not infer that row
+locking, file cleanup, or nested transactions are validated on these engines. Supporting
+them requires preserving the existing deletion guarantees with dialect-appropriate SQL
+and retesting; simply removing foreign keys is not a solution.
+
+Redshift is not validated;
+in particular, the nested savepoints used by this integration are not supported by
+Redshift, so Lucid dialect availability alone does not establish compatibility.
+
+### Failures after commit
+
+File deletion and job scheduling happen after commit. A cleanup failure retains the new
+attachment. For transactions managed by the integration, `AttachmentPostCommitError`
+exposes individual failures in `errors`; an `AttachmentFileCleanupError` includes the
+failed file locations in `attachments`, so callers can retry their removal independently.
+Other post-commit callbacks are still attempted after one fails.
+
+`AttachmentCommitError` means the commit outcome could not be confirmed (for example,
+the connection failed during commit). Files are retained because SQL may have committed.
+Reload database state before retrying the mutation or deciding which files to remove.
+
+When the application supplies the outer Lucid transaction, its commit/rollback hooks own
+these effects. Lucid may swallow hook exceptions; do not rely on `trx.commit()` rejecting
+to detect storage or queue failures. Report failures in your storage/queue adapters in
+that case. Database and filesystem changes are not a distributed transaction: process
+crashes and failed cleanup still require application-level reconciliation.
 
 ## Regenerate variants
 

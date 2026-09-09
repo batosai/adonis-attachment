@@ -206,6 +206,39 @@ test.group('Lucid SQLite integration', (group) => {
     assert.isNull(result)
   })
 
+  test('rejects owner links to variants and protects referenced blobs in SQL', async ({ assert }) => {
+    const store = new LucidAttachmentStore()
+    const original = await store.createOriginal(owner, makeAttachment('original', 'original.jpg'))
+    const variant = await store.createVariant(original.attachment, 'thumb', makeAttachment('variant', 'variant.jpg'))
+    const other = { ...owner, id: 'other' }
+    await assert.rejects(() => store.createOriginalLink(other, variant.id), /Only original attachments/)
+    await assert.rejects(() => store.createCollectionLink(other, variant.id), /Only original attachments/)
+    await assert.rejects(() => AttachmentModel.query().where('id', original.attachmentId).delete(), /FOREIGN KEY/)
+    assert.isNotNull(await store.findOriginal(owner))
+    assert.isNotNull(await store.findById(variant.id))
+  })
+
+  test('preserves legacy variant links when removing their original would cascade', async ({ assert }) => {
+    const store = new LucidAttachmentStore()
+    const original = await store.createOriginal(owner, makeAttachment('original', 'original.jpg'))
+    await store.createVariant(original.attachment, 'thumb', makeAttachment('variant', 'variant.jpg'))
+    await AttachmentLinkModel.create({ id: 'legacy-link', attachableType: 'users', attachableId: 'other', field: 'avatar', attachmentId: 'variant' })
+    await assert.rejects(() => store.remove(original), /variants have owner links/)
+    assert.isNotNull(await store.findOriginal(owner))
+    assert.isNotNull(await AttachmentLinkModel.find('legacy-link'))
+  })
+
+  test('serializes concurrent replacements of a variant including its initial creation', async ({ assert }) => {
+    const store = new LucidAttachmentStore()
+    const original = await store.createOriginal(owner, makeAttachment('original', 'original.jpg'))
+    const results = await Promise.all(['a', 'b'].map((id) =>
+      store.replaceVariant(original.attachment, 'thumb', makeAttachment(id, `${id}.jpg`))
+    ))
+    assert.lengthOf(await store.listVariants(original.attachmentId), 1)
+    assert.equal(results[0]!.variant.id, results[1]!.variant.id)
+    assert.lengthOf(results.filter((result) => result.replaced), 1)
+  })
+
   test('prevents two original attachments for the same owner field', async ({ assert }) => {
     const store = new LucidAttachmentStore()
     await store.createOriginal(owner, makeAttachment('first-id', 'users/42/first.jpg'))

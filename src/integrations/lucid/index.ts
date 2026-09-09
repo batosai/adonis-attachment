@@ -43,9 +43,11 @@ export {
 } from "./persistence/lucid_attachment_store.js";
 export {
   LucidAttachmentLifecycleService,
+  AttachmentFileCleanupError,
   type AttachmentFileService,
   type LucidAttachmentPersistence,
 } from "./persistence/lucid_attachment_lifecycle_service.js";
+export { AttachmentCommitError, AttachmentPostCommitError } from "./persistence/attachment_transaction.js";
 export {
   LucidVariantGenerationService,
   PersistedAttachmentNotFoundError,

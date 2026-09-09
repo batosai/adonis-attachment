@@ -9,15 +9,16 @@ import { Database } from '@adonisjs/lucid/database'
 
 import { AttachmentModel } from '../../src/integrations/lucid/models/attachment_model.js'
 import { AttachmentLinkModel } from '../../src/integrations/lucid/models/attachment_link_model.js'
+import { AttachmentSchemaService } from '../../src/integrations/lucid/schema/attachment_schema_service.js'
 
-export async function createLucidTestDatabase(): Promise<Database> {
+export async function createLucidTestDatabase(options: { filename?: string; createSchema?: boolean } = {}): Promise<Database> {
   const database = new Database(
     {
       connection: 'sqlite',
       connections: {
         sqlite: {
           client: 'better-sqlite3',
-          connection: { filename: ':memory:' },
+          connection: { filename: options.filename ?? ':memory:' },
           useNullAsDefault: true,
         },
       },
@@ -35,38 +36,9 @@ export async function createLucidTestDatabase(): Promise<Database> {
   AttachmentModel.useAdapter(database.modelAdapter())
   AttachmentLinkModel.useAdapter(database.modelAdapter())
 
-  await database.connection().schema.createTable('adonis_attachments', (table) => {
-    table.string('id').primary()
-    table.string('parent_id').nullable().references('id').inTable('adonis_attachments').onDelete('CASCADE')
-    table.string('variant_key').nullable()
-    table.string('disk').notNullable()
-    table.string('path').notNullable()
-    table.string('name').notNullable()
-    table.string('original_name').notNullable()
-    table.string('mime_type').notNullable()
-    table.string('extname').notNullable()
-    table.bigInteger('size').unsigned().notNullable()
-    table.string('blurhash').nullable()
-    table.json('metadata').nullable()
-    table.timestamp('created_at').notNullable()
-    table.timestamp('updated_at').notNullable()
-    table.index(['parent_id'])
-    table.unique(['parent_id', 'variant_key'])
-  })
-
-  await database.connection().schema.createTable('adonis_attachment_links', (table) => {
-    table.string('id').primary()
-    table.string('attachable_type').notNullable()
-    table.string('attachable_id').notNullable()
-    table.string('field').notNullable()
-    table.string('owner_key', 64).nullable().unique()
-    table.integer('position').unsigned().nullable()
-    table.string('attachment_id').notNullable().references('id').inTable('adonis_attachments').onDelete('CASCADE')
-    table.timestamp('created_at').notNullable()
-    table.timestamp('updated_at').notNullable()
-    table.index(['attachable_type', 'attachable_id', 'field'])
-    table.index(['attachment_id'])
-  })
+  if (options.createSchema !== false) {
+    await new AttachmentSchemaService(database.connection().getWriteClient()).createTables()
+  }
 
   return database
 }

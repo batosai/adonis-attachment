@@ -22,6 +22,14 @@ import type { AttachmentEventContext } from '../../../events/attachment_events.j
 
 export type AttachmentFileService = Pick<AttachmentService, 'create' | 'remove'> &
   Partial<Pick<AttachmentService, 'createDraft' | 'getVariantKeys' | 'getVariantMetadataEnabled' | 'getMetadataMode' | 'scheduleMetadataExtraction' | 'scheduleVariantGeneration'>>
+
+/** Retains the locations needed to retry storage cleanup after SQL has committed. */
+export class AttachmentFileCleanupError extends AggregateError {
+  constructor(readonly attachments: readonly Attachment[], errors: unknown[]) {
+    super(errors, 'Attachment file cleanup failed')
+    this.name = 'AttachmentFileCleanupError'
+  }
+}
 export type LucidAttachmentPersistence = Pick<
   LucidAttachmentStore,
   | 'createOriginal'
@@ -54,6 +62,17 @@ export class LucidAttachmentLifecycleService {
     this.#store = store
   }
 
+  get #needsTransaction(): boolean {
+    return this.#store instanceof LucidAttachmentStore && !this.#store.isScoped
+  }
+
+  transaction<T>(owner: AttachmentOwner, callback: (service: LucidAttachmentLifecycleService) => Promise<T>): Promise<T> {
+    if (this.#store instanceof LucidAttachmentStore && !this.#store.isScoped) {
+      return this.#store.transaction(owner, (store) => callback(new LucidAttachmentLifecycleService(this.#attachments, store)))
+    }
+    return callback(this)
+  }
+
   get(owner: AttachmentOwner): Promise<AttachmentLinkModel | null> {
     return this.#store.findOriginal(owner)
   }
@@ -63,6 +82,7 @@ export class LucidAttachmentLifecycleService {
     input: CreateAttachmentInput | AttachmentDraft,
     options?: AttachmentPersistenceOptions<any>
   ): Promise<AttachmentLinkModel> {
+    if (this.#needsTransaction) return this.transaction(owner, (service) => service.attach(owner, input, options))
     const persisted = await this.#persist(owner, input, options)
 
     let original: AttachmentLinkModel
@@ -70,7 +90,7 @@ export class LucidAttachmentLifecycleService {
     try {
       original = await this.#store.createOriginal(owner, persisted.attachment)
     } catch (error) {
-      await this.#discardPersisted(persisted)
+      await this.#discardFailed(persisted)
       throw error
     }
 
@@ -86,6 +106,7 @@ export class LucidAttachmentLifecycleService {
     input: CreateAttachmentInput | AttachmentDraft,
     options?: AttachmentPersistenceOptions<any>
   ): Promise<AttachmentLinkModel> {
+    if (this.#needsTransaction) return this.transaction(owner, (service) => service.replace(owner, input, options))
     const previous = await this.#store.findOriginal(owner)
 
     if (!previous) {
@@ -100,15 +121,17 @@ export class LucidAttachmentLifecycleService {
       await this.#store.releaseOwner(previous)
       current = await this.#store.createOriginal(owner, persisted.attachment)
     } catch (error) {
+      if (persisted.managed) throw error
       await this.#store.restoreOwner(previous).catch(() => undefined)
       await this.#discardPersisted(persisted)
       throw error
     }
 
+    let removed: AttachmentModel[]
     try {
-      const removed = await this.#store.remove(previous)
-      await this.#removeOnCommit(owner, removed.map((item) => item.toAttachment()))
+      removed = await this.#store.remove(previous)
     } catch (error) {
+      if (persisted.managed) throw error
       await this.#store.remove(current).catch(() => undefined)
       await this.#store.restoreOwner(previous).catch(() => undefined)
       await this.#discardPersisted(persisted)
@@ -116,6 +139,7 @@ export class LucidAttachmentLifecycleService {
     }
 
     this.#completePersistence(owner, persisted)
+    await this.#removeOnCommit(owner, removed.map((item) => item.toAttachment()))
     await this.#scheduleVariants(owner, persisted, options)
     await this.#scheduleMetadata(owner, persisted, options)
 
@@ -123,6 +147,7 @@ export class LucidAttachmentLifecycleService {
   }
 
   async detach(owner: AttachmentOwner): Promise<void> {
+    if (this.#needsTransaction) return this.transaction(owner, (service) => service.detach(owner))
     const original = await this.#store.findOriginal(owner)
 
     if (!original) {
@@ -140,6 +165,7 @@ export class LucidAttachmentLifecycleService {
   }
 
   async purgeOwner(owner: AttachmentOwner): Promise<void> {
+    if (this.#needsTransaction) return this.transaction(owner, (service) => service.purgeOwner(owner))
     for (const link of await this.#store.listOwnerLinks(owner)) {
       const removed = await this.#store.remove(link)
       await this.#removeOnCommit(owner, removed.map((attachment) => attachment.toAttachment()))
@@ -152,6 +178,7 @@ export class LucidAttachmentLifecycleService {
     position?: number,
     options?: AttachmentPersistenceOptions<any>
   ): Promise<AttachmentLinkModel> {
+    if (this.#needsTransaction) return this.transaction(owner, (service) => service.add(owner, input, position, options))
     const created = await this.#add(owner, input, position, options)
     this.#completePersistence(owner, created.persisted)
     await this.#scheduleVariants(owner, created.persisted, options)
@@ -177,12 +204,13 @@ export class LucidAttachmentLifecycleService {
       )
       return { item, persisted }
     } catch (error) {
-      await this.#discardPersisted(persisted)
+      await this.#discardFailed(persisted)
       throw error
     }
   }
 
   attachExisting(owner: AttachmentOwner, attachmentId: string): Promise<AttachmentLinkModel> {
+    if (this.#needsTransaction) return this.transaction(owner, (service) => service.attachExisting(owner, attachmentId))
     return this.#linkStore().createOriginalLink(owner, attachmentId)
   }
 
@@ -191,6 +219,7 @@ export class LucidAttachmentLifecycleService {
     attachmentId: string,
     position?: number
   ): Promise<AttachmentLinkModel> {
+    if (this.#needsTransaction) return this.transaction(owner, (service) => service.addExisting(owner, attachmentId, position))
     return this.#linkStore().createCollectionLink(owner, attachmentId, position)
   }
 
@@ -199,6 +228,7 @@ export class LucidAttachmentLifecycleService {
   }
 
   async removeCollectionItem(owner: AttachmentOwner, id: string): Promise<boolean> {
+    if (this.#needsTransaction) return this.transaction(owner, (service) => service.removeCollectionItem(owner, id))
     const item = await this.#collectionStore().findCollectionItem(owner, id)
 
     if (!item) {
@@ -210,6 +240,7 @@ export class LucidAttachmentLifecycleService {
   }
 
   async clearCollection(owner: AttachmentOwner): Promise<void> {
+    if (this.#needsTransaction) return this.transaction(owner, (service) => service.clearCollection(owner))
     for (const item of await this.#collectionStore().listCollection(owner)) {
       await this.#detachCollectionItem(owner, item)
     }
@@ -220,6 +251,7 @@ export class LucidAttachmentLifecycleService {
     inputs: readonly (CreateAttachmentInput | AttachmentDraft)[],
     options?: AttachmentPersistenceOptions<any>
   ): Promise<AttachmentLinkModel[]> {
+    if (this.#needsTransaction) return this.transaction(owner, (service) => service.replaceCollection(owner, inputs, options))
     const previous = await this.#collectionStore().listCollection(owner)
     const protectedFiles = previous.map((item) => item.toAttachment())
     const created: Array<{ item: AttachmentLinkModel; persisted: PersistedAttachment }> = []
@@ -230,10 +262,11 @@ export class LucidAttachmentLifecycleService {
         protectedFiles.push(created.at(-1)!.persisted.attachment)
       }
     } catch (error) {
-      await Promise.all(created.map(async ({ item, persisted }) => {
+      for (const { item, persisted } of created) {
+        if (persisted.managed) continue
         await this.#collectionStore().removeCollectionItem(owner, item)
         await this.#discardPersisted(persisted)
-      }))
+      }
       throw error
     }
 
@@ -258,6 +291,7 @@ export class LucidAttachmentLifecycleService {
     id: string,
     position: number
   ): Promise<AttachmentLinkModel[]> {
+    if (this.#needsTransaction) return this.transaction(owner, (service) => service.moveCollectionItem(owner, id, position))
     return this.#collectionStore().moveCollectionItem(owner, id, position)
   }
 
@@ -270,11 +304,25 @@ export class LucidAttachmentLifecycleService {
   }
 
   async #discardPersisted(persisted: PersistedAttachment): Promise<void> {
-    await this.#removeStoredFile(persisted.attachment)
-    persisted.checkpoint?.rollback()
+    try {
+      await this.#removeStoredFiles([persisted.attachment])
+    } finally {
+      persisted.checkpoint?.rollback()
+    }
+  }
+
+  async #discardFailed(persisted: PersistedAttachment): Promise<void> {
+    if (!persisted.managed) await this.#discardPersisted(persisted)
   }
 
   #completePersistence(owner: AttachmentOwner, persisted: PersistedAttachment): void {
+    if (persisted.managed) return
+    if (this.#store instanceof LucidAttachmentStore && this.#store.isScoped) {
+      persisted.managed = true
+      this.#store.afterRollback(() => this.#discardPersisted(persisted))
+      this.#store.afterCommit(() => persisted.checkpoint?.release())
+      return
+    }
     const transaction = getOwnerTransaction(owner)
 
     if (transaction) {
@@ -285,13 +333,24 @@ export class LucidAttachmentLifecycleService {
     }
   }
 
-  #removeStoredFiles(attachments: readonly Attachment[]): Promise<void> {
-    return Promise.all(attachments.map((attachment) => this.#removeStoredFile(attachment))).then(
-      () => undefined
-    )
+  async #removeStoredFiles(attachments: readonly Attachment[]): Promise<void> {
+    const results = await Promise.allSettled(attachments.map((attachment) => this.#removeStoredFile(attachment)))
+    const failed: Attachment[] = []
+    const errors: unknown[] = []
+    results.forEach((result, index) => {
+      if (result.status === 'rejected') {
+        failed.push(attachments[index]!)
+        errors.push(result.reason)
+      }
+    })
+    if (errors.length) throw new AttachmentFileCleanupError(failed, errors)
   }
 
   async #afterCommit(owner: AttachmentOwner, callback: () => Promise<void>): Promise<void> {
+    if (this.#store instanceof LucidAttachmentStore && this.#store.isScoped) {
+      this.#store.afterCommit(callback)
+      return
+    }
     const transaction = getOwnerTransaction(owner)
 
     if (transaction) {
@@ -372,7 +431,7 @@ export class LucidAttachmentLifecycleService {
       }
       const checkpoint = draft.retainForRollback()
       try {
-        return {
+        const persisted = {
           draft,
           checkpoint,
           attachment: await draft.persist({
@@ -381,13 +440,17 @@ export class LucidAttachmentLifecycleService {
             ...(protectedLocations ? { protectedLocations } : {}),
           }),
         }
+        if (this.#store instanceof LucidAttachmentStore && this.#store.isScoped) this.#completePersistence(owner, persisted)
+        return persisted
       } catch (error) {
         checkpoint.release()
         throw error
       }
     }
 
-    return { attachment: await this.#attachments.create(input as CreateAttachmentInput) }
+    const persisted = { attachment: await this.#attachments.create(input as CreateAttachmentInput) }
+    if (this.#store instanceof LucidAttachmentStore && this.#store.isScoped) this.#completePersistence(owner, persisted)
+    return persisted
   }
 
   async #scheduleVariants(
@@ -442,6 +505,7 @@ export class LucidAttachmentLifecycleService {
 }
 
 type PersistedAttachment = {
+  managed?: boolean
   attachment: Attachment
   draft?: AttachmentDraft
   checkpoint?: ReturnType<AttachmentDraft['retainForRollback']>

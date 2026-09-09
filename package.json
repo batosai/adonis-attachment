@@ -1,6 +1,6 @@
 {
   "name": "@jrmc/adonis-attachment",
-  "version": "6.0.0-alpha.3",
+  "version": "6.0.0-alpha.4",
   "type": "module",
   "description": "Next-generation attachment primitives for AdonisJS and standalone TypeScript applications",
   "repository": {
@@ -127,6 +127,7 @@
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
+    "test:databases": "tsc -p tsconfig.json && node bin/test-databases.mjs",
     "build": "npm run clean && tsc",
     "postbuild": "npm run copyfiles && npm run index:commands",
     "clean": "del-cli build",
@@ -147,6 +148,7 @@
     "@adonisjs/queue": "^0.6.2",
     "@japa/assert": "^4.2.0",
     "@japa/runner": "^4.5.0",
+    "@libsql/sqlite3": "^0.3.1",
     "@types/luxon": "^3.7.2",
     "@types/node": "^24.13.3",
     "better-sqlite3": "^12.11.1",
@@ -154,8 +156,13 @@
     "del-cli": "^7.0.0",
     "exifreader": "^4.41.3",
     "mermaid": "^11.16.0",
+    "mysql2": "^3.24.4",
+    "oracledb": "^7.0.1",
+    "pg": "^8.23.0",
     "prettier": "^3.9.5",
     "sharp": "^0.35.3",
+    "sqlite3": "^6.0.1",
+    "tedious": "^20.0.0",
     "typescript": "^5.9.3",
     "vitepress": "^1.6.4",
     "vitepress-plugin-mermaid": "^2.0.17"

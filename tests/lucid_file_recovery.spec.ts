@@ -10,6 +10,8 @@ import { LucidAttachmentLifecycleService } from '../src/integrations/lucid/persi
 import { createLucidTestDatabase } from './helpers/lucid_test_database.js'
 import { VariantGenerationService } from '../src/variants/variant_generation_service.js'
 import { LucidVariantGenerationService } from '../src/integrations/lucid/persistence/lucid_variant_generation_service.js'
+import { AttachmentPostCommitError } from '../src/integrations/lucid/persistence/attachment_transaction.js'
+import { AttachmentFileCleanupError } from '../src/integrations/lucid/persistence/lucid_attachment_lifecycle_service.js'
 
 const owner = { type: 'users', id: '42', field: 'avatar' }
 
@@ -107,11 +109,10 @@ test.group('Lucid file recovery', (group) => {
 
   test('rewrites the same draft when retried after a database failure', async ({ assert }) => {
     const pending = draft('retry')
-    const createOriginal = store.createOriginal.bind(store)
-    store.createOriginal = async () => { throw new Error('insert failed') }
-    await assert.rejects(() => lifecycle.attach(owner, pending), 'insert failed')
+    await database.rawQuery("CREATE TRIGGER fail_link BEFORE INSERT ON adonis_attachment_links BEGIN SELECT RAISE(ABORT, 'insert failed'); END")
+    await assert.rejects(() => lifecycle.attach(owner, pending), /insert failed/)
     assert.isFalse(pending.isPersisted)
-    store.createOriginal = createOriginal
+    await database.rawQuery('DROP TRIGGER fail_link')
     const result = await lifecycle.attach(owner, pending)
     assert.equal(Buffer.from(await service.read(result.toAttachment())).toString(), 'retry')
     assert.isTrue(pending.isPersisted)
@@ -131,15 +132,10 @@ test.group('Lucid file recovery', (group) => {
 
   test('retries every draft after a collection replacement insertion fails', async ({ assert }) => {
     const drafts = [draft('first'), draft('second')]
-    const createCollectionItem = store.createCollectionItem.bind(store)
-    let calls = 0
-    store.createCollectionItem = async (...args) => {
-      if (++calls === 2) throw new Error('second insert failed')
-      return createCollectionItem(...args)
-    }
-    await assert.rejects(() => lifecycle.replaceCollection(owner, drafts), 'second insert failed')
+    await database.rawQuery("CREATE TRIGGER fail_second BEFORE INSERT ON adonis_attachment_links WHEN (SELECT COUNT(*) FROM adonis_attachment_links) = 1 BEGIN SELECT RAISE(ABORT, 'second insert failed'); END")
+    await assert.rejects(() => lifecycle.replaceCollection(owner, drafts), /second insert failed/)
     assert.isTrue(drafts.every((item) => !item.isPersisted))
-    store.createCollectionItem = createCollectionItem
+    await database.rawQuery('DROP TRIGGER fail_second')
     const items = await lifecycle.replaceCollection(owner, drafts)
     assert.deepEqual(await Promise.all(items.map(async (item) =>
       Buffer.from(await service.read(item.toAttachment())).toString()
@@ -157,8 +153,8 @@ test.group('Lucid file recovery', (group) => {
 
   test('preserves a same-name file when replacement insertion fails', async ({ assert }) => {
     const first = await lifecycle.attach(owner, draft('old'))
-    store.createOriginal = async () => { throw new Error('insert failed') }
-    await assert.rejects(() => lifecycle.replace(owner, draft('new')), 'insert failed')
+    await database.rawQuery("CREATE TRIGGER fail_link BEFORE INSERT ON adonis_attachment_links BEGIN SELECT RAISE(ABORT, 'insert failed'); END")
+    await assert.rejects(() => lifecycle.replace(owner, draft('new')), /insert failed/)
     assert.equal((await store.findOriginal(owner))?.attachmentId, first.attachmentId)
     assert.equal(Buffer.from(await service.read(first.toAttachment())).toString(), 'old')
   })
@@ -173,5 +169,26 @@ test.group('Lucid file recovery', (group) => {
     assert.equal((await store.findOriginal(owner))?.attachmentId, first.attachmentId)
     assert.equal(Buffer.from(await service.read(first.toAttachment())).toString(), 'old')
     await assert.rejects(() => service.read(second.toAttachment()))
+  })
+
+  test('keeps the replacement and exposes failed cleanup locations after commit', async ({ assert }) => {
+    const first = await lifecycle.attach(owner, draft('old'))
+    const remove = service.remove.bind(service)
+    service.remove = async (attachment) => {
+      if (attachment.id === first.attachmentId) throw new Error('storage unavailable')
+      await remove(attachment)
+    }
+    let failure: unknown
+    try { await lifecycle.replace(owner, draft('new')) } catch (error) { failure = error }
+    assert.instanceOf(failure, AttachmentPostCommitError)
+    const cleanup = (failure as AttachmentPostCommitError).errors[0] as AttachmentFileCleanupError
+    assert.instanceOf(cleanup, AttachmentFileCleanupError)
+    assert.equal(cleanup.attachments[0]!.id, first.attachmentId)
+    const current = await store.findOriginal(owner)
+    assert.isNotNull(current)
+    assert.equal(Buffer.from(await service.read(current!.toAttachment())).toString(), 'new')
+    assert.isNull(await store.findById(first.attachmentId))
+    await remove(cleanup.attachments[0]!)
+    await assert.rejects(() => service.read(first.toAttachment()))
   })
 })

@@ -66,4 +66,23 @@ test.group('AttachmentSchemaService', (group) => {
 
     assert.isFalse(await database.connection().schema.hasColumn(tableName, 'blurhash'))
   })
+
+  test('upgrades and rolls back the blob foreign key without losing links', async ({ assert }) => {
+    const service = new AttachmentSchemaService(database.connection().getWriteClient())
+    await service.restoreCascadingBlobDeletion()
+    await database.table('adonis_attachments').insert({
+      id: 'blob', disk: 'fs', path: 'file.txt', name: 'file.txt', original_name: 'file.txt',
+      mime_type: 'text/plain', extname: 'txt', size: 1, created_at: '2026-01-01', updated_at: '2026-01-01',
+    })
+    await database.table('adonis_attachment_links').insert({
+      id: 'link', attachment_id: 'blob', attachable_type: 'users', attachable_id: '1', field: 'avatar',
+      created_at: '2026-01-01', updated_at: '2026-01-01',
+    })
+    await service.protectReferencedBlobs()
+    await assert.rejects(() => database.from('adonis_attachments').where('id', 'blob').delete(), /FOREIGN KEY/)
+    assert.isNotNull(await database.from('adonis_attachment_links').where('id', 'link').first())
+    await service.restoreCascadingBlobDeletion()
+    await database.from('adonis_attachments').where('id', 'blob').delete()
+    assert.isNull(await database.from('adonis_attachment_links').where('id', 'link').first())
+  })
 })

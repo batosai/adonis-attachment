@@ -61,11 +61,11 @@ export class AttachmentSchemaService {
       table.string('field').notNullable()
       table.string('owner_key', 64).nullable().unique()
       table.integer('position').unsigned().nullable()
-      table.uuid('attachment_id').notNullable().references('id').inTable(this.#tableName).onDelete('CASCADE')
+      table.uuid('attachment_id').notNullable().references('id').inTable(this.#tableName).onDelete('RESTRICT')
       table.timestamp('created_at').notNullable()
       table.timestamp('updated_at').notNullable()
 
-      table.index(['attachable_type', 'attachable_id', 'field'])
+      table.index(['attachable_type', 'attachable_id', 'field'], `${this.#linksTableName}_owner_index`)
       table.index(['attachment_id'])
     })
   }
@@ -81,6 +81,23 @@ export class AttachmentSchemaService {
   dropBlurhashColumn(): Promise<void> {
     return this.#connection.schema.table(this.#tableName, (table) => {
       table.dropColumn('blurhash')
+    })
+  }
+
+  /** Upgrade older v6 schemas so referenced blobs cannot be deleted by cascade. */
+  protectReferencedBlobs(): Promise<void> {
+    return this.#setLinkDeleteRule('RESTRICT')
+  }
+
+  /** Roll back protectReferencedBlobs without dropping attachment data. */
+  restoreCascadingBlobDeletion(): Promise<void> {
+    return this.#setLinkDeleteRule('CASCADE')
+  }
+
+  #setLinkDeleteRule(rule: 'RESTRICT' | 'CASCADE'): Promise<void> {
+    return this.#connection.schema.alterTable(this.#linksTableName, (table) => {
+      table.dropForeign(['attachment_id'])
+      table.foreign('attachment_id').references('id').inTable(this.#tableName).onDelete(rule)
     })
   }
 

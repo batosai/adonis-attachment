@@ -46,7 +46,16 @@ export class AttachmentModel extends BaseModel {
   @column()
   declare extname: string
 
-  @column()
+  @column({
+    consume(value: string | number) {
+      // PostgreSQL returns BIGINT as a string; keep Attachment.size numeric.
+      const size = Number(value)
+      if (!Number.isSafeInteger(size) || size < 0) {
+        throw new RangeError('Attachment size must be a non-negative safe integer')
+      }
+      return size
+    },
+  })
   declare size: number
 
   @column()

@@ -8,13 +8,15 @@
 import { randomUUID } from 'node:crypto'
 
 import type { TransactionClientContract } from '@adonisjs/lucid/types/database'
+import type { LucidRow, LucidModel } from '@adonisjs/lucid/types/model'
 
 import type { Attachment } from '../../../core/attachment.js'
 import { markAttachmentPersisted } from '../../../core/attachment_state.js'
 import { createAttachmentOwnerKey, type AttachmentOwner } from '../relations/attachment_owner.js'
 import { AttachmentLinkModel } from '../models/attachment_link_model.js'
 import { AttachmentModel } from '../models/attachment_model.js'
-import { AttachmentNotFoundError, AttachmentValidationError } from '../../../errors.js'
+import { AttachmentConfigurationError, AttachmentNotFoundError, AttachmentValidationError } from '../../../errors.js'
+import { attachmentTransaction, afterAttachmentCommit, afterAttachmentRollback } from './attachment_transaction.js'
 
 export type LucidAttachmentWithVariants = {
   original: AttachmentLinkModel
@@ -40,6 +42,43 @@ export class LucidAttachmentStore {
   readonly #linkModel: typeof AttachmentLinkModel
   readonly #client: TransactionClientContract | undefined
   readonly #createLinkId: () => string
+  #scoped = false
+
+  get isScoped(): boolean {
+    return this.#scoped
+  }
+
+  get #isSqlite(): boolean {
+    return ['sqlite3', 'better-sqlite3', 'libsql'].includes(this.#client?.dialect.name ?? '')
+  }
+
+  /** Serialize an owner's mutations, including when its collection is empty. */
+  async transaction<T>(
+    owner: AttachmentOwner,
+    callback: (store: LucidAttachmentStore, owner: AttachmentOwner) => Promise<T>
+  ): Promise<T> {
+    const run = async (client: TransactionClientContract) => {
+      const store = new LucidAttachmentStore(this.#blobModel, {
+        client, linkModel: this.#linkModel, createLinkId: this.#createLinkId,
+      })
+      store.#scoped = true
+      await store.#lockOwner(owner)
+      return callback(store, owner)
+    }
+    return attachmentTransaction(this.#client ?? this.#blobModel.$adapter.modelConstructorClient(this.#blobModel), run)
+  }
+
+  afterCommit(callback: () => void | Promise<void>): void {
+    afterAttachmentCommit(this.#client!, callback)
+  }
+
+  afterRollback(callback: () => void | Promise<void>): void {
+    afterAttachmentRollback(this.#client!, callback)
+  }
+
+  get client(): TransactionClientContract | undefined {
+    return this.#client
+  }
 
   constructor(
     blobModel: typeof AttachmentModel = AttachmentModel,
@@ -52,14 +91,10 @@ export class LucidAttachmentStore {
   }
 
   async createOriginal(owner: AttachmentOwner, attachment: Attachment): Promise<AttachmentLinkModel> {
+    if (!this.#scoped) return this.transaction(owner, (store) => store.createOriginal(owner, attachment))
     const blob = await this.#createBlob(attachment)
 
-    try {
-      return await this.#createLink(owner, blob, { ownerKey: createAttachmentOwnerKey(owner) })
-    } catch (error) {
-      await blob.delete().catch(() => undefined)
-      throw error
-    }
+    return this.#createLink(owner, blob, { ownerKey: createAttachmentOwnerKey(owner) })
   }
 
   async createCollectionItem(
@@ -67,20 +102,18 @@ export class LucidAttachmentStore {
     attachment: Attachment,
     position?: number
   ): Promise<AttachmentLinkModel> {
+    if (!this.#scoped) return this.transaction(owner, (store) => store.createCollectionItem(owner, attachment, position))
     const items = await this.listCollection(owner)
     const target = normalizePosition(position, items.length)
     const blob = await this.#createBlob(attachment)
 
-    try {
-      await this.#shiftCollection(items, target, 1)
-      return await this.#createLink(owner, blob, { position: target })
-    } catch (error) {
-      await blob.delete().catch(() => undefined)
-      throw error
-    }
+    await this.#shiftCollection(items, target, 1)
+    return this.#createLink(owner, blob, { position: target })
   }
 
   async createOriginalLink(owner: AttachmentOwner, attachmentId: string): Promise<AttachmentLinkModel> {
+    if (!this.#scoped) return this.transaction(owner, (store) => store.createOriginalLink(owner, attachmentId))
+    await this.#lockBlob(attachmentId)
     const blob = await this.#findBlobOrFail(attachmentId)
     return this.#createLink(owner, blob, { ownerKey: createAttachmentOwnerKey(owner) })
   }
@@ -90,6 +123,8 @@ export class LucidAttachmentStore {
     attachmentId: string,
     position?: number
   ): Promise<AttachmentLinkModel> {
+    if (!this.#scoped) return this.transaction(owner, (store) => store.createCollectionLink(owner, attachmentId, position))
+    await this.#lockBlob(attachmentId)
     const items = await this.listCollection(owner)
     const target = normalizePosition(position, items.length)
     const blob = await this.#findBlobOrFail(attachmentId)
@@ -103,6 +138,7 @@ export class LucidAttachmentStore {
     key: string,
     attachment: Attachment
   ): Promise<AttachmentModel> {
+    if (!this.#scoped) return this.#variantTransaction(original.id, (store) => store.createVariant(original, key, attachment))
     return this.#createBlob(attachment, { parentId: original.id, variantKey: key })
   }
 
@@ -115,6 +151,7 @@ export class LucidAttachmentStore {
     key: string,
     attachment: Attachment
   ): Promise<ReplacedLucidVariant> {
+    if (!this.#scoped) return this.#variantTransaction(original.id, (store) => store.replaceVariant(original, key, attachment))
     const existing = await this.#blobQuery()
       .where('parent_id', original.id)
       .where('variant_key', key)
@@ -186,6 +223,7 @@ export class LucidAttachmentStore {
     owner: AttachmentOwner,
     item: AttachmentLinkModel
   ): Promise<AttachmentModel[]> {
+    if (!this.#scoped) return this.transaction(owner, (store) => store.removeCollectionItem(owner, item))
     const removed = await this.remove(item)
     await this.#normalizeCollection(owner)
     return removed
@@ -196,6 +234,7 @@ export class LucidAttachmentStore {
     id: string,
     position: number
   ): Promise<AttachmentLinkModel[]> {
+    if (!this.#scoped) return this.transaction(owner, (store) => store.moveCollectionItem(owner, id, position))
     const items = await this.listCollection(owner)
     const source = items.findIndex((item) => item.id === id)
 
@@ -240,15 +279,21 @@ export class LucidAttachmentStore {
   /**
    * Deletes a link and returns blobs that became unreferenced and were removed.
    */
-  async remove(link: AttachmentLinkModel): Promise<AttachmentModel[]> {
-    const attachment = link.attachment ?? (await this.findById(link.attachmentId))
-    await link.delete()
+  async remove(link: AttachmentLinkModel, owner?: AttachmentOwner): Promise<AttachmentModel[]> {
+    if (!this.#scoped) return this.transaction(owner ?? { type: link.attachableType, id: link.attachableId, field: link.field }, (store) => store.remove(link))
+    await this.#lockBlob(link.attachmentId)
+    const attachment = await this.findById(link.attachmentId)
+    await this.#linkModel.query({ client: this.#client! }).where('id', link.id).delete()
 
     if (!attachment || (await this.#linkQuery().where('attachment_id', attachment.id).first())) {
       return []
     }
 
     const variants = await this.listVariants(attachment.id)
+    // Older installations may already have links directly referencing variants.
+    if (variants.length && await this.#linkQuery().whereIn('attachment_id', variants.map((variant) => variant.id)).first()) {
+      throw new AttachmentValidationError('Cannot remove an original while its variants have owner links')
+    }
     await attachment.delete()
 
     return [attachment, ...variants]
@@ -286,6 +331,10 @@ export class LucidAttachmentStore {
       throw new AttachmentNotFoundError(id)
     }
 
+    if (blob.parentId !== null) {
+      throw new AttachmentValidationError('Only original attachments can be linked to an owner')
+    }
+
     return blob
   }
 
@@ -315,13 +364,15 @@ export class LucidAttachmentStore {
   }
 
   #blobQuery() {
-    return this.#blobModel.query(this.#client ? { client: this.#client } : undefined)
+    const query = this.#blobModel.query(this.#client ? { client: this.#client } : undefined)
+    return this.#scoped && !this.#isSqlite ? query.forUpdate() : query
   }
 
   #linkQuery() {
-    return this.#linkModel
+    const query = this.#linkModel
       .query(this.#client ? { client: this.#client } : undefined)
       .preload('attachment')
+    return this.#scoped && !this.#isSqlite ? query.forUpdate() : query
   }
 
   async #shiftCollection(
@@ -340,17 +391,54 @@ export class LucidAttachmentStore {
   }
 
   async #reorderCollection(items: readonly AttachmentLinkModel[]): Promise<void> {
-    const offset = items.length + 1
-
-    for (const item of items) {
-      item.position = (item.position ?? 0) + offset
-      await item.save()
-    }
-
     for (const [position, item] of items.entries()) {
+      if (item.position === position) continue
       item.position = position
       await item.save()
     }
+  }
+
+  async #lockBlob(id: string): Promise<void> {
+    await this.#blobModel.query({ client: this.#client! }).where('id', id).update({ id })
+  }
+
+  #variantTransaction<T>(id: string, callback: (store: LucidAttachmentStore) => Promise<T>): Promise<T> {
+    return attachmentTransaction(this.#client ?? this.#blobModel.$adapter.modelConstructorClient(this.#blobModel), async (client) => {
+      const store = new LucidAttachmentStore(this.#blobModel, { client, linkModel: this.#linkModel })
+      store.#scoped = true
+      await store.#lockBlob(id)
+      await store.#findBlobOrFail(id)
+      return callback(store)
+    })
+  }
+
+  async #lockOwner(owner: AttachmentOwner): Promise<void> {
+    const client = this.#client!
+    const model = owner.model as LucidRow | undefined
+    if (model?.$getQueryFor) {
+      if (model.$isDeleted) return // Its DELETE already holds the row lock in the owner transaction.
+      const Model = model.constructor as LucidModel
+      const query = model.$getQueryFor('refresh', client)
+      if (this.#isSqlite) {
+        await model.$getQueryFor('update', client).update({ [Model.primaryKey]: model.$primaryKeyValue })
+      } else query.forUpdate()
+      if (!await query.first()) throw new AttachmentValidationError('Attachment owner no longer exists')
+      return
+    }
+    if (owner.lock) {
+      const { table, column, value } = owner.lock
+      const query = client.from(table).where(column, value)
+      if (this.#isSqlite) await query.clone().update({ [column]: value })
+      else query.forUpdate()
+      if (!await query.first()) throw new AttachmentValidationError('Attachment owner lock row does not exist')
+      return
+    }
+    if (this.#isSqlite) {
+      // Even an empty UPDATE reserves SQLite's writer before any collection read.
+      await client.from(this.#linkModel.table).whereRaw('1 = 0').update({ position: 0 })
+      return
+    }
+    throw new AttachmentConfigurationError('Concurrent attachment mutations require an owner model or owner.lock pointing to an existing row')
   }
 }
 

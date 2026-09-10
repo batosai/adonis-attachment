@@ -13,6 +13,7 @@ import type { Attachment } from '../../../core/attachment.js'
 import { AttachmentModel } from './attachment_model.js'
 import { AttachmentConfigurationError } from '../../../errors.js'
 import { attachmentDateTime } from './attachment_date_time.js'
+import { consumeAttachmentUuid } from './attachment_uuid.js'
 
 /**
  * Polymorphic relation between an application record and an attachment blob.
@@ -21,7 +22,7 @@ export class AttachmentLinkModel extends BaseModel {
   static table = 'adonis_attachment_links'
   static selfAssignPrimaryKey = true
 
-  @column({ isPrimary: true })
+  @column({ isPrimary: true, consume: consumeAttachmentUuid })
   declare id: string
 
   @column()
@@ -39,7 +40,7 @@ export class AttachmentLinkModel extends BaseModel {
   @column()
   declare position: number | null
 
-  @column()
+  @column({ consume: consumeAttachmentUuid })
   declare attachmentId: string
 
   @belongsTo(() => AttachmentModel, { foreignKey: 'attachmentId' })

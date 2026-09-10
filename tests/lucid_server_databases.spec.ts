@@ -434,7 +434,7 @@ if (
         );
       });
 
-      test("rolls back original and variant deletion together, then cascades on commit", async ({
+      test("rolls back original and variant deletion together, then removes both on commit", async ({
         assert,
       }) => {
         const store = new LucidAttachmentStore();
@@ -445,6 +445,7 @@ if (
           "thumb",
           makeAttachment(),
         );
+        assert.equal((await store.findById(variant.id))!.parentId, original.id);
         await assert.rejects(
           () =>
             store.transaction(owner, async (scoped) => {

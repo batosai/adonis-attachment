@@ -34,7 +34,8 @@ export class AttachmentSchemaService {
   createBlobsTable(): Promise<void> {
     return this.#connection.schema.createTable(this.#tableName, (table) => {
       table.uuid('id').primary()
-      table.uuid('parent_id').nullable().references('id').inTable(this.#tableName).onDelete('CASCADE')
+      const parentForeignKey = table.uuid('parent_id').nullable().references('id').inTable(this.#tableName)
+      parentForeignKey.onDelete(this.#isMssql ? 'NO ACTION' : 'CASCADE')
       table.string('variant_key').nullable()
       table.string('disk').notNullable()
       table.string('path').notNullable()
@@ -64,7 +65,7 @@ export class AttachmentSchemaService {
       table.string('owner_key', 64).nullable().unique()
       table.integer('position').unsigned().nullable()
       const attachmentForeignKey = table.uuid('attachment_id').notNullable().references('id').inTable(this.#tableName)
-      if (!this.#isOracle) attachmentForeignKey.onDelete('RESTRICT')
+      if (!this.#isOracle) attachmentForeignKey.onDelete(this.#isMssql ? 'NO ACTION' : 'RESTRICT')
       table.timestamp('created_at').notNullable()
       table.timestamp('updated_at').notNullable()
 
@@ -101,13 +102,17 @@ export class AttachmentSchemaService {
     return this.#connection.schema.alterTable(this.#linksTableName, (table) => {
       table.dropForeign(['attachment_id'])
       const foreignKey = table.foreign('attachment_id').references('id').inTable(this.#tableName)
-      if (rule === 'CASCADE' || !this.#isOracle) foreignKey.onDelete(rule)
+      if (rule === 'CASCADE' || !this.#isOracle) foreignKey.onDelete(rule === 'RESTRICT' && this.#isMssql ? 'NO ACTION' : rule)
     })
   }
 
   /** Oracle restricts referenced deletes by default and has no RESTRICT keyword. */
   get #isOracle(): boolean {
     return ['oracle', 'oracledb'].includes(this.#connection.client.config.client)
+  }
+
+  get #isMssql(): boolean {
+    return this.#connection.client.config.client === 'mssql'
   }
 
   dropTables(): Promise<void> {

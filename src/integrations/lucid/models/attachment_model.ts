@@ -11,6 +11,7 @@ import type { DateTime } from 'luxon'
 import type { Attachment } from '../../../core/attachment.js'
 import type { AttachmentMetadata } from '../../../media/media_metadata.js'
 import { attachmentDateTime } from './attachment_date_time.js'
+import { consumeAttachmentUuid } from './attachment_uuid.js'
 
 /**
  * Default Lucid model for a stored attachment blob.
@@ -20,10 +21,10 @@ export class AttachmentModel extends BaseModel {
   static table = 'adonis_attachments'
   static selfAssignPrimaryKey = true
 
-  @column({ isPrimary: true })
+  @column({ isPrimary: true, consume: consumeAttachmentUuid })
   declare id: string
 
-  @column()
+  @column({ consume: consumeAttachmentUuid })
   declare parentId: string | null
 
   @column()

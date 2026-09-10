@@ -291,6 +291,10 @@ export class LucidAttachmentStore {
     if (variants.length && await this.#first(this.#linkQuery().whereIn('attachment_id', variants.map((variant) => variant.id)))) {
       throw new AttachmentValidationError('Cannot remove an original while its variants have owner links')
     }
+    // SQL Server forbids the self-referencing cascade. Both deletes remain atomic.
+    if (this.#client?.dialect.name === 'mssql' && variants.length) {
+      await this.#blobModel.query({ client: this.#client }).where('parent_id', attachment.id).delete()
+    }
     await attachment.delete()
 
     return [attachment, ...variants]

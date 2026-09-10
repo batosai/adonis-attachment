@@ -53,6 +53,22 @@ test.group('AttachmentSchemaService', (group) => {
     } finally { await connection.destroy() }
   })
 
+  test('uses SQL Server NO ACTION without a self-referencing cascade', async ({ assert }) => {
+    const connection = knex({ client: 'mssql' })
+    try {
+      const service = new AttachmentSchemaService(connection)
+      const sql = (builder: Promise<void>) => (builder as unknown as Knex.SchemaBuilder).toSQL().map((query) => query.sql).join('\n')
+      const blobs = sql(service.createBlobsTable())
+      assert.match(blobs, /foreign key \(\[parent_id\]\).*on delete NO ACTION/i)
+      assert.notMatch(blobs, /on delete CASCADE/i)
+      for (const statements of [sql(service.createLinksTable()), sql(service.protectReferencedBlobs())]) {
+        assert.match(statements, /foreign key \(\[attachment_id\]\).*on delete NO ACTION/i)
+        assert.notMatch(statements, /on delete RESTRICT/i)
+      }
+      assert.match(sql(service.restoreCascadingBlobDeletion()), /on delete CASCADE/i)
+    } finally { await connection.destroy() }
+  })
+
   test('uses the AttachmentLinkModel default table name', async ({ assert }) => {
     const service = new AttachmentSchemaService(database.connection().getWriteClient())
 

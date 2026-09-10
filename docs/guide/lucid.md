@@ -323,7 +323,7 @@ existing Lucid owner or `owner.lock`, singular uniqueness, shared blobs, concurr
 variant replacement, nested rollback, and effects deferred to the outer transaction.
 They also cover timestamp instants, large JSON metadata, atomic original/variant
 deletion, and file lifecycle effects (using an in-memory storage double).
-PostgreSQL, MySQL, MariaDB, and Oracle concurrent tests use a pool of up to eight connections.
+PostgreSQL, MySQL, MariaDB, Oracle, and SQL Server concurrent tests use a pool of up to eight connections.
 The SQLite-family matrix uses one connection: its simultaneous calls test transaction
 sequencing, not contention between independent clients. The default suite additionally
 tests `better-sqlite3` with two workers and separate connections to one file.
@@ -393,17 +393,28 @@ existing metadata column and constraints before upgrading: changing an existing
 leave partial tables behind; do not drop tables containing application data to retry.
 Older Oracle versions and custom isolation levels have not been validated.
 
-**SQL Server remains incompatible with the generated schema** (unchanged by the Oracle adaptation):
+**SQL Server 2022 Developer 16.0.4275.2 passes the 14 tests.** Its integration uses:
 
-| Engine tested | Schema failure |
-| --- | --- |
-| SQL Server 2022 Developer 16.0.4275.2 | The self-referencing `parent_id` foreign key with `ON DELETE CASCADE` is rejected as a potential cycle or multiple cascade path. |
+- `ON DELETE NO ACTION` for both foreign keys. The foreign keys remain enforced;
+  the self-referencing cascade rejected by SQL Server is not generated.
+- Explicit deletion of variants before their original inside the store's transaction.
+  Both deletes roll back together, and shared or referenced blobs remain protected.
+  Use the store or lifecycle API: a direct SQL/model deletion of an original that still
+  has variants is rejected, rather than cascading automatically on this engine.
+- Native date bindings for the package's timestamps, preserving instants instead of
+  letting local date strings be interpreted as UTC.
+- Lowercase UUID consumption for the two package models, including their blob references,
+  because the SQL Server driver returns `UNIQUEIDENTIFIER` values in uppercase by default.
+  Application owner identifiers and global driver options are not changed.
 
-The SQL Server setup failure is reported as a failed run, not skipped or accepted. Its functional
-tests cannot execute until schema compatibility is implemented. Do not infer that row
-locking, file cleanup, or nested transactions are validated on SQL Server. Supporting
-it requires preserving the existing deletion guarantees with dialect-appropriate SQL
-and retesting; simply removing foreign keys is not a solution.
+Existing owner rows still provide the locks; no additional table or lock dependency is
+needed. Lucid/Knex's SQL Server row locks and nested transactions pass the concurrent
+insertion, variant replacement, nested rollback, and deferred file-effect tests.
+Application-owned datetime columns retain their own Lucid configuration.
+
+Validation covers fresh tables and link foreign-key upgrades. If you manually worked
+around the previously unsupported SQL Server schema, audit its existing constraints
+before upgrading. Other SQL Server versions and custom isolation levels have not been validated.
 
 Redshift is not validated;
 in particular, the nested savepoints used by this integration are not supported by

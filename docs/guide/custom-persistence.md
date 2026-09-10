@@ -66,6 +66,42 @@ Rebuild an `Attachment`-shaped object from your columns and pass it to
 `AttachmentService.read(attachment)` to get the bytes.
 :::
 
+## Shared lifecycle contracts (experimental branch)
+
+The `feat/json-persistence` branch starts by extracting a persistence-independent
+`AttachmentLifecycleService`, exported from `@jrmc/adonis-attachment/core` and the package
+root. This is infrastructure for additional adapters, **not an available JSON storage mode**.
+There is no new decorator option, data migration, job payload, or change to existing tables.
+
+`AttachmentPersistence<Entry, Record>` describes the operations consumed by this service.
+An `AttachmentRecord` provides `id` and `toAttachment()`; an `AttachmentEntry` additionally
+provides `attachmentId`. Adapters can return richer objects without losing their types.
+Collection operations and shared-file linking are separate optional capabilities.
+
+Official adapters must also implement the complete `AttachmentTransaction<Store>` contract:
+
+- `transaction(owner, callback)` locks the owner and passes a scoped store, preserving
+  an existing outer transaction rather than committing it prematurely.
+- `isScoped` identifies that managed scope.
+- `afterCommit` defers file deletion and scheduling until the outermost confirmed commit.
+- `afterRollback` cleans up newly written files only after confirmed rollback, never after
+  an uncertain commit outcome.
+
+The shared service uses these capabilities, not the adapter's class identity. A partial
+transaction implementation is rejected. Custom stores without any transaction capability
+retain their existing fallback behavior, but do not gain atomicity from this extraction.
+The legacy structural `owner.model.$trx` callback fallback remains for those stores;
+new adapters should implement the explicit transaction contract instead.
+
+`LucidAttachmentLifecycleService` remains available with its existing model-specific
+results and scoped service instances. It delegates to the shared implementation;
+`AttachmentFileCleanupError` is the same class through the core and Lucid exports.
+
+Remaining work on this branch: contextual attachment identity and resolution, JSON v5
+reading/writing, per-field adapter selection, worker/metadata/variant integration, and
+tests for mixed-mode applications. The current repository and jobs still resolve files
+by their table-backed IDs. Compatibility with simultaneous legacy v5 writers is not implied.
+
 ## Deferred metadata
 
 Metadata extraction does not require Lucid. In deferred mode, another ORM needs three pieces:

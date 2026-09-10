@@ -11,6 +11,7 @@ import type { TransactionClientContract } from '@adonisjs/lucid/types/database'
 import type { LucidRow, LucidModel } from '@adonisjs/lucid/types/model'
 
 import type { Attachment } from '../../../core/attachment.js'
+import type { AttachmentPersistence, AttachmentTransaction } from '../../../core/attachment_persistence.js'
 import { markAttachmentPersisted } from '../../../core/attachment_state.js'
 import { createAttachmentOwnerKey, type AttachmentOwner } from '../relations/attachment_owner.js'
 import { AttachmentLinkModel } from '../models/attachment_link_model.js'
@@ -37,7 +38,9 @@ export type LucidAttachmentStoreOptions = {
 /**
  * Persists immutable file blobs separately from their polymorphic owner links.
  */
-export class LucidAttachmentStore {
+export class LucidAttachmentStore implements
+  AttachmentPersistence<AttachmentLinkModel, AttachmentModel>,
+  AttachmentTransaction<LucidAttachmentStore> {
   readonly #blobModel: typeof AttachmentModel
   readonly #linkModel: typeof AttachmentLinkModel
   readonly #client: TransactionClientContract | undefined

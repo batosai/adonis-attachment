@@ -6,15 +6,9 @@
  */
 
 import { createHash } from 'node:crypto'
+import type { AttachmentOwner } from '../../../core/attachment_persistence.js'
 
-export type AttachmentOwner<Model = unknown> = {
-  type: string
-  id: string
-  field: string
-  model?: Model
-  /** Existing row to lock when using the store without a Lucid owner model. */
-  lock?: { table: string; column: string; value: string | number }
-}
+export type { AttachmentOwner } from '../../../core/attachment_persistence.js'
 
 /**
  * Produces the database key that enforces one original attachment per owner field.

@@ -32,6 +32,20 @@ export {
 } from './attachment_service.js'
 export { type AttachmentMetadataPersister } from './attachment_metadata_persister.js'
 export {
+  AttachmentLifecycleService,
+  AttachmentFileCleanupError,
+  type AttachmentFileService,
+} from './attachment_lifecycle_service.js'
+export {
+  type AttachmentOwner,
+  type AttachmentRecord,
+  type AttachmentEntry,
+  type AttachmentPersistence,
+  type AttachmentCollectionPersistence,
+  type AttachmentLinkPersistence,
+  type AttachmentTransaction,
+} from './attachment_persistence.js'
+export {
   type AttachmentBinaryConfig,
   type AttachmentBinariesConfig,
 } from '../media/binary_config.js'

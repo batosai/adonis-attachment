@@ -23,6 +23,7 @@ export const {
   LucidAttachmentMetadataPersister,
   LucidAttachmentStore,
   LucidAttachmentLifecycleService,
+  AttachmentFileCleanupError,
   LucidVariantGenerationService,
   PersistedAttachmentNotFoundError,
   createLucidAttachmentProcessor,

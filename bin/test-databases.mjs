@@ -171,6 +171,14 @@ for (const engine of engines.filter(
             "healthy"
           )
             throw new Error("Oracle is not ready");
+          // Health may turn green before the image finishes setting ORACLE_PWD.
+          const { default: oracledb } = await import("oracledb");
+          const probe = await oracledb.getConnection({
+            user: "system",
+            password: "Attachment_Test_42",
+            connectString: `127.0.0.1:${port}/FREEPDB1`,
+          });
+          await probe.close();
         } else if (engine.ready) command("exec", name, ...engine.ready);
         else {
           const response = await fetch(`http://127.0.0.1:${port}/health`, {

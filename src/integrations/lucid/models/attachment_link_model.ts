@@ -12,6 +12,7 @@ import type { DateTime } from 'luxon'
 import type { Attachment } from '../../../core/attachment.js'
 import { AttachmentModel } from './attachment_model.js'
 import { AttachmentConfigurationError } from '../../../errors.js'
+import { attachmentDateTime } from './attachment_date_time.js'
 
 /**
  * Polymorphic relation between an application record and an attachment blob.
@@ -44,10 +45,10 @@ export class AttachmentLinkModel extends BaseModel {
   @belongsTo(() => AttachmentModel, { foreignKey: 'attachmentId' })
   declare attachment: BelongsTo<typeof AttachmentModel>
 
-  @column.dateTime({ autoCreate: true })
+  @attachmentDateTime({ autoCreate: true })
   declare createdAt: DateTime
 
-  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  @attachmentDateTime({ autoCreate: true, autoUpdate: true })
   declare updatedAt: DateTime
 
   toAttachment(): Attachment {

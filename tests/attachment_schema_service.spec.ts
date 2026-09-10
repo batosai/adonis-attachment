@@ -6,6 +6,7 @@
  */
 
 import { test } from '@japa/runner'
+import knex, { type Knex } from 'knex'
 
 import { AttachmentSchemaService } from '../src/integrations/lucid/schema/attachment_schema_service.js'
 import { createLucidTestDatabase } from './helpers/lucid_test_database.js'
@@ -36,6 +37,20 @@ test.group('AttachmentSchemaService', (group) => {
 
     assert.isFalse(await database.connection().schema.hasTable('media_attachments'))
     assert.isFalse(await database.connection().schema.hasTable('media_attachment_links'))
+  })
+
+  test('uses Oracle default delete restriction for fresh and upgraded foreign keys', async ({ assert }) => {
+    const connection = knex({ client: 'oracledb', version: '23.26.3' })
+    try {
+      const service = new AttachmentSchemaService(connection)
+      const sql = (builder: Promise<void>) => (builder as unknown as Knex.SchemaBuilder).toSQL().map((query) => query.sql).join('\n')
+      for (const statements of [sql(service.createLinksTable()), sql(service.protectReferencedBlobs())]) {
+        assert.include(statements, 'foreign key ("attachment_id") references "adonis_attachments" ("id")')
+        assert.notMatch(statements, /on delete/i)
+      }
+      assert.match(sql(service.restoreCascadingBlobDeletion()), /on delete CASCADE/i)
+      assert.match(sql(service.createBlobsTable()), /on delete CASCADE/i)
+    } finally { await connection.destroy() }
   })
 
   test('uses the AttachmentLinkModel default table name', async ({ assert }) => {

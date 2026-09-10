@@ -152,10 +152,9 @@ export class LucidAttachmentStore {
     attachment: Attachment
   ): Promise<ReplacedLucidVariant> {
     if (!this.#scoped) return this.#variantTransaction(original.id, (store) => store.replaceVariant(original, key, attachment))
-    const existing = await this.#blobQuery()
+    const existing = await this.#first(this.#blobQuery()
       .where('parent_id', original.id)
-      .where('variant_key', key)
-      .first()
+      .where('variant_key', key))
 
     if (!existing) {
       return { variant: await this.createVariant(original, key, attachment), replaced: undefined }
@@ -192,12 +191,11 @@ export class LucidAttachmentStore {
   }
 
   findOriginal(owner: AttachmentOwner): Promise<AttachmentLinkModel | null> {
-    return this.#linkQuery()
+    return this.#first(this.#linkQuery()
       .where('attachable_type', owner.type)
       .where('attachable_id', owner.id)
       .where('field', owner.field)
-      .whereNotNull('owner_key')
-      .first()
+      .whereNotNull('owner_key'))
   }
 
   listCollection(owner: AttachmentOwner): Promise<AttachmentLinkModel[]> {
@@ -210,13 +208,12 @@ export class LucidAttachmentStore {
   }
 
   findCollectionItem(owner: AttachmentOwner, id: string): Promise<AttachmentLinkModel | null> {
-    return this.#linkQuery()
+    return this.#first(this.#linkQuery()
       .where('id', id)
       .where('attachable_type', owner.type)
       .where('attachable_id', owner.id)
       .where('field', owner.field)
-      .whereNull('owner_key')
-      .first()
+      .whereNull('owner_key'))
   }
 
   async removeCollectionItem(
@@ -256,7 +253,7 @@ export class LucidAttachmentStore {
   }
 
   findById(id: string): Promise<AttachmentModel | null> {
-    return this.#blobQuery().where('id', id).first()
+    return this.#first(this.#blobQuery().where('id', id))
   }
 
   async findByOwner(owner: AttachmentOwner): Promise<LucidAttachmentWithVariants | null> {
@@ -285,13 +282,13 @@ export class LucidAttachmentStore {
     const attachment = await this.findById(link.attachmentId)
     await this.#linkModel.query({ client: this.#client! }).where('id', link.id).delete()
 
-    if (!attachment || (await this.#linkQuery().where('attachment_id', attachment.id).first())) {
+    if (!attachment || (await this.#first(this.#linkQuery().where('attachment_id', attachment.id)))) {
       return []
     }
 
     const variants = await this.listVariants(attachment.id)
     // Older installations may already have links directly referencing variants.
-    if (variants.length && await this.#linkQuery().whereIn('attachment_id', variants.map((variant) => variant.id)).first()) {
+    if (variants.length && await this.#first(this.#linkQuery().whereIn('attachment_id', variants.map((variant) => variant.id)))) {
       throw new AttachmentValidationError('Cannot remove an original while its variants have owner links')
     }
     await attachment.delete()
@@ -356,7 +353,9 @@ export class LucidAttachmentStore {
       this.#client ? { client: this.#client } : undefined
     )
 
-    return this.#linkQuery().where('id', link.id).firstOrFail()
+    const persisted = await this.#first(this.#linkQuery().where('id', link.id))
+    if (!persisted) throw new AttachmentNotFoundError(link.id)
+    return persisted
   }
 
   async #normalizeCollection(owner: AttachmentOwner): Promise<void> {
@@ -398,6 +397,15 @@ export class LucidAttachmentStore {
     }
   }
 
+  async #first<T>(query: { first(): Promise<T | null>; exec(): Promise<T[]>; whereRaw(sql: string): unknown }): Promise<T | null> {
+    // Knex wraps Oracle LIMIT in a subquery, where FOR UPDATE is invalid.
+    if (this.#client?.dialect.name === 'oracledb') {
+      query.whereRaw('rownum <= 1')
+      return (await query.exec())[0] ?? null
+    }
+    return query.first()
+  }
+
   async #lockBlob(id: string): Promise<void> {
     await this.#blobModel.query({ client: this.#client! }).where('id', id).update({ id })
   }
@@ -422,7 +430,7 @@ export class LucidAttachmentStore {
       if (this.#isSqlite) {
         await model.$getQueryFor('update', client).update({ [Model.primaryKey]: model.$primaryKeyValue })
       } else query.forUpdate()
-      if (!await query.first()) throw new AttachmentValidationError('Attachment owner no longer exists')
+      if (!await this.#first(query)) throw new AttachmentValidationError('Attachment owner no longer exists')
       return
     }
     if (owner.lock) {
@@ -430,7 +438,7 @@ export class LucidAttachmentStore {
       const query = client.from(table).where(column, value)
       if (this.#isSqlite) await query.clone().update({ [column]: value })
       else query.forUpdate()
-      if (!await query.first()) throw new AttachmentValidationError('Attachment owner lock row does not exist')
+      if (!await this.#first(query)) throw new AttachmentValidationError('Attachment owner lock row does not exist')
       return
     }
     if (this.#isSqlite) {

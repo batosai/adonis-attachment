@@ -44,7 +44,9 @@ export class AttachmentSchemaService {
       table.string('extname').notNullable()
       table.bigInteger('size').unsigned().notNullable()
       table.string('blurhash').nullable()
-      table.json('metadata').nullable()
+      // Knex maps Oracle JSON to VARCHAR2(4000), too small for extracted metadata.
+      if (this.#isOracle) table.text('metadata').nullable()
+      else table.json('metadata').nullable()
       table.timestamp('created_at').notNullable()
       table.timestamp('updated_at').notNullable()
 
@@ -61,7 +63,8 @@ export class AttachmentSchemaService {
       table.string('field').notNullable()
       table.string('owner_key', 64).nullable().unique()
       table.integer('position').unsigned().nullable()
-      table.uuid('attachment_id').notNullable().references('id').inTable(this.#tableName).onDelete('RESTRICT')
+      const attachmentForeignKey = table.uuid('attachment_id').notNullable().references('id').inTable(this.#tableName)
+      if (!this.#isOracle) attachmentForeignKey.onDelete('RESTRICT')
       table.timestamp('created_at').notNullable()
       table.timestamp('updated_at').notNullable()
 
@@ -97,8 +100,14 @@ export class AttachmentSchemaService {
   #setLinkDeleteRule(rule: 'RESTRICT' | 'CASCADE'): Promise<void> {
     return this.#connection.schema.alterTable(this.#linksTableName, (table) => {
       table.dropForeign(['attachment_id'])
-      table.foreign('attachment_id').references('id').inTable(this.#tableName).onDelete(rule)
+      const foreignKey = table.foreign('attachment_id').references('id').inTable(this.#tableName)
+      if (rule === 'CASCADE' || !this.#isOracle) foreignKey.onDelete(rule)
     })
+  }
+
+  /** Oracle restricts referenced deletes by default and has no RESTRICT keyword. */
+  get #isOracle(): boolean {
+    return ['oracle', 'oracledb'].includes(this.#connection.client.config.client)
   }
 
   dropTables(): Promise<void> {

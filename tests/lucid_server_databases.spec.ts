@@ -3,6 +3,9 @@ import knex from "knex";
 import { Database } from "@adonisjs/lucid/database";
 import { BaseModel, column } from "@adonisjs/lucid/orm";
 import { test } from "@japa/runner";
+import { DateTime } from "luxon";
+import { AttachmentService } from "../src/core/attachment_service.js";
+import { LucidAttachmentLifecycleService } from "../src/integrations/lucid/persistence/lucid_attachment_lifecycle_service.js";
 import type { Attachment } from "../src/core/attachment.js";
 import { AttachmentModel } from "../src/integrations/lucid/models/attachment_model.js";
 import { AttachmentLinkModel } from "../src/integrations/lucid/models/attachment_link_model.js";
@@ -407,6 +410,126 @@ if (
         assert.isNotNull(await store.findById(first.attachmentId));
         await store.removeCollectionItem(otherOwner, second);
         assert.isNull(await store.findById(first.attachmentId));
+      });
+
+      test("persists timestamp instants and large JSON metadata", async ({
+        assert,
+      }) => {
+        const store = new LucidAttachmentStore();
+        const attachment = {
+          ...makeAttachment(),
+          metadata: { caption: "été".repeat(4000) },
+        };
+        const link = await store.createCollectionItem(owner, attachment);
+        const original = (await store.findById(link.attachmentId))!;
+        assert.deepEqual(original.metadata, attachment.metadata);
+        assert.isTrue(original.createdAt.isValid);
+        assert.isTrue(link.createdAt.isValid);
+        const instant = DateTime.fromISO("2026-09-10T13:14:15.000+02:00");
+        original.createdAt = instant;
+        await original.save();
+        assert.equal(
+          (await store.findById(original.id))!.createdAt.toMillis(),
+          instant.toMillis(),
+        );
+      });
+
+      test("rolls back original and variant deletion together, then cascades on commit", async ({
+        assert,
+      }) => {
+        const store = new LucidAttachmentStore();
+        const link = await store.createCollectionItem(owner, makeAttachment());
+        const original = (await store.findById(link.attachmentId))!;
+        const variant = await store.createVariant(
+          original,
+          "thumb",
+          makeAttachment(),
+        );
+        await assert.rejects(
+          () =>
+            store.transaction(owner, async (scoped) => {
+              await scoped.removeCollectionItem(owner, link);
+              assert.isNull(await scoped.findById(original.id));
+              assert.isNull(await scoped.findById(variant.id));
+              throw new Error("abort deletion");
+            }),
+          /abort deletion/,
+        );
+        assert.isNotNull(await store.findById(original.id));
+        assert.isNotNull(await store.findById(variant.id));
+        assert.lengthOf(await store.listCollection(owner), 1);
+        const removed = await store.removeCollectionItem(owner, link);
+        assert.sameMembers(
+          removed.map((item) => item.id),
+          [original.id, variant.id],
+        );
+        assert.isNull(await store.findById(original.id));
+        assert.isNull(await store.findById(variant.id));
+      });
+
+      test("keeps the old file until commit and removes only the new file on rollback", async ({
+        assert,
+      }) => {
+        const files = new Set<string>();
+        const attachments = new AttachmentService({
+          defaultDisk: "fs",
+          createId: randomUUID,
+          queue: { async enqueue() {} },
+          storage: {
+            async write(input) {
+              files.add(input.path);
+            },
+            async read() {
+              return new Uint8Array();
+            },
+            async remove(location) {
+              files.delete(location.path);
+            },
+            async getUrl(location) {
+              return location.path;
+            },
+          },
+        });
+        const input = (name: string) => ({
+          body: Buffer.from(name),
+          originalName: name,
+          mimeType: "text/plain",
+        });
+        const lifecycle = new LucidAttachmentLifecycleService(
+          attachments,
+          new LucidAttachmentStore(),
+        );
+        const previous = await lifecycle.attach(owner, input("before.txt"));
+        const previousPath = previous.toAttachment().path;
+        const outer = await database.transaction();
+        try {
+          const staged = new LucidAttachmentLifecycleService(
+            attachments,
+            new LucidAttachmentStore(undefined, { client: outer }),
+          );
+          const replacement = await staged.replace(
+            owner,
+            input("rollback.txt"),
+          );
+          assert.sameMembers(
+            [...files],
+            [previousPath, replacement.toAttachment().path],
+          );
+          await outer.rollback();
+          assert.deepEqual([...files], [previousPath]);
+          assert.equal(
+            (await lifecycle.get(owner))!.attachmentId,
+            previous.attachmentId,
+          );
+        } finally {
+          if (!outer.isCompleted) await outer.rollback();
+        }
+        const replacement = await lifecycle.replace(owner, input("after.txt"));
+        assert.deepEqual([...files], [replacement.toAttachment().path]);
+        assert.equal(
+          (await lifecycle.get(owner))!.attachmentId,
+          replacement.attachmentId,
+        );
       });
 
       test("serializes competing first variant replacements and forbids linking variants", async ({

@@ -1,4 +1,5 @@
 import type { QueryClientContract, TransactionClientContract } from '@adonisjs/lucid/types/database'
+import { randomUUID } from 'node:crypto'
 
 type Callback = () => void | Promise<void>
 type Effects = { commit: Callback[]; rollback: Callback[] }
@@ -41,6 +42,9 @@ export async function attachmentTransaction<T>(
   client: QueryClientContract,
   callback: (transaction: TransactionClientContract) => Promise<T>
 ): Promise<T> {
+  if (client.isTransaction && client.dialect.name === 'oracledb') {
+    return oracleSavepointTransaction(client as TransactionClientContract, callback)
+  }
   const transaction = await client.transaction()
   const pending: Effects = { commit: [], rollback: [] }
   effects.set(transaction, pending)
@@ -85,6 +89,46 @@ export async function attachmentTransaction<T>(
   } else {
     const errors = await runCallbacks(pending.commit)
     if (errors.length) throw new AttachmentPostCommitError(errors)
+  }
+  return result
+}
+
+/** Knex's Oracle nested-transaction finalizer commits the shared connection. Avoid it. */
+async function oracleSavepointTransaction<T>(
+  parent: TransactionClientContract,
+  callback: (transaction: TransactionClientContract) => Promise<T>
+): Promise<T> {
+  const name = `att_${randomUUID().replaceAll('-', '').slice(0, 24)}`
+  await parent.rawQuery(`SAVEPOINT ${name}`)
+  const parentEffects = effects.get(parent)
+  const pending: Effects = { commit: [], rollback: [] }
+  effects.set(parent, pending)
+  let result: T
+  try {
+    result = await callback(parent)
+  } catch (error) {
+    const errors: unknown[] = [error]
+    try { await parent.rawQuery(`ROLLBACK TO SAVEPOINT ${name}`) } catch (rollbackError) { errors.push(rollbackError) }
+    if (errors.length === 1) errors.push(...await runCallbacks([...pending.rollback].reverse()))
+    if (errors.length > 1) throw new AggregateError(errors, 'Attachment savepoint and rollback cleanup failed')
+    throw error
+  } finally {
+    if (parentEffects) effects.set(parent, parentEffects)
+    else effects.delete(parent)
+  }
+  // Oracle has no RELEASE SAVEPOINT. The outer commit/rollback owns its lifetime.
+  if (parentEffects) {
+    parentEffects.commit.push(...pending.commit)
+    parentEffects.rollback.push(...pending.rollback)
+  } else {
+    parent.after('commit', async () => {
+      const errors = await runCallbacks(pending.commit)
+      if (errors.length) throw new AttachmentPostCommitError(errors)
+    })
+    parent.after('rollback', async () => {
+      const errors = await runCallbacks([...pending.rollback].reverse())
+      if (errors.length) throw new AggregateError(errors, 'Attachment rollback cleanup failed')
+    })
   }
   return result
 }

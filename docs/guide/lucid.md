@@ -317,11 +317,13 @@ localhost ports, and removes its containers and anonymous volumes after each run
 Images remain cached. It does not connect to an application's database. Test drivers
 are development dependencies, not additional runtime dependencies.
 
-The same 11 tests run on each server: schema creation and foreign-key upgrades,
+The same 14 tests run on each server: schema creation and foreign-key upgrades,
 blob/JSON/BIGINT round trips, collection ordering, concurrent inserts using either an
 existing Lucid owner or `owner.lock`, singular uniqueness, shared blobs, concurrent
 variant replacement, nested rollback, and effects deferred to the outer transaction.
-PostgreSQL, MySQL, and MariaDB concurrent tests use a pool of up to eight connections.
+They also cover timestamp instants, large JSON metadata, atomic original/variant
+deletion, and file lifecycle effects (using an in-memory storage double).
+PostgreSQL, MySQL, MariaDB, and Oracle concurrent tests use a pool of up to eight connections.
 The SQLite-family matrix uses one connection: its simultaneous calls test transaction
 sequencing, not contention between independent clients. The default suite additionally
 tests `better-sqlite3` with two workers and separate connections to one file.
@@ -367,18 +369,40 @@ credentials. Oracle gets a dedicated user and tablespace; SQL Server gets a dedi
 test database. The tags are `2022-latest` and `latest-lite`, respectively; actual server
 versions are printed during the run.
 
-**Neither engine is currently compatible with the generated attachment schema.**
-Real-server runs reproduced these blockers:
+**Oracle AI Database 26ai Free 23.26.3.0.0 passes the 14 tests.** Its integration uses:
+
+- The default foreign-key delete restriction, omitting the unsupported `RESTRICT`
+  keyword. Referenced originals remain protected, and unreferenced variants still cascade.
+- A CLOB for metadata, avoiding Knex's Oracle `JSON` mapping to `VARCHAR2(4000)`.
+- Native date bindings for the package's two models, independent of session date formats.
+- `ROWNUM` predicates for single-row locked reads, avoiding Knex's invalid combination
+  of a limited subquery and `FOR UPDATE`.
+- Explicit savepoints on the existing Oracle transaction. This avoids the installed
+  Knex Oracle nested-transaction finalizer committing the shared connection prematurely.
+  Only the outer transaction commits; file effects follow its commit or rollback.
+
+Use nested operations sequentially within one transaction. These adaptations cover
+transactions opened by this integration, not arbitrary application calls to nested
+Lucid/Knex transactions. Application-owned datetime columns retain their own Lucid
+configuration; the package does not change global Oracle session settings.
+
+The Oracle validation uses fresh tables and also tests upgrading the link foreign key.
+If you previously worked around the unsupported Oracle schema manually, audit the
+existing metadata column and constraints before upgrading: changing an existing
+`VARCHAR2` metadata column to CLOB needs a separate migration. Failed Oracle DDL can
+leave partial tables behind; do not drop tables containing application data to retry.
+Older Oracle versions and custom isolation levels have not been validated.
+
+**SQL Server remains incompatible with the generated schema** (unchanged by the Oracle adaptation):
 
 | Engine tested | Schema failure |
 | --- | --- |
 | SQL Server 2022 Developer 16.0.4275.2 | The self-referencing `parent_id` foreign key with `ON DELETE CASCADE` is rejected as a potential cycle or multiple cascade path. |
-| Oracle AI Database 26ai Free 23.26.3.0.0 | The link foreign key's `ON DELETE RESTRICT` fails with `ORA-02000: missing CASCADE keyword`. |
 
-The setup failure is reported as a failed run, not skipped or accepted. The 11 functional
+The SQL Server setup failure is reported as a failed run, not skipped or accepted. Its functional
 tests cannot execute until schema compatibility is implemented. Do not infer that row
-locking, file cleanup, or nested transactions are validated on these engines. Supporting
-them requires preserving the existing deletion guarantees with dialect-appropriate SQL
+locking, file cleanup, or nested transactions are validated on SQL Server. Supporting
+it requires preserving the existing deletion guarantees with dialect-appropriate SQL
 and retesting; simply removing foreign keys is not a solution.
 
 Redshift is not validated;

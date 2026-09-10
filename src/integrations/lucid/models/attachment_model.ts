@@ -10,6 +10,7 @@ import type { DateTime } from 'luxon'
 
 import type { Attachment } from '../../../core/attachment.js'
 import type { AttachmentMetadata } from '../../../media/media_metadata.js'
+import { attachmentDateTime } from './attachment_date_time.js'
 
 /**
  * Default Lucid model for a stored attachment blob.
@@ -78,10 +79,10 @@ export class AttachmentModel extends BaseModel {
   })
   declare metadata: AttachmentMetadata | null
 
-  @column.dateTime({ autoCreate: true })
+  @attachmentDateTime({ autoCreate: true })
   declare createdAt: DateTime
 
-  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  @attachmentDateTime({ autoCreate: true, autoUpdate: true })
   declare updatedAt: DateTime
 
   toAttachment(): Attachment {

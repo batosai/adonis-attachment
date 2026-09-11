@@ -73,7 +73,7 @@ export interface AttachmentPersistence<
   restoreOwner(original: Entry): Promise<void>
   /** Return only files actually removed from persistence and safe to clean up. */
   remove(entry: Entry, owner?: AttachmentOwner): Promise<Record[]>
-  /** Enumerate all entries of this owner, across its attachment fields. */
+  /** Enumerate this owner's entries managed by the store (a field-bound store manages one field). */
   listOwnerLinks(owner: AttachmentOwner): Promise<Entry[]>
 }
 

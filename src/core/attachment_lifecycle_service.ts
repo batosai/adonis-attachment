@@ -23,6 +23,7 @@ import {
   type AttachmentLinkPersistence,
 } from './attachment_persistence.js'
 import { AttachmentConfigurationError, AttachmentConflictError } from '../errors.js'
+import { withAttachmentReference } from './attachment_reference.js'
 import type { AttachmentEventContext } from '../events/attachment_events.js'
 
 export type AttachmentFileService = Pick<AttachmentService, 'create' | 'remove'> &
@@ -82,12 +83,16 @@ export class AttachmentLifecycleService<
     options?: AttachmentPersistenceOptions<any>
   ): Promise<Entry> {
     if (this.#needsTransaction) return this.transaction(owner, (service) => service.attach(owner, input, options))
+    if (await this.#store.findOriginal(owner)) {
+      throw new AttachmentConflictError('This owner field already has an attachment; use replace instead')
+    }
     const persisted = await this.#persist(owner, input, options)
 
     let original: Entry
 
     try {
       original = await this.#store.createOriginal(owner, persisted.attachment)
+      this.#useEntryReference(persisted, original)
     } catch (error) {
       await this.#discardFailed(persisted)
       throw error
@@ -119,6 +124,7 @@ export class AttachmentLifecycleService<
     try {
       await this.#store.releaseOwner(previous)
       current = await this.#store.createOriginal(owner, persisted.attachment)
+      this.#useEntryReference(persisted, current)
     } catch (error) {
       if (persisted.managed) throw error
       await this.#store.restoreOwner(previous).catch(() => undefined)
@@ -193,6 +199,7 @@ export class AttachmentLifecycleService<
     options: AttachmentPersistenceOptions<any> | undefined,
     protectedLocations?: readonly Attachment[]
   ): Promise<{ item: Entry; persisted: PersistedAttachment }> {
+    protectedLocations ??= await this.#collectionFiles(owner)
     const persisted = await this.#persist(owner, input, options, protectedLocations)
 
     try {
@@ -201,6 +208,7 @@ export class AttachmentLifecycleService<
         persisted.attachment,
         position
       )
+      this.#useEntryReference(persisted, item)
       return { item, persisted }
     } catch (error) {
       await this.#discardFailed(persisted)
@@ -252,7 +260,7 @@ export class AttachmentLifecycleService<
   ): Promise<Entry[]> {
     if (this.#needsTransaction) return this.transaction(owner, (service) => service.replaceCollection(owner, inputs, options))
     const previous = await this.#collectionStore().listCollection(owner)
-    const protectedFiles = previous.map((item) => item.toAttachment())
+    const protectedFiles = await this.#collectionFiles(owner, previous)
     const created: Array<{ item: Entry; persisted: PersistedAttachment }> = []
 
     try {
@@ -312,6 +320,19 @@ export class AttachmentLifecycleService<
 
   async #discardFailed(persisted: PersistedAttachment): Promise<void> {
     if (!persisted.managed) await this.#discardPersisted(persisted)
+  }
+
+  async #collectionFiles(owner: AttachmentOwner, entries?: Entry[]): Promise<Attachment[]> {
+    const files: Attachment[] = []
+    for (const entry of entries ?? await this.#collectionStore().listCollection(owner)) {
+      files.push(entry.toAttachment(), ...(await this.#store.listVariants(entry.attachmentId)).map((variant) => variant.toAttachment()))
+    }
+    return files
+  }
+
+  #useEntryReference(persisted: PersistedAttachment, entry: Entry): void {
+    const reference = entry.toAttachment().reference
+    if (reference) persisted.attachment = withAttachmentReference(persisted.attachment, reference)
   }
 
   #completePersistence(owner: AttachmentOwner, persisted: PersistedAttachment): void {

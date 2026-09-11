@@ -62,4 +62,7 @@ test('keeps Lucid exports out of the package root', async ({ assert }) => {
   assert.strictEqual(lucidExports.attachment, lucidExports.attachmentRelation)
   assert.strictEqual(lucidExports.attachments, lucidExports.attachmentsRelation)
   assert.isFunction(lucidExports.createLucidAttachmentProcessor)
+  assert.isFunction(lucidExports.LucidJsonAttachmentStore)
+  assert.isFunction(lucidExports.JsonAttachmentEntry)
+  assert.isFunction(lucidExports.JsonAttachmentRecord)
 })

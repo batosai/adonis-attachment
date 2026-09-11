@@ -6,6 +6,15 @@
  */
 
 export { AttachmentModel } from "./models/attachment_model.js";
+export {
+  LucidJsonAttachmentStore,
+  type LucidJsonAttachmentStoreOptions,
+} from './json/lucid_json_attachment_store.js';
+export {
+  JsonAttachmentEntry,
+  JsonAttachmentRecord,
+  type JsonAttachmentOwner,
+} from './json/json_attachment_document.js';
 export { AttachmentLinkModel } from "./models/attachment_link_model.js";
 export {
   configureLucidAttachmentTables,

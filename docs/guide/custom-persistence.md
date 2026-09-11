@@ -70,8 +70,8 @@ Rebuild an `Attachment`-shaped object from your columns and pass it to
 
 The `feat/json-persistence` branch starts by extracting a persistence-independent
 `AttachmentLifecycleService`, exported from `@jrmc/adonis-attachment/core` and the package
-root. This is infrastructure for additional adapters, **not an available JSON storage mode**.
-There is no new decorator option, data migration, or change to existing tables.
+root. An [explicit field-bound JSON store](/guide/json-persistence) is now available on this
+branch. There is no new decorator option, automatic data migration, or change to existing tables.
 
 `AttachmentPersistence<Entry, Record>` describes the operations consumed by this service.
 An `AttachmentRecord` provides `id` and `toAttachment()`; an `AttachmentEntry` additionally
@@ -97,15 +97,15 @@ new adapters should implement the explicit transaction contract instead.
 results and scoped service instances. It delegates to the shared implementation;
 `AttachmentFileCleanupError` is the same class through the core and Lucid exports.
 
-Remaining work on this branch: JSON v5 reading/writing, per-field adapter selection,
-adapter-specific worker/metadata/variant integration, and tests for mixed-mode applications.
+Remaining work on this branch: per-field decorator selection and owner model synchronization,
+automatic adapter-specific worker/metadata/variant integration, and tests for mixed-mode applications.
 Compatibility with simultaneous legacy v5 writers is not implied.
 
 ### Contextual identity and worker resolution
 
 `AttachmentReference` is a versioned, serializable locator. It names a registered adapter,
 the stable file identity, and optionally a logical owner. For example, this describes a
-future JSON attachment; it does **not** enable JSON persistence by itself:
+JSON attachment; it does **not** configure its persistence mapping by itself:
 
 ```ts
 import type { AttachmentReference } from '@jrmc/adonis-attachment/core'

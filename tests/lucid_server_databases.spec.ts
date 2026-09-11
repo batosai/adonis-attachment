@@ -15,6 +15,8 @@ import { withAttachmentReference } from "../src/core/attachment_reference.js";
 import { resolveAttachment } from "../src/core/attachment_repository.js";
 import { LucidAttachmentRepository } from "../src/integrations/lucid/persistence/lucid_attachment_repository.js";
 import { LucidAttachmentMetadataPersister } from "../src/integrations/lucid/persistence/lucid_attachment_metadata_persister.js";
+import { LucidJsonAttachmentStore } from "../src/integrations/lucid/json/lucid_json_attachment_store.js";
+import { AttachmentLifecycleService } from "../src/core/attachment_lifecycle_service.js";
 
 const client = process.env.ATTACHMENT_TEST_CLIENT;
 // Opt-in: the container runner supplies a fresh disposable database for each engine.
@@ -52,6 +54,12 @@ if (
   }
   let database: Database;
   let schema: AttachmentSchemaService;
+  const jsonOwner = { type: "users", id: "42", field: "avatar" };
+  const jsonGallery = { ...jsonOwner, field: "gallery" };
+  const jsonStore = (kind: "one" | "many" = "one", connection = database.connection()) => new LucidJsonAttachmentStore({
+    client: connection, table: "users", column: kind === "one" ? "avatar" : "gallery",
+    owner: kind === "one" ? jsonOwner : jsonGallery, kind, defaultDisk: "fs",
+  });
 
   test.group(
     `Lucid database: ${process.env.ATTACHMENT_TEST_ENGINE ?? client}`,
@@ -185,6 +193,11 @@ if (
           await schema.createTables();
           await database.connection().schema.createTable("users", (table) => {
             table.string("id").primary();
+            if (client === "oracledb") {
+              table.text("avatar").nullable(); table.text("gallery").nullable();
+            } else {
+              table.json("avatar").nullable(); table.json("gallery").nullable();
+            }
           });
           await database.table("users").insert({ id: "42" });
         } catch (error) {
@@ -199,9 +212,85 @@ if (
       group.each.setup(async () => {
         await database.from("adonis_attachment_links").delete();
         await database.from("adonis_attachments").delete();
+        await database.from("users").where("id", "42").update({ avatar: null, gallery: null });
       });
       group.teardown(async () => {
         await database?.manager.closeAll();
+      });
+
+      test("reads legacy JSON without writes and persists large metadata with stable identities", async ({ assert }) => {
+        const legacy = { name: "old.jpg", size: 42, extname: "jpg", mimeType: "image/jpeg", custom: "keep", meta: { caption: "été" }, variants: [
+          { name: "thumb.jpg", key: "thumbnail", size: 1, extname: "jpg", mimeType: "image/jpeg" },
+        ] };
+        await database.from("users").where("id", "42").update({ avatar: JSON.stringify(legacy) });
+        const before = (await database.from("users").where("id", "42").first()).avatar;
+        const store = jsonStore();
+        const original = (await store.findOriginal(jsonOwner))!;
+        assert.equal(original.toAttachment().path, "old.jpg");
+        assert.deepEqual((await database.from("users").where("id", "42").first()).avatar, before);
+        const metadata = { caption: "été".repeat(4000) };
+        await store.persistMetadata(original.toAttachment(), metadata);
+        assert.equal((await store.findOriginal(jsonOwner))!.id, original.id);
+        assert.deepEqual((await store.findByReference(original.toAttachment().reference!))!.metadata, metadata);
+        assert.lengthOf(await store.listVariants(original.id), 1);
+        const value = (await database.from("users").where("id", "42").first()).avatar;
+        const document = typeof value === "string" ? JSON.parse(value) : value;
+        assert.equal(document.custom, "keep");
+        assert.equal(document.id, original.id);
+      });
+
+      test("serializes JSON collection inserts and enforces singular ownership", async ({ assert }) => {
+        const attachments = Array.from({ length: 16 }, makeAttachment);
+        await Promise.all(attachments.map((attachment) => jsonStore("many").createCollectionItem(jsonGallery, attachment)));
+        const items = await jsonStore("many").listCollection(jsonGallery);
+        assert.sameMembers(items.map((item) => item.id), attachments.map((attachment) => attachment.id));
+        assert.deepEqual(items.map((item) => item.position), Array.from({ length: 16 }, (_, index) => index));
+        await jsonStore("many").moveCollectionItem(jsonGallery, items[15]!.id, 0);
+        assert.equal((await jsonStore("many").listCollection(jsonGallery))[0]!.id, items[15]!.id);
+        const results = await Promise.allSettled([makeAttachment(), makeAttachment()].map((attachment) => jsonStore().createOriginal(jsonOwner, attachment)));
+        assert.lengthOf(results.filter((result) => result.status === "fulfilled"), 1);
+        assert.lengthOf(results.filter((result) => result.status === "rejected"), 1);
+      });
+
+      test("preserves JSON savepoint rollback and defers lifecycle file cleanup", async ({ assert }) => {
+        const outer = await database.transaction();
+        const calls: string[] = [];
+        const old = makeAttachment();
+        const replacement = makeAttachment();
+        try {
+          const store = jsonStore("one", outer);
+          await store.createOriginal(jsonOwner, old);
+          await assert.rejects(() => store.transaction(jsonOwner, async (scoped) => {
+            const entry = (await scoped.findOriginal(jsonOwner))!;
+            await scoped.remove(entry);
+            throw new Error("abort JSON scope");
+          }), /abort JSON scope/);
+          assert.equal((await store.findOriginal(jsonOwner))!.id, old.id);
+          const lifecycle = new AttachmentLifecycleService({
+            async create() { return replacement; },
+            async remove(attachment) { calls.push(attachment.id); },
+          }, store);
+          await lifecycle.replace(jsonOwner, { body: new Uint8Array([1]), originalName: "new.jpg" });
+          assert.isEmpty(calls);
+          await outer.rollback();
+          assert.deepEqual(calls, [replacement.id]);
+          assert.isNull(await jsonStore().findOriginal(jsonOwner));
+        } finally { if (!outer.isCompleted) await outer.rollback(); }
+      });
+
+      test("rejects stale JSON variant and metadata writes and removes originals with variants", async ({ assert }) => {
+        const store = jsonStore();
+        const original = await store.createOriginal(jsonOwner, makeAttachment());
+        const variants = await Promise.all(Array.from({ length: 8 }, () => store.replaceVariant(original, "thumbnail", makeAttachment())));
+        assert.lengthOf(await store.listVariants(original.id), 1);
+        const latest = (await store.listVariants(original.id))[0]!;
+        const stale = variants.find((result) => result.variant.id !== latest.id)!.variant;
+        await assert.rejects(() => store.persistMetadata(stale.toAttachment(), { stale: true }), /not found/);
+        const removed = await store.remove(original);
+        assert.sameMembers(removed.map((record) => record.id), [original.id, latest.id]);
+        await store.createOriginal(jsonOwner, makeAttachment());
+        await assert.rejects(() => store.createVariant(original, "late", makeAttachment()), /not found/);
+        assert.isNull(await store.findByReference(original.toAttachment().reference!));
       });
 
       test("round-trips blobs and JSON, orders, moves and removes links", async ({

@@ -21,6 +21,7 @@ declare module "@adonisjs/core/types" {
     "jrmc.attachment.manager": AttachmentManager;
     "jrmc.attachment.converters": VariantConverterRegistry;
     "jrmc.attachment.repository": AttachmentRepository;
+    "jrmc.attachment.json": import('./src/integrations/lucid/json/lucid_json_attachment_registry.js').LucidJsonAttachmentRegistry;
     "jrmc.attachment.events": AttachmentEventEmitter;
   }
 }

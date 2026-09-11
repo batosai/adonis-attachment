@@ -17,6 +17,10 @@ import { LucidAttachmentRepository } from "../src/integrations/lucid/persistence
 import { LucidAttachmentMetadataPersister } from "../src/integrations/lucid/persistence/lucid_attachment_metadata_persister.js";
 import { LucidJsonAttachmentStore } from "../src/integrations/lucid/json/lucid_json_attachment_store.js";
 import { AttachmentLifecycleService } from "../src/core/attachment_lifecycle_service.js";
+import { setApp } from "@adonisjs/core/services/app";
+import type { AttachmentJob } from "../src/core/queue.js";
+import { attachment, attachments, AttachmentRelation, AttachmentCollectionRelation, LucidJsonAttachmentRegistry, createLucidAttachmentProcessor } from "../src/integrations/lucid/index.js";
+import { attachment as legacyAttachment, Attachment as LegacyAttachment, AttachmentManager as LegacyManager } from "../src/integrations/legacy/index.js";
 
 const client = process.env.ATTACHMENT_TEST_CLIENT;
 // Opt-in: the container runner supplies a fresh disposable database for each engine.
@@ -52,7 +56,23 @@ if (
     static table = "users";
     @column({ isPrimary: true }) declare id: string;
   }
+  class JsonUser extends BaseModel {
+    static table = "users";
+    static selfAssignPrimaryKey = true;
+    @column({ isPrimary: true }) declare id: string;
+    @column() declare name: string;
+    @attachment({ persistence: "json", variants: [], meta: true }) declare avatar: AttachmentRelation<"json">;
+    @attachments({ persistence: "json", variants: [] }) declare gallery: AttachmentCollectionRelation<"json">;
+    @attachment({ variants: [] }) declare document: AttachmentRelation;
+  }
   let database: Database;
+  class LegacyUser extends BaseModel {
+    static table = "users";
+    static selfAssignPrimaryKey = true;
+    @column({ isPrimary: true }) declare id: string;
+    @column() declare name: string;
+    @legacyAttachment({ variants: ["thumbnail"], meta: true, preComputeUrl: true }) declare avatar: LegacyAttachment | null;
+  }
   let schema: AttachmentSchemaService;
   const jsonOwner = { type: "users", id: "42", field: "avatar" };
   const jsonGallery = { ...jsonOwner, field: "gallery" };
@@ -166,7 +186,7 @@ if (
             },
           } as never,
         );
-        for (const model of [AttachmentModel, AttachmentLinkModel, User])
+        for (const model of [AttachmentModel, AttachmentLinkModel, User, JsonUser, LegacyUser])
           model.useAdapter(database.modelAdapter());
         schema = new AttachmentSchemaService(
           database.connection().getWriteClient(),
@@ -193,6 +213,7 @@ if (
           await schema.createTables();
           await database.connection().schema.createTable("users", (table) => {
             table.string("id").primary();
+            table.string("name").nullable();
             if (client === "oracledb") {
               table.text("avatar").nullable(); table.text("gallery").nullable();
             } else {
@@ -212,10 +233,160 @@ if (
       group.each.setup(async () => {
         await database.from("adonis_attachment_links").delete();
         await database.from("adonis_attachments").delete();
+        await database.from("users").whereNot("id", "42").delete();
         await database.from("users").where("id", "42").update({ avatar: null, gallery: null });
       });
       group.teardown(async () => {
         await database?.manager.closeAll();
+      });
+
+      test("persists legacy values, worker variants and concurrent meta edits with rollback", async ({ assert }) => {
+        const registry = new LucidJsonAttachmentRegistry({ models: { users: async () => ({ default: LegacyUser }) }, defaultDisk: "fs" });
+        const jobs: AttachmentJob[] = [];
+        const files = new Set<string>();
+        const service = new AttachmentService({ defaultDisk: "fs", queue: { async enqueue(job) { jobs.push(job); } }, storage: {
+          async write(file) { files.add(file.path); }, async read() { return new Uint8Array([1]); }, async remove(file) { files.delete(file.path); },
+          async getUrl(file) { return `https://cdn.test/${file.path}`; },
+        } });
+        const app = { container: { async make() { return service; } } }; setApp(app as never);
+        const manager = new LegacyManager(service);
+        const row = await LegacyUser.findOrFail("42"); row.avatar = await manager.createFromBuffer(new Uint8Array([1]), "avatar.jpg");
+        row.avatar.meta = { caption: "été", nested: { left: true } }; await row.save();
+        assert.equal(row.serialize().avatar.meta.caption, "été");
+        const a = await LegacyUser.findOrFail("42"); const b = await LegacyUser.findOrFail("42");
+        a.avatar!.meta!.credit = "Alice"; b.avatar!.meta!.description = "Bob";
+        await Promise.all([a.save(), b.save()]);
+        await row.refresh();
+        assert.deepEqual(row.avatar!.meta, { caption: "été", nested: { left: true }, credit: "Alice", description: "Bob" });
+        const worker = createLucidAttachmentProcessor(app as never, { jsonPersistence: registry, converters: {
+          async keys() { return ["thumbnail"]; }, async get() { return { key: "thumbnail", async convert() {
+            return { body: new Uint8Array([2]), fileName: "thumb.jpg", mimeType: "image/jpeg" };
+          } }; },
+        } });
+        await worker.process(JSON.parse(JSON.stringify(jobs.find((job) => job.type === "generate-variants"))));
+        await row.refresh();
+        assert.isNotNull(row.avatar!.getVariant("thumbnail"));
+        row.avatar!.getVariant("thumbnail")!.meta = { caption: "Small" }; await row.save();
+        assert.equal(row.serialize().avatar.thumbnail.meta.caption, "Small");
+        const replacement = await manager.createFromBuffer(new Uint8Array([3]), "new.jpg");
+        const trx = await database.transaction();
+        try {
+          row.useTransaction(trx); row.avatar = replacement; await row.save(); await trx.rollback();
+          assert.strictEqual(row.avatar, replacement); assert.isFalse(replacement.draft()!.isPersisted);
+          assert.equal(files.size, 2);
+          await row.save(); assert.equal(files.size, 1);
+          row.avatar = null; await row.save(); assert.isEmpty(files);
+          assert.isNull((await LegacyUser.findOrFail("42")).avatar);
+        } finally { if (!trx.isCompleted) await trx.rollback(); }
+        assert.isEmpty(await database.from("adonis_attachments"));
+      });
+
+      test("routes JSON model worker jobs and preserves worker updates when a stale model saves", async ({ assert }) => {
+        const registry = new LucidJsonAttachmentRegistry({ models: { users: async () => ({ default: JsonUser }) }, defaultDisk: "fs" });
+        const jobs: AttachmentJob[] = [];
+        const files = new Set<string>();
+        const service = new AttachmentService({
+          defaultDisk: "fs", metadataMode: "deferred", metadataPersister: registry,
+          metadataExtractors: [{ async extract() { return { caption: "été", inspected: true }; } }],
+          queue: { async enqueue(job) { jobs.push(job); } },
+          storage: { async write(value) { files.add(value.path); }, async read() { return new Uint8Array([1]); }, async remove(value) { files.delete(value.path); } },
+        });
+        const app = { container: { async make() { return service; } } };
+        setApp(app as never);
+        const row = await JsonUser.findOrFail("42");
+        row.avatar.set(service.createDraft({ originalName: "avatar.jpg", body: new Uint8Array([1]) }));
+        row.gallery.add(service.createDraft({ originalName: "gallery.jpg", body: new Uint8Array([1]) }));
+        await row.save();
+        const stale = await JsonUser.findOrFail("42");
+        const worker = createLucidAttachmentProcessor(app as never, { jsonPersistence: registry, converters: {
+          async keys() { return ["thumbnail"]; },
+          async get() { return { key: "thumbnail", async convert() { return { body: new Uint8Array([2]), fileName: "thumb.jpg", mimeType: "image/jpeg" }; } }; },
+        } });
+        await row.avatar.regenerateVariants(["thumbnail"]);
+        for (const job of [...jobs].filter((job) => job.type === "generate-variants")) await worker.process(JSON.parse(JSON.stringify(job)));
+        for (const job of [...jobs].filter((job) => job.type === "extract-metadata")) await worker.process(JSON.parse(JSON.stringify(job)));
+        stale.name = "updated";
+        await stale.save();
+        assert.deepEqual((await stale.avatar.get())!.toAttachment().metadata, { caption: "été", inspected: true });
+        assert.deepEqual((await stale.avatar.variants())[0]!.toAttachment().metadata, { caption: "été", inspected: true });
+        assert.lengthOf(await stale.gallery.all(), 1);
+        assert.equal(files.size, 3);
+        assert.isEmpty(await database.from("adonis_attachments"));
+      });
+
+      test("rolls back JSON model creation and mixed-field deletion with deferred file cleanup", async ({ assert }) => {
+        const files = new Set<string>();
+        const service = new AttachmentService({ defaultDisk: "fs", queue: { async enqueue() {} }, storage: {
+          async write(value) { files.add(value.path); }, async read() { return new Uint8Array([1]); }, async remove(value) { files.delete(value.path); },
+        } });
+        setApp({ container: { async make() { return service; } } } as never);
+        const row = new JsonUser(); row.id = "43"; row.name = "created";
+        row.avatar.set(service.createDraft({ originalName: "avatar.jpg", body: new Uint8Array([1]) }));
+        row.document.set(service.createDraft({ originalName: "doc.txt", body: new Uint8Array([1]) }));
+        const creation = await database.transaction();
+        try {
+          row.useTransaction(creation); await row.save();
+          assert.equal(files.size, 2);
+          await creation.rollback();
+          assert.isFalse(row.$isPersisted);
+          assert.isTrue(row.avatar.hasPending);
+          assert.notProperty(row.$extras, "avatar");
+          assert.isEmpty(files);
+        } finally { if (!creation.isCompleted) await creation.rollback(); }
+        await row.save();
+        const deletion = await database.transaction();
+        try {
+          row.useTransaction(deletion); await row.delete();
+          assert.equal(files.size, 2);
+          await deletion.rollback();
+          assert.isFalse(row.$isDeleted);
+          assert.isNotNull(await row.avatar.get());
+          await row.delete();
+          assert.isEmpty(files);
+          assert.isNull(await JsonUser.find("43"));
+          assert.isEmpty(await database.from("adonis_attachments"));
+        } finally { if (!deletion.isCompleted) await deletion.rollback(); }
+      });
+
+      test("merges concurrent JSON metadata changes without dropping variants or unrelated nested keys", async ({ assert }) => {
+        const adapter = jsonStore();
+        const before = { caption: "old", details: { author: "Alice", remove: "old" } };
+        const original = await adapter.createOriginal(jsonOwner, { ...makeAttachment(), metadata: before });
+        const snapshot = original.toAttachment();
+        const variant = makeAttachment();
+        await Promise.all([
+          ...Array.from({ length: 16 }, (_, index) => jsonStore().persistMetadata(snapshot, { ...before, [`key${index}`]: index })),
+          jsonStore().createVariant(original, "thumbnail", variant),
+          jsonStore().patchMetadata(snapshot, before, { ...before, details: { ...before.details, language: "fr" } }),
+        ]);
+        const merged = await adapter.patchMetadata(snapshot, before, { caption: "été", details: { author: "Bob" } });
+        assert.deepEqual(merged.metadata, {
+          ...Object.fromEntries(Array.from({ length: 16 }, (_, index) => [`key${index}`, index])),
+          caption: "été", details: { author: "Bob", language: "fr" },
+        });
+        assert.equal((await adapter.listVariants(original.id))[0]!.id, variant.id);
+        assert.deepEqual((await adapter.findOriginal(jsonOwner))!.toAttachment().metadata, merged.metadata);
+      });
+
+      test("rejects conflicting JSON metadata changes atomically and preserves outer rollback", async ({ assert }) => {
+        const adapter = jsonStore();
+        const original = await adapter.createOriginal(jsonOwner, { ...makeAttachment(), metadata: { caption: "old" } });
+        const snapshot = original.toAttachment();
+        await adapter.persistMetadata(snapshot, { caption: "winner", width: 100 });
+        await assert.rejects(() => adapter.patchMetadata(snapshot, snapshot.metadata, { added: true, caption: "loser" }), /metadata changed concurrently/);
+        assert.deepEqual((await adapter.findOriginal(jsonOwner))!.toAttachment().metadata, { caption: "winner", width: 100 });
+        const outer = await database.transaction();
+        try {
+          const scoped = jsonStore("one", outer);
+          const current = (await scoped.findOriginal(jsonOwner))!.toAttachment();
+          const updated = await scoped.patchMetadata(current, current.metadata, { ...current.metadata, caption: "outer" });
+          await assert.rejects(() => scoped.patchMetadata(current, current.metadata, { caption: "conflict" }), /metadata changed concurrently/);
+          assert.deepEqual((await scoped.findOriginal(jsonOwner))!.toAttachment().metadata, updated.metadata);
+          await outer.rollback();
+          assert.deepEqual((await adapter.findOriginal(jsonOwner))!.toAttachment().metadata, current.metadata);
+        } finally { if (!outer.isCompleted) await outer.rollback(); }
+        await adapter.remove(original);
+        await assert.rejects(() => adapter.patchMetadata(snapshot, snapshot.metadata, { caption: "late" }), /not found/);
       });
 
       test("reads legacy JSON without writes and persists large metadata with stable identities", async ({ assert }) => {

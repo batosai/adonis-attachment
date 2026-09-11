@@ -74,6 +74,102 @@ test.group('Lucid JSON attachment store', (group) => {
     assert.sameMembers((await store('many').listCollection(gallery)).map((entry) => entry.id), files.map((attachment) => attachment.id))
   })
 
+  test('merges simultaneous independent metadata edits and preserves a concurrent variant', async ({ assert }) => {
+    const adapter = store()
+    const original = await adapter.createOriginal(owner, file())
+    const snapshot = original.toAttachment()
+    const variantFile = file()
+    await Promise.all([
+      ...Array.from({ length: 16 }, (_, index) => store().persistMetadata(snapshot, { [`key${index}`]: index })),
+      store().createVariant(original, 'thumbnail', variantFile),
+    ])
+    const persisted = (await adapter.findOriginal(owner))!.toAttachment()
+    assert.deepEqual(persisted.metadata, Object.fromEntries(Array.from({ length: 16 }, (_, index) => [`key${index}`, index])))
+    assert.equal((await adapter.listVariants(original.id))[0]!.id, variantFile.id)
+  })
+
+  test('applies nested local edits and deletions without losing worker metadata or other JSON fields', async ({ assert }) => {
+    await db.from('users').where('id', '42').update({ avatar: JSON.stringify({ ...legacy, meta: {
+      caption: 'old', details: { author: 'Alice', note: 'remove' }, tags: ['old'],
+    } }) })
+    const adapter = store()
+    const snapshot = (await adapter.findOriginal(owner))!.toAttachment()
+    await adapter.persistMetadata(snapshot, { ...snapshot.metadata, width: 100, details: { author: 'Alice', note: 'remove', language: 'fr' } })
+    const merged = await adapter.patchMetadata(snapshot, snapshot.metadata, { caption: 'new', details: { author: 'Bob' }, tags: ['new'] })
+    assert.deepEqual(merged.metadata, { caption: 'new', details: { author: 'Bob', language: 'fr' }, tags: ['new'], width: 100 })
+    const saved = JSON.parse((await db.from('users').first()).avatar)
+    assert.equal(saved.custom, 'keep')
+    assert.equal(saved.variants[0].name, 'thumb.jpg')
+    assert.equal((await db.from('users').first()).unrelated, 'keep')
+  })
+
+  test('rolls back conflicting metadata patches and allows an identical retry', async ({ assert }) => {
+    const adapter = store()
+    const snapshot = (await adapter.createOriginal(owner, { ...file(), metadata: { caption: 'old' } })).toAttachment()
+    await adapter.persistMetadata(snapshot, { caption: 'theirs', width: 100 })
+    const before = (await db.from('users').first()).avatar
+    await assert.rejects(() => adapter.patchMetadata(snapshot, snapshot.metadata, { added: true, caption: 'mine' }), /metadata changed concurrently/)
+    assert.equal((await db.from('users').first()).avatar, before)
+    const result = await adapter.patchMetadata(snapshot, snapshot.metadata, { caption: 'theirs' })
+    assert.deepEqual(result.metadata, { caption: 'theirs', width: 100 })
+  })
+
+  test('allows only one of two concurrent incompatible edits to the same metadata key', async ({ assert }) => {
+    const snapshot = (await store().createOriginal(owner, { ...file(), metadata: { caption: 'old' } })).toAttachment()
+    const results = await Promise.allSettled(['first', 'second'].map((caption) => store().patchMetadata(snapshot, snapshot.metadata, { caption })))
+    assert.lengthOf(results.filter((result) => result.status === 'fulfilled'), 1)
+    const rejected = results.find((result) => result.status === 'rejected') as PromiseRejectedResult
+    assert.equal(rejected.reason.code, 'E_ATTACHMENT_METADATA_CONFLICT')
+    const fulfilled = results.find((result) => result.status === 'fulfilled') as PromiseFulfilledResult<Attachment>
+    assert.deepEqual((await store().findOriginal(owner))!.toAttachment().metadata, fulfilled.value.metadata)
+  })
+
+  test('captures the intended edit before waiting and does not rewrite legacy JSON for a no-op', async ({ assert }) => {
+    const serialized = JSON.stringify(legacy)
+    await db.from('users').where('id', '42').update({ avatar: serialized })
+    const adapter = store()
+    const snapshot = (await adapter.findOriginal(owner))!.toAttachment()
+    await adapter.patchMetadata(snapshot, snapshot.metadata, snapshot.metadata)
+    assert.equal((await db.from('users').first()).avatar, serialized)
+    const before = { caption: 'été' }
+    const after = { caption: 'captured' }
+    const pending = adapter.patchMetadata(snapshot, before, after)
+    before.caption = 'changed after call'; after.caption = 'changed after call'
+    assert.deepEqual((await pending).metadata, { caption: 'captured' })
+  })
+
+  test('handles variant metadata, whole-meta removal and stale identities without altering other records', async ({ assert }) => {
+    const adapter = store()
+    const original = await adapter.createOriginal(owner, { ...file(), metadata: { caption: 'original' } })
+    const variant = await adapter.createVariant(original, 'thumbnail', { ...file(), metadata: { caption: 'variant' } })
+    const snapshot = variant.toAttachment()
+    const updated = await adapter.patchMetadata(snapshot, snapshot.metadata, { caption: 'updated' })
+    assert.equal(updated.originalName, original.toAttachment().originalName)
+    assert.equal(updated.reference?.id, variant.id)
+    assert.deepEqual((await adapter.findOriginal(owner))!.toAttachment().metadata, { caption: 'original' })
+    await adapter.patchMetadata(updated, updated.metadata, undefined)
+    assert.isUndefined((await adapter.listVariants(original.id))[0]!.toAttachment().metadata)
+    await adapter.replaceVariant(original, 'thumbnail', file())
+    await assert.rejects(() => adapter.patchMetadata(updated, undefined, undefined), /not found/)
+    await assert.rejects(() => adapter.patchMetadata({ ...original.toAttachment(), path: 'wrong.jpg' }, undefined, { caption: 'wrong' }), /file changed/)
+    await adapter.remove(original)
+    await assert.rejects(() => adapter.patchMetadata(original.toAttachment(), original.toAttachment().metadata, { caption: 'late' }), /not found/)
+  })
+
+  test('keeps metadata patches in the outer transaction and isolates a caught savepoint conflict', async ({ assert }) => {
+    const original = await store().createOriginal(owner, { ...file(), metadata: { caption: 'old' } })
+    const snapshot = original.toAttachment()
+    const outer = await db.transaction()
+    try {
+      const scoped = store('one', outer)
+      await scoped.persistMetadata(snapshot, { caption: 'outer' })
+      await assert.rejects(() => scoped.patchMetadata(snapshot, snapshot.metadata, { added: true, caption: 'conflict' }), /metadata changed concurrently/)
+      assert.deepEqual((await scoped.findOriginal(owner))!.toAttachment().metadata, { caption: 'outer' })
+      await outer.rollback()
+      assert.deepEqual((await store().findOriginal(owner))!.toAttachment().metadata, { caption: 'old' })
+    } finally { if (!outer.isCompleted) await outer.rollback() }
+  })
+
   test('keeps nested writes and lifecycle file effects inside the outer transaction', async ({ assert }) => {
     const files = new Set<string>()
     const jobs: AttachmentJob[] = []
@@ -142,9 +238,9 @@ test.group('Lucid JSON attachment store', (group) => {
     assert.isEmpty(await adapter.listCollection(gallery))
   })
 
-  test('rejects foreign owners, missing rows, invalid documents and unsupported model synchronization before files are written', async ({ assert }) => {
+  test('rejects foreign owners, missing rows, invalid documents and unbound models before files are written', async ({ assert }) => {
     await assert.rejects(() => store().findByReference({ version: 1, adapter: 'json', id: 'x', owner: { ...owner, id: '43' } }), /does not match/)
-    await assert.rejects(() => store().transaction({ ...owner, model: {} }, async () => {}), /synchronization/)
+    await assert.rejects(() => store().transaction({ ...owner, model: {} }, async () => {}), /bound to that same model/)
     await db.from('users').where('id', '42').update({ avatar: 'invalid-json' })
     const lifecycle = new AttachmentLifecycleService({ async create() { assert.fail('must not create a file'); return file() }, async remove() {} }, store())
     await assert.rejects(() => lifecycle.attach(owner, { body: new Uint8Array([1]), originalName: 'bad.jpg' }), /Invalid attachment JSON/)

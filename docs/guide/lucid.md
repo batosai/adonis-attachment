@@ -317,16 +317,20 @@ localhost ports, and removes its containers and anonymous volumes after each run
 Images remain cached. It does not connect to an application's database. Test drivers
 are development dependencies, not additional runtime dependencies.
 
-The same 19 tests run on each server: schema creation and foreign-key upgrades,
+The same 24 tests run on each server: schema creation and foreign-key upgrades,
 blob/JSON/BIGINT round trips, collection ordering, concurrent inserts using either an
 existing Lucid owner or `owner.lock`, singular uniqueness, shared blobs, concurrent
 variant replacement, nested rollback, and effects deferred to the outer transaction.
 They also cover timestamp instants, large JSON metadata, atomic original/variant
 deletion, explicit table-reference resolution and metadata persistence, and file lifecycle
 effects (using an in-memory storage double).
-Four scenarios exercise the [explicit JSON store](/guide/json-persistence): legacy reads,
+Nine scenarios exercise [JSON persistence](/guide/json-persistence): legacy reads,
 large metadata writes, concurrent collections/singular ownership, nested rollback with
-file effects, and rejection of obsolete original/variant identities.
+file effects, rejection of obsolete original/variant identities, decorated-model worker
+jobs with stale-model saves, mixed-mode model creation/deletion rollback, concurrent
+metadata patches preserving variants, and atomic metadata conflict/rollback handling.
+The singular [/legacy facade](/guide/legacy) is also exercised end-to-end: direct assignment,
+worker variants, concurrent metadata edits, serialization, refresh, rollback and deletion.
 PostgreSQL, MySQL, MariaDB, Oracle, and SQL Server concurrent tests use a pool of up to eight connections.
 The SQLite-family matrix uses one connection: its simultaneous calls test transaction
 sequencing, not contention between independent clients. The default suite additionally
@@ -373,7 +377,7 @@ credentials. Oracle gets a dedicated user and tablespace; SQL Server gets a dedi
 test database. The tags are `2022-latest` and `latest-lite`, respectively; actual server
 versions are printed during the run.
 
-**Oracle AI Database 26ai Free 23.26.3.0.0 passes the 19 tests.** Its integration uses:
+**Oracle AI Database 26ai Free 23.26.3.0.0 passes the 23 tests.** Its integration uses:
 
 - The default foreign-key delete restriction, omitting the unsupported `RESTRICT`
   keyword. Referenced originals remain protected, and unreferenced variants still cascade.
@@ -397,7 +401,7 @@ existing metadata column and constraints before upgrading: changing an existing
 leave partial tables behind; do not drop tables containing application data to retry.
 Older Oracle versions and custom isolation levels have not been validated.
 
-**SQL Server 2022 Developer 16.0.4275.2 passes the 19 tests.** Its integration uses:
+**SQL Server 2022 Developer 16.0.4275.2 passes the 23 tests.** Its integration uses:
 
 - `ON DELETE NO ACTION` for both foreign keys. The foreign keys remain enforced;
   the self-referencing cascade rejected by SQL Server is not generated.

@@ -26,6 +26,7 @@ test('imports every published package entry point', async ({ assert }) => {
     '@jrmc/adonis-attachment/converters/converter',
     '@jrmc/adonis-attachment/converters/autodetect_converter',
     '@jrmc/adonis-attachment/lucid',
+    '@jrmc/adonis-attachment/legacy',
     '@jrmc/adonis-attachment/attachment_provider',
     '@jrmc/adonis-attachment/configure',
     '@jrmc/adonis-attachment/commands/make/attachments_table',
@@ -63,6 +64,8 @@ test('keeps Lucid exports out of the package root', async ({ assert }) => {
   assert.strictEqual(lucidExports.attachments, lucidExports.attachmentsRelation)
   assert.isFunction(lucidExports.createLucidAttachmentProcessor)
   assert.isFunction(lucidExports.LucidJsonAttachmentStore)
+  assert.isFunction(lucidExports.LucidJsonAttachmentRegistry)
+  assert.isFunction(lucidExports.LucidJsonVariantGenerationService)
   assert.isFunction(lucidExports.JsonAttachmentEntry)
   assert.isFunction(lucidExports.JsonAttachmentRecord)
 })

@@ -220,6 +220,18 @@ test('extracts configured metadata only when meta is enabled', async ({ assert }
   assert.isUndefined(skipped.metadata)
 })
 
+test('persists edited draft metadata, including deletion, before synchronous extraction', async ({ assert }) => {
+  const service = new AttachmentService({ storage: new FakeStorage(), queue: new FakeQueue(), defaultDisk: 'public',
+    metadataExtractors: [{ async extract() { return { width: 100, extracted: true } } }],
+  })
+  const draft = service.createDraft({ body: new Uint8Array([1]), originalName: 'avatar.png', metadata: { width: 50, removed: true } }, { meta: true })
+  draft.metadata = { width: 75, caption: 'Edited' }
+  assert.deepEqual((await draft.persist()).metadata, { width: 75, extracted: true, caption: 'Edited' })
+  const empty = service.createDraft({ body: new Uint8Array([1]), originalName: 'avatar.png', metadata: { removed: true } })
+  empty.metadata = undefined
+  assert.isUndefined((await empty.persist()).metadata)
+})
+
 test('persists a draft only once when called concurrently', async ({ assert }) => {
   const storage = new FakeStorage()
   const service = new AttachmentService({

@@ -1,16 +1,176 @@
 # Migrate from v5
 
-v6 is a **breaking release**. The biggest change: attachments are no longer stored as
-nested JSON inside the parent model. They live in dedicated tables - a blob
-table and a polymorphic link table - which unlocks collections, variants, and blob reuse.
+v6 is a **breaking release**. The default table-backed API uses relation methods.
+For a singular JSON field such as an avatar, the experimental `/legacy` entry point
+keeps direct assignment, `meta` mutations and automatic serialization. Configuration
+and imports still change; this is not a drop-in replacement for all v5 APIs.
 
-::: warning Plan for a data migration
-Existing v5 JSON values must be converted into the new rows. The package gives you the
-tools; the record-by-record mapping is yours, because only your app knows which model,
-column, and owner each value belongs to.
+::: warning Experimental JSON option
+The JSON path below describes the implementation on `feat/json-persistence`. Do not
+assume it exists in an older published v6 alpha. Use a build containing this integration.
 :::
 
-## Migration checklist
+## Choose a migration path per field
+
+| | Keep JSON (experimental) | Migrate to tables (default) |
+| --- | --- | --- |
+| Import | `@jrmc/adonis-attachment/legacy` | `@jrmc/adonis-attachment/lucid` |
+| Declaration | `@attachment()` with `Attachment \| null` | `@attachment()` with `AttachmentRelation` |
+| Storage | Existing JSON column on the owner | Blob table and polymorphic link table |
+| Existing data | Read in place; IDs added on subsequent mutations | Convert JSON values into blob/link rows |
+| Files | Keep existing disks and file paths | Keep existing disks and file paths |
+| Sharing a file between owners | Not supported | Supported through links |
+
+The legacy facade currently covers **singular fields**, including variants and metadata.
+Legacy collections are deferred. Table relations also support collections. The existing
+[experimental JSON relation API](/guide/json-persistence) remains available for evaluation,
+but it is not a v5-compatible collection facade. Choose each field's path **before** running
+the data-migration script, which is only for fields moving to tables.
+
+## Path A: keep the existing JSON columns
+
+You do **not** need to create attachment/link tables, add a lock table, or run
+`make:attachment-v5-migration` for these fields. Keep the owner columns and stored files.
+The API and application configuration still need to change.
+
+### Declare the JSON field
+
+For an existing `users.avatar` column:
+
+```ts
+// app/models/user.ts
+import { BaseModel, column } from '@adonisjs/lucid/orm'
+import { attachment, type Attachment } from '@jrmc/adonis-attachment/legacy'
+
+export default class User extends BaseModel {
+  static table = 'users'
+
+  @column({ isPrimary: true })
+  declare id: number
+
+  @attachment({ preComputeUrl: true, variants: ['thumbnail'], meta: true })
+  declare avatar: Attachment | null
+}
+```
+
+The column name is inferred using Lucid's naming strategy: the `avatar` field uses
+the existing `avatar` column, without any extra option.
+
+Do not add `@column()` to `avatar`, or map another ordinary attribute to the same
+database column. The relation manages its writes transactionally; it is not part of
+Lucid's ordinary dirty attributes. A stale model saving another attribute therefore
+does not write its old JSON snapshot over a worker's changes.
+
+Configure the `thumbnail` converter in v6, or omit `variants` if you do not use it.
+
+<details>
+<summary>Optional: a different property name from the existing column</summary>
+
+Use `columnName` only to override the inferred name. For example, if you want to call
+the TypeScript field `profilePicture` while keeping the SQL column `avatar`, use this
+declaration **instead of** the `avatar` declaration above:
+
+```ts
+@attachment({ columnName: 'avatar', preComputeUrl: true })
+declare profilePicture: Attachment | null
+```
+
+Your application then uses `user.profilePicture = ...`. No database column rename is required.
+
+</details>
+
+### Keep direct assignment for a singular avatar
+
+With an already validated multipart `file`, creation and replacement become:
+
+```ts
+import User from '#models/user'
+import { attachmentManager } from '@jrmc/adonis-attachment/legacy'
+
+const user = await User.findOrFail(42)
+user.avatar = await attachmentManager.createFromFile(file)
+await user.save()
+
+console.log(user.avatar?.originalName)
+console.log(await user.avatar?.getUrl('thumbnail'))
+if (user.avatar) {
+  user.avatar.meta ??= {}
+  user.avatar.meta.caption = 'Profile photo'
+  await user.save()
+}
+console.log(user.serialize()) // includes avatar, meta and named variants
+
+user.avatar = null
+await user.save()
+```
+
+Import the manager from `/legacy` too: the root manager returns modern drafts, not
+legacy values. File writes and removals are staged until `save()`; deletions happen
+after commit. `user.avatar` reads the loaded snapshot synchronously. Use `await user.refresh()`
+after background jobs to reload variants and metadata. Save pending changes before refreshing.
+`serializeAs` and custom `serialize` are supported; old `keyId` output is not reproduced.
+See [Legacy JSON fields](/guide/legacy) for scope and concurrency rules.
+
+### Configure storage and worker routing
+
+```ts
+// config/attachment.ts
+import { AdonisDriveStorage, defineConfig } from '@jrmc/adonis-attachment'
+
+export default defineConfig({
+  storage: AdonisDriveStorage.fromApp,
+  route: false,
+  integrations: {
+    lucid: {
+      jsonModels: { users: () => import('#models/user') },
+    },
+  },
+  // Add your v6 converter, metadata and queue configuration as needed.
+})
+```
+
+The registry key (`users`) must match the relation's logical `type`, which defaults to
+the model table. These trusted imports let both memory and external workers resolve
+the model and JSON field, including in a fresh worker process. Keep Lucid integration
+enabled for this automatic routing. Custom repositories/processors/persisters must also
+handle JSON references if you override the defaults.
+
+The built-in ID-only HTTP route remains table-backed. For JSON, use Drive URLs or an
+application route with your own authorization; `route: false` disables the table route
+for JSON-only applications. See [JSON persistence](/guide/json-persistence) for details.
+
+### Verify data compatibility and cut over
+
+1. **Back up the database and files**, then rehearse on a staging copy.
+2. **Verify the existing documents and column capacity.** The reader accepts singular
+   v5 objects and collection arrays, with `meta` and `variants`, as native or serialized
+   JSON. `NULL` means empty. Invalid documents, duplicate IDs/variant keys and duplicate
+   file locations within a field are rejected. Oracle needs CLOB capacity, not a
+   `VARCHAR2(4000)` column that cannot hold larger documents.
+3. **Verify disks and file paths.** Keep the old Drive disks available. Legacy documents
+   missing a disk use the resolved field/config disk; those missing a path use their
+   stored `name`. Confirm these fallbacks point to the actual old files.
+4. **Update and test application calls**, including upload, replacement, deletion,
+   collections, URLs and worker jobs. Do not copy a file location between JSON owners
+   or fields: this mode has no global reference counting for shared files.
+5. **Pause v5 attachment writes and finish or retire pending v5 jobs before cutover.**
+   Do not run v5 writers alongside the v6 writers on these columns. After deploying
+   the updated models, configuration and workers, resume writes through v6.
+
+Reading legacy documents does not rewrite the database. Missing IDs are derived
+deterministically for reads; the next mutation persists IDs alongside the v5 fields,
+including variant IDs. Unknown document fields are retained when updating existing
+documents. This is data-reading compatibility, not byte-for-byte v5 output or a promise
+of safe downgrade after v6 writes. Retain backups for recovery: replacements and deletions
+can remove old files after commit, so restoring old JSON alone may not restore those files.
+
+## Path B: migrate JSON data to tables
+
+With the default table-backed mode, existing v5 values **must** be converted into blob
+and link rows. The package supplies migration tools, but your application supplies the
+owner/column mapping. Follow this path only for fields you chose to move to tables.
+
+### Migration checklist
 
 1. **Create the new schema.**
 
@@ -37,7 +197,7 @@ column, and owner each value belongs to.
    This is a real write operation: there is no built-in dry-run flag.
 
 5. **Ship the reading code** (models using the new persistence) **before** dropping the old
-   JSON columns.
+   JSON columns for migrated fields. Never drop columns retained by Path A fields.
 
 The script uses `migrateLegacyAttachmentRecords`, which writes blob and link rows in
 batches (a threshold of 100 blob rows by default, including variants; a complete source
@@ -65,12 +225,13 @@ The v5 `meta` object is copied unchanged to the v6 `metadata` column for both or
 variants. Newly uploaded files use the default Sharp, EXIF, video, and PDF metadata profile
 whenever `meta: true` is enabled; no extractor configuration is required.
 
-## Map and run the generated script
+### Map and run the generated script
 
 Read legacy columns with the database query builder, not the new relation accessors.
 For example, replace `legacyAttachmentRecords` in the generated script with this iterator
 and add the `db` import. This example assumes a numeric `users.id` and legacy JSON columns
 named `avatar` and `gallery`; adapt those names and pagination to your schema.
+If a field remains JSON-backed, omit it from this iterator.
 
 ```ts
 import db from '@adonisjs/lucid/services/db'
@@ -154,11 +315,12 @@ with Node: it requires a booted Adonis application.
 
 ## Update model decorators
 
-Before switching your models, follow the execution procedure below and verify both the
-new rows and file access.
+For the table path, complete the migration procedure above and verify both the new rows
+and file access before switching your models. For the JSON path, use the declarations
+and cutover checklist in Path A instead.
 
-`@attachment()` now declares a singular relation instead of a JSON column. Keep the decorator
-name, but change the property type and use the relation methods:
+`@attachment()` without a persistence option declares a table-backed singular relation.
+The import moves to the Lucid entry point; change the property type and use relation methods:
 
 ```ts
 import { attachment, type AttachmentRelation } from '@jrmc/adonis-attachment/lucid'
@@ -172,5 +334,5 @@ await user.save()
 
 Use `@attachments()` with `AttachmentCollectionRelation` for collections. The explicit
 `@attachmentRelation()` and `@attachmentsRelation()` names remain available as aliases.
-`serializeAs` no longer applies: relation accessors are not Lucid columns and are not
-serialized automatically.
+In both modes, `serializeAs` no longer applies: relation accessors are not ordinary
+Lucid columns and are not serialized automatically.

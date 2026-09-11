@@ -48,6 +48,17 @@ export class AttachmentConflictError extends AttachmentError {
   static status = 409
 }
 
+/** An intended metadata edit conflicts with a change since the caller's snapshot. */
+export class AttachmentMetadataConflictError extends AttachmentConflictError {
+  static code = 'E_ATTACHMENT_METADATA_CONFLICT'
+  readonly path: readonly string[]
+
+  constructor(path: readonly string[]) {
+    super(`Attachment metadata changed concurrently at ${JSON.stringify(path)}; reload before retrying`)
+    this.path = Object.freeze([...path])
+  }
+}
+
 /** Raised when an adapter or integration has been configured incorrectly. */
 export class AttachmentConfigurationError extends AttachmentError {
   static code = 'E_ATTACHMENT_CONFIGURATION'

@@ -96,6 +96,10 @@
       "types": "./build/src/converters/autodetect_converter.d.ts",
       "default": "./build/src/converters/autodetect_converter.js"
     },
+    "./legacy": {
+      "types": "./build/src/integrations/legacy/index.d.ts",
+      "default": "./build/src/legacy.js"
+    },
     "./lucid": {
       "types": "./build/src/integrations/lucid/index.d.ts",
       "default": "./build/src/lucid.js"

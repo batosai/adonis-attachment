@@ -57,6 +57,7 @@ export type AttachmentMetadataMode = 'sync' | 'deferred'
  * Database persistence deliberately remains the responsibility of the caller.
  */
 export class AttachmentService {
+  readonly defaultDisk: string
   readonly #storage: AttachmentStorage
   readonly #queue: AttachmentQueue
   readonly #factory: AttachmentFactory
@@ -68,6 +69,7 @@ export class AttachmentService {
   readonly #events: AttachmentEventEmitter | undefined
 
   constructor(options: AttachmentServiceOptions) {
+    this.defaultDisk = options.defaultDisk
     this.#storage = options.storage
     this.#queue = options.queue
     this.#factory = new AttachmentFactory(options)
@@ -79,6 +81,11 @@ export class AttachmentService {
     this.#metadataPersister = options.metadataPersister
     this.#metadataVariants = options.metadataVariants ?? true
     this.#events = options.events
+  }
+
+  /** Disk used when reading legacy documents that did not persist one. */
+  getPersistenceDisk(options?: AttachmentPersistenceOptions): string {
+    return resolveAttachmentPersistenceOptions(this.#defaults, options).disk ?? this.defaultDisk
   }
 
   createDraft(
@@ -108,7 +115,10 @@ export class AttachmentService {
   }
 
   async #persistDraft(draft: AttachmentDraft, request?: AttachmentPersistRequest<any>): Promise<Attachment> {
-    const source = draft.source
+    // Draft metadata can be edited before save (notably by the legacy facade).
+    // Capture it before the first await, without retaining a mutable caller object.
+    const { metadata: _sourceMetadata, ...sourceInput } = draft.source
+    const source = { ...sourceInput, ...(draft.metadata !== undefined ? { metadata: structuredClone(draft.metadata) } : {}) }
     const context: AttachmentPersistenceContext = {
       ...request?.context,
       originalName: source.originalName,

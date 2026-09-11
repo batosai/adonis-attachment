@@ -70,8 +70,9 @@ Rebuild an `Attachment`-shaped object from your columns and pass it to
 
 The `feat/json-persistence` branch starts by extracting a persistence-independent
 `AttachmentLifecycleService`, exported from `@jrmc/adonis-attachment/core` and the package
-root. An [explicit field-bound JSON store](/guide/json-persistence) is now available on this
-branch. There is no new decorator option, automatic data migration, or change to existing tables.
+root. A [field-bound JSON store and per-field decorator option](/guide/json-persistence)
+are available on this branch. `persistence: 'json'` opts a field into an owner column;
+omitting it preserves tables. There is no automatic data migration or change to existing tables.
 
 `AttachmentPersistence<Entry, Record>` describes the operations consumed by this service.
 An `AttachmentRecord` provides `id` and `toAttachment()`; an `AttachmentEntry` additionally
@@ -97,9 +98,11 @@ new adapters should implement the explicit transaction contract instead.
 results and scoped service instances. It delegates to the shared implementation;
 `AttachmentFileCleanupError` is the same class through the core and Lucid exports.
 
-Remaining work on this branch: per-field decorator selection and owner model synchronization,
-automatic adapter-specific worker/metadata/variant integration, and tests for mixed-mode applications.
-Compatibility with simultaneous legacy v5 writers is not implied.
+JSON decorators, model snapshot synchronization and allowlisted JSON workers are integrated,
+with tests for mixed-mode applications. The built-in HTTP route remains table/ID-only;
+v5-style automatic attribute serialization is available through the singular
+[/legacy facade](/guide/legacy), not the experimental relation helpers. Simultaneous
+legacy v5 writers remain unsupported.
 
 ### Contextual identity and worker resolution
 

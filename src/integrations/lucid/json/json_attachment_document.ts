@@ -16,6 +16,8 @@ export type JsonAttachmentDocument = Record<string, unknown> & { id: string; var
 
 /** A detached read view, not a Lucid model. Mutation goes through the scoped store. */
 export class JsonAttachmentRecord implements AttachmentRecord {
+  /** Runtime-only URL, never written to the JSON document. */
+  url?: string
   constructor(
     readonly id: string,
     readonly owner: JsonAttachmentOwner,
@@ -25,7 +27,7 @@ export class JsonAttachmentRecord implements AttachmentRecord {
   ) {}
 
   toAttachment(): Attachment {
-    return withAttachmentReference(structuredClone(this.attachment), {
+    return withAttachmentReference({ ...structuredClone(this.attachment), ...(this.url ? { url: this.url } : {}) }, {
       version: 1, adapter: 'json', id: this.id, owner: { ...this.owner },
     })
   }

@@ -5,11 +5,15 @@
  * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
  */
 
+import { isDeepStrictEqual } from 'node:util'
 import type { QueryClientContract, TransactionClientContract } from '@adonisjs/lucid/types/database'
+import type { LucidRow } from '@adonisjs/lucid/types/model'
 import type { Attachment } from '../../../core/attachment.js'
 import type { AttachmentOwner, AttachmentPersistence, AttachmentTransaction } from '../../../core/attachment_persistence.js'
 import type { AttachmentRepository } from '../../../core/attachment_repository.js'
 import type { AttachmentMetadataPersister } from '../../../core/attachment_metadata_persister.js'
+import type { AttachmentMetadata } from '../../../media/media_metadata.js'
+import { JsonMetadataMutation } from './json_metadata_mutation.js'
 import { parseAttachmentReference, type AttachmentReference } from '../../../core/attachment_reference.js'
 import { markAttachmentPersisted } from '../../../core/attachment_state.js'
 import { AttachmentConfigurationError, AttachmentConflictError, AttachmentNotFoundError, AttachmentValidationError } from '../../../errors.js'
@@ -28,6 +32,8 @@ export type LucidJsonAttachmentStoreOptions = {
   owner: JsonAttachmentOwner
   kind: 'one' | 'many'
   defaultDisk: string
+  /** Bound by the relation integration; the managed column must not be an ordinary @column. */
+  model?: LucidRow
 }
 
 /** Field-bound JSON persistence. All writers must use this locking protocol. */
@@ -218,18 +224,38 @@ export class LucidJsonAttachmentStore implements
   }
 
   async persistMetadata(attachment: Attachment, metadata: NonNullable<Attachment['metadata']>): Promise<void> {
+    await this.patchMetadata(attachment, attachment.metadata, metadata)
+  }
+
+  /** Apply local metadata edits against their original snapshot, preserving concurrent unrelated edits. */
+  async patchMetadata(attachment: Attachment, before: AttachmentMetadata | undefined, after: AttachmentMetadata | undefined): Promise<Attachment> {
     if (!attachment.reference) throw new AttachmentValidationError('JSON metadata persistence requires an attachment reference')
     const reference = parseAttachmentReference(attachment.reference)
     if (reference.adapter !== 'json' || reference.id !== attachment.id || !reference.owner) throw new AttachmentValidationError('Invalid JSON metadata reference')
     this.#assertOwner(reference.owner)
-    if (!this.#scoped) return this.transaction(this.#owner, (store) => store.persistMetadata(attachment, metadata))
+    // Capture the caller's intent before waiting for a transaction/lock. In-place
+    // changes to their objects while this call is pending must not alter the write.
+    const mutation = new JsonMetadataMutation(before, after)
+    const target = { id: attachment.id, disk: attachment.disk, path: attachment.path }
+    if (!this.#scoped) return this.transaction(this.#owner, (store) => store.#patchMetadata(target, mutation))
+    return this.#patchMetadata(target, mutation)
+  }
+
+  async #patchMetadata(target: Pick<Attachment, 'id' | 'disk' | 'path'>, mutation: JsonMetadataMutation): Promise<Attachment> {
+    this.#requireScope()
     const documents = await this.#read()
-    const document = documents.flatMap((item) => [item, ...(item.variants ?? [])]).find((item) => item.id === attachment.id)
-    if (!document) throw new AttachmentNotFoundError(attachment.id)
-    const current = attachmentFromDocument(document, this.#options.defaultDisk)
-    if (current.disk !== attachment.disk || current.path !== attachment.path) throw new AttachmentConflictError('Attachment file changed before metadata persistence')
-    document.meta = structuredClone(metadata)
+    const original = documents.find((item) => item.id === target.id || item.variants?.some((variant) => variant.id === target.id))
+    if (!original) throw new AttachmentNotFoundError(target.id)
+    const document = original.id === target.id ? original : original.variants!.find((variant) => variant.id === target.id)!
+    const record = () => document === original ? this.#entry(document, null) : this.#variant(document, original)
+    const current = record().toAttachment()
+    if (current.disk !== target.disk || current.path !== target.path) throw new AttachmentConflictError('Attachment file changed before metadata persistence')
+    const metadata = mutation.apply(current.metadata)
+    if (isDeepStrictEqual(metadata, current.metadata)) return current
+    if (metadata === undefined) delete document.meta
+    else document.meta = metadata
     await this.#write(documents)
+    return record().toAttachment()
   }
 
   #query() { return this.#client.from(this.#options.table).where(this.#primaryKey, this.#owner.id) }
@@ -241,13 +267,28 @@ export class LucidJsonAttachmentStore implements
       ? (await query.whereRaw('rownum <= 1'))[0]
       : await query.first()
     if (!row) throw new AttachmentNotFoundError(`owner:${this.#owner.type}:${this.#owner.id}`)
-    return decodeJsonAttachments(row[this.#options.column], this.#options.kind, this.#owner, this.#options.defaultDisk)
+    const documents = decodeJsonAttachments(row[this.#options.column], this.#options.kind, this.#owner, this.#options.defaultDisk)
+    this.#syncModel(row[this.#options.column])
+    return documents
   }
   async #write(documents: JsonAttachmentDocument[]): Promise<void> {
     this.#requireScope()
     validateJsonAttachments(documents, this.#options.defaultDisk)
     const value = this.#options.kind === 'one' ? documents[0] ?? null : documents
     await this.#query().update({ [this.#options.column]: value === null ? null : JSON.stringify(value) })
+    this.#syncModel(value === null ? null : JSON.stringify(value))
+  }
+  #syncModel(value: unknown): void {
+    const model = this.#options.model
+    if (!model) return
+    const column = this.#options.column
+    const present = Object.hasOwn(model.$extras, column)
+    const previous = model.$extras[column]
+    if (this.#scoped) this.afterRollback(() => {
+      if (present) model.$extras[column] = previous
+      else delete model.$extras[column]
+    })
+    model.$extras[column] = structuredClone(value)
   }
   #entry(document: JsonAttachmentDocument, position: number | null): JsonAttachmentEntry {
     return new JsonAttachmentEntry(document.id, this.#owner, attachmentFromDocument(document, this.#options.defaultDisk), position)
@@ -275,7 +316,7 @@ export class LucidJsonAttachmentStore implements
   }
   #assertOwner(owner: AttachmentOwner): void {
     if (owner.type !== this.#owner.type || owner.id !== this.#owner.id || owner.field !== this.#owner.field) throw new AttachmentValidationError('Owner does not match the configured JSON field')
-    if (owner.model !== undefined) throw new AttachmentConfigurationError('Automatic Lucid model synchronization is not implemented for JSON fields yet; use a plain owner and an explicit client')
+    if (owner.model !== undefined && owner.model !== this.#options.model) throw new AttachmentConfigurationError('JSON model owners require a store bound to that same model; use the attachment decorator or a plain owner')
   }
   #requireScope(): void {
     if (!this.#scoped) throw new AttachmentConfigurationError('This JSON operation requires a transaction-scoped store')

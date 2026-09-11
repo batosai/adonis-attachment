@@ -12,6 +12,7 @@ import AttachmentProvider from '../providers/attachment_provider.js'
 import { AttachmentLinkModel } from '../src/integrations/lucid/models/attachment_link_model.js'
 import { AttachmentModel } from '../src/integrations/lucid/models/attachment_model.js'
 import { configureLucidAttachmentTables } from '../src/integrations/lucid/schema/configure_lucid_attachment_tables.js'
+import { LucidJsonAttachmentRegistry } from '../src/integrations/lucid/json/lucid_json_attachment_registry.js'
 
 const storage: AttachmentStorage = {
   async write() {},
@@ -203,5 +204,24 @@ test.group('AttachmentProvider', (group) => {
     provider.register()
 
     assert.equal(await bindings.get('jrmc.attachment.events')?.(), events)
+  })
+
+  test('exposes the configured lazy JSON model registry to external workers', async ({ assert }) => {
+    for (const enabled of [true, false]) {
+      const bindings = new Map<string, () => Promise<unknown>>()
+      let imports = 0
+      const config = defineConfig({ storage, route: false, integrations: { lucid: enabled ? {
+        jsonModels: { users: async () => { imports++; return { default: AttachmentModel } } },
+      } : false } })
+      const provider = new AttachmentProvider({
+        config: { get: () => config },
+        container: { singleton(name: string, factory: () => Promise<unknown>) { bindings.set(name, factory) } },
+      } as never)
+      provider.register()
+      const factory = bindings.get('jrmc.attachment.json')!
+      if (enabled) assert.instanceOf(await factory(), LucidJsonAttachmentRegistry)
+      else await assert.rejects(factory, /require integrations.lucid.jsonModels/)
+      assert.equal(imports, 0)
+    }
   })
 })

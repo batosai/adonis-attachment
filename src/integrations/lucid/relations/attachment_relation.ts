@@ -8,6 +8,9 @@
 import app from "@adonisjs/core/services/app";
 import type { LucidRow, LucidModel } from "@adonisjs/lucid/types/model";
 import { attachmentTransaction, afterAttachmentRollback } from "../persistence/attachment_transaction.js";
+import { AttachmentLifecycleService } from "../../../core/attachment_lifecycle_service.js";
+import { LucidJsonAttachmentStore } from "../json/lucid_json_attachment_store.js";
+import { JsonAttachmentEntry, JsonAttachmentRecord } from "../json/json_attachment_document.js";
 import type { AttachmentVariantKey } from "../../../../index.js";
 
 import type {
@@ -30,7 +33,7 @@ import {
 
 type AttachmentRelationInput = CreateAttachmentInput | AttachmentDraft;
 
-type AttachmentRelationRow = LucidRow & {
+export type AttachmentRelationRow = LucidRow & {
   $isPersisted: boolean;
   $primaryKeyValue: string | number | null | undefined;
   constructor: {
@@ -47,12 +50,20 @@ type AttachmentRelationRow = LucidRow & {
   };
 };
 
+export type AttachmentPersistenceMode = "tables" | "json";
+export type AttachmentRelationEntry<Mode extends AttachmentPersistenceMode = "tables"> =
+  Mode extends "json" ? JsonAttachmentEntry : AttachmentLinkModel;
+export type AttachmentRelationRecord<Mode extends AttachmentPersistenceMode = "tables"> =
+  Mode extends "json" ? JsonAttachmentRecord : AttachmentModel;
+
 export type AttachmentRelationKind = "one" | "many";
 
 export type AttachmentRelationDefinition = {
   kind: AttachmentRelationKind;
   field: string;
   options: AttachmentRelationOptions<any>;
+  /** Internal: direct values can be assigned inside Lucid beforeSave hooks. */
+  managed?: boolean;
 };
 
 type RelationDefinition = AttachmentRelationDefinition;
@@ -74,6 +85,10 @@ type PendingCollectionOperation =
 export type AttachmentRelationOptions<Model = any> =
   AttachmentPersistenceOptions<Model> & {
     type?: string;
+    /** Defaults to the two-table store. JSON manages a column on the owner. */
+    persistence?: AttachmentPersistenceMode;
+    /** JSON database column name; defaults to the model naming strategy. */
+    columnName?: string;
   };
 
 const relationDefinitions = new WeakMap<
@@ -82,8 +97,16 @@ const relationDefinitions = new WeakMap<
 >();
 const relationInstances = new WeakMap<
   object,
-  Map<string, AttachmentRelation | AttachmentCollectionRelation>
+  Map<string, { readonly hasPending: boolean; persist(): Promise<unknown> }>
 >();
+/** Internal extension point: legacy values share the same model transaction hooks. */
+export interface ManagedAttachmentField {
+  readonly hasPending: boolean;
+  readonly value: unknown;
+  assign(value: unknown): void;
+  initialize(reload?: boolean): Promise<void>;
+  persist(): Promise<unknown>;
+}
 const deleteHooks = new WeakSet<object>();
 const saveHooks = new WeakSet<object>();
 
@@ -95,7 +118,7 @@ export function getAttachmentRelationDefinitions(
 }
 
 /**
- * Declares one attachment persisted in the polymorphic attachments table.
+ * Declares one attachment, using tables by default or an owner JSON column.
  */
 export function attachmentRelation<Model = LucidRow>(
   options: AttachmentRelationOptions<Model> = {},
@@ -104,7 +127,7 @@ export function attachmentRelation<Model = LucidRow>(
 }
 
 /**
- * Declares an ordered attachment collection persisted in the polymorphic attachments table.
+ * Declares an ordered collection, using tables by default or an owner JSON column.
  */
 export function attachmentsRelation<Model = LucidRow>(
   options: AttachmentRelationOptions<Model> = {},
@@ -112,7 +135,7 @@ export function attachmentsRelation<Model = LucidRow>(
   return defineRelation("many", options);
 }
 
-export class AttachmentRelation {
+export class AttachmentRelation<Mode extends AttachmentPersistenceMode = "tables"> {
   readonly #row: AttachmentRelationRow;
   readonly #definition: RelationDefinition;
   #pending: PendingSingularOperation | undefined;
@@ -122,7 +145,7 @@ export class AttachmentRelation {
     this.#definition = definition;
   }
 
-  async get(): Promise<AttachmentLinkModel | null> {
+  async get(): Promise<AttachmentRelationEntry<Mode> | null> {
     const lifecycle = await this.#lifecycle();
     return this.#preComputeUrl(await lifecycle.get(this.#owner()));
   }
@@ -163,13 +186,13 @@ export class AttachmentRelation {
     this.#pending = { type: "detach" };
   }
 
-  async persist(): Promise<AttachmentLinkModel | null> {
+  async persist(): Promise<AttachmentRelationEntry<Mode> | null> {
     if (!this.#pending) return this.get();
     this.#owner();
     return withModelTransaction(this.#row, () => this.#persist());
   }
 
-  async #persist(): Promise<AttachmentLinkModel | null> {
+  async #persist(): Promise<AttachmentRelationEntry<Mode> | null> {
     const pending = this.#pending;
 
     if (!pending) {
@@ -178,7 +201,7 @@ export class AttachmentRelation {
 
     const owner = this.#owner();
     const lifecycle = await this.#lifecycle();
-    let result: AttachmentLinkModel | null;
+    let result: AttachmentRelationEntry<Mode> | null;
 
     switch (pending.type) {
       case "attach":
@@ -211,7 +234,7 @@ export class AttachmentRelation {
     return result;
   }
 
-  async variants(): Promise<AttachmentModel[]> {
+  async variants(): Promise<AttachmentRelationRecord<Mode>[]> {
     const lifecycle = await this.#lifecycle();
     return this.#preComputeVariantUrls(await lifecycle.listVariants(this.#owner()));
   }
@@ -234,33 +257,29 @@ export class AttachmentRelation {
     return true;
   }
 
-  async #lifecycle(): Promise<LucidAttachmentLifecycleService> {
-    return new LucidAttachmentLifecycleService(
-      await resolveAttachmentService(),
-      new LucidAttachmentStore(
-        AttachmentModel,
-        this.#row.$trx ? { client: this.#row.$trx } : {},
-      ),
-    );
+  async #lifecycle(): Promise<AttachmentLifecycleService<AttachmentRelationEntry<Mode>, AttachmentRelationRecord<Mode>>> {
+    // The decorator selects the implementation; the generic preserves table-model
+    // return types for existing consumers and exposes detached records for JSON.
+    return createLifecycle(this.#row, this.#definition) as Promise<AttachmentLifecycleService<AttachmentRelationEntry<Mode>, AttachmentRelationRecord<Mode>>>;
   }
 
   #owner(): AttachmentOwner<AttachmentRelationRow> {
     return createOwner(this.#row, this.#definition);
   }
 
-  async #preComputeUrl(link: AttachmentLinkModel | null): Promise<AttachmentLinkModel | null> {
+  async #preComputeUrl(link: AttachmentRelationEntry<Mode> | null): Promise<AttachmentRelationEntry<Mode> | null> {
     if (!link) {
       return null;
     }
 
     const service = await resolveAttachmentService();
     if (service.getPreComputeUrlEnabled(this.#definition.options)) {
-      link.attachment.url = (await service.preComputeUrl(link.toAttachment())).url;
+      (link instanceof JsonAttachmentRecord ? link : link.attachment).url = (await service.preComputeUrl(link.toAttachment())).url;
     }
     return link;
   }
 
-  async #preComputeVariantUrls(variants: AttachmentModel[]): Promise<AttachmentModel[]> {
+  async #preComputeVariantUrls(variants: AttachmentRelationRecord<Mode>[]): Promise<AttachmentRelationRecord<Mode>[]> {
     const service = await resolveAttachmentService();
     if (!service.getPreComputeUrlEnabled(this.#definition.options)) {
       return variants;
@@ -273,7 +292,7 @@ export class AttachmentRelation {
   }
 }
 
-export class AttachmentCollectionRelation {
+export class AttachmentCollectionRelation<Mode extends AttachmentPersistenceMode = "tables"> {
   readonly #row: AttachmentRelationRow;
   readonly #definition: RelationDefinition;
   #pending: PendingCollectionOperation[] = [];
@@ -283,7 +302,7 @@ export class AttachmentCollectionRelation {
     this.#definition = definition;
   }
 
-  async all(): Promise<AttachmentLinkModel[]> {
+  async all(): Promise<AttachmentRelationEntry<Mode>[]> {
     const lifecycle = await this.#lifecycle();
     const links = await lifecycle.listCollection(this.#owner());
     const service = await resolveAttachmentService();
@@ -292,7 +311,7 @@ export class AttachmentCollectionRelation {
     }
 
     await Promise.all(links.map(async (link) => {
-      link.attachment.url = (await service.preComputeUrl(link.toAttachment())).url;
+      (link instanceof JsonAttachmentRecord ? link : link.attachment).url = (await service.preComputeUrl(link.toAttachment())).url;
     }));
     return links;
   }
@@ -366,13 +385,13 @@ export class AttachmentCollectionRelation {
     this.#pending.push({ type: "move", id, position });
   }
 
-  async persist(): Promise<AttachmentLinkModel[]> {
+  async persist(): Promise<AttachmentRelationEntry<Mode>[]> {
     if (!this.hasPending) return this.all();
     this.#owner();
     return withModelTransaction(this.#row, () => this.#persist());
   }
 
-  async #persist(): Promise<AttachmentLinkModel[]> {
+  async #persist(): Promise<AttachmentRelationEntry<Mode>[]> {
     if (this.#pending.length === 0) {
       return this.all();
     }
@@ -414,14 +433,10 @@ export class AttachmentCollectionRelation {
     });
   }
 
-  async #lifecycle(): Promise<LucidAttachmentLifecycleService> {
-    return new LucidAttachmentLifecycleService(
-      await resolveAttachmentService(),
-      new LucidAttachmentStore(
-        AttachmentModel,
-        this.#row.$trx ? { client: this.#row.$trx } : {},
-      ),
-    );
+  async #lifecycle(): Promise<AttachmentLifecycleService<AttachmentRelationEntry<Mode>, AttachmentRelationRecord<Mode>>> {
+    // The decorator selects the implementation; the generic preserves table-model
+    // return types for existing consumers and exposes detached records for JSON.
+    return createLifecycle(this.#row, this.#definition) as Promise<AttachmentLifecycleService<AttachmentRelationEntry<Mode>, AttachmentRelationRecord<Mode>>>;
   }
 
   #owner(): AttachmentOwner<AttachmentRelationRow> {
@@ -429,9 +444,10 @@ export class AttachmentCollectionRelation {
   }
 }
 
-function defineRelation<Model>(
+export function defineRelation<Model>(
   kind: AttachmentRelationKind,
   options: AttachmentRelationOptions<Model>,
+  managed?: (row: AttachmentRelationRow, definition: RelationDefinition) => ManagedAttachmentField,
 ): PropertyDecorator {
   return (target, propertyKey) => {
     const Model =
@@ -447,17 +463,38 @@ function defineRelation<Model>(
     }
 
     Model.boot();
-    definitions.set(field, { kind, field, options });
+    if (options.persistence !== undefined && !["tables", "json"].includes(options.persistence)) {
+      throw new AttachmentConfigurationError("Unknown attachment persistence mode");
+    }
+    if (options.columnName !== undefined && options.persistence !== "json") {
+      throw new AttachmentConfigurationError("columnName is only supported by JSON attachment relations");
+    }
+    if (options.persistence === "json") {
+      const column = jsonRelationColumn(Model as unknown as LucidModel, { kind, field, options });
+      if ([...definitions.values()].some((definition) =>
+        definition.options.persistence === "json" &&
+        jsonRelationColumn(Model as unknown as LucidModel, definition) === column
+      )) throw new AttachmentConfigurationError("Two attachment relations cannot manage the same JSON column");
+    }
+    definitions.set(field, { kind, field, options: { ...options }, ...(managed ? { managed: true } : {}) });
     relationDefinitions.set(Model, definitions);
 
     if (!deleteHooks.has(Model)) {
       deleteHooks.add(Model);
       const deleteRow = Model.prototype.delete;
       Model.prototype.delete = async function(this: AttachmentRelationRow) {
-        return withModelTransaction(this, () => deleteRow.call(this));
+        return withModelTransaction(this, async () => {
+          // JSON disappears with the owner row: collect files before deleting it.
+          for (const definition of relationDefinitions.get(Model)?.values() ?? []) {
+            if (definition.options.persistence !== "json") continue;
+            await (await createLifecycle(this, definition)).purgeOwner(createOwner(this, definition));
+          }
+          return deleteRow.call(this);
+        });
       };
       Model.after("delete", async (row) => {
         for (const definition of relationDefinitions.get(Model)?.values() ?? []) {
+          if (definition.options.persistence === "json") continue;
           const lifecycle = new LucidAttachmentLifecycleService(
             await resolveAttachmentService(),
             new LucidAttachmentStore(
@@ -475,26 +512,48 @@ function defineRelation<Model>(
       wrapSave(Model);
     }
 
+    const instance = (row: AttachmentRelationRow) => {
+      const instances = relationInstances.get(row) ?? new Map();
+      let relation = instances.get(field);
+      if (!relation) {
+        relation = managed ? managed(row, definitions.get(field)!) : kind === "one"
+          ? new AttachmentRelation<AttachmentPersistenceMode>(row, definitions.get(field)!)
+          : new AttachmentCollectionRelation<AttachmentPersistenceMode>(row, definitions.get(field)!);
+        instances.set(field, relation);
+        relationInstances.set(row, instances);
+      }
+      return relation;
+    };
+    if (managed) {
+      const lucidModel = Model as unknown as LucidModel;
+      lucidModel.before("create", (row) => {
+        const fieldInstance = instance(row as AttachmentRelationRow) as ManagedAttachmentField;
+        // A new owner without a draft has an empty field, not an omitted SELECT column.
+        if (!fieldInstance.hasPending) void fieldInstance.value;
+      });
+      lucidModel.after("find", async (row) => { await (instance(row as AttachmentRelationRow) as ManagedAttachmentField).initialize(); });
+      lucidModel.after("fetch", async (rows) => {
+        await Promise.all(rows.map((row) => (instance(row as AttachmentRelationRow) as ManagedAttachmentField).initialize()));
+      });
+      const refresh = lucidModel.prototype.refresh;
+      lucidModel.prototype.refresh = async function() {
+        const fieldInstance = instance(this as AttachmentRelationRow) as ManagedAttachmentField;
+        if (fieldInstance.hasPending) throw new AttachmentValidationError("Save pending legacy attachment changes before refresh()");
+        await refresh.call(this);
+        await fieldInstance.initialize(true);
+        return this;
+      };
+    }
     Object.defineProperty(target, propertyKey, {
       configurable: true,
       enumerable: false,
       get(this: AttachmentRelationRow) {
-        const instances = relationInstances.get(this) ?? new Map();
-        const existing = instances.get(field);
-
-        if (existing) {
-          return existing;
-        }
-
-        const relation =
-          kind === "one"
-            ? new AttachmentRelation(this, definitions.get(field)!)
-            : new AttachmentCollectionRelation(this, definitions.get(field)!);
-
-        instances.set(field, relation);
-        relationInstances.set(this, instances);
-        return relation;
+        const relation = instance(this);
+        return managed ? (relation as ManagedAttachmentField).value : relation;
       },
+      ...(managed ? { set(this: AttachmentRelationRow, value: unknown) {
+        (instance(this) as ManagedAttachmentField).assign(value);
+      } } : {}),
     });
   };
 }
@@ -528,6 +587,34 @@ function createOwner(
   };
 }
 
+/** Internal trusted mapping shared by decorators and the worker model allowlist. */
+export function jsonRelationColumn(Model: LucidModel, definition: RelationDefinition): string {
+  Model.boot();
+  const column = definition.options.columnName ?? Model.namingStrategy.columnName(Model, definition.field);
+  if (!column || Model.$hasColumn(definition.field) || [...Model.$columnsDefinitions.values()].some((entry) => entry.columnName === column)) {
+    throw new AttachmentConfigurationError("A JSON attachment column must not also be declared with @column");
+  }
+  return column;
+}
+
+async function createLifecycle(row: AttachmentRelationRow, definition: RelationDefinition) {
+  const service = await resolveAttachmentService();
+  if (definition.options.persistence === "json") {
+    const Model = row.constructor as unknown as LucidModel;
+    const owner = createOwner(row, definition);
+    return new AttachmentLifecycleService(service, new LucidJsonAttachmentStore({
+      client: Model.$adapter.modelClient(row), table: Model.table,
+      primaryKey: Model.$getColumn(Model.primaryKey)!.columnName,
+      column: jsonRelationColumn(Model, definition),
+      owner: { type: owner.type, id: owner.id, field: owner.field },
+      kind: definition.kind, defaultDisk: service.getPersistenceDisk(definition.options), model: row,
+    }));
+  }
+  return new LucidAttachmentLifecycleService(service, new LucidAttachmentStore(
+    AttachmentModel, row.$trx ? { client: row.$trx } : {},
+  ));
+}
+
 async function resolveAttachmentService(): Promise<AttachmentService> {
   return (await app.container.make("jrmc.attachment")) as AttachmentService;
 }
@@ -537,6 +624,9 @@ function wrapSave(Model: AttachmentRelationRow["constructor"]): void {
 
   Model.prototype.save = (async function saveWithAttachmentRelations(this: AttachmentRelationRow) {
     const persist = async () => {
+      for (const definition of relationDefinitions.get(Model)?.values() ?? []) {
+        if (definition.options.persistence === "json") jsonRelationColumn(Model as unknown as LucidModel, definition);
+      }
       const result = await save.call(this);
 
       for (const relation of relationInstances.get(this)?.values() ?? []) {
@@ -547,7 +637,8 @@ function wrapSave(Model: AttachmentRelationRow["constructor"]): void {
 
       return result;
     };
-    if (![...(relationInstances.get(this)?.values() ?? [])].some((relation) => relation.hasPending)) {
+    if (![...(relationDefinitions.get(Model)?.values() ?? [])].some((definition) => definition.managed) &&
+      ![...(relationInstances.get(this)?.values() ?? [])].some((relation) => relation.hasPending)) {
       return persist();
     }
     return withModelTransaction(this, persist);

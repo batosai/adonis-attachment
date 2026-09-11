@@ -12,7 +12,8 @@ import { AttachmentValidationError } from '../../../errors.js'
 import {
   getAttachmentRelationDefinitions,
   type AttachmentCollectionRelation,
-  type AttachmentRelation,
+  AttachmentRelation,
+  type AttachmentRelationRow,
 } from '../relations/attachment_relation.js'
 
 type RegeneratableRow = LucidRow
@@ -124,6 +125,13 @@ export class AttachmentRegenerator {
 
     let attachments = 0
     for (const definition of definitions) {
+      if (definition.managed) {
+        // Legacy exposes a value, not a relation helper. Reuse the same trusted
+        // JSON lifecycle without reading or changing its in-memory snapshot.
+        const relation = new AttachmentRelation<'json'>(row as AttachmentRelationRow, definition)
+        attachments += (await relation.regenerateVariants(options.variants)) ? 1 : 0
+        continue
+      }
       const relation = (row as unknown as Record<string, unknown>)[definition.field] as
         | AttachmentRelation
         | AttachmentCollectionRelation

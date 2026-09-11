@@ -13,6 +13,7 @@ import {
   type CreateAttachmentInput,
 } from './attachment.js'
 import { markAttachmentPending } from './attachment_state.js'
+import { validateAttachmentReference } from './attachment_reference.js'
 import {
   resolveAttachmentPersistenceOptions,
   type AttachmentFolder,
@@ -208,6 +209,7 @@ export class AttachmentService {
     return this.#queue.enqueue({
       type: 'extract-metadata',
       attachmentId: attachment.id,
+      ...(attachment.reference !== undefined ? { reference: validateAttachmentReference(attachment.id, attachment.reference) } : {}),
       attachment,
       ...(eventContext ? { eventContext } : {}),
     })
@@ -239,6 +241,7 @@ export class AttachmentService {
     return this.#queue.enqueue({
       type: 'generate-variants',
       attachmentId: attachment.id,
+      ...(attachment.reference !== undefined ? { reference: validateAttachmentReference(attachment.id, attachment.reference) } : {}),
       ...(variantKeys ? { variantKeys } : {}),
       ...(meta !== undefined ? { meta } : {}),
       ...(eventContext ? { eventContext } : {}),

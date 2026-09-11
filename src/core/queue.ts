@@ -7,12 +7,14 @@
 
 import type { Attachment } from './attachment.js'
 import type { AttachmentEventContext } from '../events/attachment_events.js'
+import type { AttachmentReference } from './attachment_reference.js'
 
 export type VariantGenerationMode = 'create' | 'replace'
 
 export type GenerateVariantsJob = {
   type: 'generate-variants'
   attachmentId: string
+  reference?: AttachmentReference
   variantKeys?: readonly string[]
   meta?: boolean
   /** Replaces existing variants with the same key instead of creating new rows. */
@@ -23,6 +25,7 @@ export type GenerateVariantsJob = {
 export type ExtractMetadataJob = {
   type: 'extract-metadata'
   attachmentId: string
+  reference?: AttachmentReference
   attachment: Attachment
   eventContext?: AttachmentEventContext
 }

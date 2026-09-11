@@ -35,6 +35,6 @@ test.group('LucidAttachmentMetadataPersister', () => {
 
     await persister.persistMetadata(attachment, { dimension: { width: 320, height: 180 } })
 
-    assert.deepEqual(updates, [{ id: 'attachment-id', metadata: { dimension: { width: 320, height: 180 } } }])
+    assert.deepEqual(updates, [{ id: 'attachment-id', metadata: JSON.stringify({ dimension: { width: 320, height: 180 } }) }])
   })
 })

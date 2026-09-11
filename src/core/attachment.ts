@@ -14,6 +14,7 @@ import type {
 } from './attachment_options.js'
 import type { AttachmentMetadata } from '../media/media_metadata.js'
 import { AttachmentError } from '../errors.js'
+import type { AttachmentReference } from './attachment_reference.js'
 
 export type Attachment = Readonly<{
   id: string
@@ -28,6 +29,8 @@ export type Attachment = Readonly<{
   metadata?: AttachmentMetadata | undefined
   /** Runtime-only public URL. It is never persisted with the attachment. */
   url?: string
+  /** Runtime/queue locator. Reconstructed by persistence adapters, not a stored column. */
+  reference?: AttachmentReference
 }>
 
 export type AttachmentPersistRequest<Model = any> = {
@@ -204,7 +207,7 @@ export function isAttachmentDraft(value: unknown): value is AttachmentDraft {
 
 /** Drops runtime-only fields before an attachment is persisted as JSON or a blob row. */
 export function toPersistedAttachment(attachment: Attachment): Attachment {
-  const { url: _url, ...persisted } = attachment
+  const { url: _url, reference: _reference, ...persisted } = attachment
   return persisted
 }
 

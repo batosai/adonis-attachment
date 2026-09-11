@@ -71,7 +71,7 @@ Rebuild an `Attachment`-shaped object from your columns and pass it to
 The `feat/json-persistence` branch starts by extracting a persistence-independent
 `AttachmentLifecycleService`, exported from `@jrmc/adonis-attachment/core` and the package
 root. This is infrastructure for additional adapters, **not an available JSON storage mode**.
-There is no new decorator option, data migration, job payload, or change to existing tables.
+There is no new decorator option, data migration, or change to existing tables.
 
 `AttachmentPersistence<Entry, Record>` describes the operations consumed by this service.
 An `AttachmentRecord` provides `id` and `toAttachment()`; an `AttachmentEntry` additionally
@@ -97,10 +97,61 @@ new adapters should implement the explicit transaction contract instead.
 results and scoped service instances. It delegates to the shared implementation;
 `AttachmentFileCleanupError` is the same class through the core and Lucid exports.
 
-Remaining work on this branch: contextual attachment identity and resolution, JSON v5
-reading/writing, per-field adapter selection, worker/metadata/variant integration, and
-tests for mixed-mode applications. The current repository and jobs still resolve files
-by their table-backed IDs. Compatibility with simultaneous legacy v5 writers is not implied.
+Remaining work on this branch: JSON v5 reading/writing, per-field adapter selection,
+adapter-specific worker/metadata/variant integration, and tests for mixed-mode applications.
+Compatibility with simultaneous legacy v5 writers is not implied.
+
+### Contextual identity and worker resolution
+
+`AttachmentReference` is a versioned, serializable locator. It names a registered adapter,
+the stable file identity, and optionally a logical owner. For example, this describes a
+future JSON attachment; it does **not** enable JSON persistence by itself:
+
+```ts
+import type { AttachmentReference } from '@jrmc/adonis-attachment/core'
+
+const reference: AttachmentReference = {
+  version: 1,
+  adapter: 'json',
+  id: 'stable-file-id',
+  owner: { type: 'users', id: '42', field: 'avatar' },
+}
+```
+
+`withAttachmentReference(attachment, reference)` returns a contextual attachment without
+mutating the input. The locator's ID must match the attachment ID. `toPersistedAttachment`
+omits both `reference` and the runtime `url`; adapters reconstruct locators when reading.
+
+Repositories may implement `findByReference`. `AttachmentRepositoryRegistry` routes explicit
+references through its application-supplied `adapters` map, and preserves bare-ID reads
+through its `legacy` repository. `resolveAttachment(repository, id, reference?)` checks IDs
+and carries the locator onto the resolved attachment. Unknown adapters, malformed locators,
+and repositories without reference support fail explicitly; missing records return null.
+An explicit reference never falls back to another adapter or a bare-ID search.
+
+The Lucid repository accepts `{ version: 1, adapter: 'tables', id }`, without an owner.
+Its default ID-only behavior is unchanged. Lucid table persistence and variant processing
+reject other adapters' references, preventing accidental writes to an identically named
+table-backed attachment. Registering a read repository alone does not configure its write
+or variant processor: those must also understand the selected adapter.
+
+The service's scheduling methods copy `attachment.reference` to the optional `reference`
+field of variant and metadata jobs. The worker resolves contextual jobs from current
+persistence before processing; a missing/replaced identity is rejected. Contextual metadata
+jobs do not trust their embedded file snapshot. Conflicting IDs or locators are rejected.
+Jobs without references retain their existing behavior, including legacy metadata snapshots.
+Deploy reference-aware workers before producers start enqueueing contextual jobs; older
+workers do not understand this field and must not consume these new jobs.
+
+The adapter must validate the owner and identity again **inside its final write transaction**:
+a file can be replaced after worker resolution but before a conversion finishes. This lookup
+alone does not establish concurrency safety or compatibility with legacy v5 writers.
+
+An owner type is a configured application key, not permission to query arbitrary tables.
+Reference payloads accept no model, connection, column, or lock instructions. Each adapter
+must resolve owner types/fields through an allowlist. A locator is not an authorization token.
+The built-in HTTP route remains ID-only; no contextual URL encoding or new public route is
+introduced at this stage.
 
 ## Deferred metadata
 

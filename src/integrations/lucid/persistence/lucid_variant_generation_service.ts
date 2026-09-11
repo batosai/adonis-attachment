@@ -7,6 +7,7 @@
 
 import type { AttachmentService } from '../../../core/attachment_service.js'
 import type { Attachment } from '../../../core/attachment.js'
+import { assertTableAttachmentReference } from './assert_table_attachment_reference.js'
 import type { VariantGenerationRequest, VariantGenerator } from '../../../core/attachment_job_processor.js'
 import type { GeneratedVariant, VariantGenerationService } from '../../../variants/variant_generation_service.js'
 import { AttachmentModel } from '../models/attachment_model.js'
@@ -31,6 +32,7 @@ export class LucidVariantGenerationService implements VariantGenerator {
   }
 
   async generate(request: VariantGenerationRequest): Promise<void> {
+    assertTableAttachmentReference(request.attachment)
     const original = await this.#store.findById(request.attachment.id)
 
     if (!original) {

@@ -9,6 +9,7 @@ import type { Attachment } from '../../../core/attachment.js'
 import type { AttachmentMetadataPersister } from '../../../core/attachment_metadata_persister.js'
 import type { AttachmentMetadata } from '../../../media/media_metadata.js'
 import { AttachmentModel } from '../models/attachment_model.js'
+import { assertTableAttachmentReference } from './assert_table_attachment_reference.js'
 
 /** Updates metadata for an attachment blob persisted in the Lucid attachments table. */
 export class LucidAttachmentMetadataPersister implements AttachmentMetadataPersister {
@@ -19,6 +20,9 @@ export class LucidAttachmentMetadataPersister implements AttachmentMetadataPersi
   }
 
   async persistMetadata(attachment: Attachment, metadata: AttachmentMetadata): Promise<void> {
-    await this.#model.query().where('id', attachment.id).update({ metadata })
+    assertTableAttachmentReference(attachment)
+    // Query-builder updates bypass the model column's prepare hook. Bind JSON text
+    // explicitly for drivers that cannot encode a JavaScript object themselves.
+    await this.#model.query().where('id', attachment.id).update({ metadata: JSON.stringify(metadata) })
   }
 }

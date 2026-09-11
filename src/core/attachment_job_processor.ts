@@ -7,8 +7,9 @@
 
 import type { Attachment } from './attachment.js'
 import type { AttachmentJob, VariantGenerationMode } from './queue.js'
-import type { AttachmentRepository } from './attachment_repository.js'
-import { AttachmentError } from '../errors.js'
+import { resolveAttachment, type AttachmentRepository } from './attachment_repository.js'
+import { validateAttachmentReference, type AttachmentReference } from './attachment_reference.js'
+import { AttachmentError, AttachmentValidationError } from '../errors.js'
 import {
   emitAttachmentEvent,
   toAttachmentEventFailure,
@@ -63,13 +64,28 @@ export class AttachmentJobProcessor {
   async process(job: AttachmentJob): Promise<void> {
     switch (job.type) {
       case 'generate-variants':
-        await this.#generateVariants(job.attachmentId, job.variantKeys, job.meta, job.eventContext, job.mode)
+        await this.#generateVariants(job.attachmentId, job.variantKeys, job.meta, job.eventContext, job.mode, job.reference)
         return
       case 'extract-metadata':
         if (!this.#metadata) {
           throw new DeferredMetadataProcessorNotConfiguredError()
         }
-        await this.#extractMetadata(job.attachment, job.eventContext)
+        {
+          const reference = job.reference !== undefined ? job.reference : job.attachment.reference
+          if (job.reference !== undefined && job.attachment.reference !== undefined &&
+              JSON.stringify(validateAttachmentReference(job.attachmentId, job.reference)) !==
+              JSON.stringify(validateAttachmentReference(job.attachmentId, job.attachment.reference))) {
+            throw new AttachmentValidationError('Metadata job contains conflicting attachment references')
+          }
+          if (reference !== undefined && job.attachment.id !== job.attachmentId) {
+            throw new AttachmentValidationError('Metadata job contains conflicting attachment IDs')
+          }
+          // Preserve legacy jobs; contextual jobs must re-read their current owner/identity.
+          const attachment = reference === undefined ? job.attachment
+            : await resolveAttachment(this.#attachments, job.attachmentId, reference)
+          if (!attachment) throw new AttachmentNotFoundError(job.attachmentId)
+          await this.#extractMetadata(attachment, job.eventContext)
+        }
         return
     }
   }
@@ -79,9 +95,10 @@ export class AttachmentJobProcessor {
     variantKeys?: readonly string[],
     meta?: boolean,
     eventContext?: AttachmentEventContext,
-    mode?: VariantGenerationMode
+    mode?: VariantGenerationMode,
+    reference?: AttachmentReference
   ): Promise<void> {
-    const attachment = await this.#attachments.findById(attachmentId)
+    const attachment = await resolveAttachment(this.#attachments, attachmentId, reference)
 
     if (!attachment) {
       throw new AttachmentNotFoundError(attachmentId)

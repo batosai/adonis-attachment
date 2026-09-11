@@ -11,6 +11,10 @@ import { AttachmentModel } from "../src/integrations/lucid/models/attachment_mod
 import { AttachmentLinkModel } from "../src/integrations/lucid/models/attachment_link_model.js";
 import { LucidAttachmentStore } from "../src/integrations/lucid/persistence/lucid_attachment_store.js";
 import { AttachmentSchemaService } from "../src/integrations/lucid/schema/attachment_schema_service.js";
+import { withAttachmentReference } from "../src/core/attachment_reference.js";
+import { resolveAttachment } from "../src/core/attachment_repository.js";
+import { LucidAttachmentRepository } from "../src/integrations/lucid/persistence/lucid_attachment_repository.js";
+import { LucidAttachmentMetadataPersister } from "../src/integrations/lucid/persistence/lucid_attachment_metadata_persister.js";
 
 const client = process.env.ATTACHMENT_TEST_CLIENT;
 // Opt-in: the container runner supplies a fresh disposable database for each engine.
@@ -229,6 +233,24 @@ if (
           [0],
         );
         assert.isNull(await store.findById(second.attachmentId));
+      });
+
+      test("resolves explicit table references without storing runtime locator fields", async ({ assert }) => {
+        const attachment = makeAttachment();
+        const reference = { version: 1 as const, adapter: "tables", id: attachment.id };
+        const contextual = withAttachmentReference({ ...attachment, url: "/runtime-only" }, reference);
+        const store = new LucidAttachmentStore();
+        const link = await store.createCollectionItem(owner, contextual);
+        const repository = new LucidAttachmentRepository();
+        const resolved = await resolveAttachment(repository, attachment.id, reference);
+        assert.deepEqual(resolved!.reference, reference);
+        assert.equal(resolved!.path, attachment.path);
+        assert.notProperty((await store.findById(attachment.id))!.toAttachment(), "reference");
+        assert.notProperty((await store.findById(attachment.id))!.toAttachment(), "url");
+        await new LucidAttachmentMetadataPersister().persistMetadata(resolved!, { caption: "updated" });
+        assert.deepEqual((await repository.findById(attachment.id))!.metadata, { caption: "updated" });
+        await store.removeCollectionItem(owner, link);
+        assert.isNull(await resolveAttachment(repository, attachment.id, reference));
       });
 
       test(`serializes 16 simultaneous inserts (${sqlite ? "one SQLite connection" : "eight pooled connections"})`, async ({

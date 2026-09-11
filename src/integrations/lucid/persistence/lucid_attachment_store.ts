@@ -10,7 +10,8 @@ import { randomUUID } from 'node:crypto'
 import type { TransactionClientContract } from '@adonisjs/lucid/types/database'
 import type { LucidRow, LucidModel } from '@adonisjs/lucid/types/model'
 
-import type { Attachment } from '../../../core/attachment.js'
+import { toPersistedAttachment, type Attachment } from '../../../core/attachment.js'
+import { assertTableAttachmentReference } from './assert_table_attachment_reference.js'
 import type { AttachmentPersistence, AttachmentTransaction } from '../../../core/attachment_persistence.js'
 import { markAttachmentPersisted } from '../../../core/attachment_state.js'
 import { createAttachmentOwnerKey, type AttachmentOwner } from '../relations/attachment_owner.js'
@@ -154,6 +155,7 @@ export class LucidAttachmentStore implements
     key: string,
     attachment: Attachment
   ): Promise<ReplacedLucidVariant> {
+    assertTableAttachmentReference(attachment)
     if (!this.#scoped) return this.#variantTransaction(original.id, (store) => store.replaceVariant(original, key, attachment))
     const existing = await this.#first(this.#blobQuery()
       .where('parent_id', original.id)
@@ -313,9 +315,10 @@ export class LucidAttachmentStore implements
     attachment: Attachment,
     options: { parentId?: string; variantKey?: string } = {}
   ): Promise<AttachmentModel> {
+    assertTableAttachmentReference(attachment)
     const blob = await this.#blobModel.create(
       {
-        ...attachment,
+        ...toPersistedAttachment(attachment),
         parentId: options.parentId ?? null,
         variantKey: options.variantKey ?? null,
         blurhash: attachment.blurhash ?? null,

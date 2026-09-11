@@ -103,6 +103,16 @@ export {
 } from './attachment_job_processor.js'
 export { type AttachmentRepository } from './attachment_repository.js'
 export {
+  AttachmentRepositoryRegistry,
+  resolveAttachment,
+  type AttachmentReferenceRepository,
+} from './attachment_repository.js'
+export {
+  parseAttachmentReference,
+  withAttachmentReference,
+  type AttachmentReference,
+} from './attachment_reference.js'
+export {
   type AttachmentJob,
   type AttachmentJobHandler,
   type AttachmentQueue,

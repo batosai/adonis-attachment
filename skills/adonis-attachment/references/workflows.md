@@ -1,6 +1,6 @@
 # Application workflows
 
-These recipes use table-backed `/lucid` relations. For a singular JSON field, follow
+These recipes use table-backed `/lucid` relations. For a JSON field or collection, follow
 [legacy JSON fields](legacy.md) instead; its imports, assignment and serialization differ.
 
 ## Install and configure

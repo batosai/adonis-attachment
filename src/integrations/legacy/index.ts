@@ -9,9 +9,13 @@ import type { AttachmentService } from "../../core/attachment_service.js";
 import type { Readable } from "node:stream";
 
 export { Attachment };
-export { AttachmentMetadataConflictError } from './errors.js';
-export type { LegacyAttachmentConfig } from './config.js';
-export { attachment, type AttachmentOptions } from "./decorator.js";
+export { AttachmentMetadataConflictError } from "./errors.js";
+export type { LegacyAttachmentConfig } from "./config.js";
+export {
+  attachment,
+  attachments,
+  type AttachmentOptions,
+} from "./decorator.js";
 
 /** Sources produce assignable legacy drafts; persistence still happens on model.save(). */
 export class AttachmentManager {
@@ -48,6 +52,12 @@ export class AttachmentManager {
       this.service,
     );
   }
+  async createFromFiles(
+    files: readonly MultipartAttachmentFile[],
+    options?: AttachmentSourceOptions,
+  ) {
+    return Promise.all(files.map((file) => this.createFromFile(file, options)));
+  }
   async createFromBase64(input: string, options?: AttachmentSourceOptions) {
     return new Attachment(
       await this.sources.createFromBase64(input, options),
@@ -75,6 +85,11 @@ async function manager(): Promise<AttachmentManager> {
   );
 }
 export const attachmentManager = {
+  async createFromFiles(
+    ...args: Parameters<AttachmentManager["createFromFiles"]>
+  ) {
+    return (await manager()).createFromFiles(...args);
+  },
   async createFromBuffer(
     ...args: Parameters<AttachmentManager["createFromBuffer"]>
   ) {

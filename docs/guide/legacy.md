@@ -1,7 +1,7 @@
 # Legacy JSON fields (experimental)
 
 Available on `feat/json-persistence`, not necessarily in published v6 alphas. This
-facade keeps familiar v5 usage for **one attachment per field**, backed by the v6
+facade keeps familiar v5 usage for **singular fields and JSON collections**, backed by the v6
 transactional JSON engine. No attachment tables, lock table or lock dependency are needed.
 The default v6 API remains the table-backed `/lucid` integration.
 
@@ -54,9 +54,73 @@ await user.save()
 The manager also provides `createFromBuffer(bytes, 'avatar.jpg')`, `createFromPath`,
 `createFromBase64`, `createFromUrl` and `createFromStream`. The latter methods accept
 the v6 source-options object; not every historical v5 overload is reproduced.
-Only new legacy drafts or `null` can be assigned. Copying an already persisted attachment
+For singular fields, only new legacy drafts or `null` can be assigned. Copying an already persisted attachment
 to another owner is rejected because JSON fields have no global file reference counts.
 Use direct field assignment, not Lucid `fill`/`merge` for the attachment itself.
+
+## A simple collection
+
+Keep the existing nullable JSON array column, for example `users.gallery`. The decorator
+and manager both come from `/legacy`; do not add a second `@column()` on the field.
+
+```ts
+import { BaseModel, column } from '@adonisjs/lucid/orm'
+import { attachments, type Attachment } from '@jrmc/adonis-attachment/legacy'
+
+export default class User extends BaseModel {
+  @column({ isPrimary: true }) declare id: number
+
+  @attachments({ variants: ['thumbnail'], meta: true, preComputeUrl: true })
+  declare gallery: Attachment[] | null
+}
+```
+
+Use normal arrays, after validating all uploaded files and authorizing the operation:
+
+```ts
+import { attachmentManager } from '@jrmc/adonis-attachment/legacy'
+
+user.gallery = [
+  ...(user.gallery ?? []),
+  ...await attachmentManager.createFromFiles(files),
+]
+await user.save()
+
+user.gallery ??= []
+user.gallery.push(await attachmentManager.createFromFile(file))
+await user.save()
+
+user.gallery = (user.gallery ?? []).filter((item) => item.id !== attachmentId)
+await user.save()
+
+const image = user.gallery?.[0]
+if (image) {
+  image.meta ??= {}
+  image.meta.caption = 'Holiday'
+  await user.save()
+}
+
+user.gallery = null // Explicitly clear the current collection.
+await user.save()
+```
+
+`push`, removal by `splice`/`filter`, and assignment are detected on owner save. Retain
+items from this loaded collection, then append new legacy drafts. Duplicate items,
+foreign persisted attachments, sparse arrays and null elements are rejected. There is
+no reorder API: retained items keep their order, new items append, and attempts to
+reorder or insert a draft before retained items fail rather than being silently ignored.
+
+Array edits apply additions/removals relative to the loaded collection under the owner
+lock. Concurrent additions survive; an item removed elsewhere is not resurrected by a
+stale save. Assigning `[]` removes the loaded items; assigning `null` explicitly clears
+the current collection, including items added since loading. SQL NULL/JSON null are read
+as null and JSON `[]` as an empty array; use `gallery ?? []` when iterating.
+
+Each item supports the same variants, `getUrl()`, blurhash and original/variant `meta`
+mutations as a singular attachment. Serialization returns an array, and custom `serialize`
+applies to each item, like v5. Register the model as below. Regenerate all gallery items
+with `new AttachmentRegenerator().row(user, { attributes: ['gallery'] }).run()` from `/lucid`;
+the array itself has no regeneration method. Refresh after background jobs complete.
 
 ## Variants and metadata jobs
 
@@ -139,7 +203,7 @@ keys (for example `avatar.thumbnail`), with precomputed URLs when enabled. `seri
 are supported. File reads use `getBytes()`/`getBuffer()`; signed URLs use
 `getSignedUrl(options)` or `getSignedUrl('thumbnail', options)`.
 
-This is not a complete v5 emulation: collections, old `keyId`, low-level mutable file
+This is not a complete v5 emulation: old `keyId`, low-level mutable file
 internals, and every historical manager overload are outside this first facade. Response
 objects are not promised byte-for-byte v5-compatible. Review your transformers and tests.
 Old JSON `meta`/`variants` documents are read in place; missing IDs are backfilled on

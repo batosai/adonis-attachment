@@ -1,9 +1,8 @@
-# Singular legacy JSON fields
+# Legacy JSON fields and collections
 
 Use only with a v6 build exporting `@jrmc/adonis-attachment/legacy`. This experimental
-facade keeps one attachment per owner JSON column. It is not a JSON option on `/lucid`
-relations, a standalone store without Lucid, or complete v5 emulation. Public collections
-are not implemented; do not invent a legacy `attachments` decorator or array assignment.
+facade keeps singular attachments or arrays in owner JSON columns. It is not a JSON option
+on `/lucid` relations, a standalone store without Lucid, or complete v5 emulation.
 
 ## Model, configuration and validated upload
 
@@ -64,9 +63,53 @@ Legacy decorator `folder` callbacks receive the model, and `rename` callbacks re
 
 The manager must come from `/legacy`, not the root. It also accepts
 `createFromBuffer(bytes, 'avatar.jpg')` or a modern options object. Path/base64/URL/stream
-sources use modern options; not every v5 overload exists. Only a new legacy draft or
+sources use modern options; not every v5 overload exists. On singular fields only a new legacy draft or
 `null` can be assigned, using direct assignment rather than `fill`/`merge`. Do not reuse
 a persisted attachment on another owner or assign the same draft to multiple fields.
+
+## Simple collections, without reordering
+
+Keep the JSON array column. Use `attachments`, `Attachment` and `attachmentManager` from
+`/legacy`, not `/lucid` or the root. Validate every file and authorize the operation first.
+
+```ts
+import { BaseModel, column } from '@adonisjs/lucid/orm'
+import type { HttpContext } from '@adonisjs/core/http'
+import { attachments, attachmentManager, type Attachment } from '@jrmc/adonis-attachment/legacy'
+
+export class User extends BaseModel {
+  @column({ isPrimary: true }) declare id: number
+  @attachments({ variants: ['thumbnail'], meta: true }) declare gallery: Attachment[] | null
+}
+
+export async function appendImages(user: User, { request, response }: HttpContext) {
+  const files = request.files('images', { size: '5mb', extnames: ['png', 'jpg', 'webp'] })
+  if (!files.length || files.some((file) => !file.isValid)) {
+    return response.badRequest({ message: 'Valid images are required' })
+  }
+  user.gallery = [...(user.gallery ?? []), ...await attachmentManager.createFromFiles(files)]
+  await user.save()
+  return user.serialize()
+}
+
+export async function removeImage(user: User, id: string) {
+  user.gallery = (user.gallery ?? []).filter((item) => item.id !== id)
+  await user.save()
+}
+```
+
+Use the same registered model and converter configuration as for singular fields. Native
+`push`, removal by `splice`/`filter`, and reassignment are detected on save. Retain loaded
+items and append new drafts; duplicates, foreign items, sparse arrays, reordering, or new
+items before retained items are rejected. No `move`, `addMany`, or relation wrapper exists.
+SQL NULL/JSON null read as null, JSON `[]` as an array; iterate with `gallery ?? []`.
+
+Array edits remove only loaded items and preserve concurrent additions. `gallery = []`
+removes loaded items; `gallery = null` explicitly clears the current field. Stale retained
+items removed elsewhere are not resurrected. Mutate each original/variant `meta` and save
+the owner. Serialization is an array; custom `serialize` applies per attachment, like v5.
+Refresh after jobs. Use shared `AttachmentRegenerator.row/model` with `attributes: ['gallery']`
+for all items, not `gallery.regenerateVariants()`. The array is mutable, unlike `.variants`.
 
 ## What the registry and queue do
 

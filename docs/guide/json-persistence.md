@@ -47,7 +47,7 @@ silently disabling workers. The former `persistence: 'json'` relation option and
 `AttachmentRelation<'json'>` type are removed.
 
 The internal document reader accepts native or serialized JSON, `meta`, and `variants`.
-SQL NULL and serialized JSON null represent an empty singular field. Documents without IDs
+SQL NULL and serialized JSON null represent an empty field. Collections also accept JSON arrays. Documents without IDs
 are read without rewriting the database; deterministic IDs are derived from their logical
 owner and file location, then persisted on mutation. Missing disks use the resolved
 field/config disk; missing paths use the stored name. Unknown document properties are
@@ -57,9 +57,11 @@ Invalid documents, duplicate IDs, duplicate variant keys, nested variants and du
 file locations within a field are rejected. Different JSON fields must not share a file:
 there is no global reference count protecting it from deletion by another owner.
 
-The engine retains its tested ordered-array operations internally, but the **public legacy
-collection facade is still deferred**. Those low-level operations are not an alternative
-public collection API.
+The public collection facade is `@attachments()` with `Attachment[] | null`, normal
+array edits and owner save. Retained order is stable, new drafts append, and there is no
+public reordering API. Membership is diffed against the loaded array, preserving concurrent
+additions and never resurrecting concurrently removed items. Explicit null assignment
+clears the current field. Internal ordered-array operations are not a separate public API.
 
 ## Locking and file effects
 
@@ -99,8 +101,8 @@ Shared workers route extraction results through the same patching mechanism.
 
 ## Validation scope and limitations
 
-The server matrix covers schema/foreign keys, table operations and nine JSON scenarios,
-including legacy assignment, worker variants, concurrent metadata edits, serialization,
+The server matrix covers schema/foreign keys, table operations and JSON scenarios,
+including legacy singular/collection assignment, worker variants, concurrent array and metadata edits, serialization,
 refresh, nested rollback and deletion. Server concurrency tests use up to eight connections;
 the JSON SQLite-family matrix uses one connection and does not certify multi-process
 contention behavior. Separate local tests exercise document validation, metadata conflicts,

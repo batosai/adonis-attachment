@@ -1,6 +1,6 @@
 ---
 name: adonis-attachment
-description: Use when integrating @jrmc/adonis-attachment v6 into an AdonisJS application for uploads, table-backed Lucid relations, legacy singular JSON fields, custom persistence, replacement, deletion, and public or private file URLs.
+description: Use when integrating @jrmc/adonis-attachment v6 into an AdonisJS application for uploads, table-backed Lucid relations, legacy JSON fields and collections, custom persistence, replacement, deletion, and public or private file URLs.
 metadata:
   package: "@jrmc/adonis-attachment"
   major-version: "6"
@@ -16,7 +16,7 @@ Preserve existing configuration and the application's chosen ORM and storage.
 
 Read [application workflows](references/workflows.md) for installation, validated uploads,
 table-backed singular/collection relations, and URLs. Read [legacy JSON fields](references/legacy.md)
-when retaining a singular JSON column or using `/legacy`. Read
+when retaining a JSON column or using `/legacy`. Read
 [custom persistence](references/persistence.md) when Lucid is not being used for attachments.
 
 ## Decisions that matter
@@ -25,7 +25,7 @@ when retaining a singular JSON column or using `/legacy`. Read
 - Core is required; Drive, Lucid, and Adonis Queue are optional. Default storage is
   `LocalFileStorage.fromApp`, not Drive. Configure optional Adonis integrations before use.
 - Choose the field's persistence before editing its model or schema. `/lucid` is the default
-  table-backed API; `/legacy` is an experimental singular JSON facade requiring Lucid.
+  table-backed API; `/legacy` is an experimental JSON facade requiring Lucid.
   Verify the installed build exports `/legacy`; not every v6 alpha does. Do not migrate
   an existing JSON field to tables without an explicit migration decision.
 - For table relations, import `attachmentManager` and `attachmentService` from the package root. Import
@@ -38,7 +38,8 @@ when retaining a singular JSON column or using `/legacy`. Read
   to a table relation, and do not add a JSON column for the `/lucid` decorator.
 - Legacy uses `attachment`, `Attachment`, and `attachmentManager` from `/legacy`, direct
   assignment, then owner save. Keep the JSON column without a second `@column()` decorator.
-  Public legacy collections are not supported. Do not invent `AttachmentRelation<'json'>`
+  Legacy collections use `attachments` and `Attachment[] | null`, normal array edits and
+  `createFromFiles()`, without reordering. Do not invent `AttachmentRelation<'json'>`
   or `persistence: 'json'` on `/lucid` decorators.
 - Table relation `set`, `attach`, `detach`, `addMany`, `move`, and `clear` stage changes. `owner.save()`
   flushes them. Explicit relation `persist()` requires an already persisted owner.

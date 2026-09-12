@@ -51,6 +51,20 @@ export type AttachmentOptions<Model = LucidRow> = Omit<
 export function attachment<Model = LucidRow>(
   options: AttachmentOptions<Model> = {},
 ): PropertyDecorator {
+  return defineAttachment("one", options);
+}
+
+/** V5-style array field. Existing order is retained; new drafts append. */
+export function attachments<Model = LucidRow>(
+  options: AttachmentOptions<Model> = {},
+): PropertyDecorator {
+  return defineAttachment("many", options);
+}
+
+function defineAttachment<Model>(
+  kind: LegacyFieldDefinition["kind"],
+  options: AttachmentOptions<Model>,
+): PropertyDecorator {
   return (target, key) => {
     const {
       folder,
@@ -82,7 +96,7 @@ export function attachment<Model = LucidRow>(
     const ModelClass = target.constructor as LucidModel;
     const field = String(key);
     const definition: LegacyFieldDefinition = {
-      kind: "one",
+      kind,
       field,
       options: persistence,
     };
@@ -137,12 +151,17 @@ export function attachment<Model = LucidRow>(
     ) {
       const result = serialize.call(this, fields);
       if (serialized && this.shouldSerializeField(serialized, fields)) {
-        const value = (this as unknown as Record<string, Attachment | null>)[
-          field
-        ];
-        result[serialized] = customSerialize
-          ? customSerialize(value ?? null, field, this as Model)
-          : (value?.toJSON() ?? null);
+        const value = instance(this).value;
+        const serializeValue = (item: Attachment | null) =>
+          customSerialize
+            ? customSerialize(item, field, this as Model)
+            : (item?.toJSON() ?? null);
+        // Like v5, a collection's custom serializer applies to each attachment.
+        result[serialized] = Array.isArray(value)
+          ? value.map(serializeValue)
+          : value === null && kind === "many"
+            ? null
+            : serializeValue(value);
       }
       return result;
     };
@@ -151,7 +170,8 @@ export function attachment<Model = LucidRow>(
 
 class LegacyField {
   #service?: AttachmentService;
-  #value: Attachment | null = null;
+  #value: Attachment | Attachment[] | null = null;
+  #baseline: Attachment[] = [];
   #raw: unknown;
   #loaded = false;
   #assigned = false;
@@ -181,9 +201,24 @@ class LegacyField {
     };
   }
   get hasPending() {
-    return this.#assigned || !!this.#value?.hasMetadataChanges;
+    return (
+      this.#assigned ||
+      this.#items().some(
+        (item) => !(item instanceof Attachment) || item.hasMetadataChanges,
+      ) ||
+      (this.definition.kind === "many" &&
+        (this.#items().length !== this.#baseline.length ||
+          this.#baseline.some((item, index) => item !== this.#items()[index])))
+    );
   }
-  get value(): Attachment | null {
+  #items(): Attachment[] {
+    return Array.isArray(this.#value)
+      ? this.#value
+      : this.#value
+        ? [this.#value]
+        : [];
+  }
+  get value(): Attachment | Attachment[] | null {
     if (
       !this.#assigned &&
       (!this.#loaded || this.#raw !== this.row.$extras[this.column])
@@ -192,6 +227,18 @@ class LegacyField {
     return this.#value;
   }
   assign(value: unknown): void {
+    if (this.definition.kind === "many") {
+      // Membership edits are relative to the loaded field, never an unrelated snapshot.
+      if (!this.#loaded && !this.#assigned) void this.value;
+      if (value !== null && !Array.isArray(value))
+        throw new AttachmentValidationError(
+          "Assign an array of legacy attachments or null",
+        );
+      this.#validateCollection(value ?? []);
+      this.#value = value;
+      this.#assigned = true;
+      return;
+    }
     if (
       value !== null &&
       value === this.#value &&
@@ -224,12 +271,12 @@ class LegacyField {
     this.#service ??= await app.container.make("jrmc.attachment");
     // Lucid refresh() copies $attributes only, not the JSON kept in $extras.
     if (reload && this.row.$isPersisted)
-      await this.#store().findOriginal(this.owner);
+      await this.#store().listOwnerLinks(this.owner);
     // Partial selects are allowed, but accessing an omitted field is explicit failure.
     if (Object.hasOwn(this.row.$extras, this.column)) {
       this.#hydrate();
       if (this.#service.getPreComputeUrlEnabled(this.definition.options))
-        await this.#value?.preComputeUrl();
+        await Promise.all(this.#items().map((item) => item.preComputeUrl()));
     }
   }
   #hydrate(): void {
@@ -242,7 +289,7 @@ class LegacyField {
         `Legacy attachment "${this.definition.field}" was not selected; load its JSON column first`,
       );
     }
-    if (this.#value?.hasMetadataChanges)
+    if (this.hasPending)
       throw new AttachmentValidationError(
         "Save legacy metadata changes before refreshing the attachment snapshot",
       );
@@ -250,6 +297,7 @@ class LegacyField {
       this.#raw = raw;
       this.#loaded = true;
       this.#value = null;
+      this.#baseline = [];
       return;
     }
     if (!this.#service)
@@ -257,39 +305,47 @@ class LegacyField {
         "Legacy attachment hydration requires Lucid find/fetch hooks",
       );
     const disk = this.#service.getPersistenceDisk(this.definition.options);
-    const documents = decodeJsonAttachments(raw, "one", this.owner, disk);
-    if (documents.length === 0) {
-      this.#raw = raw;
-      this.#loaded = true;
-      this.#value = null;
-      return;
-    }
-    const document = documents[0]!;
-    const file = (value: typeof document, parentId: string | null = null) =>
-      new JsonAttachmentRecord(
-        value.id,
-        this.owner,
-        attachmentFromDocument(
-          value,
-          disk,
-          String(document.originalName ?? document.name),
-        ),
-        parentId,
-        parentId ? String(value.key) : null,
-      ).toAttachment();
-    this.#value = new Attachment(
-      file(document),
-      this.#service,
-      (document.variants ?? []).map(
-        (variant) =>
-          new Attachment(
-            file(variant, document.id),
-            this.#service!,
-            [],
-            String(variant.key),
-          ),
-      ),
+    const documents = decodeJsonAttachments(
+      raw,
+      this.definition.kind,
+      this.owner,
+      disk,
     );
+    const values = documents.map((document) => {
+      const file = (value: typeof document, parentId: string | null = null) =>
+        new JsonAttachmentRecord(
+          value.id,
+          this.owner,
+          attachmentFromDocument(
+            value,
+            disk,
+            String(document.originalName ?? document.name),
+          ),
+          parentId,
+          parentId ? String(value.key) : null,
+        ).toAttachment();
+      return new Attachment(
+        file(document),
+        this.#service!,
+        (document.variants ?? []).map(
+          (variant) =>
+            new Attachment(
+              file(variant, document.id),
+              this.#service!,
+              [],
+              String(variant.key),
+            ),
+        ),
+      );
+    });
+    this.#value =
+      this.definition.kind === "many"
+        ? typeof raw === "string" && raw.trim() === "null"
+          ? null
+          : values
+        : (values[0] ?? null);
+    // Keep membership independent of the public mutable array (push/splice/filter).
+    this.#baseline = [...values];
     this.#raw = raw;
     this.#loaded = true;
   }
@@ -300,23 +356,27 @@ class LegacyField {
       assigned: this.#assigned,
       raw: this.#raw,
       loaded: this.#loaded,
+      baseline: this.#baseline,
     };
     afterAttachmentRollback(this.row.$trx!, () => {
       this.#value = state.value;
       this.#assigned = state.assigned;
       this.#raw = state.raw;
       this.#loaded = state.loaded;
+      this.#baseline = state.baseline;
     });
     const store = this.#store();
-    if (this.#assigned) {
+    if (this.definition.kind === "many") {
+      await this.#persistCollection(store);
+    } else if (this.#assigned) {
       const lifecycle = new AttachmentLifecycleService(this.#service, store);
       const owner = { ...this.owner, model: this.row };
-      if (this.#value) {
+      if (this.#value instanceof Attachment) {
         const draft = this.#value.draft()!;
         draft.metadata = structuredClone(this.#value.meta);
         await lifecycle.replace(owner, draft, this.definition.options);
       } else await lifecycle.detach(owner);
-    } else if (this.#value) {
+    } else if (this.#value instanceof Attachment) {
       const values = [this.#value, ...this.#value.variants];
       await store.transaction(this.owner, async (scoped) => {
         for (const value of values) {
@@ -328,6 +388,7 @@ class LegacyField {
       });
     }
     this.#value = null;
+    this.#baseline = [];
     this.#assigned = false;
     await this.initialize();
   }
@@ -340,19 +401,90 @@ class LegacyField {
   }
   async regenerate(keys?: readonly AttachmentVariantKey[]): Promise<number> {
     this.#service ??= await app.container.make("jrmc.attachment");
-    const original = await this.#store(false).findOriginal(this.owner);
-    if (!original) return 0;
-    await this.#service.scheduleVariantGeneration(
-      original.toAttachment(),
-      keys,
-      this.#service.getVariantMetadataEnabled(
+    const originals = await this.#store(false).listOwnerLinks(this.owner);
+    for (const original of originals)
+      await this.#service.scheduleVariantGeneration(
+        original.toAttachment(),
+        keys,
+        this.#service.getVariantMetadataEnabled(
+          undefined,
+          this.definition.options,
+        ),
         undefined,
-        this.definition.options,
-      ),
-      undefined,
-      "replace",
-    );
-    return 1;
+        "replace",
+      );
+    return originals.length;
+  }
+  #validateCollection(values: unknown[]): asserts values is Attachment[] {
+    const seen = new Set<Attachment>();
+    const drafts: object[] = [];
+    let lastIndex = -1;
+    let added = false;
+    for (const value of values) {
+      if (!(value instanceof Attachment))
+        throw new AttachmentValidationError(
+          "Collections accept only legacy attachments, without null or sparse entries",
+        );
+      if (seen.has(value))
+        throw new AttachmentValidationError(
+          "A legacy collection cannot contain duplicate attachments",
+        );
+      seen.add(value);
+      const index = this.#baseline.indexOf(value);
+      if (index >= 0) {
+        if (added || index < lastIndex)
+          throw new AttachmentValidationError(
+            "Legacy collections do not support reordering; append new drafts after retained attachments",
+          );
+        lastIndex = index;
+      } else {
+        const draft = value.draft();
+        if (!draft || draft.isPersisted)
+          throw new AttachmentValidationError(
+            "Persisted files cannot be shared; retain loaded collection items or append new legacy drafts",
+          );
+        const owner = draftOwners.get(draft);
+        if (owner && owner !== this)
+          throw new AttachmentValidationError(
+            "A legacy draft cannot be assigned to multiple owner fields",
+          );
+        drafts.push(draft);
+        added = true;
+      }
+    }
+    for (const draft of drafts) draftOwners.set(draft, this);
+  }
+  async #persistCollection(store: LucidJsonAttachmentStore): Promise<void> {
+    const values = this.#items();
+    this.#validateCollection(values);
+    const retained = new Set(values);
+    const removed = this.#baseline.filter((item) => !retained.has(item));
+    const added = values.filter((item) => !this.#baseline.includes(item));
+    const clear = this.#assigned && this.#value === null;
+    const owner = { ...this.owner, model: this.row };
+    await store.transaction(owner, async (scoped) => {
+      const lifecycle = new AttachmentLifecycleService(this.#service!, scoped);
+      // Create before removing: old originals/variants protect same-name replacements.
+      for (const item of added) {
+        const draft = item.draft()!;
+        draft.metadata = structuredClone(item.meta);
+        await lifecycle.add(owner, draft, undefined, this.definition.options);
+      }
+      if (clear) await lifecycle.clearCollection(owner);
+      else
+        for (const item of removed)
+          await lifecycle.removeCollectionItem(owner, item.id);
+      for (const item of values.filter((value) =>
+        this.#baseline.includes(value),
+      )) {
+        for (const value of [item, ...item.variants]) {
+          if (value.hasMetadataChanges) {
+            const original = value.file();
+            await scoped.patchMetadata(original, original.metadata, value.meta);
+          }
+        }
+      }
+    });
   }
   #store(bindModel = true): LucidJsonAttachmentStore {
     return new LucidJsonAttachmentStore({
@@ -361,7 +493,7 @@ class LegacyField {
       primaryKey: this.Model.$getColumn(this.Model.primaryKey)!.columnName,
       column: this.column,
       owner: this.owner,
-      kind: "one",
+      kind: this.definition.kind,
       ...(bindModel ? { model: this.row } : {}),
       defaultDisk: this.#service!.getPersistenceDisk(this.definition.options),
     });

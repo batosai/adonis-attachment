@@ -20,7 +20,7 @@ import { AttachmentLifecycleService } from "../src/core/attachment_lifecycle_ser
 import { setApp } from "@adonisjs/core/services/app";
 import type { AttachmentJob } from "../src/core/queue.js";
 import { attachment, AttachmentRelation, createLucidAttachmentProcessor } from "../src/integrations/lucid/index.js";
-import { attachment as legacyAttachment, Attachment as LegacyAttachment, AttachmentManager as LegacyManager } from "../src/integrations/legacy/index.js";
+import { attachment as legacyAttachment, attachments as legacyAttachments, Attachment as LegacyAttachment, AttachmentManager as LegacyManager } from "../src/integrations/legacy/index.js";
 
 import { createLegacyAttachmentAdapter } from "../src/integrations/legacy/config.js";
 const client = process.env.ATTACHMENT_TEST_CLIENT;
@@ -72,6 +72,7 @@ if (
     @column({ isPrimary: true }) declare id: string;
     @column() declare name: string;
     @legacyAttachment({ variants: ["thumbnail"], meta: true, preComputeUrl: true }) declare avatar: LegacyAttachment | null;
+    @legacyAttachments({ variants: ["thumbnail"], meta: true, preComputeUrl: true }) declare gallery: LegacyAttachment[] | null;
   }
   let schema: AttachmentSchemaService;
   const jsonOwner = { type: "users", id: "42", field: "avatar" };
@@ -278,6 +279,55 @@ if (
           await row.save(); assert.equal(files.size, 1);
           row.avatar = null; await row.save(); assert.isEmpty(files);
           assert.isNull((await LegacyUser.findOrFail("42")).avatar);
+        } finally { if (!trx.isCompleted) await trx.rollback(); }
+        assert.isEmpty(await database.from("adonis_attachments"));
+      });
+
+      test("persists legacy array edits, concurrent appends, worker variants and outer rollback", async ({ assert }) => {
+        const adapter = createLegacyAttachmentAdapter({ models: { users: async () => ({ default: LegacyUser }) }, defaultDisk: "fs" });
+        const files = new Set<string>();
+        const jobs: AttachmentJob[] = [];
+        const service = new AttachmentService({ defaultDisk: "fs", queue: { async enqueue(job) { jobs.push(job); } }, storage: {
+          async write(file) { files.add(file.path); }, async read() { return new Uint8Array([1]); }, async remove(file) { files.delete(file.path); },
+          async getUrl(file) { return `https://cdn.test/${file.path}`; },
+        } });
+        const app = { container: { async make() { return service; } } }; setApp(app as never);
+        const manager = new LegacyManager(service);
+        const draft = (name: string) => manager.createFromBuffer(new Uint8Array([1]), name);
+        const row = await LegacyUser.findOrFail("42");
+        row.gallery = [await draft("a.jpg"), await draft("b.jpg")]; await row.save();
+        const a = await LegacyUser.findOrFail("42"); const b = await LegacyUser.findOrFail("42");
+        a.gallery!.splice(0, 1); a.gallery!.push(await draft("c.jpg"));
+        b.gallery!.push(await draft("d.jpg"));
+        await Promise.all([a.save(), b.save()]);
+        await row.refresh();
+        assert.sameMembers(row.gallery!.map((item) => item.originalName), ["b.jpg", "c.jpg", "d.jpg"]);
+        const worker = createLucidAttachmentProcessor(app as never, { adapters: { [adapter.name]: adapter }, converters: {
+          async keys() { return ["thumbnail"]; }, async get() { return { key: "thumbnail", async convert() {
+            return { body: new Uint8Array([2]), fileName: "thumb.jpg", mimeType: "image/jpeg", blurhash: "collection-hash" };
+          } }; },
+        } });
+        const currentIds = new Set(row.gallery!.map((item) => item.id));
+        for (const job of jobs.filter((job) => job.type === "generate-variants" && currentIds.has(job.attachmentId))) await worker.process(JSON.parse(JSON.stringify(job)));
+        await row.refresh();
+        assert.equal(row.serialize().gallery[0].thumbnail.blurhash, "collection-hash");
+        const left = await LegacyUser.findOrFail("42"); const right = await LegacyUser.findOrFail("42");
+        left.gallery![0]!.meta = { caption: "left" }; right.gallery![0]!.meta = { credit: "right" };
+        await Promise.all([left.save(), right.save()]);
+        await row.refresh();
+        assert.deepEqual(row.gallery![0]!.meta, { caption: "left", credit: "right" });
+        row.gallery![0]!.getVariant("thumbnail")!.meta = { caption: "small" };
+        row.gallery!.splice(1, 1); const next = await draft("next.jpg"); row.gallery!.push(next);
+        const pending = row.gallery;
+        const trx = await database.transaction();
+        try {
+          row.useTransaction(trx); await row.save(); await trx.rollback();
+          assert.strictEqual(row.gallery, pending); assert.isFalse(next.draft()!.isPersisted);
+          assert.equal(files.size, 6);
+          await row.save(); assert.equal(files.size, 5);
+          assert.equal(row.serialize().gallery[0].thumbnail.meta.caption, "small");
+          row.gallery = null; await row.save(); assert.isEmpty(files);
+          assert.isEmpty((await LegacyUser.findOrFail("42")).gallery!);
         } finally { if (!trx.isCompleted) await trx.rollback(); }
         assert.isEmpty(await database.from("adonis_attachments"));
       });

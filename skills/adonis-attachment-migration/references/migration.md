@@ -7,10 +7,9 @@ the field is singular or multiple. Sample JSON including variants and empty/null
 Check existing v6 alpha tables before generating anything; do not create duplicates.
 Back up database and stored files, and rehearse replacement/deletion against copies.
 
-- Keep one attachment in its existing JSON column: use the experimental `/legacy` path
+- Keep singular attachments or collections in their existing JSON columns: use the experimental `/legacy` path
   below. Confirm the installed build exports it. No JSON-to-table migration is required.
-- Use default v6 relations, collections or shared blobs: follow the table migration below.
-  Public legacy collections are not implemented; an internal array reader is not an API.
+- Use default v6 relations, explicit collection positioning or shared blobs: follow the table migration below.
 - Mixed models are supported. Select the target per field and exclude retained JSON fields
   from the table migration. Never drop a column still used by `/legacy`.
 
@@ -72,6 +71,23 @@ Check serialization/transformers: `serializeAs` is supported, but old `keyId`/`g
 `router.attachments()`, manual variant insertion/deletion and all v5 overloads are not.
 The built-in blob-ID route cannot resolve JSON fields; use storage URLs or an authorized
 owner-based route and disable the built-in route with `route: false` for JSON-only apps.
+
+## Keep a JSON collection
+
+Use `/legacy` `@attachments()` with `Attachment[] | null`, without `@column()`. Keep the
+existing array column and files; do not include it in the table migration iterator.
+Append validated files using
+`user.gallery = [...(user.gallery ?? []), ...await attachmentManager.createFromFiles(files)]`
+and save. Native `push`, removal via `filter`/`splice`, and reassignment are supported.
+Retained items keep their order; new drafts append. Reordering, duplicates and foreign
+persisted items are rejected. Do not introduce relation `move()`/`addMany()` calls.
+
+Array edits merge membership changes against the loaded snapshot. Concurrent additions
+survive, and concurrently removed items are not resurrected. `[]` removes loaded items;
+`null` explicitly clears the current field. Test this distinction during cutover.
+Custom `serialize` applies per attachment, like v5. Variants, blurhash and original/variant
+`meta` edits use the same processing registry and save lifecycle as singular fields.
+Regenerate with `AttachmentRegenerator.row/model` selecting `gallery`, then refresh after jobs.
 
 ## Migrate selected fields to tables: target schema
 

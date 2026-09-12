@@ -10,7 +10,7 @@ metadata:
 
 Target the consuming AdonisJS 7 / Node.js 24+ application. Check installed package version,
 existing config, enabled variants, metadata policy, storage, and worker before changing them.
-Identify table-backed `/lucid` relations versus singular `/legacy` JSON fields. The v6
+Identify table-backed `/lucid` relations versus `/legacy` JSON fields and arrays. The v6
 legacy facade still uses v6 media/queue configuration, not v5 queue APIs. Read
 [media and worker recipes](references/media.md) for concrete configuration and diagnostics.
 

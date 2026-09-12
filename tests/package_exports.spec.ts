@@ -37,6 +37,9 @@ test('imports every published package entry point', async ({ assert }) => {
   const modules = await Promise.all(entryPoints.map((entryPoint) => import(entryPoint)))
 
   assert.lengthOf(modules, entryPoints.length)
+  const legacy = await import('@jrmc/adonis-attachment/legacy')
+  assert.isFunction(legacy.attachments)
+  assert.isFunction(legacy.attachmentManager.createFromFiles)
 })
 
 test('keeps Lucid exports out of the package root', async ({ assert }) => {

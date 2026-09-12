@@ -42,10 +42,14 @@ so converter keys remain typed in source options, decorators, and regeneration.
 ## Legacy JSON variants and metadata
 
 First verify the installed build exports `/legacy`; not every v6 alpha includes this
-experimental singular-only facade. Use the same v6 converters, media dependencies and
+experimental facade. Use the same v6 converters, media dependencies and
 queue configuration as table-backed relations, but import the decorator, `Attachment`
 type and upload manager from `/legacy`. New uploads use direct assignment then owner save.
-There is no public legacy collection or manual variant insertion/deletion API.
+Legacy collections use `@attachments()` with `Attachment[] | null`; append drafts and
+remove items with normal array operations, then save. There is no reordering or manual
+variant insertion/deletion API. Each collection item supports `getVariant()`, `meta` and
+blurhash. Select `attributes: ['gallery']` with `AttachmentRegenerator.row/model` to
+regenerate all items; the array itself has no `regenerateVariants()` method.
 
 Register `integrations.legacy.models` so variants/deferred metadata can reload current
 owner JSON in the app AND a fresh worker. Keys match the decorator's logical `type`

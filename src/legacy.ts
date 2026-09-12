@@ -4,5 +4,11 @@ const legacy = await loadOptionalDependency(
   "@adonisjs/lucid",
   () => import("./integrations/legacy/index.js"),
 );
-export const { Attachment, AttachmentManager, attachment, attachmentManager, AttachmentMetadataConflictError } =
-  legacy;
+export const {
+  Attachment,
+  AttachmentManager,
+  attachment,
+  attachments,
+  attachmentManager,
+  AttachmentMetadataConflictError,
+} = legacy;

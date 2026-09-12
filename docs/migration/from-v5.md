@@ -1,7 +1,7 @@
 # Migrate from v5
 
 v6 is a **breaking release**. The default table-backed API uses relation methods.
-For a singular JSON field such as an avatar, the experimental `/legacy` entry point
+For JSON fields such as an avatar or gallery, the experimental `/legacy` entry point
 keeps direct assignment, `meta` mutations and automatic serialization. Configuration
 and imports still change; this is not a drop-in replacement for all v5 APIs.
 
@@ -15,14 +15,15 @@ assume it exists in an older published v6 alpha. Use a build containing this int
 | | Keep JSON (experimental) | Migrate to tables (default) |
 | --- | --- | --- |
 | Import | `@jrmc/adonis-attachment/legacy` | `@jrmc/adonis-attachment/lucid` |
-| Declaration | `@attachment()` with `Attachment \| null` | `@attachment()` with `AttachmentRelation` |
+| Declaration | `@attachment()` with `Attachment \| null`; `@attachments()` with `Attachment[] \| null` | `@attachment()` with `AttachmentRelation`; `@attachments()` with `AttachmentCollectionRelation` |
 | Storage | Existing JSON column on the owner | Blob table and polymorphic link table |
 | Existing data | Read in place; IDs added on subsequent mutations | Convert JSON values into blob/link rows |
 | Files | Keep existing disks and file paths | Keep existing disks and file paths |
 | Sharing a file between owners | Not supported | Supported through links |
 
-The legacy facade currently covers **singular fields**, including variants and metadata.
-Legacy collections are deferred. Table relations also support collections. JSON storage
+The legacy facade covers **singular fields and simple collections**, including variants,
+metadata and blurhash. Legacy collections use ordinary arrays without reordering; table
+relations offer explicit collection positioning and shared blobs. JSON storage
 is reserved for `/legacy`; the earlier experimental JSON relation API has been removed.
 Choose each field's path **before** running the data-migration script, which is only for
 fields moving to tables.
@@ -110,6 +111,28 @@ after commit. `user.avatar` reads the loaded snapshot synchronously. Use `await 
 after background jobs to reload variants and metadata. Save pending changes before refreshing.
 `serializeAs` and custom `serialize` are supported; old `keyId` output is not reproduced.
 See [Legacy JSON fields](/guide/legacy) for scope and concurrency rules.
+
+### Keep a collection as a JSON array
+
+Import `attachments`, `Attachment` and `attachmentManager` from `/legacy`. Keep the old
+nullable `gallery` column, without an additional `@column()` decorator:
+
+```ts
+@attachments({ variants: ['thumbnail'], meta: true })
+declare gallery: Attachment[] | null
+```
+
+After validating the files, append with
+`user.gallery = [...(user.gallery ?? []), ...await attachmentManager.createFromFiles(files)]`,
+then `await user.save()`. Remove items with `filter` or `splice`, then save. Existing
+items must come from that loaded field; new drafts append after retained items. There
+is no reorder API, and reordering attempts are rejected. Do not substitute table relation
+methods such as `addMany()` or `move()` on this ordinary array.
+
+Array edits preserve concurrent additions; `[]` removes the loaded items while `null`
+explicitly clears the current field, including unseen additions. Original and variant
+`meta` edits are saved with the owner. Custom `serialize` still applies per item.
+See [legacy collections](/guide/legacy#a-simple-collection) for the complete workflow.
 
 ### Configure storage and worker routing
 

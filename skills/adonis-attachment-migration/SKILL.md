@@ -1,6 +1,6 @@
 ---
 name: adonis-attachment-migration
-description: Use when explicitly upgrading an AdonisJS application from @jrmc/adonis-attachment v5 to v6, choosing between retaining singular JSON fields through /legacy and migrating to blob/link tables, or adapting v5 attachment code and configuration.
+description: Use when explicitly upgrading an AdonisJS application from @jrmc/adonis-attachment v5 to v6, choosing between retaining JSON fields and collections through /legacy and migrating to blob/link tables, or adapting v5 attachment code and configuration.
 metadata:
   package: "@jrmc/adonis-attachment"
   major-version: "6"
@@ -18,9 +18,9 @@ v5 mapping applies. Read [migration procedure](references/migration.md).
 
 - A normal upload task does not authorize a major upgrade. Plan schema/data changes before
   running them. Back up database AND files, rehearse on copies, and obtain approval for production writes.
-- Choose per field: keep singular JSON through the experimental `/legacy` facade, or migrate
-  to default `/lucid` tables. Verify the installed build exports `/legacy`; public legacy
-  collections are not supported. A JSON-only cutover needs no attachment/link/lock tables.
+- Choose per field: keep JSON through the experimental `/legacy` facade, or migrate
+  to default `/lucid` tables. Verify the installed build exports the needed legacy APIs.
+  Legacy collections use arrays without reordering. A JSON-only cutover needs no attachment/link/lock tables.
 - `/lucid` decorators represent table relations, not JSON columns. Both originals and variants are blobs;
   separate links carry owner type, ID, field, singular uniqueness, and collection position.
 - Default tables are `adonis_attachments` / `adonis_attachment_links`. Respect any explicit

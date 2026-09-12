@@ -1,22 +1,23 @@
 import app from "@adonisjs/core/services/app";
 import type { LucidModel, LucidRow } from "@adonisjs/lucid/types/model";
 import { Attachment } from "./attachment.js";
+import { registerAttachmentModelField } from "../lucid/model/attachment_model_hooks.js";
 import {
-  defineRelation,
   jsonRelationColumn,
-  type AttachmentRelationDefinition,
-  type AttachmentRelationRow,
-  type AttachmentRelationOptions,
-  type ManagedAttachmentField,
-} from "../lucid/relations/attachment_relation.js";
+  validateLegacyAttachmentDefinition,
+  registerLegacyAttachmentDefinition,
+  type LegacyFieldDefinition,
+} from "./model_fields.js";
+import type { AttachmentPersistenceOptions } from "../../core/attachment_options.js";
+import type { AttachmentVariantKey } from "../../../index.js";
 import { AttachmentLifecycleService } from "../../core/attachment_lifecycle_service.js";
 import type { AttachmentService } from "../../core/attachment_service.js";
-import { LucidJsonAttachmentStore } from "../lucid/json/lucid_json_attachment_store.js";
+import { LucidJsonAttachmentStore } from "./json/lucid_json_attachment_store.js";
 import {
   attachmentFromDocument,
   decodeJsonAttachments,
   JsonAttachmentRecord,
-} from "../lucid/json/json_attachment_document.js";
+} from "./json/json_attachment_document.js";
 import { afterAttachmentRollback } from "../lucid/persistence/attachment_transaction.js";
 import { AttachmentValidationError } from "../../errors.js";
 
@@ -24,9 +25,11 @@ import { AttachmentValidationError } from "../../errors.js";
 const draftOwners = new WeakMap<object, LegacyField>();
 
 export type AttachmentOptions<Model = LucidRow> = Omit<
-  AttachmentRelationOptions<Model>,
-  "persistence" | "folder" | "rename"
+  AttachmentPersistenceOptions<Model>,
+  "folder" | "rename"
 > & {
+  type?: string;
+  columnName?: string;
   folder?: string | ((model: Model) => string | Promise<string>) | null;
   rename?:
     | boolean
@@ -56,9 +59,8 @@ export function attachment<Model = LucidRow>(
       serialize: customSerialize,
       ...rest
     } = options;
-    const persistence: AttachmentRelationOptions<Model> = {
+    const persistence: LegacyFieldDefinition["options"] = {
       ...rest,
-      persistence: "json",
       ...(folder !== undefined
         ? {
             folder:
@@ -77,13 +79,53 @@ export function attachment<Model = LucidRow>(
           }
         : {}),
     };
-    defineRelation(
-      "one",
-      persistence,
-      (row, definition) => new LegacyField(row, definition),
-    )(target, key);
     const ModelClass = target.constructor as LucidModel;
     const field = String(key);
+    const definition: LegacyFieldDefinition = {
+      kind: "one",
+      field,
+      options: persistence,
+    };
+    validateLegacyAttachmentDefinition(ModelClass, definition);
+    const instance: (row: LucidRow) => LegacyField =
+      registerAttachmentModelField(ModelClass, {
+        field,
+        transactionalSave: true,
+        validate: () => {
+          jsonRelationColumn(ModelClass, definition);
+        },
+        create: (row) => new LegacyField(row, definition),
+        beforeDelete: (row) => instance(row).purge(),
+        regenerate: (row, keys) => instance(row).regenerate(keys),
+      });
+    registerLegacyAttachmentDefinition(ModelClass, definition);
+    ModelClass.before("create", (row) => {
+      if (!instance(row).hasPending) void instance(row).value;
+    });
+    ModelClass.after("find", (row) => instance(row).initialize());
+    ModelClass.after("fetch", async (rows) => {
+      await Promise.all(rows.map((row) => instance(row).initialize()));
+    });
+    const refresh = ModelClass.prototype.refresh;
+    ModelClass.prototype.refresh = async function () {
+      if (instance(this).hasPending)
+        throw new AttachmentValidationError(
+          "Save pending legacy attachment changes before refresh()",
+        );
+      await refresh.call(this);
+      await instance(this).initialize(true);
+      return this;
+    };
+    Object.defineProperty(target, key, {
+      configurable: true,
+      enumerable: false,
+      get(this: LucidRow) {
+        return instance(this).value;
+      },
+      set(this: LucidRow, value: unknown) {
+        instance(this).assign(value);
+      },
+    });
     const serialized =
       serializeAs === undefined
         ? ModelClass.namingStrategy.serializedName(ModelClass, field)
@@ -107,15 +149,15 @@ export function attachment<Model = LucidRow>(
   };
 }
 
-class LegacyField implements ManagedAttachmentField {
+class LegacyField {
   #service?: AttachmentService;
   #value: Attachment | null = null;
   #raw: unknown;
   #loaded = false;
   #assigned = false;
   constructor(
-    readonly row: AttachmentRelationRow,
-    readonly definition: AttachmentRelationDefinition,
+    readonly row: LucidRow,
+    readonly definition: LegacyFieldDefinition,
   ) {}
   get Model() {
     return this.row.constructor as unknown as LucidModel;
@@ -124,6 +166,14 @@ class LegacyField implements ManagedAttachmentField {
     return jsonRelationColumn(this.Model, this.definition);
   }
   get owner() {
+    if (
+      !this.row.$isPersisted ||
+      this.row.$primaryKeyValue === null ||
+      this.row.$primaryKeyValue === undefined
+    )
+      throw new AttachmentValidationError(
+        "Legacy attachments require a persisted Lucid model",
+      );
     return {
       type: this.definition.options.type ?? this.Model.table,
       id: String(this.row.$primaryKeyValue),
@@ -281,7 +331,30 @@ class LegacyField implements ManagedAttachmentField {
     this.#assigned = false;
     await this.initialize();
   }
-  #store(): LucidJsonAttachmentStore {
+  async purge(): Promise<void> {
+    this.#service ??= await app.container.make("jrmc.attachment");
+    await new AttachmentLifecycleService(
+      this.#service,
+      this.#store(),
+    ).purgeOwner({ ...this.owner, model: this.row });
+  }
+  async regenerate(keys?: readonly AttachmentVariantKey[]): Promise<number> {
+    this.#service ??= await app.container.make("jrmc.attachment");
+    const original = await this.#store(false).findOriginal(this.owner);
+    if (!original) return 0;
+    await this.#service.scheduleVariantGeneration(
+      original.toAttachment(),
+      keys,
+      this.#service.getVariantMetadataEnabled(
+        undefined,
+        this.definition.options,
+      ),
+      undefined,
+      "replace",
+    );
+    return 1;
+  }
+  #store(bindModel = true): LucidJsonAttachmentStore {
     return new LucidJsonAttachmentStore({
       client: this.Model.$adapter.modelClient(this.row),
       table: this.Model.table,
@@ -289,7 +362,7 @@ class LegacyField implements ManagedAttachmentField {
       column: this.column,
       owner: this.owner,
       kind: "one",
-      model: this.row,
+      ...(bindModel ? { model: this.row } : {}),
       defaultDisk: this.#service!.getPersistenceDisk(this.definition.options),
     });
   }

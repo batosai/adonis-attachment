@@ -1,10 +1,79 @@
 # V5 to v6 procedure
 
-## Inventory and target schema
+## Inventory and choose per field
 
 Record each legacy table, column, primary key type, stored disk/path convention, and whether
 the field is singular or multiple. Sample JSON including variants and empty/null values.
 Check existing v6 alpha tables before generating anything; do not create duplicates.
+Back up database and stored files, and rehearse replacement/deletion against copies.
+
+- Keep one attachment in its existing JSON column: use the experimental `/legacy` path
+  below. Confirm the installed build exports it. No JSON-to-table migration is required.
+- Use default v6 relations, collections or shared blobs: follow the table migration below.
+  Public legacy collections are not implemented; an internal array reader is not an API.
+- Mixed models are supported. Select the target per field and exclude retained JSON fields
+  from the table migration. Never drop a column still used by `/legacy`.
+
+## Keep a singular JSON field with `/legacy`
+
+Keep `users.avatar` nullable JSON and its existing files. Do not run
+`make:attachments-table` or the JSON-to-table script for this field. The configure hook
+may still be needed when upgrading; preserve existing application configuration.
+
+```ts
+import { BaseModel, column } from '@adonisjs/lucid/orm'
+import { attachment, attachmentManager, type Attachment } from '@jrmc/adonis-attachment/legacy'
+
+export class User extends BaseModel {
+  @column({ isPrimary: true }) declare id: number
+  @attachment<User>({ folder: (user) => `users/${user.id}`, meta: true })
+  declare avatar: Attachment | null
+}
+
+export async function replaceAvatar(user: User, validatedImageBytes: Uint8Array) {
+  user.avatar = await attachmentManager.createFromBuffer(validatedImageBytes, 'avatar.jpg')
+  await user.save()
+  return user.serialize()
+}
+```
+
+The decorator, `Attachment` type and manager all come from `/legacy`, not the root or
+`/lucid`. Do not also apply `@column()` to `avatar`. Only specify `columnName` when the
+physical column differs from Lucid's naming convention. Callbacks receive the model;
+legacy `rename` receives `(model, field, originalName)`. Assign a new draft or null directly,
+not through `fill`/`merge`, and save the owner. Persisted attachments cannot be shared by
+assignment to another field because JSON has no global file reference counts.
+
+In `config/attachment.ts`, register
+`integrations: { legacy: { models: { users: () => import('#models/user') } } }`.
+The key matches logical owner `type` (model table by default), enabling jobs to reload
+the current JSON. It creates no tables and is not a global storage-mode switch. Keep
+Lucid enabled; `integrations.lucid.jsonModels` has been removed. No `/lucid` decorator
+accepts `persistence: 'json'` and `AttachmentRelation<'json'>` is not a supported type.
+
+Variants and deferred metadata use v6 converters/media settings and support both memory
+and external queues. Existing external jobs forward their complete `AttachmentJob` to
+`createLucidAttachmentProcessor(app)` from `/lucid`; the same registry must be available
+in the worker. Memory is the non-durable default, without automatic retry. The shared
+`AttachmentRegenerator` supports registered legacy fields via `.row()` / `.model()`;
+there is no legacy `avatar.regenerateVariants()` method.
+
+`getUrl()`, `getVariant()`, original/variant `meta` edits followed by owner save, and
+automatic serialization are supported. Getters use loaded JSON, so refresh after jobs
+finish (save pending edits first) or fetch a new model. Metadata merges independent keys
+under an owner-row lock; conflicting edits raise `AttachmentMetadataConflictError` from
+`/legacy`. Fetch fresh state and reconcile rather than blindly replaying a stale save.
+The implementation does not rely on `JSON_SET` or an additional lock table/library.
+
+Stop v5 writers AND workers before cutover. Retain file and database backups: old JSON is
+read in place and IDs may be backfilled on mutation; full downgrade compatibility after
+new writes is not promised. Audit shared historical file paths before cleanup tests.
+Check serialization/transformers: `serializeAs` is supported, but old `keyId`/`getKeyId()`,
+`router.attachments()`, manual variant insertion/deletion and all v5 overloads are not.
+The built-in blob-ID route cannot resolve JSON fields; use storage URLs or an authorized
+owner-based route and disable the built-in route with `route: false` for JSON-only apps.
+
+## Migrate selected fields to tables: target schema
 
 After explicitly installing the chosen v6 release, run the configure hook, preserving
 application configuration. Generate the target schema and mapping script:
@@ -27,7 +96,8 @@ storage paths. Verify that existing disk names resolve in the new storage backen
 ## Map legacy records
 
 Replace the generated iterator, retaining the script's exported async function and writer.
-This complete iterator example assumes numeric `users.id` and JSON `avatar` / `gallery`:
+This complete iterator example assumes numeric `users.id` and that BOTH JSON `avatar`
+and `gallery` were selected for table migration. Omit any fields retained through `/legacy`:
 
 ```ts
 import db from '@adonisjs/lucid/services/db'
@@ -78,9 +148,9 @@ before a full rehearsal replay. Production resumption requires a durable ledger/
 committed with the data; the example's iterator cursor is not durable. Replaying can duplicate
 collection links or violate singular uniqueness. Do not delete originals during recovery.
 
-## Adapt application code
+## Adapt application code for table relations
 
-| V5 | V6 |
+| V5 | V6 table-backed `/lucid` |
 | --- | --- |
 | JSON column decorated as attachment | `/lucid` relation decorator; no attachment JSON column |
 | `Attachment` or array property | `AttachmentRelation` / `AttachmentCollectionRelation` |

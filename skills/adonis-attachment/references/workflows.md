@@ -1,5 +1,8 @@
 # Application workflows
 
+These recipes use table-backed `/lucid` relations. For a singular JSON field, follow
+[legacy JSON fields](legacy.md) instead; its imports, assignment and serialization differ.
+
 ## Install and configure
 
 Check that the installed version is v6; these instructions do not upgrade a v5 app implicitly.
@@ -12,8 +15,8 @@ node ace configure @jrmc/adonis-attachment
 ```
 
 It generates `config/attachment.ts` from a stub and registers the provider and commands.
-Do not replace the application's entire `adonisrc.ts`. For Lucid, install/configure that
-integration if missing, then generate and run attachment schema migrations:
+Do not replace the application's entire `adonisrc.ts`. For table-backed Lucid fields,
+install/configure that integration if missing, then generate and run attachment schema migrations:
 
 ```sh
 node ace make:attachments-table
@@ -141,4 +144,6 @@ otherwise use the built-in public route or an authorized application route.
 
 For Edge, pass the computed URL to the view. For JSON/Inertia, return an explicit object.
 Do not use v5's `user.avatar.getUrl()`, `getVariant()`, `getKeyId()`, `router.attachments()`,
-`serializeAs`, or direct property assignment.
+`serializeAs`, or direct property assignment on table relations. The separate `/legacy`
+facade supports direct assignment, URL/variant getters and serialization, but not `getKeyId()`
+or `router.attachments()`.

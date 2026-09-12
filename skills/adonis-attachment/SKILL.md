@@ -1,6 +1,6 @@
 ---
 name: adonis-attachment
-description: Use when integrating @jrmc/adonis-attachment v6 into an AdonisJS application for uploads, Lucid attachment relations, custom persistence, replacement, deletion, and public or private file URLs.
+description: Use when integrating @jrmc/adonis-attachment v6 into an AdonisJS application for uploads, table-backed Lucid relations, legacy singular JSON fields, custom persistence, replacement, deletion, and public or private file URLs.
 metadata:
   package: "@jrmc/adonis-attachment"
   major-version: "6"
@@ -15,41 +15,54 @@ For an installed v5, do not apply these APIs without an explicit upgrade task.
 Preserve existing configuration and the application's chosen ORM and storage.
 
 Read [application workflows](references/workflows.md) for installation, validated uploads,
-singular/collection relations, and URLs. Read [custom persistence](references/persistence.md)
-when Lucid is not being used for attachments.
+table-backed singular/collection relations, and URLs. Read [legacy JSON fields](references/legacy.md)
+when retaining a singular JSON column or using `/legacy`. Read
+[custom persistence](references/persistence.md) when Lucid is not being used for attachments.
 
 ## Decisions that matter
 
 - The package is `@jrmc/adonis-attachment` (singular), even when the task says "attachments".
 - Core is required; Drive, Lucid, and Adonis Queue are optional. Default storage is
   `LocalFileStorage.fromApp`, not Drive. Configure optional Adonis integrations before use.
-- Import `attachmentManager` and `attachmentService` from the package root. Import
+- Choose the field's persistence before editing its model or schema. `/lucid` is the default
+  table-backed API; `/legacy` is an experimental singular JSON facade requiring Lucid.
+  Verify the installed build exports `/legacy`; not every v6 alpha does. Do not migrate
+  an existing JSON field to tables without an explicit migration decision.
+- For table relations, import `attachmentManager` and `attachmentService` from the package root. Import
   `attachment`, `attachments`, `AttachmentRelation`, and `AttachmentCollectionRelation`
   from `@jrmc/adonis-attachment/lucid`. Root `Attachment` is plain persisted file data.
 - Root `attachmentService` exposes URL methods only. For read/remove/scheduling use the
   typed full service from `await app.container.make('jrmc.attachment')` inside the booted app.
-- `createFrom*` returns an `AttachmentDraft`, not a written file. Use `draft.persist()`
+- Root `createFrom*` returns an `AttachmentDraft`, not a written file. Use `draft.persist()`
   manually, or stage it with relation methods and save the owner. Do not assign a draft
-  to `user.avatar`, and do not add a JSON column for the v6 decorator.
-- `set`, `attach`, `detach`, `addMany`, `move`, and `clear` stage changes. `owner.save()`
+  to a table relation, and do not add a JSON column for the `/lucid` decorator.
+- Legacy uses `attachment`, `Attachment`, and `attachmentManager` from `/legacy`, direct
+  assignment, then owner save. Keep the JSON column without a second `@column()` decorator.
+  Public legacy collections are not supported. Do not invent `AttachmentRelation<'json'>`
+  or `persistence: 'json'` on `/lucid` decorators.
+- Table relation `set`, `attach`, `detach`, `addMany`, `move`, and `clear` stage changes. `owner.save()`
   flushes them. Explicit relation `persist()` requires an already persisted owner.
 - Options resolve per field: manager call > decorator > `defaults`. `undefined` inherits;
   `null` clears inheritance and restores the fallback; use `false` to disable a boolean.
-- Defaults are `adonis_attachments` and `adonis_attachment_links`. Only configure
+- Table defaults are `adonis_attachments` and `adonis_attachment_links`. Configure their names via
   `integrations.lucid.tableName`; the link name is its singular form plus `_links`.
   Configuration never renames an existing database table.
-- `get()` and collection `all()` return links with a preloaded `.attachment` blob.
+- Table `get()` and collection `all()` return links with a preloaded `.attachment` blob.
   Collection `move/remove` take link IDs. `attachExisting/addExisting` and file routes take blob IDs.
-- The built-in `/attachments/:id/:name?` route is public. For private files disable it
+- The built-in `/attachments/:id/:name?` route is public and resolves table blob IDs, not
+  legacy JSON references. For private or JSON-only applications disable it
   with `route: false`, authorize your own route, and check storage is not publicly exposed.
-- Single `variants()` returns blob models, not links. Relations are not automatically
+- Table single `variants()` returns blob models, not links. Relations are not automatically
   serialized into API responses; construct the application's response explicitly.
+- Legacy serializes automatically, exposes `getUrl()` / `getVariant()` and mutable `meta`.
+  Register its model loaders in `integrations.legacy.models` for variants/deferred metadata
+  with either memory or external queues; do not use the removed `integrations.lucid.jsonModels`.
 
 ## Verification
 
 Validate the upload in the application before creating a draft. Exercise create, read,
-replace, detach, collection ordering, and the relevant failure path. Check both database
-rows and stored bytes. Use the consuming project's typecheck and tests; avoid destructive
+replace, delete, collection ordering where supported, and the relevant failure path. Check
+database rows or owner JSON and stored bytes. Use the consuming project's typecheck and tests; avoid destructive
 schema resets or real production file deletion merely to test integration.
 When API details differ across alpha releases, inspect the installed public declarations
 instead of guessing or importing unpublished `src` modules.

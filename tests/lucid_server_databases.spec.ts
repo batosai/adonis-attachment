@@ -15,13 +15,14 @@ import { withAttachmentReference } from "../src/core/attachment_reference.js";
 import { resolveAttachment } from "../src/core/attachment_repository.js";
 import { LucidAttachmentRepository } from "../src/integrations/lucid/persistence/lucid_attachment_repository.js";
 import { LucidAttachmentMetadataPersister } from "../src/integrations/lucid/persistence/lucid_attachment_metadata_persister.js";
-import { LucidJsonAttachmentStore } from "../src/integrations/lucid/json/lucid_json_attachment_store.js";
+import { LucidJsonAttachmentStore } from "../src/integrations/legacy/json/lucid_json_attachment_store.js";
 import { AttachmentLifecycleService } from "../src/core/attachment_lifecycle_service.js";
 import { setApp } from "@adonisjs/core/services/app";
 import type { AttachmentJob } from "../src/core/queue.js";
-import { attachment, attachments, AttachmentRelation, AttachmentCollectionRelation, LucidJsonAttachmentRegistry, createLucidAttachmentProcessor } from "../src/integrations/lucid/index.js";
+import { attachment, AttachmentRelation, createLucidAttachmentProcessor } from "../src/integrations/lucid/index.js";
 import { attachment as legacyAttachment, Attachment as LegacyAttachment, AttachmentManager as LegacyManager } from "../src/integrations/legacy/index.js";
 
+import { createLegacyAttachmentAdapter } from "../src/integrations/legacy/config.js";
 const client = process.env.ATTACHMENT_TEST_CLIENT;
 // Opt-in: the container runner supplies a fresh disposable database for each engine.
 if (
@@ -61,8 +62,7 @@ if (
     static selfAssignPrimaryKey = true;
     @column({ isPrimary: true }) declare id: string;
     @column() declare name: string;
-    @attachment({ persistence: "json", variants: [], meta: true }) declare avatar: AttachmentRelation<"json">;
-    @attachments({ persistence: "json", variants: [] }) declare gallery: AttachmentCollectionRelation<"json">;
+    @legacyAttachment({ variants: [], meta: true }) declare avatar: LegacyAttachment | null;
     @attachment({ variants: [] }) declare document: AttachmentRelation;
   }
   let database: Database;
@@ -241,7 +241,8 @@ if (
       });
 
       test("persists legacy values, worker variants and concurrent meta edits with rollback", async ({ assert }) => {
-        const registry = new LucidJsonAttachmentRegistry({ models: { users: async () => ({ default: LegacyUser }) }, defaultDisk: "fs" });
+        const adapter = createLegacyAttachmentAdapter({ models: { users: async () => ({ default: LegacyUser }) }, defaultDisk: "fs" });
+        const registry = adapter.repository;
         const jobs: AttachmentJob[] = [];
         const files = new Set<string>();
         const service = new AttachmentService({ defaultDisk: "fs", queue: { async enqueue(job) { jobs.push(job); } }, storage: {
@@ -258,7 +259,7 @@ if (
         await Promise.all([a.save(), b.save()]);
         await row.refresh();
         assert.deepEqual(row.avatar!.meta, { caption: "été", nested: { left: true }, credit: "Alice", description: "Bob" });
-        const worker = createLucidAttachmentProcessor(app as never, { jsonPersistence: registry, converters: {
+        const worker = createLucidAttachmentProcessor(app as never, { adapters: { [adapter.name]: adapter }, converters: {
           async keys() { return ["thumbnail"]; }, async get() { return { key: "thumbnail", async convert() {
             return { body: new Uint8Array([2]), fileName: "thumb.jpg", mimeType: "image/jpeg" };
           } }; },
@@ -282,7 +283,8 @@ if (
       });
 
       test("routes JSON model worker jobs and preserves worker updates when a stale model saves", async ({ assert }) => {
-        const registry = new LucidJsonAttachmentRegistry({ models: { users: async () => ({ default: JsonUser }) }, defaultDisk: "fs" });
+        const adapter = createLegacyAttachmentAdapter({ models: { users: async () => ({ default: JsonUser }) }, defaultDisk: "fs" });
+        const registry = adapter.repository;
         const jobs: AttachmentJob[] = [];
         const files = new Set<string>();
         const service = new AttachmentService({
@@ -294,23 +296,21 @@ if (
         const app = { container: { async make() { return service; } } };
         setApp(app as never);
         const row = await JsonUser.findOrFail("42");
-        row.avatar.set(service.createDraft({ originalName: "avatar.jpg", body: new Uint8Array([1]) }));
-        row.gallery.add(service.createDraft({ originalName: "gallery.jpg", body: new Uint8Array([1]) }));
+        row.avatar = new LegacyAttachment(service.createDraft({ originalName: "avatar.jpg", body: new Uint8Array([1]) }), service);
         await row.save();
         const stale = await JsonUser.findOrFail("42");
-        const worker = createLucidAttachmentProcessor(app as never, { jsonPersistence: registry, converters: {
+        const worker = createLucidAttachmentProcessor(app as never, { adapters: { [adapter.name]: adapter }, converters: {
           async keys() { return ["thumbnail"]; },
           async get() { return { key: "thumbnail", async convert() { return { body: new Uint8Array([2]), fileName: "thumb.jpg", mimeType: "image/jpeg" }; } }; },
         } });
-        await row.avatar.regenerateVariants(["thumbnail"]);
+        await service.scheduleVariantGeneration(row.avatar!.file(), ["thumbnail"], true, undefined, "replace");
         for (const job of [...jobs].filter((job) => job.type === "generate-variants")) await worker.process(JSON.parse(JSON.stringify(job)));
         for (const job of [...jobs].filter((job) => job.type === "extract-metadata")) await worker.process(JSON.parse(JSON.stringify(job)));
         stale.name = "updated";
         await stale.save();
-        assert.deepEqual((await stale.avatar.get())!.toAttachment().metadata, { caption: "été", inspected: true });
-        assert.deepEqual((await stale.avatar.variants())[0]!.toAttachment().metadata, { caption: "été", inspected: true });
-        assert.lengthOf(await stale.gallery.all(), 1);
-        assert.equal(files.size, 3);
+        assert.deepEqual((await JsonUser.findOrFail(stale.id)).avatar!.meta, { caption: "été", inspected: true });
+        assert.deepEqual((await JsonUser.findOrFail(stale.id)).avatar!.variants[0]!.meta, { caption: "été", inspected: true });
+        assert.equal(files.size, 2);
         assert.isEmpty(await database.from("adonis_attachments"));
       });
 
@@ -321,7 +321,7 @@ if (
         } });
         setApp({ container: { async make() { return service; } } } as never);
         const row = new JsonUser(); row.id = "43"; row.name = "created";
-        row.avatar.set(service.createDraft({ originalName: "avatar.jpg", body: new Uint8Array([1]) }));
+        row.avatar = new LegacyAttachment(service.createDraft({ originalName: "avatar.jpg", body: new Uint8Array([1]) }), service);
         row.document.set(service.createDraft({ originalName: "doc.txt", body: new Uint8Array([1]) }));
         const creation = await database.transaction();
         try {
@@ -329,7 +329,7 @@ if (
           assert.equal(files.size, 2);
           await creation.rollback();
           assert.isFalse(row.$isPersisted);
-          assert.isTrue(row.avatar.hasPending);
+          assert.isFalse(row.avatar!.draft()!.isPersisted);
           assert.notProperty(row.$extras, "avatar");
           assert.isEmpty(files);
         } finally { if (!creation.isCompleted) await creation.rollback(); }
@@ -340,7 +340,7 @@ if (
           assert.equal(files.size, 2);
           await deletion.rollback();
           assert.isFalse(row.$isDeleted);
-          assert.isNotNull(await row.avatar.get());
+          assert.isNotNull(row.avatar);
           await row.delete();
           assert.isEmpty(files);
           assert.isNull(await JsonUser.find("43"));

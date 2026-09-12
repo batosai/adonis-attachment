@@ -19,10 +19,9 @@ export default class AttachmentProvider {
   constructor(protected app: ApplicationService) {}
 
   register(): void {
-    this.app.container.singleton('jrmc.attachment.json', async () => {
+    this.app.container.singleton('jrmc.attachment.processingAdapters', async () => {
       const config = await configProvider.resolve<ResolvedAttachmentConfig>(this.app, this.app.config.get('attachment'))
-      if (!config?.jsonPersistence) throw new Error('JSON attachment workers require integrations.lucid.jsonModels')
-      return config.jsonPersistence
+      return config?.processingAdapters ?? {}
     })
     this.app.container.singleton('jrmc.attachment', async () => {
       const attachmentConfig = this.app.config.get('attachment')

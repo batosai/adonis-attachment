@@ -13,7 +13,7 @@ import {
 } from "../src/integrations/lucid/index.js";
 import { createLucidTestDatabase } from "./helpers/lucid_test_database.js";
 import type { AttachmentJob } from "../src/core/queue.js";
-import { LucidJsonAttachmentRegistry } from "../src/integrations/lucid/json/lucid_json_attachment_registry.js";
+import { LucidJsonAttachmentRegistry } from "../src/integrations/legacy/json/lucid_json_attachment_registry.js";
 import {
   defineConfig,
   type ResolvedAttachmentConfig,
@@ -358,7 +358,7 @@ test.group("Legacy singular JSON attachments", (group) => {
         hasBinding: (name: string) => name === "lucid.db",
         async make(name: string) {
           if (name === "jrmc.attachment") return service;
-          if (name === "jrmc.attachment.json") return resolved.jsonPersistence;
+          if (name === "jrmc.attachment.processingAdapters") return resolved.processingAdapters;
           if (name === "jrmc.attachment.repository") return resolved.repository;
           if (name === "jrmc.attachment.converters") return resolved.converters;
           throw new Error(`Unexpected binding ${name}`);
@@ -369,8 +369,8 @@ test.group("Legacy singular JSON attachments", (group) => {
       defaultDisk: "fs",
       route: false,
       integrations: {
-        lucid: {
-          jsonModels: { legacy_users: async () => ({ default: User }) },
+        legacy: {
+          models: { legacy_users: async () => ({ default: User }) },
         },
       },
       media: {

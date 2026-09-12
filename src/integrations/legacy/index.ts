@@ -9,6 +9,8 @@ import type { AttachmentService } from "../../core/attachment_service.js";
 import type { Readable } from "node:stream";
 
 export { Attachment };
+export { AttachmentMetadataConflictError } from './errors.js';
+export type { LegacyAttachmentConfig } from './config.js';
 export { attachment, type AttachmentOptions } from "./decorator.js";
 
 /** Sources produce assignable legacy drafts; persistence still happens on model.save(). */

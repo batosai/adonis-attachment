@@ -9,12 +9,7 @@ import type { LucidRow } from '@adonisjs/lucid/types/model'
 
 import type { AttachmentVariantKey } from '../../../../index.js'
 import { AttachmentValidationError } from '../../../errors.js'
-import {
-  getAttachmentRelationDefinitions,
-  type AttachmentCollectionRelation,
-  AttachmentRelation,
-  type AttachmentRelationRow,
-} from '../relations/attachment_relation.js'
+import { getAttachmentModelFields } from '../model/attachment_model_hooks.js'
 
 type RegeneratableRow = LucidRow
 
@@ -111,7 +106,7 @@ export class AttachmentRegenerator {
     row: RegeneratableRow,
     options: AttachmentRegenerationOptions
   ): Promise<number> {
-    const definitions = getAttachmentRelationDefinitions(row.constructor).filter((definition) =>
+    const definitions = getAttachmentModelFields(row.constructor).filter((definition) =>
       !options.attributes || options.attributes.includes(definition.field)
     )
 
@@ -125,22 +120,7 @@ export class AttachmentRegenerator {
 
     let attachments = 0
     for (const definition of definitions) {
-      if (definition.managed) {
-        // Legacy exposes a value, not a relation helper. Reuse the same trusted
-        // JSON lifecycle without reading or changing its in-memory snapshot.
-        const relation = new AttachmentRelation<'json'>(row as AttachmentRelationRow, definition)
-        attachments += (await relation.regenerateVariants(options.variants)) ? 1 : 0
-        continue
-      }
-      const relation = (row as unknown as Record<string, unknown>)[definition.field] as
-        | AttachmentRelation
-        | AttachmentCollectionRelation
-
-      if (definition.kind === 'one') {
-        attachments += (await (relation as AttachmentRelation).regenerateVariants(options.variants)) ? 1 : 0
-      } else {
-        attachments += await (relation as AttachmentCollectionRelation).regenerateVariants(options.variants)
-      }
+      attachments += await definition.regenerate(row, options.variants)
     }
 
     return attachments

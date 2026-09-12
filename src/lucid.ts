@@ -8,11 +8,6 @@ const lucid = await loadOptionalDependency('@adonisjs/lucid', () => import('./in
 
 export const {
   AttachmentModel,
-  LucidJsonAttachmentRegistry,
-  LucidJsonVariantGenerationService,
-  LucidJsonAttachmentStore,
-  JsonAttachmentEntry,
-  JsonAttachmentRecord,
   AttachmentLinkModel,
   configureLucidAttachmentTables,
   resolveAttachmentTableNames,

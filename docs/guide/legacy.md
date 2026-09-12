@@ -68,7 +68,7 @@ import { AdonisDriveStorage, defineConfig } from '@jrmc/adonis-attachment'
 export default defineConfig({
   storage: AdonisDriveStorage.fromApp,
   route: false,
-  integrations: { lucid: { jsonModels: { users: () => import('#models/user') } } },
+  integrations: { legacy: { models: { users: () => import('#models/user') } } },
   converters: {
     thumbnail: { converter: () => import('#converters/thumbnail_converter') },
   },
@@ -76,6 +76,10 @@ export default defineConfig({
 ```
 
 The registry key must match the decorator's logical `type` (the model table by default).
+Keep automatic Lucid integration enabled. The former experimental
+`integrations.lucid.jsonModels` option is replaced by `integrations.legacy.models`.
+JSON is no longer an option on `/lucid` decorators; its store and workers are internal
+to the legacy module and are not exported by `/lucid`.
 The default memory queue generates variants and extracts configured metadata. Pending
 memory jobs are lost on process termination; this is not a durable queue. The existing
 v6 external-worker routing can also resolve these registered JSON fields. This facade
@@ -119,6 +123,8 @@ only those changes to current metadata under the lock:
 On conflict, the transaction rolls back; reload a fresh model and decide which changes
 to reapply. An explicit avatar replacement or `null` assignment is a current-field
 operation, not a metadata patch: the last successfully committed replacement wins.
+For class-based handling, import `AttachmentMetadataConflictError` from `/legacy`;
+this compatibility-specific error is not exported from the package root.
 
 New-owner insertion, ordinary attributes, legacy fields and table relations participate
 in the same model-save transaction. Rollback restores pending drafts/meta changes and

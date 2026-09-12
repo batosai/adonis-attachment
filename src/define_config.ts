@@ -29,7 +29,8 @@ import type { AttachmentMetadataMode } from './core/attachment_service.js'
 import type { AttachmentMetadataPersister } from './core/attachment_metadata_persister.js'
 import { AttachmentJobProcessor } from './core/attachment_job_processor.js'
 import { AttachmentRepositoryRegistry, type AttachmentRepository } from './core/attachment_repository.js'
-import type { JsonAttachmentModels, LucidJsonAttachmentRegistry } from './integrations/lucid/json/lucid_json_attachment_registry.js'
+import type { AttachmentProcessingAdapters } from './core/attachment_processing_adapter.js'
+import type { LegacyAttachmentConfig } from './integrations/legacy/config.js'
 import type { AttachmentJobHandler, AttachmentQueue } from './core/queue.js'
 import type { AttachmentStorage } from './core/storage.js'
 import type { AttachmentManagerOptions } from './sources/attachment_manager.js'
@@ -56,13 +57,13 @@ export type ResolvedAttachmentRouteConfig = {
 export type LucidAttachmentConfig = {
   /** Blob table name. The link table is derived as `${singular(tableName)}_links`. */
   tableName?: string
-  /** Trusted model imports keyed by logical owner type, available to web and worker processes. */
-  jsonModels?: JsonAttachmentModels
 }
 
 export type AttachmentIntegrationsConfig = {
   /** Configures Lucid when detected in the container, or disables its automatic integration. */
   lucid?: LucidAttachmentConfig | false
+  /** Optional v5-style JSON compatibility, isolated from the table integration. */
+  legacy?: LegacyAttachmentConfig
 }
 
 export type AttachmentMediaConfig = {
@@ -133,7 +134,7 @@ export type AttachmentConfig<
 }
 
 export type ResolvedAttachmentConfig<KnownConverters extends ConverterConfigMap = ConverterConfigMap> = AttachmentServiceOptions & {
-  jsonPersistence?: LucidJsonAttachmentRegistry
+  processingAdapters?: AttachmentProcessingAdapters
   repository?: AttachmentRepository
   defaults?: AttachmentPersistenceOptions
   sources?: AttachmentManagerOptions
@@ -165,8 +166,14 @@ export function defineConfig<
     const storage = await resolveIntegration(config.storage, app)
     const lucid = resolveLucidIntegration(app, config.integrations?.lucid)
     const defaultDisk = config.defaultDisk ?? storage.defaultDisk ?? 'fs'
-    const jsonModels = config.integrations?.lucid && config.integrations.lucid.jsonModels
-    const jsonPersistence = jsonModels ? await resolveJsonPersistence(jsonModels, defaultDisk, config.defaults) : undefined
+    if (config.integrations?.lucid && 'jsonModels' in config.integrations.lucid) {
+      throw new AttachmentError('Use integrations.legacy.models instead of integrations.lucid.jsonModels', { code: 'E_INVALID_ATTACHMENT_CONFIG' })
+    }
+    const legacy = config.integrations?.legacy
+      ? await resolveLegacyIntegration(config.integrations.legacy, defaultDisk, config.defaults)
+      : undefined
+    if (legacy && !lucid) throw new AttachmentError('Legacy attachments require the Lucid integration', { code: 'E_INVALID_ATTACHMENT_CONFIG' })
+    const processingAdapters: AttachmentProcessingAdapters = legacy ? { [legacy.name]: legacy } : {}
     const metadataExtractors =
       config.media?.metadata !== undefined
         ? await resolveIntegration(config.media.metadata, app)
@@ -175,11 +182,11 @@ export function defineConfig<
       ? await resolveIntegration(config.media.metadataPersister, app)
       : undefined
     const resolvedMetadataPersister = metadataPersister
-      ?? await resolveLucidMetadataPersister(config.media?.metadataPolicy?.mode, lucid, jsonPersistence)
+      ?? await resolveLucidMetadataPersister(config.media?.metadataPolicy?.mode, lucid, processingAdapters)
     const repository = config.repository
       ? await resolveIntegration(config.repository, app)
       : lucid
-        ? await resolveLucidRepository(jsonPersistence)
+        ? await resolveLucidRepository(processingAdapters)
         : undefined
     const events = config.events ? await resolveIntegration(config.events, app) : undefined
     const converters = config.converters
@@ -191,7 +198,7 @@ export function defineConfig<
     const processor =
       configuredProcessor ??
       (!config.jobHandler && usesConfiguredMemoryQueue(selectedQueue) && lucid && repository
-        ? await createDefaultLucidProcessor(app, repository, converters, jsonPersistence)
+        ? await createDefaultLucidProcessor(app, repository, converters, processingAdapters)
         : undefined)
     const jobHandler: AttachmentJobHandler | undefined = config.jobHandler
       ? await resolveIntegration(config.jobHandler, app)
@@ -213,7 +220,7 @@ export function defineConfig<
 
     return {
       defaultDisk,
-      ...(jsonPersistence ? { jsonPersistence } : {}),
+      processingAdapters,
       storage,
       queue,
       route: resolveRoute(config.route),
@@ -337,7 +344,7 @@ async function createDefaultLucidProcessor(
   app: ApplicationService,
   repository: AttachmentRepository,
   converters: VariantConverterRegistry | undefined,
-  jsonPersistence: LucidJsonAttachmentRegistry | undefined
+  processingAdapters: AttachmentProcessingAdapters
 ): Promise<AttachmentJobProcessor> {
   const { createLucidAttachmentProcessor } = await loadOptionalDependency(
     '@adonisjs/lucid',
@@ -348,7 +355,7 @@ async function createDefaultLucidProcessor(
   return createLucidAttachmentProcessor(app, {
     repository,
     converters: resolvedConverters,
-    ...(jsonPersistence ? { jsonPersistence } : {}),
+    adapters: processingAdapters,
   })
 }
 
@@ -370,7 +377,7 @@ function toAutodetectOptions(binaries: AttachmentBinariesConfig | undefined) {
 async function resolveLucidMetadataPersister(
   mode: AttachmentMetadataMode | undefined,
   lucid: AttachmentTableNames | undefined,
-  jsonPersistence?: LucidJsonAttachmentRegistry
+  processingAdapters: AttachmentProcessingAdapters
 ): Promise<AttachmentMetadataPersister | undefined> {
   if (mode !== 'deferred' || !lucid) {
     return undefined
@@ -381,32 +388,34 @@ async function resolveLucidMetadataPersister(
     () => import('./integrations/lucid/persistence/lucid_attachment_metadata_persister.js')
   )
   const tables = new LucidAttachmentMetadataPersister()
-  if (!jsonPersistence) return tables
+  if (!Object.keys(processingAdapters).length) return tables
   return {
     persistMetadata(attachment, metadata) {
-      return attachment.reference?.adapter === 'json'
-        ? jsonPersistence.persistMetadata(attachment, metadata)
-        : tables.persistMetadata(attachment, metadata)
+      const adapter = attachment.reference ? processingAdapters[attachment.reference.adapter] : undefined
+      return (adapter?.metadataPersister ?? tables).persistMetadata(attachment, metadata)
     },
   }
 }
 
-async function resolveLucidRepository(jsonPersistence?: LucidJsonAttachmentRegistry): Promise<AttachmentRepository> {
+async function resolveLucidRepository(processingAdapters: AttachmentProcessingAdapters): Promise<AttachmentRepository> {
   const { LucidAttachmentRepository } = await loadOptionalDependency(
     '@adonisjs/lucid',
     () => import('./integrations/lucid/persistence/lucid_attachment_repository.js')
   )
   const tables = new LucidAttachmentRepository()
-  return jsonPersistence
-    ? new AttachmentRepositoryRegistry({ legacy: tables, adapters: { tables, json: jsonPersistence } })
+  return Object.keys(processingAdapters).length
+    ? new AttachmentRepositoryRegistry({ legacy: tables, adapters: {
+        tables, ...Object.fromEntries(Object.entries(processingAdapters).map(([key, adapter]) => [key, adapter.repository])),
+      } })
     : tables
 }
 
-async function resolveJsonPersistence(models: JsonAttachmentModels, defaultDisk: string, defaults?: AttachmentPersistenceOptions) {
-  const { LucidJsonAttachmentRegistry } = await loadOptionalDependency(
-    '@adonisjs/lucid', () => import('./integrations/lucid/json/lucid_json_attachment_registry.js')
+/** Only this activation point knows about the optional compatibility module. */
+async function resolveLegacyIntegration(config: LegacyAttachmentConfig, defaultDisk: string, defaults?: AttachmentPersistenceOptions) {
+  const { createLegacyAttachmentAdapter } = await loadOptionalDependency(
+    '@adonisjs/lucid', () => import('./integrations/legacy/config.js')
   )
-  return new LucidJsonAttachmentRegistry({ models, defaultDisk, ...(defaults ? { defaults } : {}) })
+  return createLegacyAttachmentAdapter({ ...config, defaultDisk, ...(defaults ? { defaults } : {}) })
 }
 
 function resolveLucidIntegration(

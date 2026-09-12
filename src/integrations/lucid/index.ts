@@ -6,17 +6,6 @@
  */
 
 export { AttachmentModel } from "./models/attachment_model.js";
-export { LucidJsonAttachmentRegistry, type JsonAttachmentModels } from './json/lucid_json_attachment_registry.js';
-export { LucidJsonVariantGenerationService } from './json/lucid_json_variant_generation_service.js';
-export {
-  LucidJsonAttachmentStore,
-  type LucidJsonAttachmentStoreOptions,
-} from './json/lucid_json_attachment_store.js';
-export {
-  JsonAttachmentEntry,
-  JsonAttachmentRecord,
-  type JsonAttachmentOwner,
-} from './json/json_attachment_document.js';
 export { AttachmentLinkModel } from "./models/attachment_link_model.js";
 export {
   configureLucidAttachmentTables,
@@ -39,7 +28,6 @@ export {
   type AttachmentRelationOptions,
   type AttachmentRelationDefinition,
   type AttachmentRelationKind,
-  type AttachmentPersistenceMode,
   type AttachmentRelationEntry,
   type AttachmentRelationRecord,
 } from "./relations/attachment_relation.js";

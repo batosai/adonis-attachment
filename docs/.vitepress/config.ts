@@ -40,8 +40,8 @@ export default withMermaid(
             text: 'Storing in a database',
             items: [
               { text: 'With Lucid', link: '/guide/lucid' },
-              { text: 'JSON columns (experimental)', link: '/guide/json-persistence' },
               { text: 'Legacy JSON fields (experimental)', link: '/guide/legacy' },
+              { text: 'Legacy JSON internals', link: '/guide/json-persistence' },
               { text: 'With another data store', link: '/guide/custom-persistence' },
             ],
           },

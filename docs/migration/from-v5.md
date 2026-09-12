@@ -22,10 +22,10 @@ assume it exists in an older published v6 alpha. Use a build containing this int
 | Sharing a file between owners | Not supported | Supported through links |
 
 The legacy facade currently covers **singular fields**, including variants and metadata.
-Legacy collections are deferred. Table relations also support collections. The existing
-[experimental JSON relation API](/guide/json-persistence) remains available for evaluation,
-but it is not a v5-compatible collection facade. Choose each field's path **before** running
-the data-migration script, which is only for fields moving to tables.
+Legacy collections are deferred. Table relations also support collections. JSON storage
+is reserved for `/legacy`; the earlier experimental JSON relation API has been removed.
+Choose each field's path **before** running the data-migration script, which is only for
+fields moving to tables.
 
 ## Path A: keep the existing JSON columns
 
@@ -121,8 +121,8 @@ export default defineConfig({
   storage: AdonisDriveStorage.fromApp,
   route: false,
   integrations: {
-    lucid: {
-      jsonModels: { users: () => import('#models/user') },
+    legacy: {
+      models: { users: () => import('#models/user') },
     },
   },
   // Add your v6 converter, metadata and queue configuration as needed.

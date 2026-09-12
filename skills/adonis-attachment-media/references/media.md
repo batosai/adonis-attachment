@@ -1,6 +1,6 @@
 # Media and worker recipes
 
-## Automatic variants
+## Shared converter configuration
 
 ```ts
 import { defineConfig, LocalFileStorage, type InferConverters } from '@jrmc/adonis-attachment'
@@ -30,6 +30,7 @@ After `user.avatar.set(draft); await user.save()`, read `await user.avatar.varia
 Those are blob models; find by `.variantKey`, read `.blurhash`, and build a URL from `.id`.
 Fall back to the original from `(await user.avatar.get())?.attachment` while processing.
 Only use the built-in `/attachments/:id/:name?` route for public files.
+For legacy JSON fields, use the separate recipe below instead of these relation methods.
 
 Autodetect chooses Sharp for image inputs, ffmpeg for videos, Poppler for PDFs, and
 LibreOffice then Poppler for Office documents. Image auto-orientation defaults to true.
@@ -37,6 +38,73 @@ For a video frame use converter `startTime: 12` (seconds); the direct ffmpeg ada
 `time: 12`. Video output is jpeg/png/webp; PDF and Office thumbnails are PNG.
 Formats and encoder options are typed. Keep the application's `InferConverters` augmentation
 so converter keys remain typed in source options, decorators, and regeneration.
+
+## Legacy JSON variants and metadata
+
+First verify the installed build exports `/legacy`; not every v6 alpha includes this
+experimental singular-only facade. Use the same v6 converters, media dependencies and
+queue configuration as table-backed relations, but import the decorator, `Attachment`
+type and upload manager from `/legacy`. New uploads use direct assignment then owner save.
+There is no public legacy collection or manual variant insertion/deletion API.
+
+Register `integrations.legacy.models` so variants/deferred metadata can reload current
+owner JSON in the app AND a fresh worker. Keys match the decorator's logical `type`
+(the model table by default). Keep Lucid enabled. The registry creates no tables and
+does not select field persistence. Do not use removed `integrations.lucid.jsonModels`,
+`AttachmentRelation<'json'>`, or internal JSON imports.
+
+This combined example is self-contained. In a real app, keep the model in its own file
+and use `users: () => import('#models/user')` in the config registry. Merge converters
+and storage into existing configuration rather than replacing it.
+
+```ts
+import { BaseModel, column } from '@adonisjs/lucid/orm'
+import { defineConfig, LocalFileStorage } from '@jrmc/adonis-attachment'
+import { attachment, type Attachment } from '@jrmc/adonis-attachment/legacy'
+import { AttachmentRegenerator } from '@jrmc/adonis-attachment/lucid'
+
+export class User extends BaseModel {
+  @column({ isPrimary: true }) declare id: number
+  @attachment({ variants: ['thumbnail'], meta: true }) declare avatar: Attachment | null
+}
+
+export const config = defineConfig({
+  storage: LocalFileStorage.fromApp,
+  route: false,
+  integrations: { legacy: { models: { users: async () => ({ default: User }) } } },
+  converters: { thumbnail: { resize: { width: 320 }, format: { format: 'webp' } } },
+  media: { metadataPolicy: { mode: 'deferred' } },
+})
+
+export async function enqueueAvatarRegeneration(user: User) {
+  await new AttachmentRegenerator()
+    .row(user, { attributes: ['avatar'], variants: ['thumbnail'] })
+    .run()
+}
+
+// Call once background work has completed and the model has no pending local edits.
+export async function readGeneratedAvatar(user: User) {
+  await user.refresh()
+  return {
+    metadata: user.avatar?.meta,
+    thumbnail: user.avatar?.getVariant('thumbnail'),
+    thumbnailUrl: await user.avatar?.getUrl('thumbnail'),
+  }
+}
+```
+
+`getVariant()` reads the loaded JSON without SQL; it may return null while work is pending.
+Refresh or fetch a fresh model after jobs, not before completion. Refresh rejects pending
+edits: save first or fetch a separate instance. Mutate original/variant `.meta` then save
+the owner. Independent metadata keys merge under an owner-row lock; conflicts raise
+`AttachmentMetadataConflictError` from `/legacy`, requiring fresh state and reconciliation.
+File properties and the variants array are read-only. The built-in table blob-ID route
+cannot resolve legacy JSON fields; use storage URLs or an authorized owner-based route.
+
+Both default memory processing and the external forwarding job below work for legacy.
+Forward the complete job/reference, not just a blob ID. The model registry lets the
+processor reload the target and avoid attaching results to a replaced file. Custom
+repositories, metadata persisters or processors take responsibility for their own wiring.
 
 ## Metadata and binaries
 
@@ -138,11 +206,13 @@ the root `attachmentService` facade only exposes URL methods, not create/read/re
 
 ## Regeneration, events, and diagnosis
 
-`await user.avatar.regenerateVariants(['thumbnail'])` enqueues replacement from the original.
+For table relations, `await user.avatar.regenerateVariants(['thumbnail'])` enqueues replacement from the original.
 `await post.gallery.regenerateVariants()` covers all persisted collection items. For a
 model-wide operation use `new AttachmentRegenerator().model(User, { attributes: ['avatar'],
 variants: ['thumbnail'], batchSize: 100, concurrency: 5 }).run()` from `/lucid`.
 It enqueues jobs; it does not wait for conversions to finish.
+`AttachmentRegenerator.row()` and `.model()` also support registered legacy fields, but
+legacy attachments themselves have no `regenerateVariants()` method.
 
 Listen through the Adonis emitter for `attachment:variant_started/completed/failed`,
 `attachment:metadata_started/completed/failed`, and `attachment:created/deleted` (expand

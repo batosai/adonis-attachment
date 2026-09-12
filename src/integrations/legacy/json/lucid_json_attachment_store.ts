@@ -17,7 +17,7 @@ import { JsonMetadataMutation } from './json_metadata_mutation.js'
 import { parseAttachmentReference, type AttachmentReference } from '../../../core/attachment_reference.js'
 import { markAttachmentPersisted } from '../../../core/attachment_state.js'
 import { AttachmentConfigurationError, AttachmentConflictError, AttachmentNotFoundError, AttachmentValidationError } from '../../../errors.js'
-import { attachmentTransaction, afterAttachmentCommit, afterAttachmentRollback } from '../persistence/attachment_transaction.js'
+import { attachmentTransaction, afterAttachmentCommit, afterAttachmentRollback } from '../../lucid/persistence/attachment_transaction.js'
 import {
   JsonAttachmentEntry, JsonAttachmentRecord, attachmentFromDocument, documentFromAttachment,
   decodeJsonAttachments, validateJsonAttachments, type JsonAttachmentDocument, type JsonAttachmentOwner,

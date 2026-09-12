@@ -1,5 +1,5 @@
 import { test } from '@japa/runner'
-import { decodeJsonAttachments, documentFromAttachment } from '../src/integrations/lucid/json/json_attachment_document.js'
+import { decodeJsonAttachments, documentFromAttachment } from '../src/integrations/legacy/json/json_attachment_document.js'
 
 const owner = { type: 'users', id: '42', field: 'gallery' }
 const legacy = { name: 'photo.jpg', size: 1, extname: 'jpg', mimeType: 'image/jpeg' }

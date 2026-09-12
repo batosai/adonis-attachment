@@ -4,7 +4,7 @@ import type { Attachment } from '../src/core/attachment.js'
 import { AttachmentLifecycleService } from '../src/core/attachment_lifecycle_service.js'
 import { AttachmentService } from '../src/core/attachment_service.js'
 import type { AttachmentJob } from '../src/core/queue.js'
-import { LucidJsonAttachmentStore } from '../src/integrations/lucid/json/lucid_json_attachment_store.js'
+import { LucidJsonAttachmentStore } from '../src/integrations/legacy/json/lucid_json_attachment_store.js'
 import { createLucidTestDatabase } from './helpers/lucid_test_database.js'
 
 const owner = { type: 'users', id: '42', field: 'avatar' }

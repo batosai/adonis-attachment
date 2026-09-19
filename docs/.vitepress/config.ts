@@ -6,6 +6,17 @@ export default withMermaid(
     title: 'Adonis Attachment',
     description:
       'File attachments for AdonisJS 7: storage, image variants, and optional Lucid persistence, without the coupling.',
+    head: [
+      ['meta', { name: 'robots', content: 'noindex, nofollow' }],
+      [
+        'script',
+        {
+          'defer': '',
+          'src': 'https://umami.jrmc.dev/script.js',
+          'data-website-id': 'bcdd9b7d-2429-4f68-96de-8250404e0f56',
+        },
+      ],
+    ],
     themeConfig: {
       nav: [
         { text: 'Guide', link: '/guide/introduction' },

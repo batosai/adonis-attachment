@@ -1,13 +1,71 @@
 import { defineConfig } from 'vitepress'
 import { withMermaid } from 'vitepress-plugin-mermaid'
+import { glob, mkdir, readFile, writeFile } from 'node:fs/promises'
+import { dirname, relative, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+const docsRoot = fileURLToPath(new URL('..', import.meta.url))
+const distRoot = resolve(docsRoot, '.vitepress/dist')
+const siteUrl = 'https://next.adonis-attachment.jrmc.dev'
+const markdownMirrors: Record<string, string> = {
+  'index.md':
+    'Adonis Attachment provides attachment primitives for AdonisJS 7 and standalone TypeScript applications. It separates file creation, storage, persistence, and background processing, so each integration remains optional.',
+}
+
+function toAgentMarkdown(file: string, raw: string): string {
+  const frontmatter = raw.match(/^---\n([\s\S]*?)\n---\n?/)
+  const attributes = frontmatter?.[1] ?? ''
+  const content = frontmatter ? raw.slice(frontmatter[0].length).trim() : raw.trim()
+  const title = attributes.match(/^title:\s*(.+)$/m)?.[1]
+  const description = attributes.match(/^description:\s*(.+)$/m)?.[1]
+
+  return [
+    title && `# ${title}`,
+    description && `> ${description}`,
+    markdownMirrors[file] ?? content,
+    '',
+  ]
+    .filter(Boolean)
+    .join('\n\n')
+}
+
+/**
+ * Writes a Markdown representation beside every generated public page. Caddy
+ * serves these only to clients that explicitly request `text/markdown`.
+ */
+async function buildAgentMarkdown(): Promise<void> {
+  const files = await getPublicMarkdownFiles()
+
+  await Promise.all(
+    files.map(async (file) => {
+      const source = resolve(docsRoot, file)
+      const output = resolve(distRoot, relative(docsRoot, source))
+      await mkdir(dirname(output), { recursive: true })
+      await writeFile(output, toAgentMarkdown(file, await readFile(source, 'utf-8')), 'utf-8')
+    }),
+  )
+}
+
+async function getPublicMarkdownFiles(): Promise<string[]> {
+  const files: string[] = []
+
+  for await (const file of glob('**/*.md', {
+    cwd: docsRoot,
+    exclude: ['.vitepress/**'],
+  })) {
+    files.push(file)
+  }
+
+  return files
+}
 
 export default withMermaid(
   defineConfig({
     title: 'Adonis Attachment',
     description:
       'File attachments for AdonisJS 7: storage, image variants, and optional Lucid persistence, without the coupling.',
+    cleanUrls: true,
     head: [
-      ['meta', { name: 'robots', content: 'noindex, nofollow' }],
       [
         'script',
         {
@@ -17,6 +75,8 @@ export default withMermaid(
         },
       ],
     ],
+    sitemap: { hostname: siteUrl },
+    buildEnd: buildAgentMarkdown,
     themeConfig: {
       nav: [
         { text: 'Guide', link: '/guide/introduction' },

@@ -1,0 +1,14 @@
+# Adonis Attachment
+
+> Next-generation attachment primitives for AdonisJS 7 and standalone TypeScript applications.
+
+## Documentation
+
+- [Introduction](https://next.adonis-attachment.jrmc.dev/guide/introduction)
+- [Installation](https://next.adonis-attachment.jrmc.dev/guide/installation)
+- [Quickstart](https://next.adonis-attachment.jrmc.dev/guide/getting-started)
+- [Core concepts](https://next.adonis-attachment.jrmc.dev/guide/concepts)
+- [Creating attachments](https://next.adonis-attachment.jrmc.dev/guide/creating-attachments)
+- [Image variants](https://next.adonis-attachment.jrmc.dev/guide/variants)
+- [Lucid persistence](https://next.adonis-attachment.jrmc.dev/guide/lucid)
+- [Migration from v5](https://next.adonis-attachment.jrmc.dev/migration/from-v5)

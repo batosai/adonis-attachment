@@ -8,7 +8,7 @@
 ## Install
 
 ```sh
-node ace add @jrmc/adonis-attachment
+node ace add @jrmc/adonis-attachment@next
 ```
 
 The `add` command runs the configure hook, which:

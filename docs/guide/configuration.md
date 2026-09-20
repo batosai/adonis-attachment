@@ -128,11 +128,24 @@ for callbacks and standalone behavior.
 ### Variant folders
 
 `variant.basePath` is the shared prefix for generated variants. Each converter's
-optional `folder` is a subfolder inside it. Both accept a string with attachment fields such as
-`:id`, `:name`, `:originalName`, `:path`, or an async callback receiving `{ attachment }`.
-These fields describe the source attachment, not a Lucid owner: a table-backed blob may be shared
-by several owners. Attachment values are inserted verbatim; in particular `:name` preserves the
-storage filename and its extension.
+optional `folder` is a subfolder inside it. Both accept attachment parameters or an async callback
+receiving `{ attachment }`. These fields describe the source attachment, not a Lucid owner: a
+table-backed blob may be shared by several owners. Their values are inserted verbatim.
+
+| Parameter | Attachment value |
+| --- | --- |
+| `:id` | The attachment identifier. |
+| `:disk` | The selected storage disk. |
+| `:name` | The stored filename, including its extension. |
+| `:originalName` | The original filename supplied by the client or source. |
+| `:path` | The complete stored path of the original. |
+| `:extname` | The original extension, without the leading dot. |
+| `:mimeType` | The detected or supplied MIME type. |
+| `:blurhash` | The blurhash, when it has been computed. |
+
+In particular, `:name` preserves the storage filename and its extension. This differs from
+`defaults.folder`: model parameters in that option are slugified, whereas variant parameters
+always refer to the source attachment and are not transformed.
 
 ```ts
 variant: { basePath: 'variants/:id' },
@@ -154,6 +167,23 @@ variant: {
   basePath: ({ attachment }) => join(dirname(attachment.path), 'variants', attachment.name),
 }
 ```
+
+Or use a callback to group every generated variant by the date at which it is generated:
+
+```ts
+import { DateTime } from 'luxon'
+
+variant: { basePath: 'variants' },
+converters: {
+  thumbnail: {
+    resize: { width: 320 },
+    format: 'webp',
+    folder: () => DateTime.now().toFormat('yyyy/LL'),
+  },
+}
+```
+
+This writes the thumbnail to a path such as `variants/2026/09/thumbnail.webp`.
 
 ## URLs
 

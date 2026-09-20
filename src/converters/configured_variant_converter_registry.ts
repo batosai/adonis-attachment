@@ -128,9 +128,12 @@ function asVariantConverter(
         ? { blurhash: inheritedBlurhash }
         : {}),
     convert(input) {
-      return converter instanceof Converter
+      const converted = converter instanceof Converter
         ? converter.handle({ ...input, options: converter.options })
         : converter.convert(input)
+      return Promise.resolve(converted).then((output) => output && output.folder === undefined && options?.folder !== undefined
+        ? { ...output, folder: options.folder }
+        : output)
     },
   }
 }

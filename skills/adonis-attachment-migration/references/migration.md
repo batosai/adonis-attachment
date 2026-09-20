@@ -20,12 +20,48 @@ models. Verify that a JSON-retention migration can import `/legacy` from the ins
 Never force an installation past a peer-dependency conflict. Review the package manifest and
 lockfile after each installation and stop if unrelated packages changed.
 
-Compare the effective v5 configuration—including defaults absent from its config file—with v6
-defaults. Make an explicit v6 setting whenever the application relies on a different behaviour.
-Preserve the existing storage adapter, disk names and paths; do not silently replace Drive with
-local storage. Transfer `defaultDisk`, field/default folder and naming rules, `meta`,
-`preComputeUrl`, converters and variants. Carry executable paths/timeouts into `media.binaries`,
-and keep `media.metadata` or `media.metadataPolicy` only when the application uses them.
+First resolve the effective v5 option for every field. A value configured by the application or
+on its decorator takes precedence over the v5 baseline below; do not overwrite that project
+choice with a default from this table. Then compare the resulting value with v6 and make an
+explicit v6 setting whenever behaviour differs.
+
+| v5 option | v5 baseline | v6 baseline | Migration rule |
+| --- | --- | --- | --- |
+| `disk` | unset; Adonis Drive resolves its default disk | the configured storage default, then `fs` | Preserve the actual v5 Drive disk and storage adapter; set `defaultDisk` when needed. |
+| `folder` | `'uploads'` | no folder | Set `defaults.folder: 'uploads'` unless the field had its own v5 folder. An omitted v5 folder does **not** mean no folder. |
+| `rename` | `true` | generated storage name | Equivalent; retain an explicit project or field override, especially `false` or a callback. |
+| `preComputeUrl` | `false` | `false` | Equivalent; retain an explicit project or field override. |
+| `meta` | `false` | `false` | Equivalent; retain an explicit project or field override and its extractors/policy. |
+| `variants` | `[]` | no variants | Equivalent; retain configured variants and their converters. |
+| variant folder | `<original folder>/variants/<original name>` | storage root | Configure root `variant.basePath` and converter folders; see the mapping below. |
+
+v6 additionally defaults `normalizeFileName` to `true`; it had no separate v5 option. Preserve
+the storage adapter, disk names and paths; do not silently replace Drive with local storage.
+Carry executable paths/timeouts into `media.binaries`, and keep `media.metadata` or
+`media.metadataPolicy` only when the application uses them.
+
+### Variant folders
+
+V6 replaces v5's global `variant` setting with root `variant.basePath`. It prefixes every
+generated variant. A converter `folder` is the subfolder inside that prefix, rather than an
+absolute final folder. Both values accept attachment templates such as `:id` or `:name`, or an
+async callback receiving `{ attachment }`. Those fields are from the source attachment, not a
+Lucid owner, because a table-backed blob can be shared by several owners.
+
+For every migrated v5 converter, set `folder: ':name'` unless its v5 behavior deliberately did
+not include the original name. V5 used the original storage name as the variant namespace;
+`:name` keeps that value verbatim, including its extension, so variants from distinct originals
+remain isolated.
+
+| Effective v5 `variant` configuration | V5 variant folder | v6 migration |
+| --- | --- | --- |
+| omitted | `<original folder>/variants/<original name>` | Set `variant.basePath` to a callback deriving `<original folder>/variants`; set converter `folder: ':name'`. |
+| `{ basePath }` | `<basePath>/<original folder>/<original name>` | Set `variant.basePath` to a callback combining `basePath` and the original folder; set converter `folder: ':name'`. |
+| `{ ignoreFolder: true }` | `<original name>` | Set converter `folder: ':name'`. |
+| `{ basePath, ignoreFolder: true }` | `<basePath>/<original name>` | Set `variant.basePath: basePath` and converter `folder: ':name'`. |
+
+Existing v5 JSON documents already contain their original and variant paths. Keeping them in
+`/legacy` preserves those stored paths; this mapping affects variants generated after cutover.
 
 Install only what the resulting v6 configuration needs: `sharp` for image variants or technical
 metadata, `exifreader` for EXIF/GPS, `blurhash` with `sharp` when enabled, `@adonisjs/drive` for

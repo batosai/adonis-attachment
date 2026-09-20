@@ -22,6 +22,7 @@ declare module "@adonisjs/core/types" {
     "jrmc.attachment.converters": VariantConverterRegistry;
     "jrmc.attachment.repository": AttachmentRepository;
     "jrmc.attachment.processingAdapters": import('./src/core/attachment_processing_adapter.js').AttachmentProcessingAdapters;
+    "jrmc.attachment.variant": import('./src/variants/variant_path.js').VariantPathOptions | undefined;
     "jrmc.attachment.events": AttachmentEventEmitter;
   }
 }

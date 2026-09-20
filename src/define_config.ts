@@ -34,6 +34,7 @@ import type { LegacyAttachmentConfig } from './integrations/legacy/config.js'
 import type { AttachmentJobHandler, AttachmentQueue } from './core/queue.js'
 import type { AttachmentStorage } from './core/storage.js'
 import type { AttachmentManagerOptions } from './sources/attachment_manager.js'
+import type { VariantPathOptions } from './variants/variant_path.js'
 import type { AttachmentPersistenceOptions } from './core/attachment_options.js'
 import type { MediaMetadataExtractor } from './media/media_metadata.js'
 import type { AttachmentBinariesConfig } from './media/binary_config.js'
@@ -124,6 +125,8 @@ export type AttachmentConfig<
   repository?: Integration<AttachmentRepository>
   /** Lowest-priority defaults for file persistence. */
   defaults?: AttachmentPersistenceOptions
+  /** Shared path prefix for generated variants. */
+  variant?: VariantPathOptions
   sources?: AttachmentManagerOptions
   route?: AttachmentRouteConfig
   integrations?: AttachmentIntegrationsConfig
@@ -137,6 +140,7 @@ export type ResolvedAttachmentConfig<KnownConverters extends ConverterConfigMap 
   processingAdapters?: AttachmentProcessingAdapters
   repository?: AttachmentRepository
   defaults?: AttachmentPersistenceOptions
+  variant?: VariantPathOptions
   sources?: AttachmentManagerOptions
   route: ResolvedAttachmentRouteConfig | false
   integrations?: {
@@ -170,7 +174,7 @@ export function defineConfig<
       throw new AttachmentError('Use integrations.legacy.models instead of integrations.lucid.jsonModels', { code: 'E_INVALID_ATTACHMENT_CONFIG' })
     }
     const legacy = config.integrations?.legacy
-      ? await resolveLegacyIntegration(config.integrations.legacy, defaultDisk, config.defaults)
+      ? await resolveLegacyIntegration(config.integrations.legacy, defaultDisk, config.defaults, config.variant)
       : undefined
     if (legacy && !lucid) throw new AttachmentError('Legacy attachments require the Lucid integration', { code: 'E_INVALID_ATTACHMENT_CONFIG' })
     const processingAdapters: AttachmentProcessingAdapters = legacy ? { [legacy.name]: legacy } : {}
@@ -198,7 +202,7 @@ export function defineConfig<
     const processor =
       configuredProcessor ??
       (!config.jobHandler && usesConfiguredMemoryQueue(selectedQueue) && lucid && repository
-        ? await createDefaultLucidProcessor(app, repository, converters, processingAdapters)
+        ? await createDefaultLucidProcessor(app, repository, converters, processingAdapters, config.variant)
         : undefined)
     const jobHandler: AttachmentJobHandler | undefined = config.jobHandler
       ? await resolveIntegration(config.jobHandler, app)
@@ -226,6 +230,7 @@ export function defineConfig<
       route: resolveRoute(config.route),
       ...(repository ? { repository } : {}),
       ...(config.defaults ? { defaults: config.defaults } : {}),
+      ...(config.variant ? { variant: config.variant } : {}),
       ...(config.sources ? { sources: config.sources } : {}),
       metadataExtractors,
       ...(config.media?.metadataPolicy?.mode ? { metadataMode: config.media.metadataPolicy.mode } : {}),
@@ -344,7 +349,8 @@ async function createDefaultLucidProcessor(
   app: ApplicationService,
   repository: AttachmentRepository,
   converters: VariantConverterRegistry | undefined,
-  processingAdapters: AttachmentProcessingAdapters
+  processingAdapters: AttachmentProcessingAdapters,
+  variant: VariantPathOptions | undefined
 ): Promise<AttachmentJobProcessor> {
   const { createLucidAttachmentProcessor } = await loadOptionalDependency(
     '@adonisjs/lucid',
@@ -356,6 +362,7 @@ async function createDefaultLucidProcessor(
     repository,
     converters: resolvedConverters,
     adapters: processingAdapters,
+    ...(variant ? { variant } : {}),
   })
 }
 
@@ -411,11 +418,16 @@ async function resolveLucidRepository(processingAdapters: AttachmentProcessingAd
 }
 
 /** Only this activation point knows about the optional compatibility module. */
-async function resolveLegacyIntegration(config: LegacyAttachmentConfig, defaultDisk: string, defaults?: AttachmentPersistenceOptions) {
+async function resolveLegacyIntegration(
+  config: LegacyAttachmentConfig,
+  defaultDisk: string,
+  defaults?: AttachmentPersistenceOptions,
+  variant?: VariantPathOptions
+) {
   const { createLegacyAttachmentAdapter } = await loadOptionalDependency(
     '@adonisjs/lucid', () => import('./integrations/legacy/config.js')
   )
-  return createLegacyAttachmentAdapter({ ...config, defaultDisk, ...(defaults ? { defaults } : {}) })
+  return createLegacyAttachmentAdapter({ ...config, defaultDisk, ...(defaults ? { defaults } : {}), ...(variant ? { variant } : {}) })
 }
 
 function resolveLucidIntegration(

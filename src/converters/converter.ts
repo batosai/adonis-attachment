@@ -6,6 +6,7 @@
  */
 
 import type { VariantConversionInput, VariantConversionOutput } from '../variants/variant_converter.js'
+import type { VariantFolder } from '../variants/variant_path.js'
 import type { BlurhashOptions } from '../media/blurhash.js'
 
 export type { BlurhashComponent, BlurhashOptions } from '../media/blurhash.js'
@@ -145,7 +146,8 @@ export type ConverterOptions = {
   blurhash?: BlurhashOptions
   startTime?: number
   startPage?: number
-  folder?: string
+  /** Folder below root `variant.basePath`, or a callback receiving the source attachment. */
+  folder?: VariantFolder
   [key: string]: unknown
 }
 

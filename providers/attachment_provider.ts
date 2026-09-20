@@ -14,6 +14,7 @@ import { loadOptionalDependency } from '../src/utils/optional_dependency.js'
 
 import type { ApplicationService } from '@adonisjs/core/types'
 import type { ResolvedAttachmentConfig } from '../src/define_config.js'
+import type { VariantPathOptions } from '../src/variants/variant_path.js'
 
 export default class AttachmentProvider {
   constructor(protected app: ApplicationService) {}
@@ -22,6 +23,10 @@ export default class AttachmentProvider {
     this.app.container.singleton('jrmc.attachment.processingAdapters', async () => {
       const config = await configProvider.resolve<ResolvedAttachmentConfig>(this.app, this.app.config.get('attachment'))
       return config?.processingAdapters ?? {}
+    })
+    this.app.container.singleton('jrmc.attachment.variant', async (): Promise<VariantPathOptions | undefined> => {
+      const config = await configProvider.resolve<ResolvedAttachmentConfig>(this.app, this.app.config.get('attachment'))
+      return config?.variant
     })
     this.app.container.singleton('jrmc.attachment', async () => {
       const attachmentConfig = this.app.config.get('attachment')

@@ -13,6 +13,7 @@ import type { AttachmentProcessingAdapters } from '../../core/attachment_process
 import type { AttachmentEventEmitter } from '../../events/attachment_events.js'
 import type { VariantConverterRegistry } from '../../converters/configured_variant_converter_registry.js'
 import { VariantGenerationService } from '../../variants/variant_generation_service.js'
+import type { VariantPathOptions } from '../../variants/variant_path.js'
 import { LucidAttachmentRepository } from './persistence/lucid_attachment_repository.js'
 import { LucidAttachmentStore } from './persistence/lucid_attachment_store.js'
 import { LucidVariantGenerationService } from './persistence/lucid_variant_generation_service.js'
@@ -22,6 +23,7 @@ export type CreateLucidAttachmentProcessorOptions = {
   converters?: VariantConverterRegistry
   events?: AttachmentEventEmitter
   adapters?: AttachmentProcessingAdapters
+  variant?: VariantPathOptions
 }
 
 /** Creates the standard Lucid processor used by memory and external queue workers. */
@@ -50,9 +52,12 @@ export function createLucidAttachmentProcessor(
     attachments: repository,
     async variants() {
       const attachments = await app.container.make('jrmc.attachment')
+      const variant = options.variant ?? (app.container.hasBinding?.('jrmc.attachment.variant')
+        ? await app.container.make('jrmc.attachment.variant')
+        : undefined)
       const tableVariants = new LucidVariantGenerationService({
         attachments,
-        generator: new VariantGenerationService({ attachments, converters }),
+        generator: new VariantGenerationService({ attachments, converters, ...(variant ? { variant } : {}) }),
         store: new LucidAttachmentStore(),
       })
       return {

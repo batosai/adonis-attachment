@@ -25,6 +25,13 @@ export {
   type ResolvedAttachmentPersistenceOptions,
 } from './attachment_options.js'
 export {
+  joinVariantFolders,
+  resolveVariantFolder,
+  type VariantFolder,
+  type VariantPathContext,
+  type VariantPathOptions,
+} from '../variants/variant_path.js'
+export {
   AttachmentService,
   DeferredMetadataNotConfiguredError,
   type AttachmentMetadataMode,

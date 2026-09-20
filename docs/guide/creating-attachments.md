@@ -119,6 +119,9 @@ callback on the [relation decorator](/guide/lucid#paths-from-model-attributes) i
 - **MIME types** from URLs come from the `content-type` header when present, otherwise
   they're inferred from the filename. This inference is a convenience, **not** a security
   check - validate allowed types and content in your app.
+- **URL filenames** use the URL path when it contains an extension. Without an explicit
+  `originalName`, an extension-less URL name is completed from the response MIME type (or `.bin`
+  when it is unknown). An explicitly supplied `originalName` is never changed.
 - **Streams** are read chunk by chunk and the size limit is enforced as bytes arrive.
 
 **Next:** [Image variants](/guide/variants).

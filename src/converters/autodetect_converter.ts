@@ -46,7 +46,7 @@ export default class AutodetectConverter extends Converter {
         ...resize,
         ...(options.format ? { format: options.format } : {}),
         autoOrient: options.autoOrient ?? true,
-        ...(options.folder ? { folder: options.folder } : {}),
+        ...(typeof options.folder === 'string' ? { folder: options.folder } : {}),
         ...(options.timeout !== undefined ? { timeout: options.timeout } : {}),
       }).convert({ attachment, body })
     }
@@ -62,7 +62,7 @@ export default class AutodetectConverter extends Converter {
         ...(resize.width !== undefined ? { width: resize.width } : {}),
         ...(resize.height !== undefined ? { height: resize.height } : {}),
         ...(format ? { format } : {}),
-        ...(options.folder ? { folder: options.folder } : {}),
+        ...(typeof options.folder === 'string' ? { folder: options.folder } : {}),
         ...(options.ffmpegTimeout ?? options.timeout) !== undefined
           ? { timeout: options.ffmpegTimeout ?? options.timeout }
           : {},
@@ -76,7 +76,7 @@ export default class AutodetectConverter extends Converter {
         ...(options.pdftoppmCommand ? { command: options.pdftoppmCommand } : {}),
         ...(resize.width !== undefined ? { width: resize.width } : {}),
         ...(options.startPage !== undefined ? { page: options.startPage } : {}),
-        ...(options.folder ? { folder: options.folder } : {}),
+        ...(typeof options.folder === 'string' ? { folder: options.folder } : {}),
         ...(options.pdftoppmTimeout ?? options.timeout) !== undefined
           ? { timeout: options.pdftoppmTimeout ?? options.timeout }
           : {},
@@ -91,7 +91,7 @@ export default class AutodetectConverter extends Converter {
         ...(options.officeCommand ? { officeCommand: options.officeCommand } : {}),
         ...(resize.width !== undefined ? { width: resize.width } : {}),
         ...(options.startPage !== undefined ? { page: options.startPage } : {}),
-        ...(options.folder ? { folder: options.folder } : {}),
+        ...(typeof options.folder === 'string' ? { folder: options.folder } : {}),
         ...(options.officeTimeout ?? options.timeout) !== undefined
           ? { officeTimeout: options.officeTimeout ?? options.timeout }
           : {},

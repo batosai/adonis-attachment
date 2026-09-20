@@ -134,11 +134,13 @@ export class AttachmentManager {
 
     const body = new Uint8Array(await response.arrayBuffer())
     const url = typeof input === 'string' ? new URL(input) : input
-    const originalName = options.originalName ?? (basename(url.pathname) || 'attachment.bin')
+    const inferredName = basename(url.pathname)
+    const mimeType = options.mimeType ?? normalizeMimeType(response.headers.get('content-type')) ?? mimeTypeFromName(inferredName)
+    const originalName = options.originalName ?? inferUrlOriginalName(inferredName, mimeType)
 
     return this.#create(body, {
       originalName,
-      mimeType: options.mimeType ?? normalizeMimeType(response.headers.get('content-type')) ?? mimeTypeFromName(originalName),
+      mimeType,
       options,
     })
   }
@@ -242,6 +244,34 @@ function multipartMimeType(input: MultipartAttachmentFile): string {
 function normalizeMimeType(value: string | null): string | undefined {
   const mimeType = value?.split(';')[0]?.trim()
   return mimeType || undefined
+}
+
+function inferUrlOriginalName(name: string, mimeType: string): string {
+  if (extname(name)) return name
+
+  return `${name || 'attachment'}.${extensionFromMimeType(mimeType) ?? 'bin'}`
+}
+
+function extensionFromMimeType(mimeType: string): string | undefined {
+  switch (mimeType.toLowerCase()) {
+    case 'application/pdf': return 'pdf'
+    case 'application/zip': return 'zip'
+    case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document': return 'docx'
+    case 'application/vnd.openxmlformats-officedocument.presentationml.presentation': return 'pptx'
+    case 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': return 'xlsx'
+    case 'image/avif': return 'avif'
+    case 'image/gif': return 'gif'
+    case 'image/jpeg': return 'jpg'
+    case 'image/png': return 'png'
+    case 'image/svg+xml': return 'svg'
+    case 'image/tiff': return 'tiff'
+    case 'image/webp': return 'webp'
+    case 'text/plain': return 'txt'
+    case 'video/mp4': return 'mp4'
+    case 'video/quicktime': return 'mov'
+    case 'video/webm': return 'webm'
+    default: return undefined
+  }
 }
 
 function mimeTypeFromName(name: string | undefined): string {

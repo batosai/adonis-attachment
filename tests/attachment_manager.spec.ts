@@ -144,6 +144,35 @@ test.group('AttachmentManager', () => {
     assert.equal(inputs[0]?.input.mimeType, 'image/webp')
   })
 
+  test('adds an extension from the response MIME type when a URL has no filename extension', async ({ assert }) => {
+    const { manager, inputs } = createManager({
+      fetch: async () => ({
+        ok: true, status: 200, statusText: 'OK',
+        headers: { get: (name) => name === 'content-type' ? 'image/jpeg' : null },
+        async arrayBuffer() { return new Uint8Array([1]).buffer },
+      }),
+    })
+
+    await manager.createFromUrl('https://example.test/iu/?redirect=photo')
+
+    assert.equal(inputs[0]?.input.originalName, 'iu.jpg')
+    assert.equal(inputs[0]?.input.mimeType, 'image/jpeg')
+  })
+
+  test('does not alter an explicit URL originalName without an extension', async ({ assert }) => {
+    const { manager, inputs } = createManager({
+      fetch: async () => ({
+        ok: true, status: 200, statusText: 'OK',
+        headers: { get: (name) => name === 'content-type' ? 'image/jpeg' : null },
+        async arrayBuffer() { return new Uint8Array([1]).buffer },
+      }),
+    })
+
+    await manager.createFromUrl('https://example.test/iu/', { originalName: 'remote-image' })
+
+    assert.equal(inputs[0]?.input.originalName, 'remote-image')
+  })
+
   test('creates attachments from Adonis multipart-file shaped values', async ({ assert }) => {
     const directory = await mkdtemp(join(tmpdir(), 'adonis-attachment-'))
 

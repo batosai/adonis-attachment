@@ -80,4 +80,17 @@ test.group('ConfiguredVariantConverterRegistry', () => {
     assert.isUndefined(await converter?.convert({ attachment, body: new Uint8Array() }))
     assert.isUndefined(await registry.get('missing'))
   })
+
+  test('uses the configured converter folder when its output has none', async ({ assert }) => {
+    const registry = new ConfiguredVariantConverterRegistry({
+      thumbnail: {
+        folder: ({ attachment }) => `images/${attachment.id}`,
+        converter: async () => ({ default: ThumbnailConverter }),
+      },
+    })
+
+    const output = await (await registry.get('thumbnail'))?.convert({ attachment, body: new Uint8Array([1]) })
+
+    assert.equal(typeof output?.folder, 'function')
+  })
 })

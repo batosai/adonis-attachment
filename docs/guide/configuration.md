@@ -73,11 +73,12 @@ export default defineConfig({
     normalizeFileName: true, // make supplied filenames portable across storage backends
     variants: ['thumbnail'],
   },
+  variant: { basePath: 'variants/:id' }, // prefix for all generated variants
 })
 ```
 
-Available options: `disk`, `folder`, `rename`, `normalizeFileName`, `meta`, `preComputeUrl`,
-`variants`.
+Persistence defaults accept `disk`, `folder`, `rename`, `normalizeFileName`, `meta`,
+`preComputeUrl`, and `variants`. `variant` is a separate root configuration section.
 
 | Option | Accepted value | Fallback when unset | Scope |
 | --- | --- | --- | --- |
@@ -88,6 +89,7 @@ Available options: `disk`, `folder`, `rename`, `normalizeFileName`, `meta`, `pre
 | `meta` | Boolean | Extraction not requested | Config defaults, decorator, manager |
 | `preComputeUrl` | Boolean | `false` | Same priority; consumed on Lucid relation reads |
 | `variants` | Array of configured keys | No automatic variants | Same priority; automatic scheduling with Lucid |
+| `variant.basePath` | Relative path, `:attachmentField` parameters, or async callback | No prefix | Root configuration; prefixes converter folders |
 | `originalName`, `mimeType` | String | Derived from the source | Manager options only |
 | `metadata` | Metadata object | No supplied metadata | Manager options only |
 | `maxBytes` | Positive integer | No size ceiling | `sources.maxBytes` and manager options |
@@ -122,6 +124,36 @@ defaults: {
 String model attributes are lowercased, HTML-escaped, and slugified. A parameter that is
 unknown or not a string remains unchanged. See [Creating attachments](/guide/creating-attachments#folder-and-rename)
 for callbacks and standalone behavior.
+
+### Variant folders
+
+`variant.basePath` is the shared prefix for generated variants. Each converter's
+optional `folder` is a subfolder inside it. Both accept a string with attachment fields such as
+`:id`, `:name`, `:originalName`, `:path`, or an async callback receiving `{ attachment }`.
+These fields describe the source attachment, not a Lucid owner: a table-backed blob may be shared
+by several owners. Attachment values are inserted verbatim; in particular `:name` preserves the
+storage filename and its extension.
+
+```ts
+variant: { basePath: 'variants/:id' },
+converters: {
+  thumbnail: {
+    resize: { width: 320 },
+    format: 'webp',
+    folder: 'images', // variants/<attachment id>/images/<generated file>
+  },
+}
+```
+
+Use a callback when the location needs the original path:
+
+```ts
+import { dirname, join } from 'node:path/posix'
+
+variant: {
+  basePath: ({ attachment }) => join(dirname(attachment.path), 'variants', attachment.name),
+}
+```
 
 ## URLs
 

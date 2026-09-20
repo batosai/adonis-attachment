@@ -362,11 +362,16 @@ test.group('defineConfig', () => {
       },
       async remove() {},
     }
-    const defaults = { folder: 'attachments', variants: ['thumbnail'] as const }
+    const defaults = {
+      folder: 'attachments',
+      variants: ['thumbnail'] as const,
+    }
+    const variant = { basePath: 'variants/:id' }
 
-    const resolved = await defineConfig({ defaultDisk: 'public', storage, defaults }).resolver({} as never)
+    const resolved = await defineConfig({ defaultDisk: 'public', storage, defaults, variant }).resolver({} as never)
 
     assert.equal(resolved.defaults, defaults)
+    assert.equal(resolved.variant, variant)
   })
 
   test('resolves media metadata extractors at application boot', async ({ assert }) => {

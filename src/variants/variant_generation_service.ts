@@ -9,6 +9,11 @@ import type { Attachment, CreateAttachmentInput } from '../core/attachment.js'
 import type { AttachmentService } from '../core/attachment_service.js'
 import type { VariantGenerationRequest, VariantGenerator } from '../core/attachment_job_processor.js'
 import type { VariantConverter } from './variant_converter.js'
+import {
+  joinVariantFolders,
+  resolveVariantFolder,
+  type VariantPathOptions,
+} from './variant_path.js'
 import type { VariantConverterRegistry } from '../converters/configured_variant_converter_registry.js'
 import {
   DynamicBlurhashGenerator,
@@ -27,6 +32,8 @@ export type VariantGenerationServiceOptions = {
   attachments: Pick<AttachmentService, 'create' | 'read' | 'remove'> & Partial<Pick<AttachmentService, 'createDraft' | 'getVariantMetadataEnabled'>>
   converters: readonly VariantConverter[] | VariantConverterRegistry
   blurhash?: BlurhashGenerator
+  /** Global prefix applied before each converter folder. */
+  variant?: VariantPathOptions
 }
 
 export class VariantGenerationService implements VariantGenerator {
@@ -34,6 +41,7 @@ export class VariantGenerationService implements VariantGenerator {
   readonly #converters: Map<string, VariantConverter> | undefined
   readonly #registry: VariantConverterRegistry | undefined
   readonly #blurhash: BlurhashGenerator
+  readonly #variant: VariantPathOptions | undefined
 
   constructor(options: VariantGenerationServiceOptions) {
     this.#attachments = options.attachments
@@ -43,6 +51,7 @@ export class VariantGenerationService implements VariantGenerator {
       this.#converters = new Map(options.converters.map((converter) => [converter.key, converter]))
     }
     this.#blurhash = options.blurhash ?? new DynamicBlurhashGenerator()
+    this.#variant = options.variant
   }
 
   async generate(request: VariantGenerationRequest): Promise<void> {
@@ -70,11 +79,15 @@ export class VariantGenerationService implements VariantGenerator {
           return undefined
         }
         const blurhash = output.blurhash ?? await this.#generateBlurhash(converter, output.body)
+        const folder = joinVariantFolders(
+          await resolveVariantFolder(this.#variant?.basePath ?? undefined, { attachment: request.attachment }),
+          await resolveVariantFolder(output.folder, { attachment: request.attachment })
+        )
         const input: CreateAttachmentInput = {
           body: output.body,
           originalName: output.fileName,
           mimeType: output.mimeType,
-          ...(output.folder ? { folder: output.folder } : {}),
+          ...(folder ? { folder } : {}),
           ...(output.metadata ? { metadata: output.metadata } : {}),
           ...(blurhash ? { blurhash } : {}),
           disk: request.attachment.disk,

@@ -32,6 +32,12 @@ leave only those untouched, then continue with the required code and configurati
   defaults, including omitted values, with v6 defaults and configure any behaviour the project
   relies on when it differs. Preserve the storage adapter, disk names, paths, converters,
   metadata policy, binaries, queue routing and routes deliberately.
+- Search application code, routes and configuration for removed v5 APIs and replace every
+  unambiguous usage; do not merely report them. This includes `router.attachments()`,
+  `keyId`/`getKeyId()`, manual variant insertion/deletion, `integrations.lucid.jsonModels`,
+  `persistence: 'json'`, `AttachmentRelation<'json'>` and obsolete manager overloads. Adapt
+  v5 converter handlers to the v6 input/output contract and choose the route appropriate to
+  `/legacy` or table-backed fields.
 - Install only optional dependencies required by the resulting configuration: `sharp` for image
   variants or technical image metadata, `exifreader` for EXIF/GPS, `blurhash` with `sharp` when
   enabled, `@adonisjs/drive` for Drive and `@adonisjs/queue` for external queues. Verify ffmpeg,

@@ -96,6 +96,34 @@ test.group('VariantGenerationService', () => {
     assert.equal(generated[0]?.mimeType, 'image/webp')
   })
 
+  test('prefixes converter folders with the configured variant base path', async ({ assert }) => {
+    let receivedFolder: string | undefined
+    const service = new VariantGenerationService({
+      variant: { basePath: ':id/variants' },
+      attachments: {
+        async remove() {},
+        async read() { return new Uint8Array([1]) },
+        async create(input) {
+          receivedFolder = input.folder
+          return sourceAttachment
+        },
+      },
+      converters: [{
+        key: 'thumbnail',
+        async convert() {
+          return {
+            body: new Uint8Array([2]), fileName: 'thumbnail.webp', mimeType: 'image/webp',
+            folder: 'images/:name',
+          }
+        },
+      }],
+    })
+
+    await service.generate({ attachment: sourceAttachment })
+
+    assert.equal(receivedFolder, 'original-id/variants/images/avatar.jpg')
+  })
+
   test('fails when a requested converter does not exist', async ({ assert }) => {
     const service = new VariantGenerationService({
       attachments: {

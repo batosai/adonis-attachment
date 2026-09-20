@@ -92,6 +92,58 @@ options, with the v6 defaults before copying them. When an implicit v6 value dif
 behaviour the application relied on in v5, configure that v6 value explicitly. Transfer each
 configured option deliberately:
 
+Resolve project and field-level v5 configuration first: it takes priority over these v5 baseline
+values. Only then apply the v6 mapping:
+
+| v5 option | v5 baseline | v6 baseline | v6 action |
+| --- | --- | --- | --- |
+| `disk` | Drive default disk | storage default, then `fs` | Preserve the Drive adapter/disk; set `defaultDisk` if required. |
+| `folder` | `'uploads'` | no folder | Set `defaults.folder: 'uploads'`, unless a field had its own v5 folder. |
+| `rename` | `true` | generated storage name | Equivalent; preserve `false` or a callback. |
+| `preComputeUrl` | `false` | `false` | Preserve an explicit override. |
+| `meta` | `false` | `false` | Preserve an explicit override and metadata setup. |
+| `variants` | `[]` | no variants | Preserve configured variants and converters. |
+| variant folder | `<original folder>/variants/<original name>` | storage root | Configure root `variant.basePath` and converter folders; see below. |
+
+v6 also defaults `normalizeFileName` to `true`; v5 had no separate option for it.
+
+##### Variant folders
+
+V6 replaces the global v5 `variant` setting with root `variant.basePath`. It prefixes every
+generated variant. A converter `folder` is the subfolder inside that prefix. Both values accept
+attachment templates such as `:id` or `:name`, or an async callback receiving `{ attachment }`.
+These fields describe the source attachment, not a Lucid owner, since a table-backed blob may be
+shared by several owners.
+
+To preserve the v5 variant namespace, set `folder: ':name'` on every migrated converter.
+`name` is the original storage name and is kept verbatim here, including its extension. Without
+it, variants generated for different originals can share a folder.
+
+| Effective v5 `variant` configuration | V5 variant folder | v6 action |
+| --- | --- | --- |
+| omitted | `<original folder>/variants/<original name>` | Set `variant.basePath` to a callback deriving `<original folder>/variants`; set converter `folder: ':name'`. |
+| `{ basePath }` | `<basePath>/<original folder>/<original name>` | Set `variant.basePath` to a callback combining `basePath` and the original folder; set converter `folder: ':name'`. |
+| `{ ignoreFolder: true }` | `<original name>` | Set converter `folder: ':name'`. |
+| `{ basePath, ignoreFolder: true }` | `<basePath>/<original name>` | Set `variant.basePath: basePath` and converter `folder: ':name'`. |
+
+Existing JSON documents keep their stored original/variant paths in legacy mode. This mapping is
+for variants generated after cutover.
+
+For a former `{ basePath: 'variants', ignoreFolder: true }`, configure the prefix and the
+converter folder separately:
+
+```ts
+// config/attachment.ts
+variant: { basePath: 'variants' },
+converters: {
+  thumbnail: {
+    resize: { width: 320 },
+    format: 'webp',
+    folder: ':name',
+  },
+}
+```
+
 | Existing concern | v6 configuration |
 | --- | --- |
 | Default disk, folder and naming | `storage`, `defaultDisk`, then `defaults.disk`, `folder`, `rename` and `normalizeFileName` |
@@ -337,6 +389,54 @@ application to `LocalFileStorage`. Compare the **effective** v5 defaults, includ
 options, with the v6 defaults before copying them. When an implicit v6 value differs from the
 behaviour the application relied on in v5, configure that v6 value explicitly. Transfer each
 configured option deliberately:
+
+Resolve project and field-level v5 configuration first: it takes priority over these v5 baseline
+values. Only then apply the v6 mapping:
+
+| v5 option | v5 baseline | v6 baseline | v6 action |
+| --- | --- | --- | --- |
+| `disk` | Drive default disk | storage default, then `fs` | Preserve the Drive adapter/disk; set `defaultDisk` if required. |
+| `folder` | `'uploads'` | no folder | Set `defaults.folder: 'uploads'`, unless a field had its own v5 folder. |
+| `rename` | `true` | generated storage name | Equivalent; preserve `false` or a callback. |
+| `preComputeUrl` | `false` | `false` | Preserve an explicit override. |
+| `meta` | `false` | `false` | Preserve an explicit override and metadata setup. |
+| `variants` | `[]` | no variants | Preserve configured variants and converters. |
+| variant folder | `<original folder>/variants/<original name>` | storage root | Configure root `variant.basePath` and converter folders; see below. |
+
+v6 also defaults `normalizeFileName` to `true`; v5 had no separate option for it.
+
+##### Variant folders
+
+V6 replaces the global v5 `variant` setting with root `variant.basePath`. It prefixes every
+generated variant. A converter `folder` is the subfolder inside that prefix. Both values accept
+attachment templates such as `:id` or `:name`, or an async callback receiving `{ attachment }`.
+These fields describe the source attachment, not a Lucid owner, since a table-backed blob may be
+shared by several owners.
+
+| Effective v5 `variant` configuration | V5 variant folder | v6 action |
+| --- | --- | --- |
+| omitted | `<original folder>/variants/<original name>` | Set `variant.basePath` to a callback deriving `<original folder>/variants`; set converter `folder: ':name'`. |
+| `{ basePath }` | `<basePath>/<original folder>/<original name>` | Set `variant.basePath` to a callback combining `basePath` and the original folder; set converter `folder: ':name'`. |
+| `{ ignoreFolder: true }` | `<original name>` | Set converter `folder: ':name'`. |
+| `{ basePath, ignoreFolder: true }` | `<basePath>/<original name>` | Set `variant.basePath: basePath` and converter `folder: ':name'`. |
+
+Existing JSON documents keep their stored original/variant paths in legacy mode. This mapping is
+for variants generated after cutover.
+
+For a former `{ basePath: 'variants', ignoreFolder: true }`, configure the prefix and the
+converter folder separately:
+
+```ts
+// config/attachment.ts
+variant: { basePath: 'variants' },
+converters: {
+  thumbnail: {
+    resize: { width: 320 },
+    format: 'webp',
+    folder: ':name',
+  },
+}
+```
 
 | Existing concern | v6 configuration |
 | --- | --- |

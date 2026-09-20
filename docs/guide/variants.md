@@ -21,6 +21,7 @@ const attachmentConfig = defineConfig({
     thumbnail: {
       resize: { width: 320, fit: 'cover' },
       format: { format: 'webp', options: { quality: 82 } },
+      folder: 'images',
     },
   },
 })
@@ -157,6 +158,11 @@ createFfmpegThumbnailConverter({
   format: 'webp',
 })
 ```
+
+`folder` is the converter's subfolder below `variant.basePath`. It accepts an attachment
+template such as `images/:id` or an async `({ attachment }) => string` callback. See
+[variant folders](/guide/configuration#variant-folders) for the shared prefix and available
+attachment fields.
 
 ### Blurhash
 

@@ -15,3 +15,15 @@
   --vp-c-brand-3: #6b52ff;
   --vp-c-brand-soft: rgba(138, 118, 255, 0.16);
 }
+
+/* Present both migration workflows as equal alternatives. */
+.vp-doc h3#option-1-use-an-ai-coding-agent-for-the-legacy-path,
+.vp-doc h3#option-1-use-an-ai-coding-agent-for-the-table-path,
+.vp-doc h3#option-2-migrate-manually,
+.vp-doc h3#option-2-migrate-manually-1 {
+  margin-top: 3rem;
+  padding: 0.75rem 1rem;
+  border-left: 3px solid var(--vp-c-brand-1);
+  background: var(--vp-c-brand-soft);
+  border-radius: 0 6px 6px 0;
+}

@@ -14,6 +14,33 @@ storage disks/paths, owner models, converters, and queue before choosing a mappi
 For other source versions, determine the intermediate migration first; do not assume the
 v5 mapping applies. Read [migration procedure](references/migration.md).
 
+## Agent execution contract
+
+This is an implementation task, not a read-only audit. First inventory v5 attachment fields;
+unless the user limits the scope, migrate every field whose v5 mapping is unambiguous. Infer
+singular versus collection fields from decorators and stored values. Report ambiguous fields and
+leave only those untouched, then continue with the required code and configuration changes.
+
+- Work only in the current project and preserve unrelated working-tree changes. Do not commit.
+- Confirm AdonisJS 7 and Node.js 24+ before upgrading. Upgrading the framework itself is out of
+  scope. Upgrade this package to the requested v6 release, run its configure hook, and verify
+  the installed exports before using `/legacy`.
+- Do not use `--legacy-peer-deps`, `--force`, `--omit`, `npm prune`, or `npm dedupe` to force an
+  installation. Report peer conflicts instead. After each permitted installation, inspect the
+  package manifest and lockfile diff; stop if unrelated dependencies were removed or changed.
+- Update `config/attachment.ts`; do not leave a migration TODO. Compare the effective v5
+  defaults, including omitted values, with v6 defaults and configure any behaviour the project
+  relies on when it differs. Preserve the storage adapter, disk names, paths, converters,
+  metadata policy, binaries, queue routing and routes deliberately.
+- Install only optional dependencies required by the resulting configuration: `sharp` for image
+  variants or technical image metadata, `exifreader` for EXIF/GPS, `blurhash` with `sharp` when
+  enabled, `@adonisjs/drive` for Drive and `@adonisjs/queue` for external queues. Verify ffmpeg,
+  Poppler and LibreOffice in the target runtime when configured; do not install system binaries
+  implicitly.
+- Do not run schema/data migrations, seeders, storage-writing commands, cleanup commands or
+  production cutover steps. Add focused non-destructive tests and run available non-destructive
+  checks. Report changed files, checks and remaining human production steps.
+
 ## Preserve data and intent
 
 - A normal upload task does not authorize a major upgrade. Plan schema/data changes before
@@ -27,8 +54,10 @@ v5 mapping applies. Read [migration procedure](references/migration.md).
   `integrations.lucid.tableName`; configuration does not rename existing tables or move files.
 - For a JSON-to-table migration, read source JSON through the query builder or a separate
   legacy model, not the new `/lucid` accessor. Migrate only the fields selected for tables.
-- For retained JSON, import the decorator, type and manager from `/legacy`, keep the column
-  without a second `@column()`, and register `integrations.legacy.models` for processing.
+- For retained JSON, import the decorator, type and manager from `/legacy` and register
+  `integrations.legacy.models` for processing. The decorator takes over a matching `@column()`
+  inherited from generated schema base classes or mixins, so keep the SQL column and generated
+  TypeScript field without adding `skipColumns` rules.
   Do not use removed `integrations.lucid.jsonModels` or `AttachmentRelation<'json'>` APIs.
 - Preserve paths, disk names, metadata, blurhashes, variant associations, and collection order.
   Do not reupload originals or regenerate all variants as a substitute for a data migration.

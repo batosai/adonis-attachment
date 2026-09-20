@@ -28,13 +28,95 @@ is reserved for `/legacy`; the earlier experimental JSON relation API has been r
 Choose each field's path **before** running the data-migration script, which is only for
 fields moving to tables.
 
+The package upgrade is part of the workflow you choose below. Upgrade the application to
+AdonisJS 7 and Node.js 24+ first if necessary.
+
 ## Path A: keep the existing JSON columns
 
 You do **not** need to create attachment/link tables, add a lock table, or run
 `make:attachment-v5-migration` for these fields. Keep the owner columns and stored files.
 The API and application configuration still need to change.
 
-### Declare the JSON field
+::: tip Choose one workflow
+Use **Option 1** with an AI coding agent **or** follow **Option 2** manually. They are
+alternatives: do not follow the manual checklist after giving the prompt to an agent.
+In both cases, a human must still approve and perform the production cutover.
+:::
+
+### Option 1: Use an AI coding agent for the `/legacy` path
+
+This is a prompt for an AI coding agent that has the
+`adonis-attachment-migration` skill available. The skill contains the complete procedure;
+the prompt only selects the path and scope.
+
+```text
+Use the `adonis-attachment-migration` skill to upgrade this project from
+@jrmc/adonis-attachment v5 to v6. Keep the selected fields in their existing JSON columns
+with the `/legacy` integration; do not migrate them to tables.
+
+Inspect and migrate every unambiguous v5 attachment field unless I provide a narrower list.
+Follow the skill completely, including configuration, dependencies, tests and its safety rules.
+Do not continue with the manual option below.
+```
+
+### Option 2: Migrate manually
+
+Follow the rest of this path only when you chose the manual workflow above.
+
+#### Install and configure v6
+
+Confirm the application already uses AdonisJS 7 and Node.js 24+, then upgrade the package
+and run its configure hook:
+
+```sh
+npm install @jrmc/adonis-attachment@next
+node ace configure @jrmc/adonis-attachment
+```
+
+Confirm that the installed build exports `@jrmc/adonis-attachment/legacy` before continuing.
+Upgrade AdonisJS separately if required; it is not part of this migration guide.
+
+::: danger Do not bypass a dependency conflict
+Never add `--legacy-peer-deps`, `--force` or another peer-dependency bypass to these commands.
+If installation reports a conflict, stop and resolve the incompatible package versions first.
+After installation, review `package.json` and the lockfile diff; no unrelated dependency should
+have been removed or changed.
+:::
+
+#### Migrate configuration and optional dependencies
+
+Start with the generated `config/attachment.ts`, then compare it with the v5 configuration.
+Keep the existing storage adapter, disk names and file paths: do not silently switch a Drive
+application to `LocalFileStorage`. Compare the **effective** v5 defaults, including omitted
+options, with the v6 defaults before copying them. When an implicit v6 value differs from the
+behaviour the application relied on in v5, configure that v6 value explicitly. Transfer each
+configured option deliberately:
+
+| Existing concern | v6 configuration |
+| --- | --- |
+| Default disk, folder and naming | `storage`, `defaultDisk`, then `defaults.disk`, `folder`, `rename` and `normalizeFileName` |
+| Variant keys and their options | `converters`; keep the matching `variants` option on each legacy decorator or in `defaults` |
+| `meta` and custom metadata extraction | `defaults.meta` or decorator `meta`; retain custom extractors in `media.metadata` and deferred work in `media.metadataPolicy` only when used |
+| ffmpeg, ffprobe, Poppler or LibreOffice paths | `media.binaries`, preserving commands and timeouts |
+| Background work | `queue` and the external worker; also register every JSON owner in `integrations.legacy.models` |
+| Serving URLs | `route: false` only for JSON-only applications; otherwise use a custom owner-authorized route for JSON fields and preserve any table route in mixed applications |
+
+Install only the packages required by the resulting configuration:
+
+```sh
+npm install sharp                 # image variants or technical image metadata
+npm install exifreader            # EXIF or GPS metadata
+npm install blurhash              # blurhash: true (also requires sharp)
+node ace add @adonisjs/drive      # Adonis Drive storage
+node ace add @adonisjs/queue      # durable external attachment jobs
+```
+
+Do not run every command blindly. Video, PDF and Office support also needs `ffmpeg`, Poppler
+or LibreOffice installed in the deployment runtime; configure their paths under `media.binaries`.
+For an external worker, load the same configuration and use
+`createLucidAttachmentProcessor(app)` so registered legacy fields resolve correctly.
+
+#### Declare the JSON field
 
 For an existing `users.avatar` column:
 
@@ -62,6 +144,15 @@ database column. The relation manages its writes transactionally; it is not part
 Lucid's ordinary dirty attributes. A stale model saving another attribute therefore
 does not write its old JSON snapshot over a worker's changes.
 
+::: tip Generated schemas need no exclusion rule
+`@attachment()` and `@attachments()` automatically take over a matching `@column()` inherited
+from a base class, mixin or generated schema class. The generated class, SQL column and
+TypeScript field remain unchanged; only the concrete legacy model stops treating that column as
+an ordinary Lucid attribute. Do not add `skipColumns` rules for legacy fields.
+
+Regenerate the schema and boot or import each migrated model in a focused test before deploying.
+:::
+
 Configure the `thumbnail` converter in v6, or omit `variants` if you do not use it.
 
 <details>
@@ -80,7 +171,7 @@ Your application then uses `user.profilePicture = ...`. No database column renam
 
 </details>
 
-### Keep direct assignment for a singular avatar
+#### Keep direct assignment for a singular avatar
 
 With an already validated multipart `file`, creation and replacement become:
 
@@ -112,7 +203,7 @@ after background jobs to reload variants and metadata. Save pending changes befo
 `serializeAs` and custom `serialize` are supported; old `keyId` output is not reproduced.
 See [Legacy JSON fields](/guide/legacy) for scope and concurrency rules.
 
-### Keep a collection as a JSON array
+#### Keep a collection as a JSON array
 
 Import `attachments`, `Attachment` and `attachmentManager` from `/legacy`. Keep the old
 nullable `gallery` column, without an additional `@column()` decorator:
@@ -134,7 +225,7 @@ explicitly clears the current field, including unseen additions. Original and va
 `meta` edits are saved with the owner. Custom `serialize` still applies per item.
 See [legacy collections](/guide/legacy#a-simple-collection) for the complete workflow.
 
-### Configure storage and worker routing
+#### Configure storage and worker routing
 
 ```ts
 // config/attachment.ts
@@ -162,7 +253,7 @@ The built-in ID-only HTTP route remains table-backed. For JSON, use Drive URLs o
 application route with your own authorization; `route: false` disables the table route
 for JSON-only applications. See [JSON persistence](/guide/json-persistence) for details.
 
-### Verify data compatibility and cut over
+#### Verify data compatibility and cut over
 
 1. **Back up the database and files**, then rehearse on a staging copy.
 2. **Verify the existing documents and column capacity.** The reader accepts singular
@@ -193,7 +284,83 @@ With the default table-backed mode, existing v5 values **must** be converted int
 and link rows. The package supplies migration tools, but your application supplies the
 owner/column mapping. Follow this path only for fields you chose to move to tables.
 
-### Migration checklist
+::: tip Choose one workflow
+Use **Option 1** with an AI coding agent **or** follow **Option 2** manually. They are
+alternatives: do not follow the manual checklist after giving the prompt to an agent.
+In both cases, a human must still approve and perform the production cutover.
+:::
+
+### Option 1: Use an AI coding agent for the table path
+
+This is a prompt for an AI coding agent that has the
+`adonis-attachment-migration` skill available. The skill contains the complete procedure;
+the prompt only selects the path and scope.
+
+```text
+Use the `adonis-attachment-migration` skill to upgrade this project from
+@jrmc/adonis-attachment v5 to v6. Migrate the selected JSON attachment fields to the
+table-backed `/lucid` integration, preserving existing files and JSON columns until cutover.
+
+Inspect and migrate every unambiguous v5 attachment field unless I provide a narrower list.
+Follow the skill completely, including configuration, dependencies, mapping script, tests and
+its safety rules. Do not continue with the manual option below.
+```
+
+### Option 2: Migrate manually
+
+Follow the rest of this path only when you chose the manual workflow above.
+
+#### Install and configure v6
+
+Confirm the application already uses AdonisJS 7 and Node.js 24+, then upgrade the package
+and run its configure hook:
+
+```sh
+npm install @jrmc/adonis-attachment@next
+node ace configure @jrmc/adonis-attachment
+```
+
+Upgrade AdonisJS separately if required; it is not part of this migration guide.
+
+::: danger Do not bypass a dependency conflict
+Never add `--legacy-peer-deps`, `--force` or another peer-dependency bypass to these commands.
+If installation reports a conflict, stop and resolve the incompatible package versions first.
+After installation, review `package.json` and the lockfile diff; no unrelated dependency should
+have been removed or changed.
+:::
+
+#### Migrate configuration and optional dependencies
+
+Start with the generated `config/attachment.ts`, then compare it with the v5 configuration.
+Keep the existing storage adapter, disk names and file paths: do not silently switch a Drive
+application to `LocalFileStorage`. Compare the **effective** v5 defaults, including omitted
+options, with the v6 defaults before copying them. When an implicit v6 value differs from the
+behaviour the application relied on in v5, configure that v6 value explicitly. Transfer each
+configured option deliberately:
+
+| Existing concern | v6 configuration |
+| --- | --- |
+| Default disk, folder and naming | `storage`, `defaultDisk`, then `defaults.disk`, `folder`, `rename` and `normalizeFileName` |
+| Variant keys and their options | `converters`; keep the matching `variants` option on each relation or in `defaults` |
+| `meta` and custom metadata extraction | `defaults.meta` or relation `meta`; retain custom extractors in `media.metadata` and deferred work in `media.metadataPolicy` only when used |
+| ffmpeg, ffprobe, Poppler or LibreOffice paths | `media.binaries`, preserving commands and timeouts |
+| Background work | `queue` and the external worker using `createLucidAttachmentProcessor(app)` |
+| Attachment tables and serving | `integrations.lucid.tableName` before generating the schema; keep the built-in route, configure its prefix, or set `route: false` for an authorized application route |
+
+Install only the packages required by the resulting configuration:
+
+```sh
+npm install sharp                 # image variants or technical image metadata
+npm install exifreader            # EXIF or GPS metadata
+npm install blurhash              # blurhash: true (also requires sharp)
+node ace add @adonisjs/drive      # Adonis Drive storage
+node ace add @adonisjs/queue      # durable external attachment jobs
+```
+
+Do not run every command blindly. Video, PDF and Office support also needs `ffmpeg`, Poppler
+or LibreOffice installed in the deployment runtime; configure their paths under `media.binaries`.
+
+#### Migration checklist
 
 1. **Create the new schema.**
 
@@ -248,7 +415,7 @@ The v5 `meta` object is copied unchanged to the v6 `metadata` column for both or
 variants. Newly uploaded files use the default Sharp, EXIF, video, and PDF metadata profile
 whenever `meta: true` is enabled; no extractor configuration is required.
 
-### Map and run the generated script
+#### Map and run the generated script
 
 Read legacy columns with the database query builder, not the new relation accessors.
 For example, replace `legacyAttachmentRecords` in the generated script with this iterator
@@ -323,7 +490,7 @@ script, change `async function main()` to `export default async function migrate
 and remove `void main()` before using this command. Do not run the data script directly
 with Node: it requires a booted Adonis application.
 
-### Verification and recovery
+#### Verification and recovery
 
 - Back up the database, retain the old JSON columns, and pause attachment writes during
   the final migration and cutover. The helper does not synchronize concurrent uploads.
@@ -336,7 +503,7 @@ with Node: it requires a booted Adonis application.
   or migration ledger committed with each batch; an in-memory iterator cursor is not one.
 - Do not delete migrated files during database recovery: they are still the original v5 files.
 
-## Update model decorators
+#### Update model decorators
 
 For the table path, complete the migration procedure above and verify both the new rows
 and file access before switching your models. For the JSON path, use the declarations

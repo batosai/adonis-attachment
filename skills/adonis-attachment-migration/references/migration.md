@@ -13,6 +13,28 @@ Back up database and stored files, and rehearse replacement/deletion against cop
 - Mixed models are supported. Select the target per field and exclude retained JSON fields
   from the table migration. Never drop a column still used by `/legacy`.
 
+## Upgrade package, configuration and dependencies
+
+Upgrade the package to the selected v6 release and run its configure hook before changing
+models. Verify that a JSON-retention migration can import `/legacy` from the installed build.
+Never force an installation past a peer-dependency conflict. Review the package manifest and
+lockfile after each installation and stop if unrelated packages changed.
+
+Compare the effective v5 configuration—including defaults absent from its config file—with v6
+defaults. Make an explicit v6 setting whenever the application relies on a different behaviour.
+Preserve the existing storage adapter, disk names and paths; do not silently replace Drive with
+local storage. Transfer `defaultDisk`, field/default folder and naming rules, `meta`,
+`preComputeUrl`, converters and variants. Carry executable paths/timeouts into `media.binaries`,
+and keep `media.metadata` or `media.metadataPolicy` only when the application uses them.
+
+Install only what the resulting v6 configuration needs: `sharp` for image variants or technical
+metadata, `exifreader` for EXIF/GPS, `blurhash` with `sharp` when enabled, `@adonisjs/drive` for
+Drive storage and `@adonisjs/queue` for an external queue. A video, PDF or Office configuration
+also requires ffmpeg, Poppler or LibreOffice in the deployment runtime; verify those executables
+instead of installing them implicitly. Preserve the chosen queue connection, and ensure an
+external worker loads the same configuration and forwards jobs to
+`createLucidAttachmentProcessor(app)`.
+
 ## Keep a singular JSON field with `/legacy`
 
 Keep `users.avatar` nullable JSON and its existing files. Do not run
@@ -37,8 +59,10 @@ export async function replaceAvatar(user: User, validatedImageBytes: Uint8Array)
 ```
 
 The decorator, `Attachment` type and manager all come from `/legacy`, not the root or
-`/lucid`. Do not also apply `@column()` to `avatar`. Only specify `columnName` when the
-physical column differs from Lucid's naming convention. Callbacks receive the model;
+`/lucid`. A matching `@column()` inherited from a generated schema base class or mixin is
+claimed automatically by the legacy decorator on the concrete model. Keep the physical SQL
+column and generated TypeScript field; no `skipColumns` rule is needed. Only specify `columnName`
+when the physical column differs from Lucid's naming convention. Callbacks receive the model;
 legacy `rename` receives `(model, field, originalName)`. Assign a new draft or null directly,
 not through `fill`/`merge`, and save the owner. Persisted attachments cannot be shared by
 assignment to another field because JSON has no global file reference counts.

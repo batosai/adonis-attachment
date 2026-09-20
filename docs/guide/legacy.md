@@ -26,9 +26,12 @@ export default class User extends BaseModel {
 }
 ```
 
-Do **not** add `@column()` to `avatar`. Column names follow Lucid's naming strategy;
-use `columnName` only if your existing SQL column has a different name. Folder callbacks
-receive the model; rename callbacks receive `(model, field, originalName)`.
+Do not add a second `@column()` directly to `avatar`. A matching `@column()` inherited from a
+base class, mixin or generated schema class is supported: the legacy decorator takes it over on
+the concrete model, while the generated class, SQL column and TypeScript field remain unchanged.
+Column names follow Lucid's naming strategy; use `columnName` only if your existing SQL column
+has a different name. Folder callbacks receive the model; rename callbacks receive
+`(model, field, originalName)`.
 
 ```ts
 import { attachmentManager } from '@jrmc/adonis-attachment/legacy'

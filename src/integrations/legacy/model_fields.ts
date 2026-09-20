@@ -67,10 +67,22 @@ export function jsonRelationColumn(
  * inherited metadata before this helper runs, leaving the generated base class untouched.
  */
 function claimGeneratedColumn(Model: LucidModel, field: string, column: string): void {
-  const generatedColumns = [...Model.$columnsDefinitions.entries()].filter(
+  const columns = [...Model.$columnsDefinitions.entries()].filter(
     ([attribute, definition]) =>
       attribute === field || definition.columnName === column,
   );
+
+  if (!columns.length) return;
+
+  const generatedColumns = columns.filter(([attribute, definition]) =>
+    isInheritedColumn(Model, attribute, definition.columnName),
+  );
+
+  if (generatedColumns.length !== columns.length) {
+    throw new AttachmentConfigurationError(
+      "A JSON attachment column must not also be declared with @column",
+    );
+  }
 
   for (const [attribute, definition] of generatedColumns) {
     if (definition.isPrimary) {
@@ -81,6 +93,16 @@ function claimGeneratedColumn(Model: LucidModel, field: string, column: string):
     Model.$columnsDefinitions.delete(attribute);
     removeColumnKeys(Model, attribute, definition.columnName);
   }
+}
+
+function isInheritedColumn(Model: LucidModel, attribute: string, column: string): boolean {
+  let Parent = Object.getPrototypeOf(Model) as LucidModel | undefined;
+  while (Parent) {
+    const definition = Parent.$columnsDefinitions?.get(attribute);
+    if (definition?.columnName === column) return true;
+    Parent = Object.getPrototypeOf(Parent) as LucidModel | undefined;
+  }
+  return false;
 }
 
 type ModelKeys = {

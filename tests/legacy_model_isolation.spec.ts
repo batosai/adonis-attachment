@@ -196,16 +196,17 @@ test.group("Legacy isolation and shared Lucid transactions", (group) => {
     );
   });
 
-  test("rejects ordinary column aliases and duplicate legacy JSON columns", ({
+  test("takes over generated columns and rejects duplicate legacy JSON columns", ({
     assert,
   }) => {
-    class Invalid extends BaseModel {
+    class GeneratedSchema extends BaseModel {
       @column() declare avatar: string;
     }
-    assert.throws(
-      () => attachment()(Invalid.prototype, "avatar"),
-      /must not also be declared/,
-    );
+    class GeneratedModel extends GeneratedSchema {}
+    attachment()(GeneratedModel.prototype, "avatar");
+    assert.isFalse(GeneratedModel.$hasColumn("avatar"));
+    assert.isTrue(GeneratedSchema.$hasColumn("avatar"));
+
     class Duplicate extends BaseModel {}
     attachment({ columnName: "image" })(Duplicate.prototype, "avatar");
     assert.throws(

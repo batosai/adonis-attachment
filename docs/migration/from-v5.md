@@ -36,7 +36,7 @@ AdonisJS 7 and Node.js 24+ first if necessary.
 Before using either AI-agent prompt below, install the skill from the package's `6.x` branch:
 
 ```sh
-npx skills add https://github.com/jrmc/adonis-attachment/tree/6.x/skills
+npx skills add batosai/adonis-attachment/skills#6.x
 ```
 
 ## Path A: keep the existing JSON columns

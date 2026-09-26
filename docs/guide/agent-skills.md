@@ -20,7 +20,7 @@ version and configuration first; they do not authorize an automatic major-versio
 To install the current v6 skills directly from GitHub, explicitly target the `6.x` branch:
 
 ```sh
-npx skills add https://github.com/jrmc/adonis-attachment/tree/6.x/skills
+npx skills add batosai/adonis-attachment/skills#6.x
 ```
 
 After installing a v6 package release that includes `skills`, run from your application root:

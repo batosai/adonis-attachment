@@ -3,4 +3,33 @@
   --vp-c-brand-2: var(--vp-c-red-2);
   --vp-c-brand-3: var(--vp-c-red-3);
   --vp-c-brand-soft: var(--vp-c-red-soft);
+  --vp-layout-top-height: 40px;
+}
+
+.beta-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--vp-layout-top-height);
+  padding: 8px 24px;
+  color: var(--vp-c-text-1);
+  background: var(--vp-c-brand-soft);
+  font-size: 14px;
+  text-align: center;
+}
+
+.beta-banner p {
+  margin: 0;
+}
+
+.beta-banner a {
+  margin-left: 0.25rem;
+  color: var(--vp-c-brand-1);
+  font-weight: 600;
+}
+
+@media (max-width: 480px) {
+  :root {
+    --vp-layout-top-height: 64px;
+  }
 }

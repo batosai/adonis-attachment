@@ -41,7 +41,7 @@ so converter keys remain typed in source options, decorators, and regeneration.
 
 ## Legacy JSON variants and metadata
 
-First verify the installed build exports `/legacy`; not every v6 alpha includes this
+First verify the installed build exports `/legacy`; not every v6 beta includes this
 experimental facade. Use the same v6 converters, media dependencies and
 queue configuration as table-backed relations, but import the decorator, `Attachment`
 type and upload manager from `/legacy`. New uploads use direct assignment then owner save.

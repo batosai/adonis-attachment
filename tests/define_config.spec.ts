@@ -12,6 +12,7 @@ import { test } from '@japa/runner'
 import {
   AdonisDriveStorage,
   AdonisAttachmentQueue,
+  AttachmentConfigurationError,
   AttachmentJobProcessor,
   defineConfig,
   MemoryAttachmentQueue,
@@ -46,6 +47,19 @@ class FakePdfRunner implements CommandRunner {
 }
 
 test.group('defineConfig', () => {
+  test('requires an explicit storage adapter with an actionable Drive migration error', async ({ assert }) => {
+    let error: unknown
+    try {
+      await defineConfig({} as never).resolver({} as never)
+    } catch (caught) {
+      error = caught
+    }
+
+    assert.instanceOf(error, AttachmentConfigurationError)
+    assert.equal((error as AttachmentConfigurationError).code, 'E_ATTACHMENT_CONFIGURATION')
+    assert.include((error as Error).message, 'storage: AdonisDriveStorage.fromApp')
+  })
+
   test('uses the default disk resolved from Drive config', async ({ assert }) => {
     const disks: string[] = []
     const drive = {

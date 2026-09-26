@@ -17,6 +17,12 @@ version and configuration first; they do not authorize an automatic major-versio
 
 ## Install in your project
 
+To install the current v6 skills directly from GitHub, explicitly target the `6.x` branch:
+
+```sh
+npx skills add https://github.com/jrmc/adonis-attachment/tree/6.x/skills
+```
+
 After installing a v6 package release that includes `skills`, run from your application root:
 
 ```sh
@@ -35,7 +41,7 @@ The [Skills CLI](https://github.com/vercel-labs/skills#readme) supports local fo
 selection, and agent selection. No global installation or change to the package's runtime
 configuration is required. Merely running `npm install` does not activate the skills in an agent.
 
-For local alpha testing before publication, use the path to the v6 checkout instead:
+For local beta testing before publication, use the path to the v6 checkout instead:
 
 ```sh
 npx skills add /absolute/path/to/refont/skills --list

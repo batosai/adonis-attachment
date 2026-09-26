@@ -67,6 +67,7 @@ export {
 } from '../events/attachment_events.js'
 export {
   AttachmentError,
+  AttachmentConfigurationError,
   AttachmentProcessorNotConfiguredError,
   AttachmentSourceError,
   MissingOptionalDependencyError,

@@ -26,7 +26,7 @@ when retaining a JSON column or using `/legacy`. Read
   `LocalFileStorage.fromApp`, not Drive. Configure optional Adonis integrations before use.
 - Choose the field's persistence before editing its model or schema. `/lucid` is the default
   table-backed API; `/legacy` is an experimental JSON facade requiring Lucid.
-  Verify the installed build exports `/legacy`; not every v6 alpha does. Do not migrate
+  Verify the installed build exports `/legacy`; not every v6 beta does. Do not migrate
   an existing JSON field to tables without an explicit migration decision.
 - For table relations, import `attachmentManager` and `attachmentService` from the package root. Import
   `attachment`, `attachments`, `AttachmentRelation`, and `AttachmentCollectionRelation`
@@ -65,5 +65,5 @@ Validate the upload in the application before creating a draft. Exercise create,
 replace, delete, collection ordering where supported, and the relevant failure path. Check
 database rows or owner JSON and stored bytes. Use the consuming project's typecheck and tests; avoid destructive
 schema resets or real production file deletion merely to test integration.
-When API details differ across alpha releases, inspect the installed public declarations
+When API details differ across beta releases, inspect the installed public declarations
 instead of guessing or importing unpublished `src` modules.

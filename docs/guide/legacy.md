@@ -1,6 +1,6 @@
 # Legacy JSON fields (experimental)
 
-Available on `feat/json-persistence`, not necessarily in published v6 alphas. This
+Available on `feat/json-persistence`, not necessarily in published v6 betas. This
 facade keeps familiar v5 usage for **singular fields and JSON collections**, backed by the v6
 transactional JSON engine. No attachment tables, lock table or lock dependency are needed.
 The default v6 API remains the table-backed `/lucid` integration.

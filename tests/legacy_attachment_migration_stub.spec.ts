@@ -13,6 +13,7 @@ import { test } from '@japa/runner'
 import MakeAttachmentV5Migration from '../commands/make/attachment_v5_migration.js'
 import { stubsRoot } from '../stubs/main.js'
 import { createLegacyAttachmentMigrationStubState } from '../src/integrations/lucid/index.js'
+import { defineConfig } from '../src/define_config.js'
 
 test.group('legacy attachment migration stub', () => {
   test('prepares a timestamped destination and template state', ({ assert }) => {
@@ -37,6 +38,9 @@ test.group('legacy attachment migration stub', () => {
     assert.include(stub, 'migrateLegacyAttachmentRecords')
     assert.include(stub, 'AttachmentLinkModel.createMany(rows.links')
     assert.include(stub, 'export default async function migrateAttachments()')
+    assert.include(stub, "'Migrated ' +")
+    assert.include(stub, 'result.attachments')
+    assert.notInclude(stub, '${result.')
     assert.notInclude(stub, 'void main()')
   })
 
@@ -46,7 +50,10 @@ test.group('legacy attachment migration stub', () => {
 
     await MakeAttachmentV5Migration.prototype.run.call({
       parsed: { flags: { disk: 's3', folder: 'database/scripts' } },
-      app: { makePath: (path: string) => `/app/${path}` },
+      app: {
+        makePath: (path: string) => `/app/${path}`,
+        config: { get() { return undefined } },
+      },
       async createCodemods() {
         return {
           async makeUsingStub(root: string, path: string, state: Record<string, unknown>) {
@@ -66,5 +73,38 @@ test.group('legacy attachment migration stub', () => {
     assert.equal(generated[0]?.state.defaultDisk, 's3')
     assert.match(String(generated[0]?.state.destination), /^\/app\/database\/scripts\/\d+_migrate_v5_attachments\.ts$/)
     assert.match(messages[0] ?? '', /^Created \/app\/database\/scripts\//)
+  })
+
+  test('uses the resolved attachment configuration disk when --disk is omitted', async ({ assert }) => {
+    const generated: Array<{ state: Record<string, unknown> }> = []
+
+    await MakeAttachmentV5Migration.prototype.run.call({
+      parsed: { flags: {} },
+      app: {
+        makePath: (path: string) => `/app/${path}`,
+        config: {
+          get() {
+            return defineConfig({
+              storage: {
+                defaultDisk: 'fs',
+                async write() {},
+                async read() { return new Uint8Array() },
+                async remove() {},
+              },
+            })
+          },
+        },
+      },
+      async createCodemods() {
+        return {
+          async makeUsingStub(_root: string, _path: string, state: Record<string, unknown>) {
+            generated.push({ state })
+          },
+        }
+      },
+      logger: { success() {} },
+    } as never)
+
+    assert.equal(generated[0]?.state.defaultDisk, 'fs')
   })
 })

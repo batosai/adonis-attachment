@@ -9,7 +9,7 @@ import { join } from 'node:path'
 
 export type LegacyAttachmentMigrationStubOptions = {
   directory: string
-  defaultDisk?: string
+  defaultDisk: string
   timestamp?: number
 }
 
@@ -28,6 +28,6 @@ export function createLegacyAttachmentMigrationStubState(
 
   return {
     destination: join(options.directory, `${timestamp}_migrate_v5_attachments.ts`),
-    defaultDisk: options.defaultDisk ?? 'public',
+    defaultDisk: options.defaultDisk,
   }
 }

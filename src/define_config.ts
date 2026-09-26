@@ -16,6 +16,7 @@ import {
 } from './queues/adonis_queue.js'
 import {
   AttachmentError,
+  AttachmentConfigurationError,
   AttachmentProcessorNotConfiguredError,
 } from './errors.js'
 import {
@@ -166,6 +167,11 @@ export function defineConfig<
   config: AttachmentConfig<KnownConverters, KnownQueues>
 ): ConfigProvider<ResolvedAttachmentConfig<KnownConverters>> {
   return configProvider.create(async (app) => {
+    if (!config.storage) {
+      throw new AttachmentConfigurationError(
+        'Attachment storage is required. Add storage: AdonisDriveStorage.fromApp to config/attachment.ts when using Adonis Drive.'
+      )
+    }
     const selectedQueue = selectQueue(config.queue)
     const storage = await resolveIntegration(config.storage, app)
     const lucid = resolveLucidIntegration(app, config.integrations?.lucid)

@@ -7,7 +7,7 @@ and imports still change; this is not a drop-in replacement for all v5 APIs.
 
 ::: warning Experimental JSON option
 The JSON path below describes the implementation on `feat/json-persistence`. Do not
-assume it exists in an older published v6 alpha. Use a build containing this integration.
+assume it exists in an older published v6 beta. Use a build containing this integration.
 :::
 
 ## Choose a migration path per field
@@ -30,6 +30,14 @@ fields moving to tables.
 
 The package upgrade is part of the workflow you choose below. Upgrade the application to
 AdonisJS 7 and Node.js 24+ first if necessary.
+
+## Install the v6 migration skill
+
+Before using either AI-agent prompt below, install the skill from the package's `6.x` branch:
+
+```sh
+npx skills add https://github.com/jrmc/adonis-attachment/tree/6.x/skills
+```
 
 ## Path A: keep the existing JSON columns
 
@@ -447,6 +455,25 @@ converters: {
 | Background work | `queue` and the external worker using `createLucidAttachmentProcessor(app)` |
 | Attachment tables and serving | `integrations.lucid.tableName` before generating the schema; keep the built-in route, configure its prefix, or set `route: false` for an authorized application route |
 
+##### Type imports and custom converters
+
+V5 paths `/types/config`, `/types/converter`, and `/types/input` are not exported in v6. Import
+`InferConverters` from `@jrmc/adonis-attachment`, and `ConverterAttributes` from
+`@jrmc/adonis-attachment/converters/converter`. A v6 converter must return an object describing
+the generated file, not a bare `Buffer`:
+
+```ts
+import type { ConverterAttributes } from '@jrmc/adonis-attachment/converters/converter'
+
+async function convert({ body }: ConverterAttributes) {
+  return {
+    body,
+    fileName: 'thumbnail.webp',
+    mimeType: 'image/webp',
+  }
+}
+```
+
 Install only the packages required by the resulting configuration:
 
 ```sh
@@ -477,8 +504,9 @@ or LibreOffice installed in the deployment runtime; configure their paths under 
    node ace make:attachment-v5-migration
    ```
 
-   This renders a script into `database/scripts`. Use `--disk=s3` or
-   `--folder=...` to change defaults.
+   This renders a script into `database/scripts`. Without `--disk`, it uses the effective
+   `defaultDisk` resolved from `config/attachment.ts`; use `--disk=s3` only to override it.
+   Use `--folder=...` to change the script destination.
 
 3. **Fill in the mapping.** In the generated script, implement `legacyAttachmentRecords`
    so it yields each legacy JSON value together with its `{ type, id, field }` owner.

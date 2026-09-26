@@ -26,7 +26,13 @@ export default async function migrateAttachments(): Promise<void> {
   })
 
   console.info(
-    `Migrated ${result.attachments} attachments and ${result.variants} variants; skipped ${result.skipped} empty values.`
+    'Migrated ' +
+      result.attachments +
+      ' attachments and ' +
+      result.variants +
+      ' variants; skipped ' +
+      result.skipped +
+      ' empty values.'
   )
 }
 

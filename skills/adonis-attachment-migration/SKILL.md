@@ -23,21 +23,29 @@ leave only those untouched, then continue with the required code and configurati
 
 - Work only in the current project and preserve unrelated working-tree changes. Do not commit.
 - Confirm AdonisJS 7 and Node.js 24+ before upgrading. Upgrading the framework itself is out of
-  scope. Upgrade this package to the requested v6 release, run its configure hook, and verify
-  the installed exports before using `/legacy`.
+  scope. Upgrade this package to the requested v6 release and verify the installed exports before
+  using `/legacy`. Run its configure hook only when provider/command registration is absent: it
+  preserves an existing `config/attachment.ts` rather than upgrading its contents.
 - Do not use `--legacy-peer-deps`, `--force`, `--omit`, `npm prune`, or `npm dedupe` to force an
   installation. Report peer conflicts instead. After each permitted installation, inspect the
   package manifest and lockfile diff; stop if unrelated dependencies were removed or changed.
 - Update `config/attachment.ts`; do not leave a migration TODO. Compare the effective v5
   defaults, including omitted values, with v6 defaults and configure any behaviour the project
-  relies on when it differs. Preserve the storage adapter, disk names, paths, converters,
-  metadata policy, binaries, queue routing and routes deliberately.
+  relies on when it differs. V6 requires an explicit `storage` adapter: when v5 files are on
+  Drive, set `storage: AdonisDriveStorage.fromApp` rather than assuming the v5 Drive default is
+  inferred. On an existing v5 config, make that upgrade manually; `node ace configure` does not
+  rewrite it. Preserve the storage adapter, disk names, paths, converters, metadata policy,
+  binaries, queue routing and routes deliberately.
 - Search application code, routes and configuration for removed v5 APIs and replace every
   unambiguous usage; do not merely report them. This includes `router.attachments()`,
-  `keyId`/`getKeyId()`, manual variant insertion/deletion, `integrations.lucid.jsonModels`,
-  `persistence: 'json'`, `AttachmentRelation<'json'>` and obsolete manager overloads. Adapt
-  v5 converter handlers to the v6 input/output contract and choose the route appropriate to
-  `/legacy` or table-backed fields.
+  root `attachment`/`attachments` decorators for table-backed fields, `keyId`/`getKeyId()`,
+  manual variant insertion/deletion, `integrations.lucid.jsonModels`, `persistence: 'json'`,
+  `AttachmentRelation<'json'>` and obsolete manager overloads. Adapt
+  a v5 converter handler to the v6 input/output contract only when it contains application-specific
+  transformation logic. For standard image, PDF, Office-document, video or autodetected previews,
+  inspect the installed exports and prefer the package's native converter selected by a config entry
+  without `converter`; do not recreate a wrapper around package behavior. Choose the route appropriate
+  to `/legacy` or table-backed fields.
 - Install only optional dependencies required by the resulting configuration: `sharp` for image
   variants or technical image metadata, `exifreader` for EXIF/GPS, `blurhash` with `sharp` when
   enabled, `@adonisjs/drive` for Drive and `@adonisjs/queue` for external queues. Verify ffmpeg,

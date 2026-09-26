@@ -4,7 +4,7 @@ File attachments for AdonisJS: upload files, generate image variants, and serve 
 
 > **Compatible with AdonisJS 7 only. Requires Node.js 24 or later.**
 
-Version 6 is currently in **alpha**, published under the `next` tag.
+Version 6 is currently in **beta**, published under the `next` tag.
 
 **[Documentation](https://next.adonis-attachment.jrmc.dev)** · **[Migration from v5](https://next.adonis-attachment.jrmc.dev/migration/from-v5)**
 

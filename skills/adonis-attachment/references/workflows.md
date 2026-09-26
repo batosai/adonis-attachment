@@ -8,7 +8,7 @@ These recipes use table-backed `/lucid` relations. For a JSON field or collectio
 Check that the installed version is v6; these instructions do not upgrade a v5 app implicitly.
 For a fresh installation select the intended v6 release, then run the configure hook.
 `node ace add @jrmc/adonis-attachment` installs the registry default, which may be another
-major while v6 is in alpha. With v6 already installed, run:
+major while v6 is in beta. With v6 already installed, run:
 
 ```sh
 node ace configure @jrmc/adonis-attachment

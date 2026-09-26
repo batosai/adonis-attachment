@@ -4,8 +4,21 @@
 
 Record each legacy table, column, primary key type, stored disk/path convention, and whether
 the field is singular or multiple. Sample JSON including variants and empty/null values.
-Check existing v6 alpha tables before generating anything; do not create duplicates.
+Check existing v6 beta tables before generating anything; do not create duplicates.
 Back up database and stored files, and rehearse replacement/deletion against copies.
+
+### Mandatory storage-path audit
+
+Before editing `config/attachment.ts`, inspect the v5 configuration, every selected attachment
+decorator, and representative persisted JSON **and physical files**. For each distinct path
+convention, record the effective Drive disk and storage root, original folder and naming strategy,
+global variant base path, each converter's variant folder, and the complete `path` of one original
+and one variant. Retain this audit for the migration review and tests.
+
+Do not infer compatibility from matching a `folder`: the table migration must copy each stored
+original and variant `path` and `disk` verbatim, and new v6 writes must match the complete audited
+paths. If the samples reveal more than one convention, preserve and test every convention rather
+than selecting a representative default.
 
 - Keep singular attachments or collections in their existing JSON columns: use the experimental `/legacy` path
   below. Confirm the installed build exports it. No JSON-to-table migration is required.
@@ -15,10 +28,38 @@ Back up database and stored files, and rehearse replacement/deletion against cop
 
 ## Upgrade package, configuration and dependencies
 
-Upgrade the package to the selected v6 release and run its configure hook before changing
-models. Verify that a JSON-retention migration can import `/legacy` from the installed build.
-Never force an installation past a peer-dependency conflict. Review the package manifest and
-lockfile after each installation and stop if unrelated packages changed.
+Upgrade the package to the selected v6 release. Verify that a JSON-retention migration can import
+`/legacy` from the installed build. Never force an installation past a peer-dependency conflict.
+Review the package manifest and lockfile after each installation and stop if unrelated packages
+changed.
+
+If the application lacks the provider/command registration, run `node ace configure
+@jrmc/adonis-attachment`. Do **not** rerun it expecting an existing `config/attachment.ts` to be
+migrated: the configure hook deliberately preserves that file, while it may update `adonisrc.ts`.
+Audit and update the existing configuration manually before changing models, including `storage`,
+`integrations.lucid`, v5 variant settings, disks, paths, queue and media settings.
+
+### Explicit v6 storage and Lucid integration
+
+V5 applications may rely on Drive defaults without declaring package storage. V6 does not infer
+that adapter: configure `storage` explicitly before booting an application that reads or writes
+attachments. When the audited v5 files are on Adonis Drive, preserve that behavior with
+`AdonisDriveStorage.fromApp`; do not replace it with local storage merely because v6 supports a
+local default.
+
+```ts
+import { AdonisDriveStorage, defineConfig } from '@jrmc/adonis-attachment'
+
+export default defineConfig({
+  storage: AdonisDriveStorage.fromApp,
+  integrations: { lucid: {} },
+})
+```
+
+For table-backed fields, `integrations.lucid` enables the repository and the provider's automatic
+`/attachments/:id/:name?` read route. Remove v5 `router.attachments()` calls rather than keeping
+both route systems. A `Cannot read properties of undefined (reading 'defaultDisk')` error during
+the cutover normally means `storage` was omitted, not that the stored v5 disk is invalid.
 
 First resolve the effective v5 option for every field. A value configured by the application or
 on its decorator takes precedence over the v5 baseline below; do not overwrite that project
@@ -63,6 +104,69 @@ remain isolated.
 Existing v5 JSON documents already contain their original and variant paths. Keeping them in
 `/legacy` preserves those stored paths; this mapping affects variants generated after cutover.
 
+For the common v5 layout below, set both the root base path and the converter namespace:
+
+```text
+<original folder>/<original storage name>
+<original folder>/variants/<original storage name>/<variant storage name>
+```
+
+```ts
+import { AdonisDriveStorage, defineConfig } from '@jrmc/adonis-attachment'
+
+const legacyVariantBasePath = ({ attachment }: { attachment: { path: string } }) => {
+  const separator = attachment.path.lastIndexOf('/')
+  const folder = separator === -1 ? '' : attachment.path.slice(0, separator)
+  return folder ? `${folder}/variants` : 'variants'
+}
+
+export default defineConfig({
+  storage: AdonisDriveStorage.fromApp,
+  variant: { basePath: legacyVariantBasePath },
+  converters: {
+    thumbnail: { resize: 640, format: 'webp', folder: ':name' },
+  },
+})
+```
+
+`basePath` restores the original directory plus `variants`; `folder: ':name'` restores the
+original storage name as the variant namespace. This is an example, not a default: encode the
+audited v5 layout when it differs.
+
+### Built-in converters before custom wrappers
+
+Inspect the installed v6 exports before porting a v5 converter import. The former named v5 modules
+may have been consolidated. When the v5 converter was standard image, PDF, Office-document, video,
+or autodetected preview generation, omit the `converter` loader from its named config entry and let
+the package's `AutodetectConverter` select its built-in implementation. Keep `resize`, `format`,
+`folder`, timing and binary options in the config entry.
+
+Write a local v6 `Converter` handler only for application-specific transformation logic that the
+installed package cannot express. Do not wrap a package converter merely to re-expose it under the
+old v5 import path. Verify actual output MIME type and extension from the installed version: an
+option such as `format` is not necessarily supported by every media converter. If a native output
+differs from a required v5 result, report the compatibility difference before adding a custom
+transformation.
+
+### Removed v5 type paths and converter output
+
+The v5 `/types/config`, `/types/converter`, and `/types/input` import paths are not exported by
+v6. Import `InferConverters` from the package root and `ConverterAttributes` from
+`@jrmc/adonis-attachment/converters/converter` when migrating a custom converter. A v6 converter
+returns an object, not a bare `Buffer`:
+
+```ts
+import type { ConverterAttributes } from '@jrmc/adonis-attachment/converters/converter'
+
+async function convert({ body }: ConverterAttributes) {
+  return {
+    body,
+    fileName: 'thumbnail.webp',
+    mimeType: 'image/webp',
+  }
+}
+```
+
 Install only what the resulting v6 configuration needs: `sharp` for image variants or technical
 metadata, `exifreader` for EXIF/GPS, `blurhash` with `sharp` when enabled, `@adonisjs/drive` for
 Drive storage and `@adonisjs/queue` for an external queue. A video, PDF or Office configuration
@@ -74,8 +178,8 @@ external worker loads the same configuration and forwards jobs to
 ## Keep a singular JSON field with `/legacy`
 
 Keep `users.avatar` nullable JSON and its existing files. Do not run
-`make:attachments-table` or the JSON-to-table script for this field. The configure hook
-may still be needed when upgrading; preserve existing application configuration.
+`make:attachments-table` or the JSON-to-table script for this field. If the existing
+`config/attachment.ts` is v5, upgrade its settings manually; the configure hook will preserve it.
 
 ```ts
 import { BaseModel, column } from '@adonisjs/lucid/orm'
@@ -151,15 +255,17 @@ Regenerate with `AttachmentRegenerator.row/model` selecting `gallery`, then refr
 
 ## Migrate selected fields to tables: target schema
 
-After explicitly installing the chosen v6 release, run the configure hook, preserving
-application configuration. Generate the target schema and mapping script:
+After explicitly installing the chosen v6 release and manually upgrading an existing
+`config/attachment.ts`, generate the target schema and mapping script:
 
 ```sh
-node ace configure @jrmc/adonis-attachment
 node ace make:attachments-table
 node ace migration:run
 node ace make:attachment-v5-migration
 ```
+
+Run `node ace configure @jrmc/adonis-attachment` before these commands only if provider/command
+registration is missing; it is not a configuration-upgrade step.
 
 Run schema/data commands only in the approved environment. `integrations.lucid.tableName`
 controls the blob name; its singular form plus `_links` controls the links. The schema stub
@@ -246,7 +352,32 @@ legacy disk/path values depend on it. Converter config retains named lazy loader
 handlers receive `{ attachment, body, options }` and return bytes with filename/MIME rather
 than v5's bare input. Shared binaries belong in `media.binaries`.
 
-Verify uploaded originals and variants, metadata/GPS/blurhash, collection order and link IDs,
-URLs and private-file authorization, and queue processing before enabling new writes.
+Root `attachment` / `attachments` decorators, `getKeyId()`, and v5 converter imports are not
+compatibility shims for table-backed fields: replace them with decorators and relation methods
+from `/lucid`, the provider route above, and a named converter configuration without `converter`
+when `AutodetectConverter` covers the former standard behavior. Do not keep root decorators or
+`router.attachments()` alongside their `/lucid` replacements.
+
+Verify migrated original and variant `path`/`disk` values against the recorded v5 JSON samples.
+For every distinct audited convention, upload a new fixture and compare its complete original and
+variant paths with the recorded v5 pattern. Matching folders alone is insufficient. Also verify
+metadata/GPS/blurhash, collection order and link IDs, URLs and private-file authorization, and
+queue processing before enabling new writes.
 Pause legacy writes during final cutover or implement explicit reconciliation. Retain old
 JSON until verification; do not drop it as an automatic side effect of changing decorators.
+
+## Final authorized table cutover
+
+After the table migration and `attachments:migrate-v5` command have been reviewed on a staging
+copy, back up the production database and storage, stop v5 writers/workers, and deploy the v6
+code and worker configuration. The approved operator then runs these commands in order:
+
+```sh
+node ace migration:run
+node ace attachments:migrate-v5
+```
+
+The first creates or upgrades the attachment tables; the second executes the reviewed mapping
+script and writes the blob/link rows. Do not enable v6 writers until its result, complete original
+and variant paths, collection order, reads and queue processing have been checked. Keep the JSON
+columns and stored files for rollback until that verification is complete.

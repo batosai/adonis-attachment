@@ -39,6 +39,16 @@ Before using either AI-agent prompt below, install the skill from the package's 
 npx skills add batosai/adonis-attachment/skills#6.x
 ```
 
+Installing the skill adds migration instructions to your coding agent only. It does **not** install
+or upgrade `@jrmc/adonis-attachment` in your application. Start the migration with the package
+currently installed; the agent must inspect it and ask for your approval before performing the
+v6 package upgrade described in the selected path below. When you approve it, install the v6
+release with:
+
+```sh
+npm install @jrmc/adonis-attachment@next
+```
+
 ## Path A: keep the existing JSON columns
 
 You do **not** need to create attachment/link tables, add a lock table, or run
@@ -71,13 +81,11 @@ Do not continue with the manual option below.
 
 Follow the rest of this path only when you chose the manual workflow above.
 
-#### Install and configure v6
+#### Configure v6
 
-Confirm the application already uses AdonisJS 7 and Node.js 24+, then upgrade the package
-and run its configure hook:
+Confirm the application uses AdonisJS 7 and Node.js 24+, then run the configure hook:
 
 ```sh
-npm install @jrmc/adonis-attachment@next
 node ace configure @jrmc/adonis-attachment
 ```
 
@@ -370,13 +378,11 @@ its safety rules. Do not continue with the manual option below.
 
 Follow the rest of this path only when you chose the manual workflow above.
 
-#### Install and configure v6
+#### Configure v6
 
-Confirm the application already uses AdonisJS 7 and Node.js 24+, then upgrade the package
-and run its configure hook:
+Confirm the application uses AdonisJS 7 and Node.js 24+, then run the configure hook:
 
 ```sh
-npm install @jrmc/adonis-attachment@next
 node ace configure @jrmc/adonis-attachment
 ```
 

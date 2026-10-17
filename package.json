@@ -63,13 +63,13 @@
       "types": "./build/src/queues/adonis_queue.d.ts",
       "default": "./build/src/queues/adonis_queue.js"
     },
-    "./adapters/adonis-drive": {
-      "types": "./build/src/adapters/adonis_drive_storage.d.ts",
-      "default": "./build/src/adapters/adonis_drive_storage.js"
+    "./storages/adonis-drive": {
+      "types": "./build/src/storages/adonis_drive_storage.d.ts",
+      "default": "./build/src/storages/adonis_drive_storage.js"
     },
-    "./adapters/local-file": {
-      "types": "./build/src/adapters/local_file_storage.d.ts",
-      "default": "./build/src/adapters/local_file_storage.js"
+    "./storages/local-file": {
+      "types": "./build/src/storages/local_file_storage.d.ts",
+      "default": "./build/src/storages/local_file_storage.js"
     },
     "./media/sharp": {
       "types": "./build/src/media/sharp.d.ts",

@@ -38,6 +38,8 @@ when retaining a JSON column or using `/legacy`. Read
   from `@jrmc/adonis-attachment/lucid`. Root `Attachment` is plain persisted file data.
   The internal `src/stores/lucid/` layout does not change the public `/lucid` and `/legacy`
   entry points; use package exports in consuming applications.
+  Storage classes are root exports or available from `/storages/local-file` and
+  `/storages/adonis-drive`; beta.2 replaces the former `/adapters/...` entry points.
 - Root `attachmentService` exposes URL methods only. For read/remove/scheduling use the
   typed full service from `await app.container.make('jrmc.attachment')` inside the booted app.
 - Root `createFrom*` returns an `AttachmentDraft`, not a written file. Use `draft.persist()`

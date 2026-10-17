@@ -129,3 +129,7 @@ explicite; les suivants recoivent le disque resolu. La queue recoit aussi le han
 optionnel du store ou de jobHandler. Sa construction reste paresseuse pour eviter un
 cycle avec le service attachment. Ne pas executer le handler pendant cette resolution.
 Les raccourcis driver et les connexions nommees de queue sont conserves.
+
+Les implementations de stockage des fichiers vivent dans `src/storages/`, celles de
+persistance dans `src/stores/` et les queues dans `src/queues/`. Les sous-chemins publics
+pour les stockages sont `/storages/local-file` et `/storages/adonis-drive`.

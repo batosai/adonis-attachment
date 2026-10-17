@@ -32,6 +32,11 @@ different MIME type from the requested variant.
 
 ### Changed
 
+- **Breaking import change:** storage modules move from `/adapters/local-file` and
+  `/adapters/adonis-drive` to `/storages/local-file` and `/storages/adonis-drive`.
+  Internal modules now live under `src/storages/`, alongside `src/stores/` and
+  `src/queues/`. Root imports of `LocalFileStorage` and `AdonisDriveStorage` are unchanged.
+
 - **Breaking configuration change:** `store` now selects data persistence explicitly,
   independently of `storage`. Lucid is no longer auto-detected. Use
   `store: LucidAttachmentStore.fromApp`, or `LucidAttachmentStore.configure({ tableName, legacy })`.

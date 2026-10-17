@@ -58,6 +58,11 @@ when factories can be resolved for multiple bindings.
 
 Storage decides *where the bytes go*. Pick one.
 
+Import the built-in storage classes from the package root, or use the dedicated entry points
+`@jrmc/adonis-attachment/storages/local-file` and
+`@jrmc/adonis-attachment/storages/adonis-drive`. The former `/adapters/...` entry points
+are replaced by `/storages/...` in beta.2.
+
 ### Local filesystem (default)
 
 ```ts

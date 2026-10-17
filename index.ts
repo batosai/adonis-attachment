@@ -58,7 +58,7 @@ export {
   type AttachmentEventName,
   type AttachmentEventPayload,
 } from "./src/events/attachment_events.js";
-export { AdonisDriveStorage, type AdonisDriveStorageOptions } from "./src/adapters/adonis_drive_storage.js";
+export { AdonisDriveStorage, type AdonisDriveStorageOptions } from "./src/storages/adonis_drive_storage.js";
 export {
   type AttachmentBinaryConfig,
   type AttachmentBinariesConfig,
@@ -66,7 +66,7 @@ export {
 export {
   LocalFileStorage,
   type LocalFileStorageOptions,
-} from "./src/adapters/local_file_storage.js";
+} from "./src/storages/local_file_storage.js";
 export {
   VariantGenerationService,
   UnknownVariantConverterError,

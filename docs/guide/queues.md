@@ -37,7 +37,7 @@ not silently fall back to memory. Omitting `queue` entirely still selects the bu
 
 Only the selected connection is initialized. A connection can be a driver configuration,
 a queue instance, or a factory receiving the Adonis application. For the memory driver,
-automatic Lucid processing and the `processor` / `jobHandler` overrides remain unchanged.
+the selected store supplies automatic memory processing, and `jobHandler` remains an advanced override.
 Queue instances and factories own their handler wiring, as with the direct configuration.
 
 The selected connection handles both variant and metadata jobs. `background` is a connection
@@ -109,9 +109,9 @@ Pending jobs are not durable: a process restart loses them, and failed jobs are 
 automatically retried. Use a persistent queue when those guarantees matter.
 
 If you configure nothing, `MemoryAttachmentQueue` runs jobs **in the same process** - great
-for development, tests, and simple deployments. When Lucid is detected, the package also
-builds the processor automatically from the Lucid repository, configured converters, metadata
-service, and variant store. Neither `queue` nor `processor` is required in that case.
+for development, tests, and simple deployments. When `store` is configured, the package
+creates a processor using that store's repository, variant persistence and metadata
+persister. No Lucid detection is performed.
 
 The default concurrency is `1`; declare the memory driver only when you need to change it or
 install a failure handler:
@@ -136,27 +136,27 @@ receives both the failed job and the original error. Without this callback, the 
 finishes the failed job silently, so production applications should report failures explicitly.
 
 Outside Lucid, the package cannot infer how originals and generated variants are persisted.
-Configure `processor` or `jobHandler` before scheduling a memory job; otherwise `enqueue`
-rejects with `E_ATTACHMENT_PROCESSOR_NOT_CONFIGURED`. An explicit `processor` or `jobHandler`
-also overrides the automatic Lucid processor.
+Configure a store or a custom `jobHandler` before scheduling memory jobs; otherwise
+`enqueue` rejects with `E_ATTACHMENT_PROCESSOR_NOT_CONFIGURED`. A `jobHandler` overrides
+the store's memory processor. Read-only stores reject unsupported variant/metadata jobs
+explicitly instead of routing them to Lucid.
 
-### Creating the Lucid processor for a worker
+### Creating the processor for a worker
 
 An external worker does not use the memory queue's automatic processor. Create its processor
-once in an application module with the Lucid-specific factory:
+once in an application module with the store-aware factory:
 
 ```ts
-// app/attachments/lucid_processor.ts
+// app/attachments/processor.ts
 import app from '@adonisjs/core/services/app'
-import { createLucidAttachmentProcessor } from '@jrmc/adonis-attachment/lucid'
+import { createAttachmentProcessor } from '@jrmc/adonis-attachment'
 
-export default createLucidAttachmentProcessor(app)
+export default createAttachmentProcessor(app)
 ```
 
-The factory resolves the configured attachment service and converters lazily, and wires the
-Lucid repository and variant store. Its name and import path make the persistence dependency
-explicit. For another ORM, build a generic `AttachmentJobProcessor` with that ORM's repository
-and variant persistence. To replace lifecycle events, pass `{ events }` as the second argument.
+The factory resolves the configured store, attachment service and converters lazily.
+It works with the Lucid store (including legacy JSON) or a custom store. To replace
+lifecycle events, pass `{ events }` as the second argument.
 See [Events](/guide/events#workers-and-external-queues).
 
 For a custom data store, see the complete
@@ -200,7 +200,7 @@ Your job owns dependency injection and simply forwards its payload to the proces
 ```ts
 import { Job } from '@adonisjs/queue'
 import type { AttachmentJob } from '@jrmc/adonis-attachment'
-import attachmentProcessor from '#attachments/lucid_processor'
+import attachmentProcessor from '#attachments/processor'
 
 export default class GenerateAttachmentVariants extends Job<AttachmentJob> {
   async execute() {
@@ -231,7 +231,7 @@ standard configuration factory:
 
 ```ts
 import { MemoryAttachmentQueue, defineConfig, LocalFileStorage } from '@jrmc/adonis-attachment'
-import attachmentProcessor from '#attachments/lucid_processor'
+import attachmentProcessor from '#attachments/processor'
 
 export default defineConfig({
   storage: LocalFileStorage.fromApp,

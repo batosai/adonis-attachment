@@ -8,7 +8,7 @@
 import { test } from '@japa/runner'
 
 import type { Attachment } from '../src/core/attachment.js'
-import { LucidAttachmentMetadataPersister } from '../src/integrations/lucid/persistence/lucid_attachment_metadata_persister.js'
+import { LucidAttachmentMetadataPersister } from '../src/stores/lucid/persistence/lucid_attachment_metadata_persister.js'
 
 const attachment: Attachment = {
   id: 'attachment-id', disk: 'public', path: 'avatar.jpg', name: 'avatar.jpg',

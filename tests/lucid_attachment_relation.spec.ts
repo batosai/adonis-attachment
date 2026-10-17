@@ -16,11 +16,11 @@ import {
   AttachmentRegenerator,
   type AttachmentCollectionRelation,
   type AttachmentRelation,
-} from "../src/integrations/lucid/index.js";
+} from "../src/stores/lucid/index.js";
 import { AttachmentService } from "../src/core/attachment_service.js";
 import type { AttachmentJob, GenerateVariantsJob } from "../src/core/queue.js";
-import { AttachmentModel } from "../src/integrations/lucid/models/attachment_model.js";
-import { LucidAttachmentStore } from "../src/integrations/lucid/persistence/lucid_attachment_store.js";
+import { AttachmentModel } from "../src/stores/lucid/models/attachment_model.js";
+import { LucidAttachmentStore } from "../src/stores/lucid/persistence/lucid_attachment_store.js";
 import { createLucidTestDatabase } from "./helpers/lucid_test_database.js";
 
 class RelationUser extends BaseModel {

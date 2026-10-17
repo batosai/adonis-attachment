@@ -12,7 +12,7 @@ import { test } from '@japa/runner'
 
 import MakeAttachmentV5Migration from '../commands/make/attachment_v5_migration.js'
 import { stubsRoot } from '../stubs/main.js'
-import { createLegacyAttachmentMigrationStubState } from '../src/integrations/lucid/index.js'
+import { createLegacyAttachmentMigrationStubState } from '../src/stores/lucid/index.js'
 import { defineConfig } from '../src/define_config.js'
 
 test.group('legacy attachment migration stub', () => {

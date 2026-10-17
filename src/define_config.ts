@@ -19,19 +19,14 @@ import {
   AttachmentConfigurationError,
   AttachmentProcessorNotConfiguredError,
 } from './errors.js'
-import {
-  resolveAttachmentTableNames,
-  type AttachmentTableNames,
-} from './integrations/lucid/schema/attachment_table_names.js'
-
 import type { ApplicationService, ConfigProvider } from '@adonisjs/core/types'
 import type { AttachmentServiceOptions } from './core/attachment_service.js'
 import type { AttachmentMetadataMode } from './core/attachment_service.js'
-import type { AttachmentMetadataPersister } from './core/attachment_metadata_persister.js'
-import { AttachmentJobProcessor } from './core/attachment_job_processor.js'
-import { AttachmentRepositoryRegistry, type AttachmentRepository } from './core/attachment_repository.js'
+import type { AttachmentRepository } from './core/attachment_repository.js'
 import type { AttachmentProcessingAdapters } from './core/attachment_processing_adapter.js'
-import type { LegacyAttachmentConfig } from './integrations/legacy/config.js'
+import type { AttachmentStore, AttachmentStoreConfig, AttachmentStoreContext } from './core/attachment_store.js'
+import { hasAttachmentTransactions } from './core/attachment_persistence.js'
+import { createAttachmentProcessor } from './create_attachment_processor.js'
 import type { AttachmentJobHandler, AttachmentQueue } from './core/queue.js'
 import type { AttachmentStorage } from './core/storage.js'
 import type { AttachmentManagerOptions } from './sources/attachment_manager.js'
@@ -41,7 +36,6 @@ import type { MediaMetadataExtractor } from './media/media_metadata.js'
 import type { AttachmentBinariesConfig } from './media/binary_config.js'
 import type { AttachmentEventEmitter } from './events/attachment_events.js'
 import { createDefaultMetadataExtractors } from './media/default_metadata.js'
-import { loadOptionalDependency } from './utils/optional_dependency.js'
 import {
   ConfiguredVariantConverterRegistry,
   type ConverterConfigMap,
@@ -56,18 +50,6 @@ export type ResolvedAttachmentRouteConfig = {
   path: string
 }
 
-export type LucidAttachmentConfig = {
-  /** Blob table name. The link table is derived as `${singular(tableName)}_links`. */
-  tableName?: string
-}
-
-export type AttachmentIntegrationsConfig = {
-  /** Configures Lucid when detected in the container, or disables its automatic integration. */
-  lucid?: LucidAttachmentConfig | false
-  /** Optional v5-style JSON compatibility, isolated from the table integration. */
-  legacy?: LegacyAttachmentConfig
-}
-
 export type AttachmentMediaConfig = {
   /** Shared executable paths and timeouts for the built-in media adapters. */
   binaries?: AttachmentBinariesConfig
@@ -77,7 +59,6 @@ export type AttachmentMediaConfig = {
     mode?: AttachmentMetadataMode
     variants?: boolean
   }
-  metadataPersister?: Integration<AttachmentMetadataPersister>
 }
 
 /** Optional application event emitter used for attachment lifecycle events. */
@@ -119,18 +100,16 @@ export type AttachmentConfig<
   defaultDisk?: string
   storage: Integration<AttachmentStorage>
   queue?: AttachmentQueueConnection | NamedAttachmentQueueConfig<KnownQueues>
-  /** Overrides every processor, including the automatic Lucid memory processor. */
+  /** Advanced escape hatch overriding the configured store job processor. */
   jobHandler?: Integration<AttachmentJobHandler>
-  /** Overrides the processor automatically created for an in-memory Lucid integration. */
-  processor?: Integration<AttachmentJobProcessor>
-  repository?: Integration<AttachmentRepository>
+  /** Data persistence and processing, independent of file storage. No auto-detection. */
+  store?: AttachmentStoreConfig
   /** Lowest-priority defaults for file persistence. */
   defaults?: AttachmentPersistenceOptions
   /** Shared path prefix for generated variants. */
   variant?: VariantPathOptions
   sources?: AttachmentManagerOptions
   route?: AttachmentRouteConfig
-  integrations?: AttachmentIntegrationsConfig
   media?: AttachmentMediaConfig
   events?: AttachmentEventsConfig
   converters?: KnownConverters
@@ -138,15 +117,15 @@ export type AttachmentConfig<
 }
 
 export type ResolvedAttachmentConfig<KnownConverters extends ConverterConfigMap = ConverterConfigMap> = AttachmentServiceOptions & {
-  processingAdapters?: AttachmentProcessingAdapters
+  store?: AttachmentStore
+  /** Internal bridge for the low-level Lucid worker factory. */
+  processingAdapters: AttachmentProcessingAdapters
+  storeContext: AttachmentStoreContext
   repository?: AttachmentRepository
   defaults?: AttachmentPersistenceOptions
   variant?: VariantPathOptions
   sources?: AttachmentManagerOptions
   route: ResolvedAttachmentRouteConfig | false
-  integrations?: {
-    lucid?: AttachmentTableNames
-  }
   converters?: VariantConverterRegistry<Extract<keyof KnownConverters, string>>
 }
 
@@ -174,47 +153,51 @@ export function defineConfig<
     }
     const selectedQueue = selectQueue(config.queue)
     const storage = await resolveIntegration(config.storage, app)
-    const lucid = resolveLucidIntegration(app, config.integrations?.lucid)
-    const defaultDisk = config.defaultDisk ?? storage.defaultDisk ?? 'fs'
-    if (config.integrations?.lucid && 'jsonModels' in config.integrations.lucid) {
-      throw new AttachmentError('Use integrations.legacy.models instead of integrations.lucid.jsonModels', { code: 'E_INVALID_ATTACHMENT_CONFIG' })
+    const obsolete = config as unknown as Record<string, unknown>
+    for (const key of ['integrations', 'repository', 'processor']) {
+      if (key in obsolete) throw new AttachmentConfigurationError(`Attachment config "${key}" has been replaced by store. Use store: LucidAttachmentStore.fromApp or provide a custom AttachmentStore.`)
     }
-    const legacy = config.integrations?.legacy
-      ? await resolveLegacyIntegration(config.integrations.legacy, defaultDisk, config.defaults, config.variant)
-      : undefined
-    if (legacy && !lucid) throw new AttachmentError('Legacy attachments require the Lucid integration', { code: 'E_INVALID_ATTACHMENT_CONFIG' })
-    const processingAdapters: AttachmentProcessingAdapters = legacy ? { [legacy.name]: legacy } : {}
+    if (config.media && 'metadataPersister' in config.media) {
+      throw new AttachmentConfigurationError('media.metadataPersister has moved to store.metadataPersister')
+    }
+    const defaultDisk = config.defaultDisk ?? storage.defaultDisk ?? 'fs'
+    const storeContext: AttachmentStoreContext = {
+      defaultDisk,
+      ...(config.defaults ? { defaults: config.defaults } : {}),
+      ...(config.variant ? { variant: config.variant } : {}),
+    }
+    const store = config.store === false || config.store === undefined ? undefined
+      : typeof config.store === 'function' ? await config.store(app, storeContext) : config.store
+    if (store && (typeof store.repository?.findById !== 'function' ||
+        (store.variants !== undefined && typeof store.variants !== 'function') ||
+        (store.metadataPersister !== undefined && typeof store.metadataPersister?.persistMetadata !== 'function'))) {
+      throw new AttachmentConfigurationError('Invalid attachment store: provide a repository and valid optional variants/metadataPersister capabilities')
+    }
+    if (config.store !== false && config.store !== undefined && !store) {
+      throw new AttachmentConfigurationError('Attachment store factory must return an AttachmentStore')
+    }
+    if (store?.persistence) hasAttachmentTransactions(store.persistence)
+    if (config.defaults?.variants?.length && !store?.variants && !config.jobHandler && usesConfiguredMemoryQueue(selectedQueue)) {
+      throw new AttachmentConfigurationError('Attachment defaults.variants requires a store with variant persistence or a custom jobHandler')
+    }
     const metadataExtractors =
       config.media?.metadata !== undefined
         ? await resolveIntegration(config.media.metadata, app)
         : createDefaultMetadataExtractors(config.media?.binaries ? { binaries: config.media.binaries } : {})
-    const metadataPersister = config.media?.metadataPersister
-      ? await resolveIntegration(config.media.metadataPersister, app)
-      : undefined
-    const resolvedMetadataPersister = metadataPersister
-      ?? await resolveLucidMetadataPersister(config.media?.metadataPolicy?.mode, lucid, processingAdapters)
-    const repository = config.repository
-      ? await resolveIntegration(config.repository, app)
-      : lucid
-        ? await resolveLucidRepository(processingAdapters)
-        : undefined
+    const resolvedMetadataPersister = store?.metadataPersister
+    const repository = store?.repository
     const events = config.events ? await resolveIntegration(config.events, app) : undefined
     const converters = config.converters
       ? new ConfiguredVariantConverterRegistry(config.converters, {
           autodetect: toAutodetectOptions(config.media?.binaries),
         })
       : undefined
-    const configuredProcessor = config.processor ? await resolveIntegration(config.processor, app) : undefined
-    const processor =
-      configuredProcessor ??
-      (!config.jobHandler && usesConfiguredMemoryQueue(selectedQueue) && lucid && repository
-        ? await createDefaultLucidProcessor(app, repository, converters, processingAdapters, config.variant)
-        : undefined)
+    const processor = !config.jobHandler && usesConfiguredMemoryQueue(selectedQueue) && store
+      ? createAttachmentProcessor(app, { store, context: storeContext, converters: converters ?? new ConfiguredVariantConverterRegistry({}) })
+      : undefined
     const jobHandler: AttachmentJobHandler | undefined = config.jobHandler
       ? await resolveIntegration(config.jobHandler, app)
-      : processor
-        ? (job) => processor.process(job)
-        : undefined
+      : processor ? (job) => processor.process(job) : undefined
     const queue = await resolveQueue(selectedQueue, app, jobHandler)
 
     if (processor && events) {
@@ -223,14 +206,16 @@ export function defineConfig<
 
     if (config.media?.metadataPolicy?.mode === 'deferred' && !resolvedMetadataPersister) {
       throw new AttachmentError(
-        'Deferred metadata extraction requires media.metadataPersister or integrations.lucid',
+        'Deferred metadata extraction requires store.metadataPersister',
         { code: 'E_INVALID_ATTACHMENT_CONFIG' }
       )
     }
 
     return {
       defaultDisk,
-      processingAdapters,
+      processingAdapters: store && 'processingAdapters' in store ? store.processingAdapters as AttachmentProcessingAdapters : {},
+      storeContext,
+      ...(store ? { store } : {}),
       storage,
       queue,
       route: resolveRoute(config.route),
@@ -244,13 +229,6 @@ export function defineConfig<
       ...(resolvedMetadataPersister ? { metadataPersister: resolvedMetadataPersister } : {}),
       ...(events ? { events } : {}),
       ...(converters ? { converters } : {}),
-      ...(lucid
-        ? {
-            integrations: {
-              lucid,
-            },
-          }
-        : {}),
       ...(config.createId ? { createId: config.createId } : {}),
     }
   })
@@ -351,27 +329,6 @@ function usesConfiguredMemoryQueue(config: AttachmentQueueConnection | undefined
   return typeof config === 'object' && config !== null && !isAttachmentQueue(config) && config.driver === 'memory'
 }
 
-async function createDefaultLucidProcessor(
-  app: ApplicationService,
-  repository: AttachmentRepository,
-  converters: VariantConverterRegistry | undefined,
-  processingAdapters: AttachmentProcessingAdapters,
-  variant: VariantPathOptions | undefined
-): Promise<AttachmentJobProcessor> {
-  const { createLucidAttachmentProcessor } = await loadOptionalDependency(
-    '@adonisjs/lucid',
-    () => import('./integrations/lucid/create_lucid_attachment_processor.js')
-  )
-  const resolvedConverters = converters ?? new ConfiguredVariantConverterRegistry({})
-
-  return createLucidAttachmentProcessor(app, {
-    repository,
-    converters: resolvedConverters,
-    adapters: processingAdapters,
-    ...(variant ? { variant } : {}),
-  })
-}
-
 function isAttachmentQueue(value: unknown): value is AttachmentQueue {
   return typeof value === 'object' && value !== null && 'enqueue' in value && typeof value.enqueue === 'function'
 }
@@ -385,70 +342,6 @@ function toAutodetectOptions(binaries: AttachmentBinariesConfig | undefined) {
     ...(binaries?.soffice?.command ? { officeCommand: binaries.soffice.command } : {}),
     ...(binaries?.soffice?.timeout !== undefined ? { officeTimeout: binaries.soffice.timeout } : {}),
   }
-}
-
-async function resolveLucidMetadataPersister(
-  mode: AttachmentMetadataMode | undefined,
-  lucid: AttachmentTableNames | undefined,
-  processingAdapters: AttachmentProcessingAdapters
-): Promise<AttachmentMetadataPersister | undefined> {
-  if (mode !== 'deferred' || !lucid) {
-    return undefined
-  }
-
-  const { LucidAttachmentMetadataPersister } = await loadOptionalDependency(
-    '@adonisjs/lucid',
-    () => import('./integrations/lucid/persistence/lucid_attachment_metadata_persister.js')
-  )
-  const tables = new LucidAttachmentMetadataPersister()
-  if (!Object.keys(processingAdapters).length) return tables
-  return {
-    persistMetadata(attachment, metadata) {
-      const adapter = attachment.reference ? processingAdapters[attachment.reference.adapter] : undefined
-      return (adapter?.metadataPersister ?? tables).persistMetadata(attachment, metadata)
-    },
-  }
-}
-
-async function resolveLucidRepository(processingAdapters: AttachmentProcessingAdapters): Promise<AttachmentRepository> {
-  const { LucidAttachmentRepository } = await loadOptionalDependency(
-    '@adonisjs/lucid',
-    () => import('./integrations/lucid/persistence/lucid_attachment_repository.js')
-  )
-  const tables = new LucidAttachmentRepository()
-  return Object.keys(processingAdapters).length
-    ? new AttachmentRepositoryRegistry({ legacy: tables, adapters: {
-        tables, ...Object.fromEntries(Object.entries(processingAdapters).map(([key, adapter]) => [key, adapter.repository])),
-      } })
-    : tables
-}
-
-/** Only this activation point knows about the optional compatibility module. */
-async function resolveLegacyIntegration(
-  config: LegacyAttachmentConfig,
-  defaultDisk: string,
-  defaults?: AttachmentPersistenceOptions,
-  variant?: VariantPathOptions
-) {
-  const { createLegacyAttachmentAdapter } = await loadOptionalDependency(
-    '@adonisjs/lucid', () => import('./integrations/legacy/config.js')
-  )
-  return createLegacyAttachmentAdapter({ ...config, defaultDisk, ...(defaults ? { defaults } : {}), ...(variant ? { variant } : {}) })
-}
-
-function resolveLucidIntegration(
-  app: ApplicationService,
-  lucid: LucidAttachmentConfig | false | undefined
-): AttachmentTableNames | undefined {
-  if (lucid === false) {
-    return undefined
-  }
-
-  if (lucid || app.container?.hasBinding?.('lucid.db')) {
-    return resolveAttachmentTableNames(lucid?.tableName)
-  }
-
-  return undefined
 }
 
 function resolveRoute(route: AttachmentRouteConfig | undefined): ResolvedAttachmentRouteConfig | false {

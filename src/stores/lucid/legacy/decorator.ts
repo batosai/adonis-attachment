@@ -1,25 +1,25 @@
 import app from "@adonisjs/core/services/app";
 import type { LucidModel, LucidRow } from "@adonisjs/lucid/types/model";
 import { Attachment } from "./attachment.js";
-import { registerAttachmentModelField } from "../lucid/model/attachment_model_hooks.js";
+import { registerAttachmentModelField } from "../model/attachment_model_hooks.js";
 import {
   jsonRelationColumn,
   validateLegacyAttachmentDefinition,
   registerLegacyAttachmentDefinition,
   type LegacyFieldDefinition,
 } from "./model_fields.js";
-import type { AttachmentPersistenceOptions } from "../../core/attachment_options.js";
-import type { AttachmentVariantKey } from "../../../index.js";
-import { AttachmentLifecycleService } from "../../core/attachment_lifecycle_service.js";
-import type { AttachmentService } from "../../core/attachment_service.js";
+import type { AttachmentPersistenceOptions } from "../../../core/attachment_options.js";
+import type { AttachmentVariantKey } from "../../../../index.js";
+import { AttachmentLifecycleService } from "../../../core/attachment_lifecycle_service.js";
+import type { AttachmentService } from "../../../core/attachment_service.js";
 import { LucidJsonAttachmentStore } from "./json/lucid_json_attachment_store.js";
 import {
   attachmentFromDocument,
   decodeJsonAttachments,
   JsonAttachmentRecord,
 } from "./json/json_attachment_document.js";
-import { afterAttachmentRollback } from "../lucid/persistence/attachment_transaction.js";
-import { AttachmentValidationError } from "../../errors.js";
+import { afterAttachmentRollback } from "../persistence/attachment_transaction.js";
+import { AttachmentValidationError } from "../../../errors.js";
 
 // One source draft belongs to one field, including before either owner is saved.
 const draftOwners = new WeakMap<object, LegacyField>();

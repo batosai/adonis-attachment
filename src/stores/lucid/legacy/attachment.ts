@@ -1,11 +1,11 @@
 import {
   AttachmentDraft,
   type Attachment as FileAttachment,
-} from "../../core/attachment.js";
-import type { AttachmentService } from "../../core/attachment_service.js";
-import type { AttachmentMetadata } from "../../media/media_metadata.js";
-import type { AttachmentSignedUrlOptions } from "../../core/storage.js";
-import { AttachmentValidationError } from "../../errors.js";
+} from "../../../core/attachment.js";
+import type { AttachmentService } from "../../../core/attachment_service.js";
+import type { AttachmentMetadata } from "../../../media/media_metadata.js";
+import type { AttachmentSignedUrlOptions } from "../../../core/storage.js";
+import { AttachmentValidationError } from "../../../errors.js";
 
 /** A loaded legacy value. Only meta is mutable; file changes use a new draft. */
 export class Attachment {

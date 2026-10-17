@@ -8,9 +8,9 @@
 import type { Database } from '@adonisjs/lucid/database'
 import { test } from '@japa/runner'
 
-import { AttachmentLinkModel } from '../src/integrations/lucid/models/attachment_link_model.js'
-import { AttachmentModel } from '../src/integrations/lucid/models/attachment_model.js'
-import { LucidAttachmentStore } from '../src/integrations/lucid/persistence/lucid_attachment_store.js'
+import { AttachmentLinkModel } from '../src/stores/lucid/models/attachment_link_model.js'
+import { AttachmentModel } from '../src/stores/lucid/models/attachment_model.js'
+import { LucidAttachmentStore } from '../src/stores/lucid/persistence/lucid_attachment_store.js'
 import { createLucidTestDatabase } from './helpers/lucid_test_database.js'
 
 const attachment = {

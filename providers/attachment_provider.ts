@@ -10,7 +10,6 @@ import { AttachmentService } from '../src/core/attachment_service.js'
 import { AttachmentsController } from '../src/controllers/attachments_controller.js'
 import { AttachmentManager } from '../src/sources/attachment_manager.js'
 import { AdonisAttachmentEventEmitter } from '../src/events/adonis_attachment_event_emitter.js'
-import { loadOptionalDependency } from '../src/utils/optional_dependency.js'
 
 import type { ApplicationService } from '@adonisjs/core/types'
 import type { ResolvedAttachmentConfig } from '../src/define_config.js'
@@ -23,6 +22,14 @@ export default class AttachmentProvider {
     this.app.container.singleton('jrmc.attachment.processingAdapters', async () => {
       const config = await configProvider.resolve<ResolvedAttachmentConfig>(this.app, this.app.config.get('attachment'))
       return config?.processingAdapters ?? {}
+    })
+    this.app.container.singleton('jrmc.attachment.store', async () => {
+      const config = await configProvider.resolve<ResolvedAttachmentConfig>(this.app, this.app.config.get('attachment'))
+      return config?.store
+    })
+    this.app.container.singleton('jrmc.attachment.storeContext', async () => {
+      const config = await configProvider.resolve<ResolvedAttachmentConfig>(this.app, this.app.config.get('attachment'))
+      return config?.storeContext ?? { defaultDisk: 'fs' }
     })
     this.app.container.singleton('jrmc.attachment.variant', async (): Promise<VariantPathOptions | undefined> => {
       const config = await configProvider.resolve<ResolvedAttachmentConfig>(this.app, this.app.config.get('attachment'))
@@ -40,8 +47,6 @@ export default class AttachmentProvider {
           'Invalid attachment config. Export the result of defineConfig from config/attachment.ts'
         )
       }
-
-      await applyLucidConfig(config)
 
       const events = await this.app.container.make('jrmc.attachment.events')
       return new AttachmentService({ ...config, events })
@@ -70,10 +75,8 @@ export default class AttachmentProvider {
       )
 
       if (!config?.repository) {
-        throw new Error('Attachment routes require a repository in config/attachment.ts')
+        throw new Error('Attachment routes require store.repository in config/attachment.ts')
       }
-
-      await applyLucidConfig(config)
 
       return config.repository
     })
@@ -84,9 +87,6 @@ export default class AttachmentProvider {
         this.app,
         attachmentConfig
       )
-      if (config) {
-        await applyLucidConfig(config)
-      }
       const attachments = await this.app.container.make('jrmc.attachment')
 
       return new AttachmentManager(attachments, config?.sources)
@@ -114,10 +114,6 @@ export default class AttachmentProvider {
       attachmentConfig
     )
 
-    if (config) {
-      await applyLucidConfig(config)
-    }
-
     if (!config || config.route === false || !config.repository) {
       return
     }
@@ -130,18 +126,4 @@ export default class AttachmentProvider {
       return new AttachmentsController(attachments, repository).handle(context)
     })
   }
-}
-
-async function applyLucidConfig(config: ResolvedAttachmentConfig): Promise<void> {
-  const lucid = config.integrations?.lucid
-
-  if (!lucid) {
-    return
-  }
-
-  const { configureLucidAttachmentTables } = await loadOptionalDependency(
-    '@adonisjs/lucid',
-    () => import('../src/integrations/lucid/schema/configure_lucid_attachment_tables.js')
-  )
-  configureLucidAttachmentTables(lucid.tableName)
 }

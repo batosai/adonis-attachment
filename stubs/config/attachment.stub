@@ -21,6 +21,8 @@ const binaries = {
  */
 const attachmentConfig = defineConfig({
   storage: LocalFileStorage.fromApp,
+  // Lucid: import { LucidAttachmentStore } from '@jrmc/adonis-attachment/lucid'
+  store: false, // Replace with LucidAttachmentStore.fromApp to use Lucid.
   queue: {
     default: 'memory',
     connections: {

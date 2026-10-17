@@ -1,3 +1,5 @@
+import { createAttachmentProcessor } from '../src/create_attachment_processor.js'
+import { LucidAttachmentStore } from '../src/stores/lucid/persistence/lucid_attachment_store.js'
 import { setApp } from '@adonisjs/core/services/app'
 import { BaseModel, column } from '@adonisjs/lucid/orm'
 import { test } from '@japa/runner'
@@ -5,12 +7,12 @@ import { defineConfig, type ResolvedAttachmentConfig } from '../src/define_confi
 import { AttachmentService } from '../src/core/attachment_service.js'
 import type { AttachmentJob } from '../src/core/queue.js'
 import { MemoryAttachmentQueue } from '../src/queues/memory_queue.js'
-import { attachment as tableAttachment, AttachmentRelation, AttachmentRegenerator, createLucidAttachmentProcessor } from '../src/integrations/lucid/index.js'
-import { attachment, Attachment } from '../src/integrations/legacy/index.js'
-import { LucidJsonVariantGenerationService } from '../src/integrations/legacy/json/lucid_json_variant_generation_service.js'
-import type { LucidJsonAttachmentRegistry } from '../src/integrations/legacy/json/lucid_json_attachment_registry.js'
+import { attachment as tableAttachment, AttachmentRelation, AttachmentRegenerator } from '../src/stores/lucid/index.js'
+import { attachment, Attachment } from '../src/stores/lucid/legacy/index.js'
+import { LucidJsonVariantGenerationService } from '../src/stores/lucid/legacy/json/lucid_json_variant_generation_service.js'
+import type { LucidJsonAttachmentRegistry } from '../src/stores/lucid/legacy/json/lucid_json_attachment_registry.js'
 import { createLucidTestDatabase } from './helpers/lucid_test_database.js'
-import { AttachmentCommitError } from '../src/integrations/lucid/persistence/attachment_transaction.js'
+import { AttachmentCommitError } from '../src/stores/lucid/persistence/attachment_transaction.js'
 
 class JsonJobUser extends BaseModel {
   static table = 'json_job_users'
@@ -35,6 +37,8 @@ test.group('Lucid JSON attachment workers', (group) => {
     container: {
       hasBinding: (name: string) => name === 'lucid.db' || name === 'jrmc.attachment.processingAdapters',
       async make(name: string) {
+        if (name === 'jrmc.attachment.store') return resolved.store
+        if (name === 'jrmc.attachment.storeContext') return resolved.storeContext
         if (name === 'jrmc.attachment') return service
         if (name === 'jrmc.attachment.processingAdapters') return resolved.processingAdapters
         if (name === 'jrmc.attachment.repository') return resolved.repository
@@ -46,7 +50,7 @@ test.group('Lucid JSON attachment workers', (group) => {
   async function configure(memory = false) {
     resolved = await defineConfig({
       defaultDisk: 'fs', defaults: { rename: false }, route: false,
-      integrations: { legacy: { models: { json_job_users: async () => { loads++; return { default: JsonJobUser } } } } },
+      store: LucidAttachmentStore.configure({ legacy: { models: { json_job_users: async () => { loads++; return { default: JsonJobUser } } } } }),
       media: { metadata: [{ async extract() { await duringExtraction?.(); return { inspected: true } } }], metadataPolicy: { mode: 'deferred' } },
       converters: { thumbnail: { converter: async () => ({ default: {
         key: 'thumbnail',
@@ -76,7 +80,7 @@ test.group('Lucid JSON attachment workers', (group) => {
     owner: { type: 'json_job_users', id: row.id, field: 'avatar' } })
   const loadOriginal = async (row: JsonJobUser) => (await store(row)).findOriginal({ type: 'json_job_users', id: row.id, field: 'avatar' })
   const loadVariants = async (row: JsonJobUser) => (await store(row)).listVariants((await loadOriginal(row))!.id)
-  const processor = () => createLucidAttachmentProcessor(app as never)
+  const processor = () => createAttachmentProcessor(app as never)
   const variantJob = () => jobs.find((job) => job.type === 'generate-variants')!
   group.setup(async () => {
     db = await createLucidTestDatabase({ createSchema: false })

@@ -5,6 +5,8 @@
  * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
  */
 
+export type { LucidAttachmentStoreConfig } from "./config.js";
+
 export { AttachmentModel } from "./models/attachment_model.js";
 export { AttachmentLinkModel } from "./models/attachment_link_model.js";
 export {

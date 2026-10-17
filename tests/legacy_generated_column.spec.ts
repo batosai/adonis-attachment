@@ -1,6 +1,6 @@
 import { BaseModel, column } from '@adonisjs/lucid/orm'
 import { test } from '@japa/runner'
-import { attachment } from '../src/integrations/legacy/index.js'
+import { attachment } from '../src/stores/lucid/legacy/index.js'
 
 test('legacy fields take over inherited generated JSON columns', ({ assert }) => {
   class GeneratedSchema extends BaseModel {

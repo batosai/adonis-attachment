@@ -18,6 +18,8 @@ export type AttachmentVariantKey = [keyof AttachmentVariants] extends [never]
 declare module "@adonisjs/core/types" {
   export interface ContainerBindings {
     "jrmc.attachment": AttachmentService;
+    "jrmc.attachment.store": import('./src/core/attachment_store.js').AttachmentStore | undefined;
+    "jrmc.attachment.storeContext": import('./src/core/attachment_store.js').AttachmentStoreContext;
     "jrmc.attachment.manager": AttachmentManager;
     "jrmc.attachment.converters": VariantConverterRegistry;
     "jrmc.attachment.repository": AttachmentRepository;
@@ -34,7 +36,6 @@ export { attachmentConverters };
 export { attachmentService };
 export {
   defineConfig,
-  type AttachmentIntegrationsConfig,
   type AttachmentMediaConfig,
   type AttachmentEventsConfig,
   type AttachmentConvertersConfig,
@@ -46,7 +47,6 @@ export {
   type AdonisAttachmentQueueConfig,
   type AttachmentConfig,
   type InferConverters,
-  type LucidAttachmentConfig,
   type ResolvedAttachmentConfig,
 } from "./src/define_config.js";
 export {
@@ -98,3 +98,5 @@ export {
   type AdonisAttachmentQueueOptions,
   type AdonisQueueDispatcher,
 } from "./src/queues/adonis_queue.js";
+
+export { createAttachmentProcessor, type CreateAttachmentProcessorOptions } from "./src/create_attachment_processor.js";

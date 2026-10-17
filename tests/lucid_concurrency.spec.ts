@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { Worker } from 'node:worker_threads'
 import { test } from '@japa/runner'
 import { createLucidTestDatabase } from './helpers/lucid_test_database.js'
-import { LucidAttachmentStore } from '../src/integrations/lucid/persistence/lucid_attachment_store.js'
+import { LucidAttachmentStore } from '../src/stores/lucid/persistence/lucid_attachment_store.js'
 
 test('serializes collection writers on separate SQLite connections and JS runtimes', async ({ assert }) => {
   const directory = await mkdtemp(join(tmpdir(), 'attachment-concurrency-'))
@@ -37,7 +37,7 @@ test('serializes collection writers on separate SQLite connections and JS runtim
       `, { eval: true, workerData: {
         filename, writer, owner,
         helper: new URL('./helpers/lucid_test_database.js', import.meta.url).href,
-        store: new URL('../src/integrations/lucid/persistence/lucid_attachment_store.js', import.meta.url).href,
+        store: new URL('../src/stores/lucid/persistence/lucid_attachment_store.js', import.meta.url).href,
       } })
       workers.push(worker)
       worker.on('error', reject)

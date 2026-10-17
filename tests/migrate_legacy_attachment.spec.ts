@@ -7,8 +7,8 @@
 
 import { test } from "@japa/runner";
 
-import { migrateLegacyAttachment } from "../src/integrations/lucid/index.js";
-import { createAttachmentOwnerKey } from "../src/integrations/lucid/relations/attachment_owner.js";
+import { migrateLegacyAttachment } from "../src/stores/lucid/index.js";
+import { createAttachmentOwnerKey } from "../src/stores/lucid/relations/attachment_owner.js";
 
 const legacyMetadata = {
   date: "2010:01:15 18:51:34",

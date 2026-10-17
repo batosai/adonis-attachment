@@ -1,10 +1,10 @@
 /**
  * Runtime entry point that reports a clear error when the optional Lucid peer is absent.
- * Package types continue to come from the static Lucid integration declaration.
+ * Package types continue to come from the static Lucid store declaration.
  */
 import { loadOptionalDependency } from './utils/optional_dependency.js'
 
-const lucid = await loadOptionalDependency('@adonisjs/lucid', () => import('./integrations/lucid/index.js'))
+const lucid = await loadOptionalDependency('@adonisjs/lucid', () => import('./stores/lucid/index.js'))
 
 export const {
   AttachmentModel,

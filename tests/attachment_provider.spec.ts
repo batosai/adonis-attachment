@@ -1,3 +1,4 @@
+import { LucidAttachmentStore } from '../src/stores/lucid/persistence/lucid_attachment_store.js'
 /**
  * @jrmc/adonis-attachment
  *
@@ -9,10 +10,10 @@ import { test } from '@japa/runner'
 
 import { defineConfig, type AttachmentRepository, type AttachmentStorage } from '../index.js'
 import AttachmentProvider from '../providers/attachment_provider.js'
-import { AttachmentLinkModel } from '../src/integrations/lucid/models/attachment_link_model.js'
-import { AttachmentModel } from '../src/integrations/lucid/models/attachment_model.js'
-import { configureLucidAttachmentTables } from '../src/integrations/lucid/schema/configure_lucid_attachment_tables.js'
-import { LucidJsonAttachmentRegistry } from '../src/integrations/legacy/json/lucid_json_attachment_registry.js'
+import { AttachmentLinkModel } from '../src/stores/lucid/models/attachment_link_model.js'
+import { AttachmentModel } from '../src/stores/lucid/models/attachment_model.js'
+import { configureLucidAttachmentTables } from '../src/stores/lucid/schema/configure_lucid_attachment_tables.js'
+import { LucidJsonAttachmentRegistry } from '../src/stores/lucid/legacy/json/lucid_json_attachment_registry.js'
 
 const storage: AttachmentStorage = {
   async write() {},
@@ -41,7 +42,7 @@ test.group('AttachmentProvider', (group) => {
           return defineConfig({
             defaultDisk: 'public',
             storage,
-            repository,
+            store: { repository },
             route: { prefix: '/media' },
           })
         },
@@ -65,7 +66,7 @@ test.group('AttachmentProvider', (group) => {
 
   test('does not register a route when it is disabled or has no repository', async ({ assert }) => {
     for (const config of [
-      defineConfig({ defaultDisk: 'public', storage, repository, route: false }),
+      defineConfig({ defaultDisk: 'public', storage, store: { repository }, route: false }),
       defineConfig({ defaultDisk: 'public', storage }),
     ]) {
       const provider = new AttachmentProvider({
@@ -90,7 +91,7 @@ test.group('AttachmentProvider', (group) => {
     const provider = new AttachmentProvider({
       config: {
         get() {
-          return defineConfig({ storage })
+          return defineConfig({ storage, store: LucidAttachmentStore.fromApp })
         },
       },
       container: {
@@ -121,9 +122,9 @@ test.group('AttachmentProvider', (group) => {
           return defineConfig({
             defaultDisk: 'public',
             storage,
-            integrations: {
-              lucid: { tableName: 'media_attachments' },
-            },
+            store: LucidAttachmentStore.configure({
+              tableName: 'media_attachments'
+            }),
           })
         },
       },
@@ -210,9 +211,9 @@ test.group('AttachmentProvider', (group) => {
     for (const enabled of [true, false]) {
       const bindings = new Map<string, () => Promise<unknown>>()
       let imports = 0
-      const config = defineConfig({ storage, route: false, integrations: { lucid: enabled ? {} : false, ...(enabled ? { legacy: {
+      const config = defineConfig({ storage, route: false, store: enabled ? LucidAttachmentStore.configure({ legacy: {
         models: { users: async () => { imports++; return { default: AttachmentModel } } },
-      } } : {}) } })
+      } }) : false })
       const provider = new AttachmentProvider({
         config: { get: () => config },
         container: { singleton(name: string, factory: () => Promise<unknown>) { bindings.set(name, factory) } },

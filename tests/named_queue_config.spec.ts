@@ -161,7 +161,7 @@ test.group('named attachment queues', () => {
     }).resolver({} as never)
     await assert.rejects(
       () => resolved.queue.enqueue({ type: 'generate-variants', attachmentId: 'original' }),
-      'The in-memory attachment queue requires a processor or jobHandler when Lucid is not available'
+      'The in-memory attachment queue requires a configured store or jobHandler'
     )
   })
 })

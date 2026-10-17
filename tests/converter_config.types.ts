@@ -14,7 +14,7 @@ import {
   type ConverterOptions,
   type InferConverters,
 } from '../index.js'
-import type { AttachmentRelation, AttachmentRelationUrlOptions } from '../src/integrations/lucid/index.js'
+import type { AttachmentRelation, AttachmentRelationUrlOptions } from '../src/stores/lucid/index.js'
 
 type Assert<Value extends true> = Value
 type IsEqual<Left, Right> =
@@ -68,6 +68,11 @@ function relationUrlTypes(relation: AttachmentRelation) {
   relation.getUrl('thumbnail', { fallback: 'preview' })
   return [original, thumbnail]
 }
+
+// @ts-expect-error A store must at least provide a read repository.
+defineConfig({ storage: { async write() {}, async read() { return new Uint8Array() }, async remove() {} }, store: {} })
+// @ts-expect-error The previous integration configuration is removed.
+defineConfig({ storage: { async write() {}, async read() { return new Uint8Array() }, async remove() {} }, integrations: { lucid: {} } })
 
 const invalidFormat: ConverterConfig = {
   // @ts-expect-error Unsupported Sharp formats are rejected.

@@ -14,6 +14,13 @@ storage disks/paths, owner models, converters, and queue before choosing a mappi
 For other source versions, determine the intermediate migration first; do not assume the
 v5 mapping applies. Read [migration procedure](references/migration.md).
 
+Select the data store explicitly: `store: LucidAttachmentStore.fromApp` for tables, or
+`LucidAttachmentStore.configure({ legacy: { models } })` for mixed/legacy fields. Import
+it from `/lucid`. No Lucid auto-detection remains. The old root `integrations`, `repository`,
+`processor` and `media.metadataPersister` config keys must be migrated to `store`.
+External jobs use `createAttachmentProcessor(app)` from the root and the same store.
+Verify installed beta declarations before applying these newer config APIs.
+
 ## Agent execution contract
 
 This is an implementation task, not a read-only audit. First inventory v5 attachment fields;
@@ -65,11 +72,11 @@ leave only those untouched, then continue with the required code and configurati
 - `/lucid` decorators represent table relations, not JSON columns. Both originals and variants are blobs;
   separate links carry owner type, ID, field, singular uniqueness, and collection position.
 - Default tables are `adonis_attachments` / `adonis_attachment_links`. Respect any explicit
-  `integrations.lucid.tableName`; configuration does not rename existing tables or move files.
+  `LucidAttachmentStore.configure({ tableName })`; configuration does not rename existing tables or move files.
 - For a JSON-to-table migration, read source JSON through the query builder or a separate
   legacy model, not the new `/lucid` accessor. Migrate only the fields selected for tables.
 - For retained JSON, import the decorator, type and manager from `/legacy` and register
-  `integrations.legacy.models` for processing. The decorator takes over a matching `@column()`
+  `store: LucidAttachmentStore.configure({ legacy: { models } })` for processing. The decorator takes over a matching `@column()`
   inherited from generated schema base classes or mixins, so keep the SQL column and generated
   TypeScript field without adding `skipColumns` rules.
   Do not use removed `integrations.lucid.jsonModels` or `AttachmentRelation<'json'>` APIs.

@@ -23,8 +23,26 @@ fallback, or a storage backend without a public URL returns `null`. Fallback app
 when the variant record is absent; storage errors propagate. The original may have a
 different MIME type from the requested variant.
 
+### Changed
+
+- **Breaking configuration change:** `store` now selects data persistence explicitly,
+  independently of `storage`. Lucid is no longer auto-detected. Use
+  `store: LucidAttachmentStore.fromApp`, or `LucidAttachmentStore.configure({ tableName, legacy })`.
+- Root `integrations`, `repository`, `processor`, and `media.metadataPersister` have been
+  replaced by store capabilities. Removed keys fail with a migration message instead of
+  silently selecting a different data store.
+- `createAttachmentProcessor(app)` uses the configured store for both memory and external
+  workers, including mixed Lucid table/legacy applications and custom stores. `jobHandler`
+  remains available for fully custom memory processing.
+
+- Internal Lucid modules now live under `src/stores/lucid/`, with legacy JSON support
+  grouped under `legacy/`. Store assembly is isolated in `config.ts`; public `/lucid`
+  and `/legacy` imports remain unchanged.
+
 ### Documentation
 
+- Added [Creating a store](/guide/creating-a-store), with a complete class, a `fromApp`
+  factory, optional processing capabilities and the steps for adapting it to another ORM.
 - Added this changelog to the documentation navigation.
 - Updated the Lucid and file-serving guides, plus application integration, media, and migration skills, to use the native relation URL method.
 - Clarified installation instructions in the quickstart and migration skill guide.
@@ -37,8 +55,9 @@ Once beta.2 is published:
 npm install @jrmc/adonis-attachment@6.0.0-beta.2
 ```
 
-No schema or configuration changes are required for this addition. Existing URL APIs
-continue to work. To replace an application helper that falls back to the original, use
+Update existing configurations before booting beta.2. Follow the
+[configuration migration table](/guide/configuration#migrating-from-earlier-v6-betas).
+The store refactor requires no data or schema migration. Existing URL APIs continue to work. To replace an application helper that falls back to the original, use
 `await user.avatar.getUrl('thumbnail', { fallback: 'original' })`.
 
 ## 6.0.0-beta.1

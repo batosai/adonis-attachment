@@ -7,11 +7,11 @@ import {
   attachment,
   Attachment,
   AttachmentManager,
-} from "../src/integrations/legacy/index.js";
+} from "../src/stores/lucid/legacy/index.js";
 import {
   attachment as tableAttachment,
   AttachmentRelation,
-} from "../src/integrations/lucid/index.js";
+} from "../src/stores/lucid/index.js";
 import { createLucidTestDatabase } from "./helpers/lucid_test_database.js";
 import { defineConfig } from "../src/define_config.js";
 
@@ -110,12 +110,13 @@ test.group("Legacy isolation and shared Lucid transactions", (group) => {
   }) => {
     for (const path of [
       "relations/attachment_relation",
+      "persistence/lucid_attachment_store",
       "create_lucid_attachment_processor",
       "model/attachment_model_hooks",
       "regeneration/attachment_regenerator",
     ]) {
       const source = await readFile(
-        new URL("../src/integrations/lucid/" + path + ".js", import.meta.url),
+        new URL("../src/stores/lucid/" + path + ".js", import.meta.url),
         "utf8",
       );
       assert.notMatch(source, /from\s+['"][^'"]*(?:legacy|\/json\/)/);
@@ -155,28 +156,12 @@ test.group("Legacy isolation and shared Lucid transactions", (group) => {
       queue: { async enqueue() {} },
     }).resolver(app);
     assert.deepEqual(modern.processingAdapters, {});
-    await assert.rejects(
-      () =>
-        defineConfig({
-          storage,
-          integrations: {
-            // @ts-expect-error JSON model mapping now belongs exclusively to integrations.legacy.
-            lucid: { jsonModels: {} },
-          },
-        }).resolver(app),
-      /integrations.legacy.models/,
-    );
-    await assert.rejects(
-      () =>
-        defineConfig({
-          storage,
-          integrations: {
-            lucid: false,
-            legacy: { models: {} },
-          },
-        }).resolver(app),
-      /require the Lucid integration/,
-    );
+    for (const integrations of [{ lucid: { jsonModels: {} } }, { lucid: false, legacy: { models: {} } }]) {
+      await assert.rejects(
+        () => defineConfig({ storage, integrations } as never).resolver(app),
+        /has been replaced by store/,
+      );
+    }
   });
 
   test("rejects duplicate fields across integrations in both declaration orders", ({

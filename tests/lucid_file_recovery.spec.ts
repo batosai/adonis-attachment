@@ -5,13 +5,13 @@ import type { Database } from '@adonisjs/lucid/database'
 import { test } from '@japa/runner'
 import { LocalFileStorage } from '../src/adapters/local_file_storage.js'
 import { AttachmentService } from '../src/core/attachment_service.js'
-import { LucidAttachmentStore } from '../src/integrations/lucid/persistence/lucid_attachment_store.js'
-import { LucidAttachmentLifecycleService } from '../src/integrations/lucid/persistence/lucid_attachment_lifecycle_service.js'
+import { LucidAttachmentStore } from '../src/stores/lucid/persistence/lucid_attachment_store.js'
+import { LucidAttachmentLifecycleService } from '../src/stores/lucid/persistence/lucid_attachment_lifecycle_service.js'
 import { createLucidTestDatabase } from './helpers/lucid_test_database.js'
 import { VariantGenerationService } from '../src/variants/variant_generation_service.js'
-import { LucidVariantGenerationService } from '../src/integrations/lucid/persistence/lucid_variant_generation_service.js'
-import { AttachmentPostCommitError } from '../src/integrations/lucid/persistence/attachment_transaction.js'
-import { AttachmentFileCleanupError } from '../src/integrations/lucid/persistence/lucid_attachment_lifecycle_service.js'
+import { LucidVariantGenerationService } from '../src/stores/lucid/persistence/lucid_variant_generation_service.js'
+import { AttachmentPostCommitError } from '../src/stores/lucid/persistence/attachment_transaction.js'
+import { AttachmentFileCleanupError } from '../src/stores/lucid/persistence/lucid_attachment_lifecycle_service.js'
 
 const owner = { type: 'users', id: '42', field: 'avatar' }
 

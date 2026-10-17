@@ -1,6 +1,6 @@
 import type { LucidModel } from "@adonisjs/lucid/types/model";
-import type { AttachmentPersistenceOptions } from "../../core/attachment_options.js";
-import { AttachmentConfigurationError } from "../../errors.js";
+import type { AttachmentPersistenceOptions } from "../../../core/attachment_options.js";
+import { AttachmentConfigurationError } from "../../../errors.js";
 
 export type LegacyFieldDefinition = {
   kind: "one" | "many";

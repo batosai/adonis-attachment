@@ -16,7 +16,19 @@ node ace add @jrmc/adonis-attachment@next
 
 `node ace add` creates `config/attachment.ts`, registers the provider, and wires up the
 package commands. The default config stores files on the **local filesystem** under
-`storage/attachments`, with nothing else to set up.
+`storage/attachments`. Data persistence is selected separately with `store`.
+
+Select Lucid explicitly in the generated configuration (replace `store: false`):
+
+```ts
+import { defineConfig, LocalFileStorage } from '@jrmc/adonis-attachment'
+import { LucidAttachmentStore } from '@jrmc/adonis-attachment/lucid'
+
+export default defineConfig({
+  storage: LocalFileStorage.fromApp,
+  store: LucidAttachmentStore.fromApp,
+})
+```
 
 ## 2. Create the attachment tables
 
@@ -116,9 +128,8 @@ a valid token through your application's form or authenticated test client. Do n
 disable protection globally to run this example.
 :::
 
-When Lucid is registered in the application, the package detects its `lucid.db` container
-binding and enables the built-in read route automatically. No additional attachment
-configuration is required:
+Selecting `store: LucidAttachmentStore.fromApp` supplies the read repository and enables
+the route. Lucid is never activated merely because it is installed.
 
 ```ts
 // config/attachment.ts

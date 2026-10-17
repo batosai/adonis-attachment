@@ -1,6 +1,6 @@
 import { test } from '@japa/runner'
 import { AttachmentService } from '../src/core/attachment_service.js'
-import { createLucidAttachmentProcessor } from '../src/integrations/lucid/create_lucid_attachment_processor.js'
+import { createLucidAttachmentProcessor } from '../src/stores/lucid/create_lucid_attachment_processor.js'
 import type { AttachmentProcessingAdapter } from '../src/core/attachment_processing_adapter.js'
 import type { Attachment } from '../src/core/attachment.js'
 

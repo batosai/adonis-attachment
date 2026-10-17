@@ -7,10 +7,10 @@
 
 import { test } from '@japa/runner'
 
-import { AttachmentLinkModel } from '../src/integrations/lucid/models/attachment_link_model.js'
-import { AttachmentModel } from '../src/integrations/lucid/models/attachment_model.js'
-import { configureLucidAttachmentTables } from '../src/integrations/lucid/schema/configure_lucid_attachment_tables.js'
-import { resolveAttachmentTableNames } from '../src/integrations/lucid/schema/attachment_table_names.js'
+import { AttachmentLinkModel } from '../src/stores/lucid/models/attachment_link_model.js'
+import { AttachmentModel } from '../src/stores/lucid/models/attachment_model.js'
+import { configureLucidAttachmentTables } from '../src/stores/lucid/schema/configure_lucid_attachment_tables.js'
+import { resolveAttachmentTableNames } from '../src/stores/lucid/schema/attachment_table_names.js'
 
 test.group('Lucid attachment table names', (group) => {
   group.each.teardown(() => {

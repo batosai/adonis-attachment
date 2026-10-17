@@ -58,7 +58,7 @@ export class AttachmentProcessorNotConfiguredError extends AttachmentConfigurati
   static code = 'E_ATTACHMENT_PROCESSOR_NOT_CONFIGURED'
 
   constructor() {
-    super('The in-memory attachment queue requires a processor or jobHandler when Lucid is not available')
+    super('The in-memory attachment queue requires a configured store or jobHandler')
     this.name = 'AttachmentProcessorNotConfiguredError'
   }
 }

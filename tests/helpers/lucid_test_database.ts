@@ -7,9 +7,9 @@
 
 import { Database } from '@adonisjs/lucid/database'
 
-import { AttachmentModel } from '../../src/integrations/lucid/models/attachment_model.js'
-import { AttachmentLinkModel } from '../../src/integrations/lucid/models/attachment_link_model.js'
-import { AttachmentSchemaService } from '../../src/integrations/lucid/schema/attachment_schema_service.js'
+import { AttachmentModel } from '../../src/stores/lucid/models/attachment_model.js'
+import { AttachmentLinkModel } from '../../src/stores/lucid/models/attachment_link_model.js'
+import { AttachmentSchemaService } from '../../src/stores/lucid/schema/attachment_schema_service.js'
 
 export async function createLucidTestDatabase(options: { filename?: string; createSchema?: boolean } = {}): Promise<Database> {
   const database = new Database(

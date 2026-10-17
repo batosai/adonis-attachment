@@ -76,29 +76,26 @@ same structured `error` object as a failed variant event.
 
 Variant and deferred-metadata events occur where the job executes. Declare an adapter in
 the attachment configuration to replace the default Adonis emitter; `defineConfig` gives it
-to the configured or automatically created Lucid processor. A separate `@adonisjs/queue`
+to the selected store's memory processor. A separate `@adonisjs/queue`
 worker must give the same adapter to its own processor.
 
 ```ts
+import app from '@adonisjs/core/services/app'
 import emitter from '@adonisjs/core/services/emitter'
-import {
-  AttachmentJobProcessor,
-  defineConfig,
-} from '@jrmc/adonis-attachment'
+import { createAttachmentProcessor, defineConfig, LocalFileStorage } from '@jrmc/adonis-attachment'
+import { LucidAttachmentStore } from '@jrmc/adonis-attachment/lucid'
 import { AdonisAttachmentEventEmitter } from '@jrmc/adonis-attachment/events/adonis'
 
 const events = new AdonisAttachmentEventEmitter(emitter)
 
-const processor = new AttachmentJobProcessor({
-  attachments: attachmentRepository,
-  variants: attachmentVariants,
-})
-
 export default defineConfig({
-  storage: attachmentStorage,
-  processor,
+  storage: LocalFileStorage.fromApp,
+  store: LucidAttachmentStore.fromApp,
   events,
 })
+
+// In the external forwarding job, use the same emitter adapter.
+const processor = createAttachmentProcessor(app, { events })
 ```
 
 For a Lucid relation, the scheduling layer stores its v5 context in the job payload. It is

@@ -1,3 +1,4 @@
+import { LucidAttachmentStore } from '../src/stores/lucid/persistence/lucid_attachment_store.js'
 import { setApp } from "@adonisjs/core/services/app";
 import { BaseModel, column } from "@adonisjs/lucid/orm";
 import { test } from "@japa/runner";
@@ -20,8 +21,8 @@ import {
   type ResolvedAttachmentConfig,
 } from "../src/define_config.js";
 import { MemoryAttachmentQueue } from "../src/queues/memory_queue.js";
-import { AttachmentRegenerator } from "../src/integrations/lucid/regeneration/attachment_regenerator.js";
-import { createLucidAttachmentProcessor } from "../src/integrations/lucid/create_lucid_attachment_processor.js";
+import { AttachmentRegenerator } from "../src/stores/lucid/regeneration/attachment_regenerator.js";
+import { createLucidAttachmentProcessor } from "../src/stores/lucid/create_lucid_attachment_processor.js";
 
 class User extends BaseModel {
   static table = "legacy_collection_users";
@@ -523,7 +524,7 @@ test.group("Legacy JSON collections", (group) => {
           },
         },
       },
-      integrations: {
+      store: LucidAttachmentStore.configure({
         legacy: {
           models: {
             [User.table]: async () => {
@@ -532,7 +533,7 @@ test.group("Legacy JSON collections", (group) => {
             },
           },
         },
-      },
+      }),
       media: {
         metadata: [
           {

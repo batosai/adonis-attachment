@@ -56,7 +56,7 @@ variant insertion/deletion API. Each collection item supports `getVariant()`, `m
 blurhash. Select `attributes: ['gallery']` with `AttachmentRegenerator.row/model` to
 regenerate all items; the array itself has no `regenerateVariants()` method.
 
-Register `integrations.legacy.models` so variants/deferred metadata can reload current
+Register `store: LucidAttachmentStore.configure({ legacy: { models } })` so variants/deferred metadata can reload current
 owner JSON in the app AND a fresh worker. Keys match the decorator's logical `type`
 (the model table by default). Keep Lucid enabled. The registry creates no tables and
 does not select field persistence. Do not use removed `integrations.lucid.jsonModels`,
@@ -67,6 +67,7 @@ and use `users: () => import('#models/user')` in the config registry. Merge conv
 and storage into existing configuration rather than replacing it.
 
 ```ts
+import { LucidAttachmentStore } from '@jrmc/adonis-attachment/lucid'
 import { BaseModel, column } from '@adonisjs/lucid/orm'
 import { defineConfig, LocalFileStorage } from '@jrmc/adonis-attachment'
 import { attachment, type Attachment } from '@jrmc/adonis-attachment/legacy'
@@ -80,7 +81,7 @@ export class User extends BaseModel {
 export const config = defineConfig({
   storage: LocalFileStorage.fromApp,
   route: false,
-  integrations: { legacy: { models: { users: async () => ({ default: User }) } } },
+  store: LucidAttachmentStore.configure({ legacy: { models: { users: async () => ({ default: User }) } } }),
   converters: { thumbnail: { resize: { width: 320 }, format: { format: 'webp' } } },
   media: { metadataPolicy: { mode: 'deferred' } },
 })
@@ -138,7 +139,7 @@ For autodetect, per-converter commands/timeouts override shared binary settings.
 Metadata is synchronous by default: catch failures around `draft.persist()` or `user.save()`.
 For deferred extraction set `media.metadataPolicy: { mode: 'deferred' }`; Lucid schedules
 after commit. `metadataPolicy.variants: false` disables variant extraction only.
-Outside Lucid, supply a metadata persister and processor and schedule after your row commits.
+Outside Lucid, supply `store.metadataPersister` and schedule after your row commits.
 
 `media.metadata` replaces the whole profile. Customize only when needed using
 `createDefaultMetadataExtractors` from `/media/metadata`; options `sharp`, `exif`, `ffprobe`,
@@ -191,9 +192,9 @@ Configure `@adonisjs/queue` first, create the forwarding job with
 import app from '@adonisjs/core/services/app'
 import { Job } from '@adonisjs/queue'
 import type { AttachmentJob } from '@jrmc/adonis-attachment'
-import { createLucidAttachmentProcessor } from '@jrmc/adonis-attachment/lucid'
+import { createAttachmentProcessor } from '@jrmc/adonis-attachment'
 
-const processor = createLucidAttachmentProcessor(app)
+const processor = createAttachmentProcessor(app)
 export default class GenerateAttachmentVariants extends Job<AttachmentJob> {
   async execute() {
     await processor.process(this.payload)
@@ -203,15 +204,15 @@ export default class GenerateAttachmentVariants extends Job<AttachmentJob> {
 
 Run `node ace queue:work --queue=attachments`. Worker database/storage access and media
 dependencies must match the application. A native `Job.options.queue` takes precedence
-over Attachment's `queueName`. The default memory driver automatically wires Lucid processing;
+over Attachment's `queueName`. The default memory driver automatically wires processing through the selected store;
 external workers need the factory above. Direct queue instances/factories own their handlers.
 
-Without Lucid, use an application repository and a variant-persistence wrapper with
-`AttachmentJobProcessor`. Persist `VariantGenerationService.generateAll()` results; rollback
+Without Lucid, use a custom store with a repository and a variant-persistence factory
+(`variants(service, converters, context)`). Persist `VariantGenerationService.generateAll()` results; rollback
 must clean new files, and regeneration must replace rows and clean old files after commit.
 Resolve the full service for that generator with `await app.container.make('jrmc.attachment')`;
 the root `attachmentService` facade only exposes URL methods, not create/read/remove.
-`processor` or `jobHandler` overrides automatic memory processing.
+`jobHandler` overrides automatic memory processing. Store capabilities supply the default processor.
 
 ## Regeneration, events, and diagnosis
 

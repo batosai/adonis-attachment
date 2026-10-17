@@ -133,3 +133,5 @@ export {
   type StorageLocation,
   type WriteAttachmentInput,
 } from './storage.js'
+
+export type { AttachmentStore, AttachmentStoreContext, AttachmentStoreFactory, AttachmentStoreConfig } from './attachment_store.js'

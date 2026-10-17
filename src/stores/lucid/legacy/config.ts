@@ -1,7 +1,7 @@
-import type { AttachmentPersistenceOptions } from "../../core/attachment_options.js";
-import type { AttachmentProcessingAdapter } from "../../core/attachment_processing_adapter.js";
-import { VariantGenerationService } from "../../variants/variant_generation_service.js";
-import type { VariantPathOptions } from '../../variants/variant_path.js'
+import type { AttachmentPersistenceOptions } from "../../../core/attachment_options.js";
+import type { AttachmentProcessingAdapter } from "../../../core/attachment_processing_adapter.js";
+import { VariantGenerationService } from "../../../variants/variant_generation_service.js";
+import type { VariantPathOptions } from '../../../variants/variant_path.js'
 import {
   LucidJsonAttachmentRegistry,
   type JsonAttachmentModels,

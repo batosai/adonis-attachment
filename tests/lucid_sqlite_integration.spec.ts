@@ -10,12 +10,12 @@ import { test } from '@japa/runner'
 
 import { defineConfig, MemoryAttachmentQueue, type AttachmentStorage } from '../index.js'
 import type { Attachment } from '../src/core/attachment.js'
-import { createLucidAttachmentProcessor } from '../src/integrations/lucid/create_lucid_attachment_processor.js'
-import { AttachmentLinkModel } from '../src/integrations/lucid/models/attachment_link_model.js'
-import { AttachmentModel } from '../src/integrations/lucid/models/attachment_model.js'
-import { LucidAttachmentLifecycleService } from '../src/integrations/lucid/persistence/lucid_attachment_lifecycle_service.js'
-import { LucidAttachmentRepository } from '../src/integrations/lucid/persistence/lucid_attachment_repository.js'
-import { LucidAttachmentStore } from '../src/integrations/lucid/persistence/lucid_attachment_store.js'
+import { createLucidAttachmentProcessor } from '../src/stores/lucid/create_lucid_attachment_processor.js'
+import { AttachmentLinkModel } from '../src/stores/lucid/models/attachment_link_model.js'
+import { AttachmentModel } from '../src/stores/lucid/models/attachment_model.js'
+import { LucidAttachmentLifecycleService } from '../src/stores/lucid/persistence/lucid_attachment_lifecycle_service.js'
+import { LucidAttachmentRepository } from '../src/stores/lucid/persistence/lucid_attachment_repository.js'
+import { LucidAttachmentStore } from '../src/stores/lucid/persistence/lucid_attachment_store.js'
 import { createLucidTestDatabase } from './helpers/lucid_test_database.js'
 
 const owner = { type: 'users', id: '42', field: 'avatar' }
@@ -110,6 +110,7 @@ test.group('Lucid SQLite integration', (group) => {
     }
     const resolved = await defineConfig({
       storage,
+      store: LucidAttachmentStore.fromApp,
       converters: {
         thumbnail: {
           converter: async () => ({

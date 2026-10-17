@@ -1,4 +1,4 @@
-import { AttachmentConflictError } from "../../errors.js";
+import { AttachmentConflictError } from "../../../errors.js";
 
 /** A legacy metadata edit conflicts with a change since the loaded snapshot. */
 export class AttachmentMetadataConflictError extends AttachmentConflictError {

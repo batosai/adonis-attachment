@@ -3,12 +3,12 @@ import type { TransactionClientContract } from '@adonisjs/lucid/types/database'
 import { createLucidTestDatabase } from './helpers/lucid_test_database.js'
 import type { Attachment } from '../src/core/attachment.js'
 import type { AttachmentTransaction } from '../src/core/attachment_persistence.js'
-import { LucidAttachmentStore } from '../src/integrations/lucid/persistence/lucid_attachment_store.js'
-import { LucidAttachmentLifecycleService, type LucidAttachmentPersistence } from '../src/integrations/lucid/persistence/lucid_attachment_lifecycle_service.js'
+import { LucidAttachmentStore } from '../src/stores/lucid/persistence/lucid_attachment_store.js'
+import { LucidAttachmentLifecycleService, type LucidAttachmentPersistence } from '../src/stores/lucid/persistence/lucid_attachment_lifecycle_service.js'
 import {
   attachmentTransaction, afterAttachmentCommit, afterAttachmentRollback,
   AttachmentCommitError, AttachmentPostCommitError,
-} from '../src/integrations/lucid/persistence/attachment_transaction.js'
+} from '../src/stores/lucid/persistence/attachment_transaction.js'
 
 test('preserves outer SQL rollback through a structural adapter and the Lucid lifecycle facade', async ({ assert }) => {
   const database = await createLucidTestDatabase()

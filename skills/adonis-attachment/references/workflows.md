@@ -23,8 +23,12 @@ node ace make:attachments-table
 node ace migration:run
 ```
 
+Select `store: LucidAttachmentStore.fromApp` explicitly in the generated config before
+running these commands. Import `LucidAttachmentStore` from `/lucid`. The default stub
+uses `store: false`; Lucid is never detected automatically.
+
 The generated migration delegates to `AttachmentSchemaService`. Set a custom
-`integrations.lucid.tableName` before generation and use the same name at runtime.
+`LucidAttachmentStore.configure({ tableName })` before generation and use the same name at runtime.
 Defaults are `adonis_attachments` / `adonis_attachment_links`; `media_attachments` derives
 `media_attachment_links`. Existing tables require an explicit migration or matching config.
 
@@ -153,8 +157,8 @@ export async function storageUrls(attachment: Attachment) {
 }
 ```
 
-The optional route filename is cosmetic, not an authorization check. Lucid detection or
-an explicit repository enables the read route. `route: { prefix: '/files' }` changes its
+The optional route filename is cosmetic, not an authorization check. The selected store
+provides the repository for the read route. `route: { prefix: '/files' }` changes its
 prefix. URL methods may return undefined if storage does not support them; signed options
 are forwarded to that storage backend. Authorize the caller before issuing a signed URL.
 `preComputeUrl: true` sets public `.url` in memory on relation reads, never in the database.

@@ -1,10 +1,10 @@
 import type { LucidModel } from '@adonisjs/lucid/types/model'
-import type { Attachment } from '../../../core/attachment.js'
-import type { AttachmentMetadataPersister } from '../../../core/attachment_metadata_persister.js'
-import type { AttachmentReferenceRepository } from '../../../core/attachment_repository.js'
-import { parseAttachmentReference, type AttachmentReference } from '../../../core/attachment_reference.js'
-import { resolveAttachmentPersistenceOptions, type AttachmentPersistenceOptions } from '../../../core/attachment_options.js'
-import { AttachmentConfigurationError, AttachmentValidationError } from '../../../errors.js'
+import type { Attachment } from '../../../../core/attachment.js'
+import type { AttachmentMetadataPersister } from '../../../../core/attachment_metadata_persister.js'
+import type { AttachmentReferenceRepository } from '../../../../core/attachment_repository.js'
+import { parseAttachmentReference, type AttachmentReference } from '../../../../core/attachment_reference.js'
+import { resolveAttachmentPersistenceOptions, type AttachmentPersistenceOptions } from '../../../../core/attachment_options.js'
+import { AttachmentConfigurationError, AttachmentValidationError } from '../../../../errors.js'
 import { getLegacyAttachmentDefinitions, jsonRelationColumn } from '../model_fields.js'
 import { LucidJsonAttachmentStore } from './lucid_json_attachment_store.js'
 
@@ -26,7 +26,7 @@ export class LucidJsonAttachmentRegistry implements AttachmentReferenceRepositor
     const reference = parseAttachmentReference(value)
     if (reference.adapter !== 'json' || !reference.owner) throw new AttachmentValidationError('JSON references require an explicit owner')
     const load = this.#models.get(reference.owner.type)
-    if (!load) throw new AttachmentConfigurationError(`JSON attachment model "${reference.owner.type}" is not registered in integrations.legacy.models`)
+    if (!load) throw new AttachmentConfigurationError(`JSON attachment model "${reference.owner.type}" is not registered in the Lucid store's legacy.models`)
     const { default: Model } = await load()
     Model.boot()
     const definition = getLegacyAttachmentDefinitions(Model).find((item) => item.field === reference.owner!.field)

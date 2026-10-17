@@ -6,10 +6,10 @@
  */
 
 import { createHash } from 'node:crypto'
-import type { Attachment } from '../../../core/attachment.js'
-import type { AttachmentOwner, AttachmentEntry, AttachmentRecord } from '../../../core/attachment_persistence.js'
-import { withAttachmentReference } from '../../../core/attachment_reference.js'
-import { AttachmentValidationError } from '../../../errors.js'
+import type { Attachment } from '../../../../core/attachment.js'
+import type { AttachmentOwner, AttachmentEntry, AttachmentRecord } from '../../../../core/attachment_persistence.js'
+import { withAttachmentReference } from '../../../../core/attachment_reference.js'
+import { AttachmentValidationError } from '../../../../errors.js'
 
 export type JsonAttachmentOwner = Pick<AttachmentOwner, 'type' | 'id' | 'field'>
 export type JsonAttachmentDocument = Record<string, unknown> & { id: string; variants?: JsonAttachmentDocument[] }

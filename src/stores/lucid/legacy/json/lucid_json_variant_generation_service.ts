@@ -1,7 +1,7 @@
-import type { VariantGenerator, VariantGenerationRequest } from '../../../core/attachment_job_processor.js'
-import type { AttachmentService } from '../../../core/attachment_service.js'
-import type { VariantGenerationService } from '../../../variants/variant_generation_service.js'
-import { AttachmentNotFoundError, AttachmentValidationError } from '../../../errors.js'
+import type { VariantGenerator, VariantGenerationRequest } from '../../../../core/attachment_job_processor.js'
+import type { AttachmentService } from '../../../../core/attachment_service.js'
+import type { VariantGenerationService } from '../../../../variants/variant_generation_service.js'
+import { AttachmentNotFoundError, AttachmentValidationError } from '../../../../errors.js'
 import type { LucidJsonAttachmentRegistry } from './lucid_json_attachment_registry.js'
 
 /** Conversion is outside SQL locks; publishing and file effects follow the owner's transaction. */

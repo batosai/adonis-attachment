@@ -1,6 +1,6 @@
 import { isDeepStrictEqual } from 'node:util'
-import type { AttachmentMetadata } from '../../../media/media_metadata.js'
-import { AttachmentValidationError } from '../../../errors.js'
+import type { AttachmentMetadata } from '../../../../media/media_metadata.js'
+import { AttachmentValidationError } from '../../../../errors.js'
 import { AttachmentMetadataConflictError } from '../errors.js'
 
 type JsonValue = null | boolean | number | string | JsonValue[] | JsonObject

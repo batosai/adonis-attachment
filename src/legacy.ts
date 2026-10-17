@@ -2,7 +2,7 @@ import { loadOptionalDependency } from "./utils/optional_dependency.js";
 
 const legacy = await loadOptionalDependency(
   "@adonisjs/lucid",
-  () => import("./integrations/legacy/index.js"),
+  () => import("./stores/lucid/legacy/index.js"),
 );
 export const {
   Attachment,

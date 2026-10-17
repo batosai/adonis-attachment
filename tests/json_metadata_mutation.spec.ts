@@ -1,6 +1,6 @@
 import { test } from '@japa/runner'
-import { JsonMetadataMutation } from '../src/integrations/legacy/json/json_metadata_mutation.js'
-import { AttachmentMetadataConflictError } from '../src/integrations/legacy/errors.js'
+import { JsonMetadataMutation } from '../src/stores/lucid/legacy/json/json_metadata_mutation.js'
+import { AttachmentMetadataConflictError } from '../src/stores/lucid/legacy/errors.js'
 
 test.group('JSON metadata mutations', () => {
   test('merges independent top-level and nested edits without mutating snapshots', ({ assert }) => {

@@ -1,3 +1,4 @@
+import { LucidAttachmentStore } from '../src/stores/lucid/persistence/lucid_attachment_store.js'
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 
@@ -6,7 +7,7 @@ import { test } from '@japa/runner'
 import MakeAttachmentsTable from '../commands/make/attachments_table.js'
 import { defineConfig } from '../src/define_config.js'
 import { stubsRoot } from '../stubs/main.js'
-import { createAttachmentsTableStubState } from '../src/integrations/lucid/schema/attachments_table_stub.js'
+import { createAttachmentsTableStubState } from '../src/stores/lucid/schema/attachments_table_stub.js'
 
 test.group('attachments table migration stub', () => {
   test('uses the prefixed default when no table is configured', async ({ assert }) => {
@@ -120,9 +121,9 @@ test.group('attachments table migration stub', () => {
                 },
                 async remove() {},
               },
-              integrations: {
-                lucid: { tableName: 'media_attachments' },
-              },
+              store: LucidAttachmentStore.configure({
+                tableName: 'media_attachments'
+              }),
             })
           },
         },

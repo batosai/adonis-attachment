@@ -7,9 +7,9 @@
 
 import { test } from '@japa/runner'
 
-import { migrateLegacyAttachmentRecords, type MigratedAttachmentRows } from '../src/integrations/lucid/index.js'
+import { migrateLegacyAttachmentRecords, type MigratedAttachmentRows } from '../src/stores/lucid/index.js'
 import { createLucidTestDatabase } from './helpers/lucid_test_database.js'
-import { AttachmentModel, AttachmentLinkModel, LucidAttachmentStore } from '../src/integrations/lucid/index.js'
+import { AttachmentModel, AttachmentLinkModel, LucidAttachmentStore } from '../src/stores/lucid/index.js'
 
 test.group('migrateLegacyAttachmentRecords', () => {
   test('migrates arrays and individual collection items to ordered readable links', async ({ assert }) => {

@@ -51,6 +51,63 @@ Any object implementing `AttachmentStorage` (`write`, `read`, `remove`) works. T
 disk name is `fs` unless your adapter exposes `defaultDisk` or you set `defaultDisk`
 explicitly.
 
+## Store
+
+`storage` handles file bytes. `store` handles attachment data and the persistence of
+background-processing results. The two choices are independent.
+
+Lucid is **never detected automatically**. Select it explicitly:
+
+```ts
+import { defineConfig, AdonisDriveStorage } from '@jrmc/adonis-attachment'
+import { LucidAttachmentStore } from '@jrmc/adonis-attachment/lucid'
+
+export default defineConfig({
+  storage: AdonisDriveStorage.fromApp,
+  store: LucidAttachmentStore.fromApp,
+})
+```
+
+Use `LucidAttachmentStore.configure({ tableName: 'media_attachments' })` for custom tables,
+or `LucidAttachmentStore.configure({ legacy: { models: { users: () => import('#models/user') } } })`
+for legacy JSON fields. Both options can be combined; tables and JSON can coexist.
+
+Omitting `store`, or setting `store: false`, leaves data persistence to the application.
+No read route or automatic memory processing is enabled in that mode. Draft creation,
+file storage, synchronous metadata extraction and manual processing remain available.
+
+For another ORM, provide an `AttachmentStore` object or a factory `(app, context) => store`.
+The context contains `defaultDisk`, `defaults`, and `variant`. Capabilities are optional:
+
+| Store member | Purpose |
+| --- | --- |
+| `repository` | Required. Read originals and variants by ID; optionally resolve contextual references. Enables the public route unless `route: false`. |
+| `persistence` | Optional. Existing `AttachmentPersistence` lifecycle/transaction contract, for application-owned lifecycle integration. |
+| `metadataPersister` | Required for `media.metadataPolicy.mode: 'deferred'`. Persists extracted metadata. |
+| `variants(service, converters, context)` | Required to persist generated variants. Returns a `VariantGenerator`, including the adapter's replacement and cleanup policy. |
+
+The configured store is used by memory processing and by `createAttachmentProcessor(app)`
+in external workers. A read-only store is supported; requesting unsupported processing
+fails explicitly. Providing a store does not create another ORM's model decorators or
+schedule jobs before the application's transaction commits.
+Follow [Creating a store](/guide/creating-a-store) for a complete class and factory,
+then [custom persistence](/guide/custom-persistence) for lifecycle and transaction details.
+
+### Migrating from earlier v6 betas
+
+| Previous configuration | Replacement |
+| --- | --- |
+| Automatic Lucid detection | `store: LucidAttachmentStore.fromApp` |
+| `integrations.lucid.tableName` | `store: LucidAttachmentStore.configure({ tableName })` |
+| `integrations.legacy.models` | `legacy.models` inside `LucidAttachmentStore.configure()` |
+| Root `repository` | `store.repository` |
+| `media.metadataPersister` | `store.metadataPersister` |
+| Root `processor` | Store processing capabilities, or `jobHandler: () => (job) => processor.process(job)` for a fully custom processor |
+
+The removed keys fail with a migration error. `queue`, `route`, `converters`, `events`,
+`defaults`, `variant`, and media extraction settings keep their roles. No data or schema
+migration is needed solely for this configuration change.
+
 ## Default persistence options
 
 `defaults` sets the **lowest-priority** file options. They're resolved per setting, from
@@ -67,6 +124,7 @@ generated names, while `rename: false` uses the client filename).
 ```ts
 export default defineConfig({
   storage: LocalFileStorage.fromApp,
+  store: LucidAttachmentStore.fromApp,
   defaults: {
     folder: 'uploads',
     rename: true,          // store under a generated name instead of the client name
@@ -307,8 +365,8 @@ media: {
 ```
 
 For video or PDF-heavy applications, defer extraction to the queue after the attachment row
-is committed. Lucid configures its metadata persister automatically; another ORM must provide
-`metadataPersister` with a `persistMetadata(attachment, metadata)` method.
+is committed. The Lucid store provides its metadata persister; another ORM must provide
+`store.metadataPersister` with a `persistMetadata(attachment, metadata)` method.
 
 ```ts
 media: {
@@ -392,42 +450,28 @@ By default the Lucid integration uses `adonis_attachments` (blobs) and `adonis_a
 ```ts
 export default defineConfig({
   storage: LocalFileStorage.fromApp,
-  integrations: {
-    lucid: { tableName: 'media_attachments' },
-  },
+  store: LucidAttachmentStore.configure({ tableName: 'media_attachments' }),
 })
 ```
 
-Lucid is detected automatically through the `lucid.db` container binding. When present, the
-package configures the default Lucid repository, enables the read route, and can persist deferred
-metadata without additional wiring. Use `integrations.lucid` only to customize table names or to
-disable this automatic integration:
-
-```ts
-integrations: {
-  lucid: false,
-}
-```
+`LucidAttachmentStore.fromApp` uses the default names. `configure()` selects custom
+names and optionally enables legacy JSON processing. Use `store: false` when attachments
+should not use Lucid, even if Lucid is installed for the rest of the application.
 
 ::: warning
 Use the same `tableName` when you generate the migration **and** at runtime - the models
 are pointed at these names at boot.
 Changing configuration does not rename existing tables. To keep an existing `attachments`
-and `attachment_links` schema, explicitly set `integrations.lucid.tableName: 'attachments'`.
+and `attachment_links` schema, explicitly set `store: LucidAttachmentStore.configure({ tableName: 'attachments' })`.
 :::
 
 ## Read route & background processing
 
-- **`repository`** - overrides the automatically detected Lucid repository, or enables
-  `GET /attachments/:id/:name?` with another persistence layer. See
-  [Serving files](/guide/serving-files).
-- **`route`** - `false` to disable the built-in route, or `{ prefix: '/media' }` to move it.
-- **`queue`** - controls where jobs run. Omit it for an in-memory queue, or declare
-  `queue.connections` and a typed `queue.default` to select a connection, optionally
-  [by environment](/guide/queues#select-by-environment). The generated configuration starts
-  with the `memory` connection. The direct driver, instance, and factory forms remain supported.
-- **`processor`** - overrides the processor automatically created for an in-memory queue when
-  Lucid is detected. Custom persistence must provide a processor or `jobHandler`. See
-  [Background processing](/guide/queues).
+- **`store`** supplies the repository, metadata persistence, and variant persistence.
+- **`route`** is `false` to disable the public read route, or `{ prefix: '/media' }` to move it.
+- **`queue`** controls where jobs run. Omit it for an in-memory queue, or use named
+  connections and a typed default. Direct drivers, instances, and factories remain supported.
+- **`jobHandler`** is an advanced override for memory processing. It takes precedence over
+  the store's default processor. External forwarding jobs can use `createAttachmentProcessor(app)`.
 
 **Next:** [Creating attachments](/guide/creating-attachments).

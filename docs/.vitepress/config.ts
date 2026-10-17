@@ -115,6 +115,7 @@ export default withMermaid(
               { text: 'Legacy JSON fields (experimental)', link: '/guide/legacy' },
               { text: 'Legacy JSON internals', link: '/guide/json-persistence' },
               { text: 'With another data store', link: '/guide/custom-persistence' },
+              { text: 'Creating a store', link: '/guide/creating-a-store' },
             ],
           },
         ],

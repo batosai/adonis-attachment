@@ -3,9 +3,11 @@
 The Lucid integration is optional, but it's the most convenient way to tie files to your
 records. Attachments are represented by polymorphic relations backed by the package tables.
 
-It also exports `createLucidAttachmentProcessor` for external queue workers. The default
-in-memory queue creates this processor automatically; see
-[Background processing](/guide/queues#creating-the-lucid-processor-for-a-worker).
+Select `store: LucidAttachmentStore.fromApp` explicitly in `config/attachment.ts`.
+For custom tables or legacy JSON, use `LucidAttachmentStore.configure()`.
+The default memory queue uses the configured store; external workers use
+`createAttachmentProcessor(app)` from the package root. See
+[Background processing](/guide/queues#creating-the-processor-for-a-worker).
 
 Use `@attachment()` for one file and `@attachments()` for an ordered collection.
 `@attachmentRelation()` and `@attachmentsRelation()` remain available as equivalent,

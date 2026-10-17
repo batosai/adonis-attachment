@@ -9,7 +9,9 @@ import { BaseCommand } from '@adonisjs/core/ace'
 import { configProvider } from '@adonisjs/core'
 
 import { stubsRoot } from '../../stubs/main.js'
-import { createAttachmentsTableStubState } from '../../src/integrations/lucid/schema/attachments_table_stub.js'
+import { createAttachmentsTableStubState } from '../../src/stores/lucid/schema/attachments_table_stub.js'
+
+import { LucidAttachmentStore } from '../../src/stores/lucid/persistence/lucid_attachment_store.js'
 
 import type { ResolvedAttachmentConfig } from '../../src/define_config.js'
 
@@ -40,5 +42,5 @@ async function configuredTableName(app: BaseCommand['app']): Promise<string> {
   const attachmentConfig = app.config.get('attachment')
   const config = await configProvider.resolve<ResolvedAttachmentConfig>(app, attachmentConfig)
 
-  return config?.integrations?.lucid?.tableName ?? 'adonis_attachments'
+  return config?.store instanceof LucidAttachmentStore ? config.store.tableName : 'adonis_attachments'
 }

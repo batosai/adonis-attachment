@@ -130,12 +130,13 @@ the array itself has no regeneration method. Refresh after background jobs compl
 Use v6 converters and register the model for contextual job routing:
 
 ```ts
+import { LucidAttachmentStore } from '@jrmc/adonis-attachment/lucid'
 import { AdonisDriveStorage, defineConfig } from '@jrmc/adonis-attachment'
 
 export default defineConfig({
   storage: AdonisDriveStorage.fromApp,
   route: false,
-  integrations: { legacy: { models: { users: () => import('#models/user') } } },
+  store: LucidAttachmentStore.configure({ legacy: { models: { users: () => import('#models/user') } } }),
   converters: {
     thumbnail: { converter: () => import('#converters/thumbnail_converter') },
   },
@@ -143,8 +144,8 @@ export default defineConfig({
 ```
 
 The registry key must match the decorator's logical `type` (the model table by default).
-Keep automatic Lucid integration enabled. The former experimental
-`integrations.lucid.jsonModels` option is replaced by `integrations.legacy.models`.
+Select the Lucid store explicitly. The former experimental
+`integrations.lucid.jsonModels` option is replaced by `store: LucidAttachmentStore.configure({ legacy: { models } })`.
 JSON is no longer an option on `/lucid` decorators; its store and workers are internal
 to the legacy module and are not exported by `/lucid`.
 The default memory queue generates variants and extracts configured metadata. Pending

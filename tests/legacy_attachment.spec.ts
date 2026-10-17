@@ -1,3 +1,4 @@
+import { LucidAttachmentStore } from '../src/stores/lucid/persistence/lucid_attachment_store.js'
 import { setApp } from "@adonisjs/core/services/app";
 import { BaseModel, column } from "@adonisjs/lucid/orm";
 import { test } from "@japa/runner";
@@ -5,21 +6,21 @@ import {
   Attachment,
   AttachmentManager,
   attachment,
-} from "../src/integrations/legacy/index.js";
+} from "../src/stores/lucid/legacy/index.js";
 import { AttachmentService } from "../src/core/attachment_service.js";
 import {
   attachment as tableAttachment,
   AttachmentRelation,
-} from "../src/integrations/lucid/index.js";
+} from "../src/stores/lucid/index.js";
 import { createLucidTestDatabase } from "./helpers/lucid_test_database.js";
 import type { AttachmentJob } from "../src/core/queue.js";
-import { LucidJsonAttachmentRegistry } from "../src/integrations/legacy/json/lucid_json_attachment_registry.js";
+import { LucidJsonAttachmentRegistry } from "../src/stores/lucid/legacy/json/lucid_json_attachment_registry.js";
 import {
   defineConfig,
   type ResolvedAttachmentConfig,
 } from "../src/define_config.js";
 import { MemoryAttachmentQueue } from "../src/queues/memory_queue.js";
-import { AttachmentRegenerator } from "../src/integrations/lucid/regeneration/attachment_regenerator.js";
+import { AttachmentRegenerator } from "../src/stores/lucid/regeneration/attachment_regenerator.js";
 
 class User extends BaseModel {
   static table = "legacy_users";
@@ -368,11 +369,11 @@ test.group("Legacy singular JSON attachments", (group) => {
     resolved = await defineConfig({
       defaultDisk: "fs",
       route: false,
-      integrations: {
+      store: LucidAttachmentStore.configure({
         legacy: {
           models: { legacy_users: async () => ({ default: User }) },
         },
-      },
+      }),
       media: {
         metadata: [
           {

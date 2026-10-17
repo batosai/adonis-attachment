@@ -5,10 +5,10 @@ import {
   parseAttachmentReference, resolveAttachment, withAttachmentReference, toPersistedAttachment,
   type Attachment, type AttachmentReference, type AttachmentJob, type VariantGenerationRequest,
 } from '../index.js'
-import { LucidAttachmentRepository } from '../src/integrations/lucid/persistence/lucid_attachment_repository.js'
-import { LucidAttachmentMetadataPersister } from '../src/integrations/lucid/persistence/lucid_attachment_metadata_persister.js'
-import { LucidVariantGenerationService } from '../src/integrations/lucid/persistence/lucid_variant_generation_service.js'
-import { LucidAttachmentStore } from '../src/integrations/lucid/persistence/lucid_attachment_store.js'
+import { LucidAttachmentRepository } from '../src/stores/lucid/persistence/lucid_attachment_repository.js'
+import { LucidAttachmentMetadataPersister } from '../src/stores/lucid/persistence/lucid_attachment_metadata_persister.js'
+import { LucidVariantGenerationService } from '../src/stores/lucid/persistence/lucid_variant_generation_service.js'
+import { LucidAttachmentStore } from '../src/stores/lucid/persistence/lucid_attachment_store.js'
 
 const attachment: Attachment = {
   id: 'file-42', disk: 'fs', path: 'avatar.jpg', name: 'avatar.jpg', originalName: 'avatar.jpg',

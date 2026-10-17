@@ -23,7 +23,7 @@ when retaining a JSON column or using `/legacy`. Read
 
 - The package is `@jrmc/adonis-attachment` (singular), even when the task says "attachments".
 - Core is required; Drive, Lucid, and Adonis Queue are optional. Default storage is
-  `LocalFileStorage.fromApp`, not Drive. Configure optional Adonis integrations before use.
+  `LocalFileStorage.fromApp`, not Drive. Select `store: LucidAttachmentStore.fromApp` from `/lucid` explicitly for Lucid data; the default stub uses `store: false`.
 - Choose the field's persistence before editing its model or schema. `/lucid` is the default
   table-backed API; `/legacy` is an experimental JSON facade requiring Lucid.
   Verify the installed build exports `/legacy`; not every v6 beta does. Do not migrate
@@ -31,6 +31,8 @@ when retaining a JSON column or using `/legacy`. Read
 - For table relations, import `attachmentManager` and `attachmentService` from the package root. Import
   `attachment`, `attachments`, `AttachmentRelation`, and `AttachmentCollectionRelation`
   from `@jrmc/adonis-attachment/lucid`. Root `Attachment` is plain persisted file data.
+  The internal `src/stores/lucid/` layout does not change the public `/lucid` and `/legacy`
+  entry points; use package exports in consuming applications.
 - Root `attachmentService` exposes URL methods only. For read/remove/scheduling use the
   typed full service from `await app.container.make('jrmc.attachment')` inside the booted app.
 - Root `createFrom*` returns an `AttachmentDraft`, not a written file. Use `draft.persist()`
@@ -45,8 +47,11 @@ when retaining a JSON column or using `/legacy`. Read
   flushes them. Explicit relation `persist()` requires an already persisted owner.
 - Options resolve per field: manager call > decorator > `defaults`. `undefined` inherits;
   `null` clears inheritance and restores the fallback; use `false` to disable a boolean.
+- Root `integrations`, `repository`, `processor` and `media.metadataPersister` are removed.
+  Use `store` capabilities (`repository`, optional `persistence`, `metadataPersister`, `variants`)
+  and the advanced `jobHandler` override. Never rely on Lucid auto-detection.
 - Table defaults are `adonis_attachments` and `adonis_attachment_links`. Configure their names via
-  `integrations.lucid.tableName`; the link name is its singular form plus `_links`.
+  `LucidAttachmentStore.configure({ tableName })`; the link name is its singular form plus `_links`.
   Configuration never renames an existing database table.
 - Table `get()` and collection `all()` return links with a preloaded `.attachment` blob.
   Collection `move/remove` take link IDs. `attachExisting/addExisting` and file routes take blob IDs.
@@ -59,7 +64,7 @@ when retaining a JSON column or using `/legacy`. Read
   It returns `string | null`; `{ fallback: 'original' }` uses the original only when the
   variant record is absent. It does not require `preComputeUrl` or build a file-route URL.
 - Legacy serializes automatically, exposes `getUrl()` / `getVariant()` and mutable `meta`.
-  Register its model loaders in `integrations.legacy.models` for variants/deferred metadata
+  Register its model loaders in `store: LucidAttachmentStore.configure({ legacy: { models } })` for variants/deferred metadata
   with either memory or external queues; do not use the removed `integrations.lucid.jsonModels`.
 
 ## Verification

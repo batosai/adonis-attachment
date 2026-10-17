@@ -9,7 +9,7 @@ import { BaseCommand } from '@adonisjs/core/ace'
 import { configProvider } from '@adonisjs/core'
 
 import { stubsRoot } from '../../stubs/main.js'
-import { createLegacyAttachmentMigrationStubState } from '../../src/integrations/lucid/migrations/legacy/legacy_attachment_migration_stub.js'
+import { createLegacyAttachmentMigrationStubState } from '../../src/stores/lucid/migrations/legacy/legacy_attachment_migration_stub.js'
 
 import type { ResolvedAttachmentConfig } from '../../src/define_config.js'
 

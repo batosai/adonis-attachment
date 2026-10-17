@@ -37,7 +37,7 @@ If the application lacks the provider/command registration, run `node ace config
 @jrmc/adonis-attachment`. Do **not** rerun it expecting an existing `config/attachment.ts` to be
 migrated: the configure hook deliberately preserves that file, while it may update `adonisrc.ts`.
 Audit and update the existing configuration manually before changing models, including `storage`,
-`integrations.lucid`, v5 variant settings, disks, paths, queue and media settings.
+`store`, v5 variant settings, disks, paths, queue and media settings.
 
 ### Explicit v6 storage and Lucid integration
 
@@ -49,14 +49,15 @@ local default.
 
 ```ts
 import { AdonisDriveStorage, defineConfig } from '@jrmc/adonis-attachment'
+import { LucidAttachmentStore } from '@jrmc/adonis-attachment/lucid'
 
 export default defineConfig({
   storage: AdonisDriveStorage.fromApp,
-  integrations: { lucid: {} },
+  store: LucidAttachmentStore.fromApp,
 })
 ```
 
-For table-backed fields, `integrations.lucid` enables the repository and the provider's automatic
+For table-backed fields, `store: LucidAttachmentStore.fromApp` enables the repository and the provider's automatic
 `/attachments/:id/:name?` read route. Remove v5 `router.attachments()` calls rather than keeping
 both route systems. A `Cannot read properties of undefined (reading 'defaultDisk')` error during
 the cutover normally means `storage` was omitted, not that the stored v5 disk is invalid.
@@ -113,6 +114,7 @@ For the common v5 layout below, set both the root base path and the converter na
 
 ```ts
 import { AdonisDriveStorage, defineConfig } from '@jrmc/adonis-attachment'
+import { LucidAttachmentStore } from '@jrmc/adonis-attachment/lucid'
 
 const legacyVariantBasePath = ({ attachment }: { attachment: { path: string } }) => {
   const separator = attachment.path.lastIndexOf('/')
@@ -173,7 +175,7 @@ Drive storage and `@adonisjs/queue` for an external queue. A video, PDF or Offic
 also requires ffmpeg, Poppler or LibreOffice in the deployment runtime; verify those executables
 instead of installing them implicitly. Preserve the chosen queue connection, and ensure an
 external worker loads the same configuration and forwards jobs to
-`createLucidAttachmentProcessor(app)`.
+`createAttachmentProcessor(app)`.
 
 ## Keep a singular JSON field with `/legacy`
 
@@ -208,7 +210,7 @@ not through `fill`/`merge`, and save the owner. Persisted attachments cannot be 
 assignment to another field because JSON has no global file reference counts.
 
 In `config/attachment.ts`, register
-`integrations: { legacy: { models: { users: () => import('#models/user') } } }`.
+`store: LucidAttachmentStore.configure({ legacy: { models: { users: () => import('#models/user') } } })`.
 The key matches logical owner `type` (model table by default), enabling jobs to reload
 the current JSON. It creates no tables and is not a global storage-mode switch. Keep
 Lucid enabled; `integrations.lucid.jsonModels` has been removed. No `/lucid` decorator
@@ -216,7 +218,7 @@ accepts `persistence: 'json'` and `AttachmentRelation<'json'>` is not a supporte
 
 Variants and deferred metadata use v6 converters/media settings and support both memory
 and external queues. Existing external jobs forward their complete `AttachmentJob` to
-`createLucidAttachmentProcessor(app)` from `/lucid`; the same registry must be available
+`createAttachmentProcessor(app)` from the package root; the same registry must be available
 in the worker. Memory is the non-durable default, without automatic retry. The shared
 `AttachmentRegenerator` supports registered legacy fields via `.row()` / `.model()`;
 there is no legacy `avatar.regenerateVariants()` method.
@@ -267,7 +269,7 @@ node ace make:attachment-v5-migration
 Run `node ace configure @jrmc/adonis-attachment` before these commands only if provider/command
 registration is missing; it is not a configuration-upgrade step.
 
-Run schema/data commands only in the approved environment. `integrations.lucid.tableName`
+Run schema/data commands only in the approved environment. `LucidAttachmentStore.configure({ tableName })`
 controls the blob name; its singular form plus `_links` controls the links. The schema stub
 uses `AttachmentSchemaService`, not a hand-maintained copy of the table definitions.
 

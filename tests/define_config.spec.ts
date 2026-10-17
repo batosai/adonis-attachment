@@ -1,3 +1,4 @@
+import { LucidAttachmentStore } from '../src/stores/lucid/persistence/lucid_attachment_store.js'
 /**
  * @jrmc/adonis-attachment
  *
@@ -22,8 +23,8 @@ import {
 } from '../index.js'
 import type { Attachment } from '../src/core/attachment.js'
 import type { CommandExecution, CommandRunner } from '../src/media/binaries.js'
-import { LucidAttachmentMetadataPersister } from '../src/integrations/lucid/persistence/lucid_attachment_metadata_persister.js'
-import { LucidAttachmentRepository } from '../src/integrations/lucid/persistence/lucid_attachment_repository.js'
+import { LucidAttachmentMetadataPersister } from '../src/stores/lucid/persistence/lucid_attachment_metadata_persister.js'
+import { LucidAttachmentRepository } from '../src/stores/lucid/persistence/lucid_attachment_repository.js'
 
 const pdf: Attachment = {
   id: 'attachment-id',
@@ -222,6 +223,7 @@ test.group('defineConfig', () => {
       const resolved = await defineConfig({
         storage,
         ...(queue ? { queue } : {}),
+        store: LucidAttachmentStore.fromApp,
       }).resolver(app as never)
 
       await resolved.queue.enqueue({
@@ -251,7 +253,7 @@ test.group('defineConfig', () => {
           type: 'generate-variants',
           attachmentId: pdf.id,
         }),
-      'The in-memory attachment queue requires a processor or jobHandler when Lucid is not available'
+      'The in-memory attachment queue requires a configured store or jobHandler'
     )
   })
 
@@ -315,18 +317,9 @@ test.group('defineConfig', () => {
       async remove() {},
     }
     const events = { emit() {} }
-    let injected: unknown
-    const processor = {
-      async process() {},
-      setEventEmitter(value: unknown) {
-        injected = value
-      },
-    } as never
-
-    const resolved = await defineConfig({ storage, events, processor }).resolver({} as never)
+    const resolved = await defineConfig({ storage, events }).resolver({} as never)
 
     assert.equal(resolved.events, events)
-    assert.equal(injected, events)
   })
 
   test('allows applications to disable or prefix the read route', async ({ assert }) => {
@@ -382,7 +375,7 @@ test.group('defineConfig', () => {
     }
     const variant = { basePath: 'variants/:id' }
 
-    const resolved = await defineConfig({ defaultDisk: 'public', storage, defaults, variant }).resolver({} as never)
+    const resolved = await defineConfig({ defaultDisk: 'public', storage, defaults, variant, store: LucidAttachmentStore.fromApp }).resolver({} as never)
 
     assert.equal(resolved.defaults, defaults)
     assert.equal(resolved.variant, variant)
@@ -460,7 +453,7 @@ test.group('defineConfig', () => {
             metadataPolicy: { mode: 'deferred' },
           },
         }).resolver({} as never),
-      'Deferred metadata extraction requires media.metadataPersister or integrations.lucid'
+      'Deferred metadata extraction requires store.metadataPersister'
     )
   })
 
@@ -541,21 +534,15 @@ test.group('defineConfig', () => {
     const resolved = await defineConfig({
       defaultDisk: 'public',
       storage,
-      integrations: {
-        lucid: { tableName: 'media_attachments' },
-      },
+      store: LucidAttachmentStore.configure({ tableName: 'media_attachments' }),
     }).resolver({} as never)
 
-    assert.deepEqual(resolved.integrations, {
-      lucid: {
-        tableName: 'media_attachments',
-        linksTableName: 'media_attachment_links',
-      },
-    })
+    assert.instanceOf(resolved.store, LucidAttachmentStore)
+    assert.equal((resolved.store as LucidAttachmentStore).tableName, 'media_attachments')
     assert.instanceOf(resolved.repository, LucidAttachmentRepository)
   })
 
-  test('uses Lucid defaults when its container binding is available', async ({ assert }) => {
+  test('does not detect Lucid implicitly when its container binding is available', async ({ assert }) => {
     const storage: AttachmentStorage = {
       async write() {},
       async read() {
@@ -573,14 +560,11 @@ test.group('defineConfig', () => {
 
     const resolved = await defineConfig({ storage }).resolver(app as never)
 
-    assert.instanceOf(resolved.repository, LucidAttachmentRepository)
-    assert.deepEqual(resolved.integrations?.lucid, {
-      tableName: 'adonis_attachments',
-      linksTableName: 'adonis_attachment_links',
-    })
+    assert.isUndefined(resolved.repository)
+    assert.isUndefined(resolved.store)
   })
 
-  test('uses Lucid as the deferred metadata persister when it is detected', async ({ assert }) => {
+  test('uses the selected Lucid store for deferred metadata', async ({ assert }) => {
     const storage: AttachmentStorage = {
       async write() {},
       async read() {
@@ -598,13 +582,14 @@ test.group('defineConfig', () => {
 
     const resolved = await defineConfig({
       storage,
+      store: LucidAttachmentStore.fromApp,
       media: { metadataPolicy: { mode: 'deferred' } },
     }).resolver(app as never)
 
     assert.instanceOf(resolved.metadataPersister, LucidAttachmentMetadataPersister)
   })
 
-  test('allows automatic Lucid integration to be disabled', async ({ assert }) => {
+  test('keeps store false independent of installed Lucid', async ({ assert }) => {
     const storage: AttachmentStorage = {
       async write() {},
       async read() {
@@ -622,14 +607,14 @@ test.group('defineConfig', () => {
 
     const resolved = await defineConfig({
       storage,
-      integrations: { lucid: false },
+      store: false,
     }).resolver(app as never)
 
     assert.isUndefined(resolved.repository)
-    assert.isUndefined(resolved.integrations)
+    assert.isUndefined(resolved.store)
   })
 
-  test('prefers an explicit repository over the detected Lucid repository', async ({ assert }) => {
+  test('uses the custom store repository even when Lucid is installed', async ({ assert }) => {
     const storage: AttachmentStorage = {
       async write() {},
       async read() {
@@ -646,7 +631,7 @@ test.group('defineConfig', () => {
       },
     }
 
-    const resolved = await defineConfig({ storage, repository }).resolver(app as never)
+    const resolved = await defineConfig({ storage, store: { repository } }).resolver(app as never)
 
     assert.equal(resolved.repository, repository)
   })
@@ -666,7 +651,7 @@ test.group('defineConfig', () => {
     )
   })
 
-  test('uses the configured processor as the memory queue handler', async ({ assert }) => {
+  test('uses a custom processor through the jobHandler escape hatch', async ({ assert }) => {
     const storage: AttachmentStorage = {
       async write() {},
       async read() {
@@ -691,7 +676,7 @@ test.group('defineConfig', () => {
     const config = defineConfig({
       defaultDisk: 'public',
       storage,
-      processor,
+      jobHandler: () => (job: AttachmentJob) => processor.process(job),
       queue: { driver: 'memory', concurrency: 1 },
     })
     const resolved = await config.resolver({
@@ -708,7 +693,7 @@ test.group('defineConfig', () => {
     assert.deepEqual(processed, [{ type: 'generate-variants', attachmentId: 'attachment-id' }])
   })
 
-  test('gives jobHandler precedence over the default Lucid processor', async ({ assert }) => {
+  test('gives jobHandler precedence over store memory processing', async ({ assert }) => {
     const storage: AttachmentStorage = {
       async write() {},
       async read() {
@@ -719,6 +704,7 @@ test.group('defineConfig', () => {
     const processed: AttachmentJob[] = []
     const resolved = await defineConfig({
       storage,
+      store: LucidAttachmentStore.fromApp,
       jobHandler: () => async (job: AttachmentJob) => {
         processed.push(job)
       },

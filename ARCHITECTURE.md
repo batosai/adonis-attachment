@@ -1,5 +1,19 @@
 # Architecture de la refonte
 
+## Configuration du stockage et des donnees
+
+`storage` gere les octets. `store` regroupe le repository et les capacites optionnelles de
+persistence du lifecycle, des metadonnees differees et des variants. Lucid est choisi
+explicitement avec `store: LucidAttachmentStore.fromApp`, jamais detecte automatiquement.
+`LucidAttachmentStore.configure({ tableName, legacy })` permet les tables personnalisees
+et les champs JSON historiques dans la meme application. Un objet/factory `AttachmentStore`
+permet un autre ORM; `store: false` conserve la persistence manuelle.
+
+`createAttachmentProcessor(app)` utilise le meme store pour la queue memoire et les workers
+externes. Les options publiques `integrations`, `repository`, `processor` et
+`media.metadataPersister` sont remplacees par ce store; `jobHandler` reste une surcharge
+avancee. Les contrats de transaction et le scheduling apres commit sont conserves.
+
 ## Principe de decoupage
 
 Le noyau ne depend ni d'AdonisJS ni de Lucid. Il cree les objets `Attachment`, ecrit les octets via `AttachmentStorage` et publie les travaux asynchrones via `AttachmentQueue`.
@@ -71,7 +85,28 @@ La commande Ace `make:attachments-table` rend le stub package `stubs/migrations/
 
 Le sous-chemin `@jrmc/adonis-attachment/lucid` expose `AttachmentModel`, `AttachmentLinkModel`, `LucidAttachmentRepository` et `LucidAttachmentStore`. Le repository donne au worker un acces type aux blobs, et le store persiste liens, collections et variants sans introduire Lucid dans le noyau. Quand une relation est appelee depuis un modele place dans une transaction Lucid, le store utilise le meme client SQL.
 
-Les modules internes Lucid sont regroupes par responsabilite : `column/` contient la strategie JSON historique, `relations/` la strategie polymorphique et ses owners, `models/` les deux modeles Lucid, `persistence/` le store, le lifecycle, le repository et les variants, `schema/` les noms et definitions de tables, et `migrations/legacy/` la conversion des donnees v5. Le fichier `index.ts` conserve l'API publique du sous-chemin Lucid stable malgre cette organisation interne.
+L'implementation Lucid est regroupee sous `src/stores/lucid/`. `config.ts` assemble les
+repositories, les persisters de metadonnees et les generateurs de variants, et active le
+legacy lorsque demande. `persistence/lucid_attachment_store.ts` conserve les operations SQL
+et les transactions; ses factories et accesseurs deleguent l'assemblage a `config.ts`.
+
+```text
+src/stores/lucid/
+  config.ts           Assemblage des capacites du store
+  index.ts            Exports publics du sous-chemin /lucid
+  models/             Blobs et liens Lucid
+  model/              Coordination des hooks du modele
+  relations/          Relations singulieres et collections
+  persistence/        Operations SQL, transactions et lifecycle
+  schema/             Noms, definitions de tables et stubs
+  regeneration/       Planification de la regeneration
+  migrations/legacy/  Conversion des donnees v5 vers les tables
+  legacy/             Facade historique, champs JSON et workers JSON
+```
+
+`src/lucid.ts` et `src/legacy.ts` restent les points d'entree runtime avec controle de la
+dependance Lucid optionnelle. Les chemins publics `/lucid` et `/legacy` sont inchanges.
+Le noyau et le processeur commun ne dependent pas des implementations des stores.
 
 Deux decorateurs de relation completent le decorateur JSON `@attachment()`. `@attachmentRelation()` expose une relation singuliere sur le modele avec `get`, `attach`, `set`, `replace`, `detach`, `persist`, `variants` et `regenerateVariants`. `attach` est strict et refuse de remplacer une valeur existante; `set` et `replace` preparent la creation ou le remplacement. `@attachmentsRelation()` expose une collection ordonnee avec `all`, `add`, `remove`, `clear`, `replaceAll`, `move` et `persist`. Les mutations sont conservees en attente sur le modele et executees apres `save()`, ce qui permet aussi de les definir avant la creation du parent. Si `save()` echoue, aucune ecriture de fichier ou de lien ne commence et la mutation reste disponible pour une nouvelle tentative. `persist()` force une execution immediate pour un modele deja persiste. Les relations passent le modele au contexte de persistence pour resoudre les options de decorateur. En transaction, les nouveaux fichiers sont retires sur rollback et les suppressions de fichiers sont repoussees au commit. La suppression du modele parent retire ses liens; le store ne purge un blob et ses variants que si aucun lien ne le reference encore.
 

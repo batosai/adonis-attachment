@@ -5,24 +5,24 @@ import { BaseModel, column } from "@adonisjs/lucid/orm";
 import { test } from "@japa/runner";
 import { DateTime } from "luxon";
 import { AttachmentService } from "../src/core/attachment_service.js";
-import { LucidAttachmentLifecycleService } from "../src/integrations/lucid/persistence/lucid_attachment_lifecycle_service.js";
+import { LucidAttachmentLifecycleService } from "../src/stores/lucid/persistence/lucid_attachment_lifecycle_service.js";
 import type { Attachment } from "../src/core/attachment.js";
-import { AttachmentModel } from "../src/integrations/lucid/models/attachment_model.js";
-import { AttachmentLinkModel } from "../src/integrations/lucid/models/attachment_link_model.js";
-import { LucidAttachmentStore } from "../src/integrations/lucid/persistence/lucid_attachment_store.js";
-import { AttachmentSchemaService } from "../src/integrations/lucid/schema/attachment_schema_service.js";
+import { AttachmentModel } from "../src/stores/lucid/models/attachment_model.js";
+import { AttachmentLinkModel } from "../src/stores/lucid/models/attachment_link_model.js";
+import { LucidAttachmentStore } from "../src/stores/lucid/persistence/lucid_attachment_store.js";
+import { AttachmentSchemaService } from "../src/stores/lucid/schema/attachment_schema_service.js";
 import { withAttachmentReference } from "../src/core/attachment_reference.js";
 import { resolveAttachment } from "../src/core/attachment_repository.js";
-import { LucidAttachmentRepository } from "../src/integrations/lucid/persistence/lucid_attachment_repository.js";
-import { LucidAttachmentMetadataPersister } from "../src/integrations/lucid/persistence/lucid_attachment_metadata_persister.js";
-import { LucidJsonAttachmentStore } from "../src/integrations/legacy/json/lucid_json_attachment_store.js";
+import { LucidAttachmentRepository } from "../src/stores/lucid/persistence/lucid_attachment_repository.js";
+import { LucidAttachmentMetadataPersister } from "../src/stores/lucid/persistence/lucid_attachment_metadata_persister.js";
+import { LucidJsonAttachmentStore } from "../src/stores/lucid/legacy/json/lucid_json_attachment_store.js";
 import { AttachmentLifecycleService } from "../src/core/attachment_lifecycle_service.js";
 import { setApp } from "@adonisjs/core/services/app";
 import type { AttachmentJob } from "../src/core/queue.js";
-import { attachment, AttachmentRelation, createLucidAttachmentProcessor } from "../src/integrations/lucid/index.js";
-import { attachment as legacyAttachment, attachments as legacyAttachments, Attachment as LegacyAttachment, AttachmentManager as LegacyManager } from "../src/integrations/legacy/index.js";
+import { attachment, AttachmentRelation, createLucidAttachmentProcessor } from "../src/stores/lucid/index.js";
+import { attachment as legacyAttachment, attachments as legacyAttachments, Attachment as LegacyAttachment, AttachmentManager as LegacyManager } from "../src/stores/lucid/legacy/index.js";
 
-import { createLegacyAttachmentAdapter } from "../src/integrations/legacy/config.js";
+import { createLegacyAttachmentAdapter } from "../src/stores/lucid/legacy/config.js";
 const client = process.env.ATTACHMENT_TEST_CLIENT;
 // Opt-in: the container runner supplies a fresh disposable database for each engine.
 if (

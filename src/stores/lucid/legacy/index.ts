@@ -4,8 +4,8 @@ import {
   AttachmentManager as SourceManager,
   type AttachmentSourceOptions,
   type MultipartAttachmentFile,
-} from "../../sources/attachment_manager.js";
-import type { AttachmentService } from "../../core/attachment_service.js";
+} from "../../../sources/attachment_manager.js";
+import type { AttachmentService } from "../../../core/attachment_service.js";
 import type { Readable } from "node:stream";
 
 export { Attachment };

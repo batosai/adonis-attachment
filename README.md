@@ -35,6 +35,18 @@ node ace configure @jrmc/adonis-attachment
 
 The configure command registers the provider and Ace commands and creates `config/attachment.ts`. Files are stored locally in `storage/attachments` by default.
 
+Select Lucid explicitly in the generated configuration (replace `store: false`):
+
+```ts
+import { defineConfig, LocalFileStorage } from '@jrmc/adonis-attachment'
+import { LucidAttachmentStore } from '@jrmc/adonis-attachment/lucid'
+
+export default defineConfig({
+  storage: LocalFileStorage.fromApp,
+  store: LucidAttachmentStore.fromApp,
+})
+```
+
 ### 2. Create the attachment tables
 
 ```sh
@@ -101,10 +113,11 @@ router.post("/users/:id/avatar", [UsersController, "updateAvatar"]);
 
 Submit a `multipart/form-data` request with an `avatar` file to `/users/:id/avatar`, using an existing user's ID. The response contains a URL you can use as an image's `src`.
 
-With Lucid configured, the package automatically registers `GET /attachments/:id/:name?` to serve stored files. This route is public; see [serving files](https://next.adonis-attachment.jrmc.dev/guide/serving-files) for protected attachments. Add your application's authentication, authorization, and CSRF handling to the upload route.
+With the Lucid attachment store selected, the package registers `GET /attachments/:id/:name?` to serve stored files. This route is public; see [serving files](https://next.adonis-attachment.jrmc.dev/guide/serving-files) for protected attachments. Add your application's authentication, authorization, and CSRF handling to the upload route.
 
 ## Go further
 
+- [Creating a store](https://next.adonis-attachment.jrmc.dev/guide/creating-a-store): build a custom data adapter and its factory.
 - [Configuration](https://next.adonis-attachment.jrmc.dev/guide/configuration): local storage, AdonisJS Drive, and cloud disks.
 - [Lucid integration](https://next.adonis-attachment.jrmc.dev/guide/lucid): collections, ownership, and persistence.
 - [Image variants](https://next.adonis-attachment.jrmc.dev/guide/variants): thumbnails and conversions.

@@ -16,6 +16,7 @@ the application, keep them in their usual files and use the lazy model loader
 `users: () => import('#models/user')` in `config/attachment.ts`.
 
 ```ts
+import { LucidAttachmentStore } from '@jrmc/adonis-attachment/lucid'
 import { BaseModel, column } from '@adonisjs/lucid/orm'
 import type { HttpContext } from '@adonisjs/core/http'
 import { defineConfig, LocalFileStorage } from '@jrmc/adonis-attachment'
@@ -36,7 +37,7 @@ export class User extends BaseModel {
 export const config = defineConfig({
   storage: LocalFileStorage.fromApp,
   route: false,
-  integrations: { legacy: { models: { users: async () => ({ default: User }) } } },
+  store: LucidAttachmentStore.configure({ legacy: { models: { users: async () => ({ default: User }) } } }),
   converters: { thumbnail: { resize: { width: 320 }, format: { format: 'webp' } } },
 })
 
@@ -113,7 +114,7 @@ for all items, not `gallery.regenerateVariants()`. The array is mutable, unlike 
 
 ## What the registry and queue do
 
-`integrations.legacy.models` maps trusted owner types to lazy model modules. The key
+`store: LucidAttachmentStore.configure({ legacy: { models } })` maps trusted owner types to lazy model modules. The key
 matches the decorator's `type`, which defaults to the model table (`users` here). It
 enables legacy processing and lets jobs reload the current JSON, even in a fresh worker
 process. It does not scan all users, create tables, or choose the decorator's storage.
@@ -122,7 +123,7 @@ do not import internal JSON stores/registries or expect them to be exported by `
 
 Both the default memory queue and external Adonis Queue workers support legacy variants
 and deferred metadata. External jobs forward the full `AttachmentJob` payload to
-`createLucidAttachmentProcessor(app)` from `/lucid`, just as for table fields. Workers
+`createAttachmentProcessor(app)` from the package root, just as for table fields. Workers
 must load the same config, model registry, storage and media dependencies. Memory jobs
 are non-durable and have no automatic retry; use `onFailure` to observe failures.
 

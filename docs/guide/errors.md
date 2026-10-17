@@ -4,11 +4,11 @@
 
 | Symptom | Check first |
 | --- | --- |
-| No attachment tables | Run `node ace make:attachments-table`, then `node ace migration:run`; check `integrations.lucid.tableName` for custom names. |
+| No attachment tables | Run `node ace make:attachments-table`, then `node ace migration:run`; check `LucidAttachmentStore.configure({ tableName })` for custom names. |
 | `createFromFile` fails before persistence | Check that the upload exists, is valid, and has a temporary path. See the [validated upload example](/guide/getting-started). |
 | Original exists but thumbnail is absent | Confirm the key is enabled in `variants`, check the required media dependency, and report queue failures with `onFailure`. External queues also need a running worker. |
 | Invalid attachment queue default at boot | Check that `queue.default` matches a key in `queue.connections`. Validate `ATTACHMENT_QUEUE` with an enum when selecting by environment; no fallback is applied to an unknown name. |
-| File route returns 404 | Use the blob ID, not the link ID. Check the route prefix and repository; without Lucid or an explicit repository, no route is registered. |
+| File route returns 404 | Use the blob ID, not the link ID. Check the route prefix and `store.repository`; without a store, no route is registered. |
 | Private file is still publicly accessible | Set `route: false` and check that the underlying storage does not also expose a public URL. |
 | Filename rejected by Drive | Keep `normalizeFileName: true`, especially with `rename: false`; see [folder and rename](/guide/creating-attachments#folder-and-rename). |
 
@@ -43,7 +43,7 @@ try {
 | `InvalidConverterModuleError` | `E_INVALID_CONVERTER_MODULE` | 500 | A configured converter module has an unsupported export. |
 | `DeferredMetadataNotConfiguredError` | `E_METADATA_NOT_CONFIGURED` | 500 | Deferred metadata has no extractors or persister. |
 | `DeferredMetadataProcessorNotConfiguredError` | `E_METADATA_PROCESSOR_NOT_CONFIGURED` | 500 | A worker has no metadata processor. |
-| `AttachmentProcessorNotConfiguredError` | `E_ATTACHMENT_PROCESSOR_NOT_CONFIGURED` | 500 | The memory queue has no processor and Lucid is unavailable. |
+| `AttachmentProcessorNotConfiguredError` | `E_ATTACHMENT_PROCESSOR_NOT_CONFIGURED` | 500 | The memory queue has no configured store or custom jobHandler. |
 | `PersistedAttachmentNotFoundError` | `E_PERSISTED_ATTACHMENT_NOT_FOUND` | 404 | A variant job targets a blob that no longer exists. |
 | `CommandExecutionError` | `E_COMMAND_EXECUTION_FAILED` | 500 | An external binary exits unsuccessfully. |
 | `CommandTimeoutError` | `E_COMMAND_TIMEOUT` | 504 | An external binary exceeds its configured timeout. |

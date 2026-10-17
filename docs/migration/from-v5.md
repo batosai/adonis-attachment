@@ -166,7 +166,7 @@ converters: {
 | Variant keys and their options | `converters`; keep the matching `variants` option on each legacy decorator or in `defaults` |
 | `meta` and custom metadata extraction | `defaults.meta` or decorator `meta`; retain custom extractors in `media.metadata` and deferred work in `media.metadataPolicy` only when used |
 | ffmpeg, ffprobe, Poppler or LibreOffice paths | `media.binaries`, preserving commands and timeouts |
-| Background work | `queue` and the external worker; also register every JSON owner in `integrations.legacy.models` |
+| Background work | `queue` and the external worker; also register every JSON owner in `store: LucidAttachmentStore.configure({ legacy: { models } })` |
 | Serving URLs | `route: false` only for JSON-only applications; otherwise use a custom owner-authorized route for JSON fields and preserve any table route in mixed applications |
 
 Install only the packages required by the resulting configuration:
@@ -182,7 +182,7 @@ node ace add @adonisjs/queue      # durable external attachment jobs
 Do not run every command blindly. Video, PDF and Office support also needs `ffmpeg`, Poppler
 or LibreOffice installed in the deployment runtime; configure their paths under `media.binaries`.
 For an external worker, load the same configuration and use
-`createLucidAttachmentProcessor(app)` so registered legacy fields resolve correctly.
+`createAttachmentProcessor(app)` so registered legacy fields resolve correctly.
 
 #### Declare the JSON field
 
@@ -298,23 +298,22 @@ See [legacy collections](/guide/legacy#a-simple-collection) for the complete wor
 ```ts
 // config/attachment.ts
 import { AdonisDriveStorage, defineConfig } from '@jrmc/adonis-attachment'
+import { LucidAttachmentStore } from '@jrmc/adonis-attachment/lucid'
 
 export default defineConfig({
   storage: AdonisDriveStorage.fromApp,
   route: false,
-  integrations: {
-    legacy: {
-      models: { users: () => import('#models/user') },
-    },
-  },
+  store: LucidAttachmentStore.configure({
+    legacy: { models: { users: () => import('#models/user') } },
+  }),
   // Add your v6 converter, metadata and queue configuration as needed.
 })
 ```
 
 The registry key (`users`) must match the relation's logical `type`, which defaults to
 the model table. These trusted imports let both memory and external workers resolve
-the model and JSON field, including in a fresh worker process. Keep Lucid integration
-enabled for this automatic routing. Custom repositories/processors/persisters must also
+the model and JSON field, including in a fresh worker process. Select the Lucid store
+explicitly for this routing. Custom repositories/processors/persisters must also
 handle JSON references if you override the defaults.
 
 The built-in ID-only HTTP route remains table-backed. For JSON, use Drive URLs or an
@@ -458,8 +457,8 @@ converters: {
 | Variant keys and their options | `converters`; keep the matching `variants` option on each relation or in `defaults` |
 | `meta` and custom metadata extraction | `defaults.meta` or relation `meta`; retain custom extractors in `media.metadata` and deferred work in `media.metadataPolicy` only when used |
 | ffmpeg, ffprobe, Poppler or LibreOffice paths | `media.binaries`, preserving commands and timeouts |
-| Background work | `queue` and the external worker using `createLucidAttachmentProcessor(app)` |
-| Attachment tables and serving | `integrations.lucid.tableName` before generating the schema; keep the built-in route, configure its prefix, or set `route: false` for an authorized application route |
+| Background work | `queue` and the external worker using `createAttachmentProcessor(app)` |
+| Attachment tables and serving | `LucidAttachmentStore.configure({ tableName })` before generating the schema; keep the built-in route, configure its prefix, or set `route: false` for an authorized application route |
 
 ##### Type imports and custom converters
 

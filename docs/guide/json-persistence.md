@@ -7,7 +7,12 @@ from `@jrmc/adonis-attachment/lucid`.
 
 ## Architecture and removal boundary
 
-All JSON-specific runtime code lives in `src/integrations/legacy/`:
+The Lucid implementation lives under `src/stores/lucid/`. Its `config.ts` assembles the
+table repository, metadata persistence, variants, and optional legacy adapter. The SQL
+store delegates configuration to that module. The public `/lucid` and `/legacy` entry
+points are unchanged; applications should continue importing from those package exports.
+
+All JSON-specific runtime code lives in `src/stores/lucid/legacy/`:
 
 ```text
 legacy/
@@ -29,19 +34,19 @@ The common model coordinator only knows field callbacks for persistence, deletio
 regeneration. The common worker only knows registered processing adapters; neither imports
 the legacy implementation or selects behavior by a hard-coded JSON adapter name.
 
-`integrations.legacy.models` activates the module through the config resolver. Its logical
+`store: LucidAttachmentStore.configure({ legacy: { models } })` activates the module through the config resolver. Its logical
 job adapter remains `json`, preserving existing contextual references and queued jobs.
 The provider exposes a generic processing-adapter registry to memory and external workers.
 
 To remove the compatibility module, remove its directory, the `/legacy` entry/export,
-and its config activation/type, then update tests/docs. Keep the shared transaction and
+and its activation/type in `src/stores/lucid/config.ts`, then update tests/docs. Keep the shared transaction and
 worker interfaces: table attachments use them too. Keep the separate JSON-to-table migration
 tools under `lucid/migrations/legacy/` so applications retain a supported exit path.
 
 ## Existing data and configuration
 
 The public usage and configuration are documented in [Legacy JSON fields](/guide/legacy)
-and [Migration from v5](/migration/from-v5). Use `integrations.legacy.models`, not the old
+and [Migration from v5](/migration/from-v5). Use `store: LucidAttachmentStore.configure({ legacy: { models } })`, not the old
 experimental `integrations.lucid.jsonModels`. The latter fails explicitly rather than
 silently disabling workers. The former `persistence: 'json'` relation option and
 `AttachmentRelation<'json'>` type are removed.

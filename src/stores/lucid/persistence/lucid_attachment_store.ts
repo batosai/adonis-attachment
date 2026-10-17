@@ -6,6 +6,16 @@
  */
 
 import { randomUUID } from 'node:crypto'
+import type { ApplicationService } from '@adonisjs/core/types'
+import type { AttachmentStore, AttachmentStoreContext } from '../../../core/attachment_store.js'
+import type { AttachmentService } from '../../../core/attachment_service.js'
+import type { VariantConverterRegistry } from '../../../converters/configured_variant_converter_registry.js'
+import {
+  configureLucidStore,
+  createLucidStoreServices,
+  type LucidAttachmentStoreConfig,
+  type LucidStoreServices,
+} from '../config.js'
 
 import type { TransactionClientContract } from '@adonisjs/lucid/types/database'
 import type { LucidRow, LucidModel } from '@adonisjs/lucid/types/model'
@@ -40,6 +50,7 @@ export type LucidAttachmentStoreOptions = {
  * Persists immutable file blobs separately from their polymorphic owner links.
  */
 export class LucidAttachmentStore implements
+  AttachmentStore,
   AttachmentPersistence<AttachmentLinkModel, AttachmentModel>,
   AttachmentTransaction<LucidAttachmentStore> {
   readonly #blobModel: typeof AttachmentModel
@@ -47,6 +58,34 @@ export class LucidAttachmentStore implements
   readonly #client: TransactionClientContract | undefined
   readonly #createLinkId: () => string
   #scoped = false
+  #services: LucidStoreServices | undefined
+
+  /** Factory for selecting Lucid explicitly in the attachment configuration. */
+  static async fromApp(app: ApplicationService, context: AttachmentStoreContext): Promise<LucidAttachmentStore> {
+    return LucidAttachmentStore.configure()(app, context)
+  }
+
+  static configure(options: LucidAttachmentStoreConfig = {}): (app: ApplicationService, context: AttachmentStoreContext) => Promise<LucidAttachmentStore> {
+    return async (_app, context) => {
+      const store = new LucidAttachmentStore()
+      store.#services = configureLucidStore(store, store.#blobModel, options, context)
+      return store
+    }
+  }
+
+  get tableName(): string { return this.#blobModel.table }
+  get persistence(): this { return this }
+  get processingAdapters() { return this.#storeServices.processingAdapters }
+  get repository() { return this.#storeServices.repository }
+  get metadataPersister() { return this.#storeServices.metadataPersister }
+
+  variants(attachments: AttachmentService, converters: VariantConverterRegistry, context: AttachmentStoreContext) {
+    return this.#storeServices.variants(attachments, converters, context)
+  }
+
+  get #storeServices(): LucidStoreServices {
+    return this.#services ??= createLucidStoreServices(this, this.#blobModel)
+  }
 
   get isScoped(): boolean {
     return this.#scoped

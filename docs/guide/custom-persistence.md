@@ -1,5 +1,9 @@
 # With another data store
 
+To build your adapter class and its `fromApp` factory, start with
+[Creating a store](/guide/creating-a-store). This page covers the data lifecycle,
+transaction boundaries and lower-level processing contracts.
+
 Lucid is optional. If you use Prisma, Kysely, MikroORM, raw SQL - or no ORM at all - you
 can persist attachments yourself. The pattern is always the same:
 
@@ -8,7 +12,9 @@ can persist attachments yourself. The pattern is always the same:
 3. Store the fields you care about in your own schema.
 
 ```ts
-import { attachmentManager, attachmentService } from '@jrmc/adonis-attachment'
+import app from '@adonisjs/core/services/app'
+import { attachmentManager } from '@jrmc/adonis-attachment'
+const service = await app.container.make('jrmc.attachment')
 
 const attachment = await attachmentManager.createFromBuffer(fileBytes, {
   originalName: 'profile.jpg',
@@ -36,7 +42,7 @@ try {
   })
 } catch (error) {
   try {
-    await attachmentService.remove(attachment)
+    await service.remove(attachment)
   } catch (cleanupError) {
     throw new AggregateError([error, cleanupError], 'Database write and file cleanup failed')
   }
@@ -66,9 +72,9 @@ Rebuild an `Attachment`-shaped object from your columns and pass it to
 `AttachmentService.read(attachment)` to get the bytes.
 :::
 
-## Shared lifecycle contracts (experimental branch)
+## Shared lifecycle contracts
 
-The `feat/json-persistence` branch provides a persistence-independent
+The package provides a persistence-independent
 `AttachmentLifecycleService`, exported from `@jrmc/adonis-attachment/core` and the package
 root. The [legacy integration](/guide/legacy) uses an internal field-bound JSON store;
 the modern Lucid integration uses tables only. There is no automatic data migration
@@ -160,8 +166,8 @@ introduced at this stage.
 
 Metadata extraction does not require Lucid. In deferred mode, another ORM needs three pieces:
 
-1. An `AttachmentMetadataPersister` that updates its own record.
-2. A queue handler that processes `extract-metadata` jobs.
+1. A store with a `repository` and an `AttachmentMetadataPersister` that updates its record.
+2. The common `createAttachmentProcessor(app)` for external workers (memory is wired automatically).
 3. A call to `scheduleMetadataExtraction()` after the attachment record commits.
 
 The default in-memory queue is enough for local development and small applications. This
@@ -175,6 +181,9 @@ import {
   type AttachmentMetadataPersister,
 } from '@jrmc/adonis-attachment'
 
+// Implemented in the repository example below; keep it in an application module.
+import { UserMediaRepository } from '#attachments/user_media_repository'
+
 const metadataPersister: AttachmentMetadataPersister = {
   async persistMetadata(attachment, metadata) {
     await database.userMedia.update({
@@ -186,17 +195,8 @@ const metadataPersister: AttachmentMetadataPersister = {
 
 export default defineConfig({
   storage: LocalFileStorage.fromApp,
-  integrations: { lucid: false }, // only needed when this application also has Lucid
-  media: {
-    metadataPolicy: { mode: 'deferred' },
-    metadataPersister,
-  },
-  jobHandler: (app) => async (job) => {
-    if (job.type !== 'extract-metadata') return
-
-    const attachments = await app.container.make('jrmc.attachment')
-    await attachments.extractAndPersistMetadata(job.attachment)
-  },
+  store: { repository: new UserMediaRepository(), metadataPersister },
+  media: { metadataPolicy: { mode: 'deferred' } },
 })
 ```
 
@@ -204,7 +204,9 @@ Enable metadata on the draft, persist the attachment record in your ORM, and enq
 only after the transaction succeeds:
 
 ```ts
-import { attachmentManager, attachmentService } from '@jrmc/adonis-attachment'
+import app from '@adonisjs/core/services/app'
+import { attachmentManager } from '@jrmc/adonis-attachment'
+const service = await app.container.make('jrmc.attachment')
 
 const draft = await attachmentManager.createFromBuffer(fileBytes, {
   originalName: 'profile.jpg',
@@ -230,7 +232,7 @@ try {
   })
 } catch (error) {
   try {
-    await attachmentService.remove(attachment)
+    await service.remove(attachment)
   } catch (cleanupError) {
     throw new AggregateError([error, cleanupError], 'Transaction and file cleanup failed')
   }
@@ -238,7 +240,7 @@ try {
 }
 
 // Keep scheduling outside the cleanup catch: the record has already committed.
-await attachmentService.scheduleMetadataExtraction(attachment)
+await service.scheduleMetadataExtraction(attachment)
 ```
 
 The attachment is usable immediately; its `metadata` column is populated when the job finishes.
@@ -277,13 +279,13 @@ export class UserMediaRepository implements AttachmentRepository {
 }
 ```
 
-Then pass it to `defineConfig`:
+Then pass it through `store` to `defineConfig`. This read-only store enables the public
+route, but does not support persisting generated variants:
 
 ```ts
 export default defineConfig({
   storage: LocalFileStorage.fromApp,
-  integrations: { lucid: false }, // only needed when this application also has Lucid
-  repository: new UserMediaRepository(),
+  store: { repository: new UserMediaRepository() },
 })
 ```
 
@@ -292,84 +294,82 @@ generated variants (the Lucid integration is what automates variant rows for you
 
 ## Generating and persisting variants
 
-Call `generateAll()` to obtain both the variant keys and the newly written files. Do not use
-the low-level `generate()` alone when you need to store results: it returns no attachments.
-This example assumes a `userMediaVariant` table with `originalId`, `variantKey`, and all
-`Attachment` fields, and a transaction that rolls back all inserts on failure:
+Provide `store.variants(service, converters, context)` to add variant persistence to the
+same store. The package constructs its memory processor from these capabilities; external
+workers call `createAttachmentProcessor(app)` from the package root.
+
+This example assumes application modules for `database` and `UserMediaRepository`, a
+`userMediaVariant` table holding `originalId`, `variantKey` and all `Attachment` fields,
+and a transaction that rolls back all inserts on failure:
 
 ```ts
-import {
-  VariantGenerationService,
-  attachmentConverters,
-  attachmentService,
-  type VariantGenerationRequest,
-} from '@jrmc/adonis-attachment'
+import { defineConfig, LocalFileStorage, VariantGenerationService, type AttachmentStore } from '@jrmc/adonis-attachment'
+import { UserMediaRepository } from '#attachments/user_media_repository'
+import database from '#services/database'
 
-const generator = new VariantGenerationService({
-  attachments: attachmentService,
-  converters: attachmentConverters,
-})
-
-export const storedVariants = {
-  async generate(request: VariantGenerationRequest) {
-    const generated = await generator.generateAll(request)
-    try {
-      await database.transaction(async (transaction) => {
-        for (const { key, attachment } of generated) {
-          await transaction.userMediaVariant.create({
-            data: { ...attachment, originalId: request.attachment.id, variantKey: key },
+const store: AttachmentStore = {
+  repository: new UserMediaRepository(),
+  variants(attachments, converters, context) {
+    const generator = new VariantGenerationService({
+      attachments, converters, ...(context.variant ? { variant: context.variant } : {}),
+    })
+    return {
+      async generate(request) {
+        const generated = await generator.generateAll(request)
+        try {
+          await database.transaction(async (transaction) => {
+            for (const { key, attachment } of generated) {
+              await transaction.userMediaVariant.create({
+                data: { ...attachment, originalId: request.attachment.id, variantKey: key },
+              })
+            }
           })
+        } catch (error) {
+          const cleanup = await Promise.allSettled(generated.map(({ attachment }) => attachments.remove(attachment)))
+          const failures = cleanup.flatMap((result) => result.status === 'rejected' ? [result.reason] : [])
+          if (failures.length) throw new AggregateError([error, ...failures], 'Variant persistence and cleanup failed')
+          throw error
         }
-      })
-    } catch (error) {
-      const cleanup = await Promise.allSettled(
-        generated.map(({ attachment }) => attachmentService.remove(attachment))
-      )
-      const failures = cleanup.flatMap((result) =>
-        result.status === 'rejected' ? [result.reason] : []
-      )
-      if (failures.length) {
-        throw new AggregateError([error, ...failures], 'Variant persistence and cleanup failed')
-      }
-      throw error
+      },
     }
   },
 }
+
+export default defineConfig({
+  storage: LocalFileStorage.fromApp,
+  store,
+  converters: { thumbnail: { resize: 320, format: 'webp' } },
+})
 ```
 
 This is an initial-generation example. For retries and regeneration, enforce uniqueness on
 `(originalId, variantKey)`, replace rows transactionally, and remove superseded files only
 after commit. The low-level generator does not implement your database's replacement policy.
-Schedule deferred metadata for generated files after their rows commit if enabled.
+If metadata is deferred, provide `store.metadataPersister` and schedule metadata for the
+generated files after their rows commit. Revalidate contextual owner/identity references
+inside the final transaction before publishing results.
 
-Use this persistence wrapper in a generic processor, created inside a booted application:
+After committing an original, resolve the full service using
+`await app.container.make('jrmc.attachment')`, then call
+`await service.scheduleVariantGeneration(attachment, ['thumbnail'])`.
+Outside Lucid, `variants` on `createFrom*` does not replace this post-commit scheduling step.
+A store's optional `persistence` capability exposes the existing `AttachmentPersistence`
+contract for use with `AttachmentLifecycleService`; merely supplying that property does
+not wire another ORM's model hooks or create decorators.
 
-```ts
-import { AttachmentJobProcessor, attachmentService } from '@jrmc/adonis-attachment'
-import { UserMediaRepository } from '#attachments/user_media_repository'
-import { storedVariants } from '#attachments/stored_variants'
-
-export default new AttachmentJobProcessor({
-  attachments: new UserMediaRepository(),
-  variants: storedVariants,
-  metadata: attachmentService,
-})
-```
-
-Place the two implementations above in the application modules referenced by these imports.
-Configure a lazy handler so those service-dependent modules load after boot:
+An external worker uses the same configuration:
 
 ```ts
-jobHandler: () => async (job) => {
-  const { default: processor } = await import('#attachments/processor')
+import app from '@adonisjs/core/services/app'
+import { createAttachmentProcessor, type AttachmentJob } from '@jrmc/adonis-attachment'
+
+const processor = createAttachmentProcessor(app)
+export async function processAttachmentJob(job: AttachmentJob) {
   await processor.process(job)
-},
+}
 ```
 
-After committing an original, call
-`await attachmentService.scheduleVariantGeneration(attachment, ['thumbnail'])`.
-Outside Lucid, passing `variants` to `createFrom*` does not replace this application-owned
-scheduling step. An external worker can call the same processor instead of the memory handler.
-For public variant URLs, extend your repository to resolve variant IDs as well as original IDs.
+Forward the complete job, including its optional reference. For public variant URLs, the
+store repository must resolve variant IDs as well as original IDs.
 
 **Next:** [Serving files](/guide/serving-files) · [Background processing](/guide/queues).

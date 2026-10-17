@@ -14,6 +14,13 @@ Identify table-backed `/lucid` relations versus `/legacy` JSON fields and arrays
 legacy facade still uses v6 media/queue configuration, not v5 queue APIs. Read
 [media and worker recipes](references/media.md) for concrete configuration and diagnostics.
 
+Select the data store explicitly: `store: LucidAttachmentStore.fromApp` for tables, or
+`LucidAttachmentStore.configure({ legacy: { models } })` for mixed/legacy fields. Import
+it from `/lucid`. No Lucid auto-detection remains. The old root `integrations`, `repository`,
+`processor` and `media.metadataPersister` config keys must be migrated to `store`.
+External jobs use `createAttachmentProcessor(app)` from the root and the same store.
+Verify installed beta declarations before applying these newer config APIs.
+
 ## Choose the smallest workflow
 
 - Named `converters` plus field `variants` is enough for common conversions. Omitting
@@ -34,8 +41,8 @@ legacy facade still uses v6 media/queue configuration, not v5 queue APIs. Read
 - Configure `queue.default` and `queue.connections` for environment selection. Memory is
   the fallback when queue is omitted, in-process, non-durable, and has no automatic retry.
 - Legacy supports BOTH memory and external workers. Register trusted model loaders in
-  `integrations.legacy.models` for variants/deferred metadata; keep Lucid enabled. The same
-  `createLucidAttachmentProcessor(app)` worker factory handles both persistence modes.
+  `store: LucidAttachmentStore.configure({ legacy: { models } })` for variants/deferred metadata; keep Lucid enabled. The same
+  `createAttachmentProcessor(app)` worker factory handles both persistence modes.
 - Legacy getters read a loaded snapshot. Refresh after jobs finish, without discarding
   pending edits. Regenerate via shared `AttachmentRegenerator.row/model`, not a legacy
   `avatar.regenerateVariants()` method; do not import internal JSON stores or workers.

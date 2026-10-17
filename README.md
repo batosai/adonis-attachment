@@ -22,6 +22,13 @@ Version 6 separates file storage, database persistence, and processing so you ca
 
 Existing v5 applications also have an experimental legacy integration for keeping JSON fields. Configuration and APIs have changed: follow the [migration guide](https://next.adonis-attachment.jrmc.dev/migration/from-v5) before upgrading.
 
+Storage, store and queue accept instances or `(app, context)` factories. Use `fromApp`
+for defaults and `configure(options)` for overrides, for example
+`AdonisDriveStorage.configure({ disk: 's3' })`,
+`LucidAttachmentStore.configure({ tableName: 'media_attachments' })`, and
+`MemoryAttachmentQueue.configure({ concurrency: 2 })`.
+See the [common adapter configuration](https://next.adonis-attachment.jrmc.dev/guide/configuration#a-common-adapter-pattern).
+
 ## Quick start with Lucid
 
 This example uses the Lucid integration to add an avatar to an existing `User` model in an AdonisJS 7 application with Lucid configured. For a setup without Lucid, follow the [custom persistence guide](https://next.adonis-attachment.jrmc.dev/guide/custom-persistence).

@@ -6,6 +6,11 @@
  */
 
 import type { Attachment } from './attachment.js'
+import type { AttachmentAdapterConfig, AttachmentAdapterContext, AttachmentAdapterFactory } from './attachment_adapter.js'
+
+export type AttachmentStorageContext = AttachmentAdapterContext
+export type AttachmentStorageFactory = AttachmentAdapterFactory<AttachmentStorage, AttachmentStorageContext>
+export type AttachmentStorageConfig = AttachmentAdapterConfig<AttachmentStorage, AttachmentStorageContext>
 
 export type StorageLocation = Pick<Attachment, 'disk' | 'path'>
 

@@ -5,8 +5,16 @@
  * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
  */
 
-import type { AttachmentJob, AttachmentJobHandler, AttachmentQueue } from '../core/queue.js'
-import { AttachmentError } from '../errors.js'
+import type { ApplicationService } from '@adonisjs/core/types'
+import type { AttachmentJob, AttachmentJobHandler, AttachmentQueue, AttachmentQueueContext } from '../core/queue.js'
+import { AttachmentError, AttachmentProcessorNotConfiguredError } from '../errors.js'
+
+const configuredQueues = new WeakSet<AttachmentQueue>()
+
+/** @internal Identifies queues whose handler is supplied by attachment configuration. */
+export function isConfiguredMemoryAttachmentQueue(queue: AttachmentQueue): boolean {
+  return configuredQueues.has(queue)
+}
 
 export type AttachmentQueueFailureHandler = (
   job: AttachmentJob,
@@ -40,6 +48,20 @@ export class MemoryAttachmentQueue implements AttachmentQueue {
     this.#handler = options.handler
     this.#onFailure = options.onFailure
     this.#concurrency = options.concurrency ?? 1
+  }
+
+  static fromApp(app: ApplicationService, context: AttachmentQueueContext): MemoryAttachmentQueue {
+    return MemoryAttachmentQueue.configure()(app, context)
+  }
+
+  static configure(options: Omit<MemoryAttachmentQueueOptions, 'handler'> = {}) {
+    return (_app: ApplicationService, context: AttachmentQueueContext): MemoryAttachmentQueue => {
+      const queue = context.handler
+        ? new MemoryAttachmentQueue({ ...options, handler: context.handler })
+        : new UnconfiguredMemoryAttachmentQueue(options)
+      configuredQueues.add(queue)
+      return queue
+    }
   }
 
   async enqueue(job: AttachmentJob): Promise<void> {
@@ -88,5 +110,16 @@ export class MemoryAttachmentQueue implements AttachmentQueue {
     const waiters = this.#drainWaiters
     this.#drainWaiters = []
     waiters.forEach((resolve) => resolve())
+  }
+}
+
+/** Keep missing processing configuration visible at enqueue time. */
+class UnconfiguredMemoryAttachmentQueue extends MemoryAttachmentQueue {
+  constructor(options: Omit<MemoryAttachmentQueueOptions, 'handler'>) {
+    super({ ...options, handler: async () => {} })
+  }
+
+  override enqueue(): Promise<void> {
+    return Promise.reject(new AttachmentProcessorNotConfiguredError())
   }
 }

@@ -11,7 +11,7 @@ import { randomUUID } from 'node:crypto'
 
 import type { ApplicationService } from '@adonisjs/core/types'
 
-import type { AttachmentStorage, StorageLocation, WriteAttachmentInput } from '../core/storage.js'
+import type { AttachmentStorage, AttachmentStorageContext, StorageLocation, WriteAttachmentInput } from '../core/storage.js'
 import { AttachmentError } from '../errors.js'
 
 export type LocalFileStorageOptions = {
@@ -35,8 +35,13 @@ export class LocalFileStorage implements AttachmentStorage {
     this.#baseUrl = options.baseUrl?.replace(/\/+$/, '')
   }
 
-  static fromApp(app: ApplicationService): LocalFileStorage {
-    return new LocalFileStorage({ location: app.makePath('storage/attachments') })
+  static fromApp(app: ApplicationService, context: AttachmentStorageContext = {}): LocalFileStorage {
+    return LocalFileStorage.configure()(app, context)
+  }
+
+  static configure(options: Partial<LocalFileStorageOptions> = {}) {
+    return (app: ApplicationService, _context: AttachmentStorageContext): LocalFileStorage =>
+      new LocalFileStorage({ ...options, location: options.location ?? app.makePath('storage/attachments') })
   }
 
   async write(input: WriteAttachmentInput): Promise<void> {

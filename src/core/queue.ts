@@ -8,6 +8,16 @@
 import type { Attachment } from './attachment.js'
 import type { AttachmentEventContext } from '../events/attachment_events.js'
 import type { AttachmentReference } from './attachment_reference.js'
+import type { AttachmentAdapterConfig, AttachmentAdapterFactory } from './attachment_adapter.js'
+import type { AttachmentStoreContext } from './attachment_store.js'
+
+export type AttachmentQueueContext = AttachmentStoreContext & {
+  /** Ready-to-use store processor or configured jobHandler for in-process adapters. */
+  handler?: AttachmentJobHandler
+}
+
+export type AttachmentQueueFactory = AttachmentAdapterFactory<AttachmentQueue, AttachmentQueueContext>
+export type AttachmentQueueAdapterConfig = AttachmentAdapterConfig<AttachmentQueue, AttachmentQueueContext>
 
 export type VariantGenerationMode = 'create' | 'replace'
 

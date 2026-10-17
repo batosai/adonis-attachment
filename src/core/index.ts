@@ -135,3 +135,7 @@ export {
 } from './storage.js'
 
 export type { AttachmentStore, AttachmentStoreContext, AttachmentStoreFactory, AttachmentStoreConfig } from './attachment_store.js'
+
+export type { AttachmentAdapterContext, AttachmentAdapterFactory, AttachmentAdapterConfig } from './attachment_adapter.js'
+export type { AttachmentStorageContext, AttachmentStorageFactory, AttachmentStorageConfig } from './storage.js'
+export type { AttachmentQueueContext, AttachmentQueueFactory, AttachmentQueueAdapterConfig } from './queue.js'

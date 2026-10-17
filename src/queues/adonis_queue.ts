@@ -5,7 +5,8 @@
  * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
  */
 
-import type { AttachmentJob, AttachmentQueue } from '../core/queue.js'
+import type { ApplicationService } from '@adonisjs/core/types'
+import type { AttachmentJob, AttachmentQueue, AttachmentQueueContext } from '../core/queue.js'
 import { AttachmentConfigurationError } from '../errors.js'
 import { loadOptionalDependency } from '../utils/optional_dependency.js'
 
@@ -33,6 +34,12 @@ export class AdonisAttachmentQueue implements AttachmentQueue {
   readonly #job: AdonisAttachmentJob
   readonly #queueName: string | undefined
   #dependency: Promise<unknown> | undefined
+
+  /** A forwarding job is application-specific and must be supplied explicitly. */
+  static configure(options: AdonisAttachmentQueueOptions) {
+    return (_app: ApplicationService, _context: AttachmentQueueContext): AdonisAttachmentQueue =>
+      new AdonisAttachmentQueue(options)
+  }
 
   constructor(options: AdonisAttachmentQueueOptions) {
     if (!options.job || typeof options.job.dispatch !== 'function') {

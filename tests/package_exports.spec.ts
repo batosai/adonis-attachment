@@ -54,6 +54,11 @@ test('keeps Lucid exports out of the package root', async ({ assert }) => {
   assert.property(packageExports, 'attachmentService')
   assert.property(packageExports, 'defineConfig')
   assert.isFunction(packageExports.createAttachmentProcessor)
+  for (const adapter of [packageExports.LocalFileStorage, packageExports.AdonisDriveStorage, packageExports.MemoryAttachmentQueue]) {
+    assert.isFunction(adapter.fromApp)
+    assert.isFunction(adapter.configure)
+  }
+  assert.isFunction(packageExports.AdonisAttachmentQueue.configure)
   assert.notProperty(packageExports, 'attachment')
   assert.notInclude(rootSource, 'stores/lucid')
   assert.notInclude(lifecycleSource, '@adonisjs/lucid')

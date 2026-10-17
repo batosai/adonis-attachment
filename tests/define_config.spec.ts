@@ -218,8 +218,11 @@ test.group('defineConfig', () => {
     for (const queue of [
       undefined,
       { driver: 'memory' as const, concurrency: 2 },
+      MemoryAttachmentQueue.fromApp,
+      MemoryAttachmentQueue.configure({ concurrency: 2 }),
+      { default: 'local' as const, connections: { local: MemoryAttachmentQueue.configure() } },
       { default: 'local' as const, connections: { local: { driver: 'memory' as const, concurrency: 2 } } },
-    ]) {
+    ] as Array<import('../index.js').AttachmentConfig['queue']>) {
       const resolved = await defineConfig({
         storage,
         ...(queue ? { queue } : {}),
@@ -234,7 +237,7 @@ test.group('defineConfig', () => {
       await (resolved.queue as MemoryAttachmentQueue).drain()
     }
 
-    assert.deepEqual(processed, [pdf.id, pdf.id, pdf.id])
+    assert.deepEqual(processed, [pdf.id, pdf.id, pdf.id, pdf.id, pdf.id, pdf.id])
   })
 
   test('rejects memory jobs without Lucid or a configured processor', async ({ assert }) => {

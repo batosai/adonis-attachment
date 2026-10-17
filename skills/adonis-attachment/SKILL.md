@@ -21,6 +21,11 @@ when retaining a JSON column or using `/legacy`. Read
 
 ## Decisions that matter
 
+- Storage, store and queue share instances or `(app, context)` factories. Built-ins use
+  `fromApp` for defaults and `configure(options)` for overrides. Queue defaults to memory;
+  store defaults to disabled; storage is required. Queue driver shortcuts and named
+  connections still work. Inspect the installed beta exports before using new factories.
+
 - The package is `@jrmc/adonis-attachment` (singular), even when the task says "attachments".
 - Core is required; Drive, Lucid, and Adonis Queue are optional. Default storage is
   `LocalFileStorage.fromApp`, not Drive. Select `store: LucidAttachmentStore.fromApp` from `/lucid` explicitly for Lucid data; the default stub uses `store: false`.

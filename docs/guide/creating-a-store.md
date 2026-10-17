@@ -14,6 +14,12 @@ with this example. An external worker needs a store backed by the same persisten
 as the web application. Persisting files alone does not make their in-memory records durable.
 :::
 
+
+Store factories follow the same `(app, context)` convention as storage and queue adapters.
+Use `fromApp` for defaults and `configure(options)` for overrides when designing your class.
+See [the common adapter pattern](/guide/configuration#a-common-adapter-pattern) for resolution
+order, shared settings and queue handler wiring.
+
 ## 1. Start with the read capability
 
 Only `repository` is required by `AttachmentStore`. It must return a plain `Attachment`

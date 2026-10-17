@@ -58,7 +58,7 @@ export {
   type AttachmentEventName,
   type AttachmentEventPayload,
 } from "./src/events/attachment_events.js";
-export { AdonisDriveStorage } from "./src/adapters/adonis_drive_storage.js";
+export { AdonisDriveStorage, type AdonisDriveStorageOptions } from "./src/adapters/adonis_drive_storage.js";
 export {
   type AttachmentBinaryConfig,
   type AttachmentBinariesConfig,
@@ -80,6 +80,7 @@ export {
 } from "./src/variants/variant_converter.js";
 export {
   MemoryAttachmentQueue,
+  type MemoryAttachmentQueueOptions,
   type AttachmentQueueFailureHandler,
 } from "./src/queues/memory_queue.js";
 export {

@@ -5,21 +5,17 @@
  * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
  */
 
-import type { ApplicationService } from '@adonisjs/core/types'
+import type { AttachmentAdapterConfig, AttachmentAdapterContext, AttachmentAdapterFactory } from './attachment_adapter.js'
 import type { AttachmentRepository } from './attachment_repository.js'
 import type { AttachmentMetadataPersister } from './attachment_metadata_persister.js'
 import type { AttachmentPersistence } from './attachment_persistence.js'
-import type { AttachmentPersistenceOptions } from './attachment_options.js'
 import type { AttachmentService } from './attachment_service.js'
 import type { VariantGenerator } from './attachment_job_processor.js'
 import type { VariantConverterRegistry } from '../converters/configured_variant_converter_registry.js'
-import type { VariantPathOptions } from '../variants/variant_path.js'
 
 /** Shared settings available to store factories when the application boots. */
-export type AttachmentStoreContext = {
+export type AttachmentStoreContext = AttachmentAdapterContext & {
   defaultDisk: string
-  defaults?: AttachmentPersistenceOptions
-  variant?: VariantPathOptions
 }
 
 /**
@@ -39,9 +35,6 @@ export interface AttachmentStore {
   ): VariantGenerator | Promise<VariantGenerator>
 }
 
-export type AttachmentStoreFactory = (
-  app: ApplicationService,
-  context: AttachmentStoreContext,
-) => AttachmentStore | Promise<AttachmentStore>
+export type AttachmentStoreFactory = AttachmentAdapterFactory<AttachmentStore, AttachmentStoreContext>
 
-export type AttachmentStoreConfig = AttachmentStore | AttachmentStoreFactory | false
+export type AttachmentStoreConfig = AttachmentAdapterConfig<AttachmentStore, AttachmentStoreContext> | false

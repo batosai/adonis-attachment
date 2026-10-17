@@ -8,6 +8,7 @@
 import { configProvider } from '@adonisjs/core'
 import {
   MemoryAttachmentQueue,
+  isConfiguredMemoryAttachmentQueue,
   type AttachmentQueueFailureHandler,
 } from './queues/memory_queue.js'
 import {
@@ -17,7 +18,6 @@ import {
 import {
   AttachmentError,
   AttachmentConfigurationError,
-  AttachmentProcessorNotConfiguredError,
 } from './errors.js'
 import type { ApplicationService, ConfigProvider } from '@adonisjs/core/types'
 import type { AttachmentServiceOptions } from './core/attachment_service.js'
@@ -27,8 +27,8 @@ import type { AttachmentProcessingAdapters } from './core/attachment_processing_
 import type { AttachmentStore, AttachmentStoreConfig, AttachmentStoreContext } from './core/attachment_store.js'
 import { hasAttachmentTransactions } from './core/attachment_persistence.js'
 import { createAttachmentProcessor } from './create_attachment_processor.js'
-import type { AttachmentJobHandler, AttachmentQueue } from './core/queue.js'
-import type { AttachmentStorage } from './core/storage.js'
+import type { AttachmentJobHandler, AttachmentQueue, AttachmentQueueAdapterConfig, AttachmentQueueContext } from './core/queue.js'
+import type { AttachmentStorageConfig, AttachmentStorageContext } from './core/storage.js'
 import type { AttachmentManagerOptions } from './sources/attachment_manager.js'
 import type { VariantPathOptions } from './variants/variant_path.js'
 import type { AttachmentPersistenceOptions } from './core/attachment_options.js'
@@ -83,7 +83,7 @@ export type AttachmentQueueConfig =
   | MemoryAttachmentQueueConfig
   | AdonisAttachmentQueueConfig
 
-export type AttachmentQueueConnection = AttachmentQueueConfig | Integration<AttachmentQueue>
+export type AttachmentQueueConnection = AttachmentQueueConfig | AttachmentQueueAdapterConfig
 
 export type AttachmentQueueConnections = Record<string, AttachmentQueueConnection>
 
@@ -98,7 +98,7 @@ export type AttachmentConfig<
 > = {
   /** Overrides the storage default. Falls back to `fs` when no adapter provides one. */
   defaultDisk?: string
-  storage: Integration<AttachmentStorage>
+  storage: AttachmentStorageConfig
   queue?: AttachmentQueueConnection | NamedAttachmentQueueConfig<KnownQueues>
   /** Advanced escape hatch overriding the configured store job processor. */
   jobHandler?: Integration<AttachmentJobHandler>
@@ -152,7 +152,16 @@ export function defineConfig<
       )
     }
     const selectedQueue = selectQueue(config.queue)
-    const storage = await resolveIntegration(config.storage, app)
+    const storageContext: AttachmentStorageContext = {
+      ...(config.defaultDisk !== undefined ? { defaultDisk: config.defaultDisk } : {}),
+      ...(config.defaults ? { defaults: config.defaults } : {}),
+      ...(config.variant ? { variant: config.variant } : {}),
+    }
+    const storage = typeof config.storage === 'function'
+      ? await config.storage(app, storageContext) : config.storage
+    if (!storage || typeof storage.write !== 'function' || typeof storage.read !== 'function' || typeof storage.remove !== 'function') {
+      throw new AttachmentConfigurationError('Invalid attachment storage: write, read and remove methods are required')
+    }
     const obsolete = config as unknown as Record<string, unknown>
     for (const key of ['integrations', 'repository', 'processor']) {
       if (key in obsolete) throw new AttachmentConfigurationError(`Attachment config "${key}" has been replaced by store. Use store: LucidAttachmentStore.fromApp or provide a custom AttachmentStore.`)
@@ -177,9 +186,6 @@ export function defineConfig<
       throw new AttachmentConfigurationError('Attachment store factory must return an AttachmentStore')
     }
     if (store?.persistence) hasAttachmentTransactions(store.persistence)
-    if (config.defaults?.variants?.length && !store?.variants && !config.jobHandler && usesConfiguredMemoryQueue(selectedQueue)) {
-      throw new AttachmentConfigurationError('Attachment defaults.variants requires a store with variant persistence or a custom jobHandler')
-    }
     const metadataExtractors =
       config.media?.metadata !== undefined
         ? await resolveIntegration(config.media.metadata, app)
@@ -192,13 +198,20 @@ export function defineConfig<
           autodetect: toAutodetectOptions(config.media?.binaries),
         })
       : undefined
-    const processor = !config.jobHandler && usesConfiguredMemoryQueue(selectedQueue) && store
+    const processor = !config.jobHandler && store
       ? createAttachmentProcessor(app, { store, context: storeContext, converters: converters ?? new ConfiguredVariantConverterRegistry({}) })
       : undefined
     const jobHandler: AttachmentJobHandler | undefined = config.jobHandler
       ? await resolveIntegration(config.jobHandler, app)
       : processor ? (job) => processor.process(job) : undefined
-    const queue = await resolveQueue(selectedQueue, app, jobHandler)
+    const queue = await resolveQueue(selectedQueue, app, {
+      ...storeContext,
+      ...(jobHandler ? { handler: jobHandler } : {}),
+    })
+
+    if (config.defaults?.variants?.length && !store?.variants && !config.jobHandler && isConfiguredMemoryAttachmentQueue(queue)) {
+      throw new AttachmentConfigurationError('Attachment defaults.variants requires a store with variant persistence or a custom jobHandler')
+    }
 
     if (processor && events) {
       processor.setEventEmitter(events)
@@ -261,14 +274,14 @@ function selectQueue(config: unknown): AttachmentQueueConnection | undefined {
 async function resolveQueue(
   config: AttachmentQueueConnection | undefined,
   app: ApplicationService,
-  handler: AttachmentJobHandler | undefined
+  context: AttachmentQueueContext
 ): Promise<AttachmentQueue> {
   if (config === undefined) {
-    return createMemoryQueue(handler)
+    return MemoryAttachmentQueue.fromApp(app, context)
   }
 
   const resolved = typeof config === 'function'
-    ? await resolveIntegration(config, app)
+    ? await config(app, context)
     : config
 
   if (typeof resolved !== 'object' || resolved === null) {
@@ -283,50 +296,21 @@ async function resolveQueue(
 
   switch (resolved.driver) {
     case 'memory':
-      return createMemoryQueue(handler, {
+      return MemoryAttachmentQueue.configure({
         ...(resolved.concurrency !== undefined ? { concurrency: resolved.concurrency } : {}),
         ...(resolved.onFailure ? { onFailure: resolved.onFailure } : {}),
-      })
+      })(app, context)
     case 'adonis':
-      return new AdonisAttachmentQueue({
+      return AdonisAttachmentQueue.configure({
         job: resolved.job,
         ...(resolved.queueName ? { queueName: resolved.queueName } : {}),
-      })
+      })(app, context)
     default:
       throw new AttachmentError(
         `Unknown attachment queue driver: ${String((resolved as { driver?: unknown }).driver)}`,
         { code: 'E_INVALID_ATTACHMENT_CONFIG' }
       )
   }
-}
-
-function createMemoryQueue(
-  handler: AttachmentJobHandler | undefined,
-  options: Omit<MemoryAttachmentQueueConfig, 'driver'> = {}
-): MemoryAttachmentQueue {
-  if (!handler) {
-    return new UnconfiguredMemoryAttachmentQueue(options)
-  }
-
-  return new MemoryAttachmentQueue({ handler, ...options })
-}
-
-class UnconfiguredMemoryAttachmentQueue extends MemoryAttachmentQueue {
-  constructor(options: Omit<MemoryAttachmentQueueConfig, 'driver'>) {
-    super({ handler: async () => {}, ...options })
-  }
-
-  override enqueue(): Promise<void> {
-    return Promise.reject(new AttachmentProcessorNotConfiguredError())
-  }
-}
-
-function usesConfiguredMemoryQueue(config: AttachmentQueueConnection | undefined): boolean {
-  if (config === undefined) {
-    return true
-  }
-
-  return typeof config === 'object' && config !== null && !isAttachmentQueue(config) && config.driver === 'memory'
 }
 
 function isAttachmentQueue(value: unknown): value is AttachmentQueue {

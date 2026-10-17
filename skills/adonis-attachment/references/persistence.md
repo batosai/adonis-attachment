@@ -69,3 +69,19 @@ For variants, use `VariantGenerationService.generateAll(request)` and persist th
 On rollback remove newly generated files; on regeneration replace rows uniquely by original
 ID and variant key and remove old files only after commit. Expose that wrapper as `store.variants(service, converters, context)` alongside the repository;
 `createAttachmentProcessor(app)` wires it for memory and external workers; do not discard low-level results or pretend it stores rows.
+
+## Shared adapter factories
+
+Storage, store and queue accept instances or sync/async `(app, context)` factories.
+Use `LocalFileStorage.configure({ baseUrl })`, `AdonisDriveStorage.configure({ disk })`,
+`LucidAttachmentStore.configure({ tableName })`, and `MemoryAttachmentQueue.configure({ concurrency })`
+for native overrides. Import Lucid from `/lucid` and the other classes from the root.
+`fromApp` uses defaults. `AdonisAttachmentQueue.configure({ job, queueName })` requires
+an application forwarding job; there is no implicit default job.
+Factories resolve storage first, then store, then queue. All receive `defaults` and `variant`;
+storage receives optional explicit `defaultDisk`, the others the resolved disk.
+A queue factory also receives optional `context.handler` assembled from the store or
+`jobHandler`; use it after boot for custom in-process execution. External workers use
+`createAttachmentProcessor(app)`. Never run the handler inside a config factory.
+Existing one-argument factories, instances, queue driver shortcuts and named connections
+remain valid. Do not add `false` for storage or queue; only store supports it.

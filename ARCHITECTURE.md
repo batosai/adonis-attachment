@@ -117,3 +117,15 @@ La commande Ace `make:attachment-v5-migration` rend le stub package `stubs/migra
 ## Route de lecture
 
 Le provider expose `GET /attachments/:id` uniquement lorsque l'application est configuree avec un `AttachmentRepository`. La route est desactivable et son prefixe est configurable. Elle lit les octets via `AttachmentService` et renseigne le type MIME. Elle est publique par defaut : les applications qui ont besoin d'autorisation doivent definir leur propre route autour du repository et du service.
+
+## Fabriques d'adaptateurs
+
+`storage`, `store` et `queue` acceptent une instance ou une fabrique `(app, context)`
+synchrone/asynchrone. Les types communs sont dans `src/core/attachment_adapter.ts`.
+Les adaptateurs natifs exposent `configure(options)` et, quand des valeurs par defaut
+suffisent, `fromApp`. Adonis Queue exige explicitement le job de l'application.
+La resolution suit storage → store → queue. Le contexte storage recoit le defaultDisk
+explicite; les suivants recoivent le disque resolu. La queue recoit aussi le handler
+optionnel du store ou de jobHandler. Sa construction reste paresseuse pour eviter un
+cycle avec le service attachment. Ne pas executer le handler pendant cette resolution.
+Les raccourcis driver et les connexions nommees de queue sont conserves.

@@ -176,11 +176,11 @@ to skip. Use `Converter<CustomOptions>` and `ConverterConfig<CustomOptions>` for
 Add `ATTACHMENT_QUEUE: Env.schema.enum.optional(['memory', 'background'] as const)` to the
 existing `start/env.ts` schema. Import `env` from `#start/env` in attachment config, then set
 `queue.default: env.get('ATTACHMENT_QUEUE', 'memory')`. Declare `connections.memory` with
-`{ driver: 'memory', concurrency: 1, onFailure(job, error) { console.error(job.type, error) } }`.
+`MemoryAttachmentQueue.configure({ concurrency: 1, onFailure(job, error) { console.error(job.type, error) } })`.
 Default must match a connection key; unknown names fail boot rather than silently falling back.
 
-An external connection is `{ driver: 'adonis', job: GenerateAttachmentVariants,
-queueName: 'attachments' }`. The connection name `background` is distinct from the native
+An external connection is `AdonisAttachmentQueue.configure({ job: GenerateAttachmentVariants,
+queueName: 'attachments' })`. The connection name `background` is distinct from the native
 queue destination. Only the selected connection is initialized, but top-level JS imports
 still run. Use an async connection factory with a dynamic job import returning
 `new AdonisAttachmentQueue(...)` to defer optional dependencies.
@@ -205,7 +205,7 @@ export default class GenerateAttachmentVariants extends Job<AttachmentJob> {
 Run `node ace queue:work --queue=attachments`. Worker database/storage access and media
 dependencies must match the application. A native `Job.options.queue` takes precedence
 over Attachment's `queueName`. The default memory driver automatically wires processing through the selected store;
-external workers need the factory above. Direct queue instances/factories own their handlers.
+external workers need the factory above. Direct queue instances own their handlers. Factories receive optional `context.handler` from the store or `jobHandler`; invoke it only after configuration finishes.
 
 Without Lucid, use a custom store with a repository and a variant-persistence factory
 (`variants(service, converters, context)`). Persist `VariantGenerationService.generateAll()` results; rollback
@@ -233,3 +233,14 @@ Check failures where work executes: sync persistence catch, memory connection `o
 or external worker logs. Without `onFailure`, memory job failures are silent; drain does
 not rethrow them. Unsupported input and absent metadata differ from corrupt input, missing
 packages, binary failures, or missing workers. A SVG must never be passed to EXIF.
+
+### Common queue factories
+
+Prefer `queue: MemoryAttachmentQueue.configure({ concurrency: 2, onFailure })` for local
+processing and `queue: AdonisAttachmentQueue.configure({ job: GenerateAttachmentVariants,
+queueName: 'attachments' })` for external jobs. Import these classes from the package root.
+`MemoryAttachmentQueue.fromApp` and omitted queue use default concurrency 1. Named
+connections can contain the same factories; only the selected connection is resolved.
+Existing `{ driver: 'memory' }` / `{ driver: 'adonis', job }` declarations remain supported.
+Storage, store and queue share the `(app, context)` convention. Their responsibilities and
+defaults remain distinct: bytes (required), data persistence (disabled), dispatch (memory).

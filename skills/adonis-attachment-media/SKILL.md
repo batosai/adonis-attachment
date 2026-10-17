@@ -38,6 +38,10 @@ Verify installed beta declarations before applying these newer config APIs.
   LibreOffice and Poppler. No extracted metadata is different from a processing error.
 - A missing dependency or corrupt supported file raises an error; unsupported MIME types
   are skipped. Blurhash alone is best-effort and may be absent without failing the variant.
+- Queue follows storage/store: an instance, `fromApp`, or `configure(options)` factory.
+  Use `MemoryAttachmentQueue.configure({ concurrency, onFailure })` or
+  `AdonisAttachmentQueue.configure({ job, queueName })` from the root. Custom factories
+  receive `(app, context)` and optional `context.handler`; run it only after config resolves.
 - Configure `queue.default` and `queue.connections` for environment selection. Memory is
   the fallback when queue is omitted, in-process, non-durable, and has no automatic retry.
 - Legacy supports BOTH memory and external workers. Register trusted model loaders in

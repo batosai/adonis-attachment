@@ -11,6 +11,7 @@ import type { ApplicationService } from '@adonisjs/core/types'
 import type {
   AttachmentSignedUrlOptions,
   AttachmentStorage,
+  AttachmentStorageContext,
   StorageLocation,
   WriteAttachmentInput,
 } from '../core/storage.js'
@@ -33,6 +34,11 @@ export type AdonisDriveService = {
   use(disk?: string): AdonisDriveDisk
 }
 
+export type AdonisDriveStorageOptions = {
+  /** Override the default Drive disk for attachments. */
+  disk?: string
+}
+
 export class AdonisDriveStorage implements AttachmentStorage {
   readonly #drive: AdonisDriveService
   readonly defaultDisk: string | undefined
@@ -45,24 +51,30 @@ export class AdonisDriveStorage implements AttachmentStorage {
   /**
    * Creates a Drive adapter using the default disk declared in config/drive.ts.
    */
-  static async fromApp(app: ApplicationService): Promise<AdonisDriveStorage> {
-    await loadOptionalDependency('@adonisjs/drive')
+  static async fromApp(app: ApplicationService, context: AttachmentStorageContext = {}): Promise<AdonisDriveStorage> {
+    return AdonisDriveStorage.configure()(app, context)
+  }
 
-    const config = await configProvider.resolve<{ config: { default: string } }>(
-      app,
-      app.config.get('drive')
-    )
+  static configure(options: AdonisDriveStorageOptions = {}) {
+    return async (app: ApplicationService, _context: AttachmentStorageContext): Promise<AdonisDriveStorage> => {
+      await loadOptionalDependency('@adonisjs/drive')
 
-    if (!config) {
-      throw new AttachmentError('Drive config is required when using AdonisDriveStorage.fromApp', {
-        code: 'E_DRIVE_CONFIG_NOT_FOUND',
-      })
+      const config = await configProvider.resolve<{ config: { default: string } }>(
+        app,
+        app.config.get('drive')
+      )
+
+      if (!config) {
+        throw new AttachmentError('Drive config is required when using AdonisDriveStorage.fromApp', {
+          code: 'E_DRIVE_CONFIG_NOT_FOUND',
+        })
+      }
+
+      return new AdonisDriveStorage(
+        (await app.container.make('drive.manager')) as AdonisDriveService,
+        options.disk ?? config.config.default
+      )
     }
-
-    return new AdonisDriveStorage(
-      (await app.container.make('drive.manager')) as AdonisDriveService,
-      config.config.default
-    )
   }
 
   async write(input: WriteAttachmentInput): Promise<void> {

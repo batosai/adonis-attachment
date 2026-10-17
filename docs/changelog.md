@@ -9,6 +9,13 @@ For earlier versions, see the [v5 changelog](https://adonis-attachment.jrmc.dev/
 
 ### Added
 
+- Storage, store and queue share the `(app, context)` adapter factory convention.
+  `LocalFileStorage`, `AdonisDriveStorage`, `MemoryAttachmentQueue` and
+  `AdonisAttachmentQueue` now offer `configure(options)`. Memory also offers `fromApp`.
+  Existing instances, one-argument factories, driver shortcuts and named queues remain supported.
+- Custom queue factories receive an optional `context.handler` from the selected store or
+  `jobHandler`. See [configuration](/guide/configuration#a-common-adapter-pattern).
+
 - [`AttachmentRelation.getUrl()`](/guide/lucid#public-urls) resolves public storage URLs directly from singular Lucid relations, without importing `attachmentService` or enabling `preComputeUrl`.
 - Named variants are supported through typed `AttachmentVariantKey` keys. Use `{ fallback: 'original' }` to display the original while a variant has no persisted record.
 

@@ -12,6 +12,48 @@ export default defineConfig({
 })
 ```
 
+## A common adapter pattern
+
+`storage`, `store`, and `queue` each accept an adapter instance or a synchronous/asynchronous
+factory `(app, context) => adapter`. Built-in adapters offer `fromApp` when defaults are
+sufficient and `configure(options)` when you need overrides:
+
+```ts
+import { defineConfig, AdonisDriveStorage, MemoryAttachmentQueue } from '@jrmc/adonis-attachment'
+import { LucidAttachmentStore } from '@jrmc/adonis-attachment/lucid'
+
+export default defineConfig({
+  storage: AdonisDriveStorage.configure({ disk: 's3' }),
+  store: LucidAttachmentStore.configure({ tableName: 'media_attachments' }),
+  queue: MemoryAttachmentQueue.configure({ concurrency: 2 }),
+})
+```
+
+The default forms are `AdonisDriveStorage.fromApp`, `LucidAttachmentStore.fromApp`, and
+`MemoryAttachmentQueue.fromApp`. `configure()` returns a factory; it does not initialize
+an adapter immediately. Adonis Queue requires an application job, so use
+`AdonisAttachmentQueue.configure({ job: GenerateAttachmentVariants })`.
+
+| Setting | Responsibility | When omitted |
+| --- | --- | --- |
+| `storage` | File bytes and storage URLs | Required |
+| `store` | Attachment records and processing persistence | Disabled; `false` also disables it |
+| `queue` | Job dispatch or in-process execution | Memory queue |
+
+Factories resolve in this order: storage, store, queue. All receive `defaults` and `variant`.
+Storage receives the explicitly configured `defaultDisk`, if any. Store and queue receive the
+resolved disk: root `defaultDisk`, then the storage adapter's default, then `fs`.
+The queue context also supplies an optional `handler`, assembled from the store or overridden
+by `jobHandler`. A custom in-process queue can use it; external adapters usually dispatch
+jobs and build their processor in the worker instead.
+
+Public types include `AttachmentAdapterFactory`, `AttachmentStorageConfig`,
+`AttachmentStoreConfig`, `AttachmentQueueAdapterConfig` and their role-specific contexts.
+Existing one-argument factories, queue `driver` shortcuts and named `connections` remain
+supported. Do not resolve `jrmc.attachment` or run the handler inside a config factory:
+configuration must finish before processing starts. Reuse stateful adapters per application
+when factories can be resolved for multiple bindings.
+
 ## Storage
 
 Storage decides *where the bytes go*. Pick one.
@@ -27,8 +69,7 @@ directories, writes atomically (temp file + rename), and refuses paths that esca
 root. Pass `baseUrl` when those files are exposed publicly and you need public URLs:
 
 ```ts
-storage: new LocalFileStorage({
-  location: app.makePath('storage/attachments'),
+storage: LocalFileStorage.configure({
   baseUrl: 'https://app.example.test/uploads',
 })
 ```
@@ -50,6 +91,8 @@ export default defineConfig({
 Any object implementing `AttachmentStorage` (`write`, `read`, `remove`) works. The fallback
 disk name is `fs` unless your adapter exposes `defaultDisk` or you set `defaultDisk`
 explicitly.
+
+To override the default Drive disk, use `storage: AdonisDriveStorage.configure({ disk: 's3' })`.
 
 ## Store
 

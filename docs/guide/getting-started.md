@@ -11,7 +11,7 @@ An AdonisJS 7 app with `@adonisjs/lucid` already installed and a `User` model.
 ## 1. Install the package
 
 ```sh
-node ace add @jrmc/adonis-attachment
+node ace add @jrmc/adonis-attachment@next
 ```
 
 `node ace add` creates `config/attachment.ts`, registers the provider, and wires up the

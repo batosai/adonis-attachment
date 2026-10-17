@@ -8,6 +8,8 @@ Version 6 is currently in **beta**, published under the `next` tag.
 
 **[Documentation](https://next.adonis-attachment.jrmc.dev)** · **[Migration from v5](https://next.adonis-attachment.jrmc.dev/migration/from-v5)**
 
+See the [changelog](https://next.adonis-attachment.jrmc.dev/changelog) for additions and changes in each v6 release.
+
 ## What's new in v6
 
 Version 6 separates file storage, database persistence, and processing so you can choose the integrations your application needs.

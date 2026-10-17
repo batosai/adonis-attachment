@@ -26,6 +26,7 @@ export {
   AttachmentRelation,
   AttachmentCollectionRelation,
   type AttachmentRelationOptions,
+  type AttachmentRelationUrlOptions,
   type AttachmentRelationDefinition,
   type AttachmentRelationKind,
   type AttachmentRelationEntry,

@@ -41,6 +41,9 @@ class RelationUser extends BaseModel {
   })
   declare avatar: AttachmentRelation;
 
+  @attachment({ rename: false })
+  declare document: AttachmentRelation;
+
   @attachments({
     folder: ({ model }) => `gallery/${(model as RelationUser).id}`,
     rename: false,
@@ -54,6 +57,8 @@ let removed: string[];
 let writes: Array<{ disk: string; path: string }>;
 let queued: GenerateVariantsJob[];
 let nextId = 0;
+let urlPaths: string[];
+let resolveUrl: (path: string) => string | undefined;
 
 function createDraft(
   name: string,
@@ -107,6 +112,8 @@ test.group("Lucid attachment relations", (group) => {
     writes = [];
     queued = [];
     nextId = 0;
+    urlPaths = [];
+    resolveUrl = (path) => `https://cdn.example.test/${path}`;
     attachmentService = new AttachmentService({
       defaultDisk: "fs",
       defaults: { disk: "config", folder: "config" },
@@ -129,7 +136,8 @@ test.group("Lucid attachment relations", (group) => {
           removed.push(location.path);
         },
         async getUrl(location) {
-          return `https://cdn.example.test/${location.path}`;
+          urlPaths.push(location.path);
+          return resolveUrl(location.path);
         },
       },
     });
@@ -148,6 +156,58 @@ test.group("Lucid attachment relations", (group) => {
 
   group.teardown(async () => {
     await database.manager.closeAll();
+  });
+
+  test("resolves original and variant URLs with an explicit missing-variant fallback", async ({ assert }) => {
+    for (const field of ["avatar", "document"] as const) {
+      const user = await createUser(field);
+      const relation = user[field];
+      assert.isNull(await relation.getUrl());
+      assert.isNull(await relation.getUrl("thumbnail", { fallback: "original" }));
+
+      relation.attach(createDraft("original.txt"));
+      await user.save();
+      const link = await relation.get();
+      const originalPath = link!.attachment.path;
+      urlPaths = [];
+
+      assert.equal(await relation.getUrl(), `https://cdn.example.test/${originalPath}`);
+      assert.deepEqual(urlPaths, [originalPath]);
+      urlPaths = [];
+      assert.isNull(await relation.getUrl("thumbnail"));
+      assert.deepEqual(urlPaths, []);
+      assert.equal(await relation.getUrl("thumbnail", { fallback: "original" }), `https://cdn.example.test/${originalPath}`);
+
+      await new LucidAttachmentStore().createVariant(link!.attachment, "thumbnail", {
+        id: `variant-${field}`,
+        disk: "fs",
+        path: `${field}/thumbnail.txt`,
+        name: "thumbnail.txt",
+        originalName: "original.txt",
+        mimeType: "text/plain",
+        extname: "txt",
+        size: 1,
+      });
+      urlPaths = [];
+      assert.equal(await relation.getUrl("thumbnail"), `https://cdn.example.test/${field}/thumbnail.txt`);
+      assert.equal(await relation.getUrl("thumbnail", { fallback: "original" }), `https://cdn.example.test/${field}/thumbnail.txt`);
+      assert.deepEqual(urlPaths, [`${field}/thumbnail.txt`, `${field}/thumbnail.txt`]);
+
+      resolveUrl = (path) => path === originalPath ? "https://cdn.example.test/original.txt" : undefined;
+      assert.isNull(await relation.getUrl("thumbnail", { fallback: "original" }));
+      resolveUrl = () => undefined;
+      assert.isNull(await relation.getUrl());
+      assert.isNull(await relation.getUrl("preview", { fallback: "original" }));
+      resolveUrl = (path) => `https://cdn.example.test/${path}`;
+    }
+  });
+
+  test("propagates storage URL errors instead of falling back", async ({ assert }) => {
+    const user = await createUser();
+    user.avatar.attach(createDraft("original.txt"));
+    await user.save();
+    resolveUrl = () => { throw new Error("URL storage unavailable"); };
+    await assert.rejects(() => user.avatar.getUrl("thumbnail", { fallback: "original" }), /URL storage unavailable/);
   });
 
   test("stages singular changes until the Lucid model is saved", async ({

@@ -77,6 +77,7 @@ when you `save()` the model (or when you call `await avatar.persist()`). Reads s
 | Method | Does |
 | --- | --- |
 | `get()` | Reads the linked `AttachmentLinkModel` (blob preloaded) or `null`. Async. |
+| `getUrl(variant?, options?)` | Resolves a public storage URL or `null`. Use `{ fallback: 'original' }` for a missing variant. Async. |
 | `attach(draft)` | Stages the first attachment. Throws on flush if one already exists. |
 | `set(draft)` / `replace(draft)` | Stages an attachment, or a replacement of the current one. |
 | `attachExisting(id)` | Stages a link to an **existing blob** (reuse, no new file). |
@@ -142,6 +143,25 @@ declare avatar: AttachmentRelation
 ```
 
 ### Public URLs
+
+Resolve an original or named variant directly from a singular relation:
+
+```ts
+const originalUrl = await user.avatar.getUrl()
+const thumbnailUrl = await user.avatar.getUrl('thumbnail')
+const previewUrl = await user.avatar.getUrl('thumbnail', { fallback: 'original' })
+```
+
+`getUrl()` returns `Promise<string | null>` and works without `preComputeUrl`.
+Variant keys use `AttachmentVariantKey`, including your `AttachmentVariants` augmentation.
+Without a fallback, a missing variant returns `null`. With `fallback: 'original'`, the
+original is used only when the requested variant has no persisted record, for example
+while asynchronous generation is pending. A persisted variant without a public storage
+URL still returns `null`; storage errors propagate. This does not check file existence
+or generate a URL for the built-in file route.
+
+An empty relation or storage without public URL support returns `null`. The original
+may have a different MIME type from the variant, such as a PDF instead of a thumbnail.
 
 Enable `preComputeUrl` to resolve a public URL when `get()`, `all()`, or `variants()` reads
 the relation. The URL is kept in memory on the loaded attachment model and is never stored:

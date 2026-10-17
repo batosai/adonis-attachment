@@ -342,7 +342,7 @@ collection links or violate singular uniqueness. Do not delete originals during 
 | Root decorators and old `/types/...` imports | Decorators/types from `/lucid`; file data/services from root |
 | Global file options | `defaults`, overridden by decorator then manager call |
 | `serializeAs`, automatic attachment JSON | Explicit application response/view data |
-| `avatar.getUrl()` / `getVariant()` | Read link/blob; use `attachmentService` / relation `variants()` |
+| `avatar.getUrl()` / `getVariant()` | Use table `avatar.getUrl(key?)` for public URLs (`string \| null`); use `variants()` for blob metadata. Opt into `{ fallback: 'original' }` only for absent variant records. Verify the installed beta exposes `getUrl`. |
 | `router.attachments()` | Built-in public blob route, or authorized custom route with `route: false` |
 | V5 queue callbacks | Memory `onFailure`, or named connections and external job processor |
 | `RegenerateService` | `/lucid` `AttachmentRegenerator` or relation `regenerateVariants()` |

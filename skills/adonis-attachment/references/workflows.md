@@ -119,6 +119,25 @@ Use a decorator callback for a numeric auto-increment ID available after the own
 
 ## Read and serve
 
+Prefer the singular table relation's native URL method over an application wrapper:
+
+```ts
+import type { AttachmentRelation } from '@jrmc/adonis-attachment/lucid'
+
+declare const user: { avatar: AttachmentRelation }
+
+const originalUrl = await user.avatar.getUrl()
+const thumbnailUrl = await user.avatar.getUrl('thumbnail')
+const pendingPreviewUrl = await user.avatar.getUrl('thumbnail', { fallback: 'original' })
+```
+
+These return `string | null`, independently of `preComputeUrl`. Variant keys are typed
+through `AttachmentVariantKey`. A missing relation, missing variant without fallback,
+or storage without a public URL returns `null`. The fallback applies only to an absent
+variant record; it does not cover unavailable variant URLs, missing files, or storage errors.
+It returns a storage URL, not the built-in route URL. Check that the original MIME type
+is suitable for the UI before enabling fallback. Verify the installed beta exposes this method.
+
 ```ts
 import { attachmentService, type Attachment } from '@jrmc/adonis-attachment'
 
@@ -143,7 +162,7 @@ It does not precompute signed URLs. Local storage needs `baseUrl` for direct pub
 otherwise use the built-in public route or an authorized application route.
 
 For Edge, pass the computed URL to the view. For JSON/Inertia, return an explicit object.
-Do not use v5's `user.avatar.getUrl()`, `getVariant()`, `getKeyId()`, `router.attachments()`,
+Do not use v5's `getVariant()`, `getKeyId()`, `router.attachments()`,
 `serializeAs`, or direct property assignment on table relations. The separate `/legacy`
 facade supports direct assignment, URL/variant getters and serialization, but not `getKeyId()`
 or `router.attachments()`.

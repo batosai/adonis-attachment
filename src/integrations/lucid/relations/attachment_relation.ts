@@ -53,6 +53,11 @@ export type AttachmentRelationRow = LucidRow & {
 export type AttachmentRelationEntry = AttachmentLinkModel;
 export type AttachmentRelationRecord = AttachmentModel;
 
+export type AttachmentRelationUrlOptions = {
+  /** Use the original only when the requested variant has not been persisted. */
+  fallback?: "original";
+};
+
 export type AttachmentRelationKind = "one" | "many";
 
 export type AttachmentRelationDefinition = {
@@ -124,6 +129,28 @@ export class AttachmentRelation {
   async get(): Promise<AttachmentRelationEntry | null> {
     const lifecycle = await this.#lifecycle();
     return this.#preComputeUrl(await lifecycle.get(this.#owner()));
+  }
+
+  /** Resolve a public storage URL, optionally falling back from a missing variant. */
+  async getUrl(
+    variant?: AttachmentVariantKey,
+    options: AttachmentRelationUrlOptions = {},
+  ): Promise<string | null> {
+    const lifecycle = await this.#lifecycle();
+    const owner = this.#owner();
+    const link = await lifecycle.get(owner);
+    if (!link) return null;
+
+    let attachment: AttachmentModel = link.attachment;
+    if (variant !== undefined) {
+      const variants = await lifecycle.listVariants(owner);
+      const selected = variants.find((item) => item.variantKey === variant);
+      if (!selected && options.fallback !== "original") return null;
+      attachment = selected ?? attachment;
+    }
+
+    const service = await resolveAttachmentService();
+    return (await service.getUrl(attachment.toAttachment())) ?? null;
   }
 
   get hasPending(): boolean {

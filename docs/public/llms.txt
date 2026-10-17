@@ -12,3 +12,4 @@
 - [Image variants](https://next.adonis-attachment.jrmc.dev/guide/variants)
 - [Lucid persistence](https://next.adonis-attachment.jrmc.dev/guide/lucid)
 - [Migration from v5](https://next.adonis-attachment.jrmc.dev/migration/from-v5)
+- [Changelog](https://next.adonis-attachment.jrmc.dev/changelog)

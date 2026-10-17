@@ -82,6 +82,7 @@ export default withMermaid(
         { text: 'Guide', link: '/guide/introduction' },
         { text: 'Quickstart', link: '/guide/getting-started' },
         { text: 'Migrate from v5', link: '/migration/from-v5' },
+        { text: 'Changelog', link: '/changelog' },
       ],
       sidebar: {
         '/guide/': [

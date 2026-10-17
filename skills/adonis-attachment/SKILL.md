@@ -55,6 +55,9 @@ when retaining a JSON column or using `/legacy`. Read
   with `route: false`, authorize your own route, and check storage is not publicly exposed.
 - Table single `variants()` returns blob models, not links. Relations are not automatically
   serialized into API responses; construct the application's response explicitly.
+- For singular table relations, prefer `getUrl(variant?, options?)` for public storage URLs.
+  It returns `string | null`; `{ fallback: 'original' }` uses the original only when the
+  variant record is absent. It does not require `preComputeUrl` or build a file-route URL.
 - Legacy serializes automatically, exposes `getUrl()` / `getVariant()` and mutable `meta`.
   Register its model loaders in `integrations.legacy.models` for variants/deferred metadata
   with either memory or external queues; do not use the removed `integrations.lucid.jsonModels`.

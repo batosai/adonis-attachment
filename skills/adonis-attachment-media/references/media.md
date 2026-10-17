@@ -27,8 +27,13 @@ image conversion and `blurhash` if enabled. Enable the key with
 `@attachment({ variants: ['thumbnail'] })` on an `AttachmentRelation` imported from `/lucid`,
 or in `defaults.variants`, or in manager source options (highest priority).
 After `user.avatar.set(draft); await user.save()`, read `await user.avatar.variants()`.
-Those are blob models; find by `.variantKey`, read `.blurhash`, and build a URL from `.id`.
-Fall back to the original from `(await user.avatar.get())?.attachment` while processing.
+Those are blob models; find by `.variantKey` and read `.blurhash` for variant metadata.
+For public storage URLs, prefer `await user.avatar.getUrl('thumbnail')`. When the UI can
+display the original MIME type while processing, use
+`await user.avatar.getUrl('thumbnail', { fallback: 'original' })`.
+The method returns `string | null` without requiring `preComputeUrl`. Fallback covers
+only an absent variant record; missing public URLs return `null` and storage errors propagate.
+Verify the installed beta exposes this method. Build route URLs from blob `.id` when needed.
 Only use the built-in `/attachments/:id/:name?` route for public files.
 For legacy JSON fields, use the separate recipe below instead of these relation methods.
 

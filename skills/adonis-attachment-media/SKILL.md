@@ -20,6 +20,9 @@ legacy facade still uses v6 media/queue configuration, not v5 queue APIs. Read
   `converter` selects autodetect; `make:converter` is for custom processing, not required setup.
 - With Lucid, drafts staged on relations or assigned to legacy fields are written on owner save; variant jobs are queued
   after commit. No variant is guaranteed to exist when the upload response arrives.
+- For singular table relation previews, use `getUrl('thumbnail', { fallback: 'original' })`
+  when the UI can display the original MIME type. Fallback covers an absent variant record
+  only; a persisted variant without a public URL returns `null`, and storage errors propagate.
 - `meta: true` enables metadata independently of variants. Default image extraction uses
   Sharp, then EXIF where supported; SVG uses Sharp only. GPS normalization is built in.
 - PDF metadata requires `pdfinfo`; a PDF thumbnail requires `pdftoppm`. Video metadata

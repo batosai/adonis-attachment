@@ -14,6 +14,7 @@ import {
   type ConverterOptions,
   type InferConverters,
 } from '../index.js'
+import type { AttachmentRelation, AttachmentRelationUrlOptions } from '../src/integrations/lucid/index.js'
 
 type Assert<Value extends true> = Value
 type IsEqual<Left, Right> =
@@ -57,6 +58,17 @@ const validVariants: AttachmentPersistenceOptions = { variants: ['thumbnail', 'p
 // @ts-expect-error Unknown keys must be rejected after module augmentation.
 const invalidVariants: AttachmentPersistenceOptions = { variants: ['unknown'] }
 
+function relationUrlTypes(relation: AttachmentRelation) {
+  const options: AttachmentRelationUrlOptions = { fallback: 'original' }
+  const original: Promise<string | null> = relation.getUrl()
+  const thumbnail: Promise<string | null> = relation.getUrl('thumbnail', options)
+  // @ts-expect-error Unknown variant keys must be rejected after augmentation.
+  relation.getUrl('unknown')
+  // @ts-expect-error Only the original is a supported fallback.
+  relation.getUrl('thumbnail', { fallback: 'preview' })
+  return [original, thumbnail]
+}
+
 const invalidFormat: ConverterConfig = {
   // @ts-expect-error Unsupported Sharp formats are rejected.
   format: 'bmp',
@@ -96,5 +108,6 @@ void invalidVariants
 void invalidFormat
 void invalidWebpOptions
 void watermarkConfig
+void relationUrlTypes
 
 export {}

@@ -3,6 +3,11 @@
 You have two ways to serve stored files back to users: the **built-in route** (quick, for
 public assets) or your **own route** (for anything that needs authorization).
 
+For direct public storage URLs on singular Lucid relations, use
+`await user.avatar.getUrl()` or
+`await user.avatar.getUrl('thumbnail', { fallback: 'original' })`.
+See [public URLs](/guide/lucid#public-urls) for missing-variant behavior and storage requirements.
+
 ## The built-in route
 
 When Lucid is registered in the application, the package detects its `lucid.db` container

@@ -80,7 +80,7 @@ v5; follow the [migration guide](/migration/from-v5) before upgrading an existin
 - Separated attachment creation, storage, persistence, and processing. Managers create drafts; explicit persistence or a Lucid owner save writes the files.
 - Made Lucid, Adonis Drive, and Adonis Queue optional, with local filesystem storage and an in-memory queue available out of the box.
 - Added [table-backed Lucid relations](/guide/lucid) for singular attachments, ordered collections, and shared files, with transaction-aware persistence and cleanup.
-- Added an experimental [/legacy integration](/guide/legacy) for existing JSON fields and collections, including variants, metadata, and background processing.
+- Added a [/legacy integration](/guide/legacy) for existing JSON fields and collections, including variants, metadata, and background processing.
 - Added [custom persistence and processing adapters](/guide/custom-persistence) for other data stores.
 - Included [variant path configuration](/guide/configuration), typed converters, metadata extraction, regeneration, and [named queue connections](/guide/queues).
 - Included [installable agent skills](/guide/agent-skills) for application integration, media processing, and v5 migration.

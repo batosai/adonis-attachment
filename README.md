@@ -20,7 +20,7 @@ Version 6 separates file storage, database persistence, and processing so you ca
 - **Lucid gets a relation API.** Dedicated attachment and ownership tables support singular attachments, collections, and sharing a file between records. Use methods such as `set()`, `get()`, and `detach()` to manage relations.
 - **Queue integrations are optional.** An in-memory queue is included for variant processing; connect AdonisJS Queue when you need separate workers.
 
-Existing v5 applications also have an experimental legacy integration for keeping JSON fields. Configuration and APIs have changed: follow the [migration guide](https://next.adonis-attachment.jrmc.dev/migration/from-v5) before upgrading.
+Existing v5 applications also have a legacy integration for keeping JSON fields. Configuration and APIs have changed: follow the [migration guide](https://next.adonis-attachment.jrmc.dev/migration/from-v5) before upgrading.
 
 Storage, store and queue accept instances or `(app, context)` factories. Use `fromApp`
 for defaults and `configure(options)` for overrides, for example
@@ -132,7 +132,7 @@ With the Lucid attachment store selected, the package registers `GET /attachment
 
 ## Migrating from v5
 
-Version 6 introduces breaking changes to configuration and attachment APIs. Follow the [migration guide](https://next.adonis-attachment.jrmc.dev/migration/from-v5) to choose between keeping existing JSON fields with the experimental legacy integration or migrating them to attachment tables.
+Version 6 introduces breaking changes to configuration and attachment APIs. Follow the [migration guide](https://next.adonis-attachment.jrmc.dev/migration/from-v5) to choose between keeping existing JSON fields with the legacy integration or migrating them to attachment tables.
 
 ## License
 

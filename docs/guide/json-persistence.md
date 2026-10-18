@@ -1,6 +1,6 @@
 # Legacy JSON internals
 
-The JSON engine belongs exclusively to the experimental [/legacy integration](/guide/legacy).
+The JSON engine belongs exclusively to the [/legacy integration](/guide/legacy).
 The default [/lucid integration](/guide/lucid) uses attachment and link tables. There is no
 public per-field storage switch, and the JSON store/record/worker classes are not exported
 from `@jrmc/adonis-attachment/lucid`.

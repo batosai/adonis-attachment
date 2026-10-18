@@ -112,10 +112,15 @@ export default withMermaid(
             text: 'Storing in a database',
             items: [
               { text: 'With Lucid', link: '/guide/lucid' },
-              { text: 'Legacy JSON fields (experimental)', link: '/guide/legacy' },
-              { text: 'Legacy JSON internals', link: '/guide/json-persistence' },
               { text: 'With another data store', link: '/guide/custom-persistence' },
               { text: 'Creating a store', link: '/guide/creating-a-store' },
+            ],
+          },
+          {
+            text: 'Legacy JSON',
+            items: [
+              { text: 'Fields and collections', link: '/guide/legacy' },
+              { text: 'Internals', link: '/guide/json-persistence' },
             ],
           },
         ],

@@ -30,7 +30,7 @@ when retaining a JSON column or using `/legacy`. Read
 - Core is required; Drive, Lucid, and Adonis Queue are optional. Default storage is
   `LocalFileStorage.fromApp`, not Drive. Select `store: LucidAttachmentStore.fromApp` from `/lucid` explicitly for Lucid data; the default stub uses `store: false`.
 - Choose the field's persistence before editing its model or schema. `/lucid` is the default
-  table-backed API; `/legacy` is an experimental JSON facade requiring Lucid.
+  table-backed API; `/legacy` is a JSON facade requiring Lucid.
   Verify the installed build exports `/legacy`; not every v6 beta does. Do not migrate
   an existing JSON field to tables without an explicit migration decision.
 - For table relations, import `attachmentManager` and `attachmentService` from the package root. Import

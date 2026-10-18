@@ -20,7 +20,7 @@ original and variant `path` and `disk` verbatim, and new v6 writes must match th
 paths. If the samples reveal more than one convention, preserve and test every convention rather
 than selecting a representative default.
 
-- Keep singular attachments or collections in their existing JSON columns: use the experimental `/legacy` path
+- Keep singular attachments or collections in their existing JSON columns: use the `/legacy` path
   below. Confirm the installed build exports it. No JSON-to-table migration is required.
 - Use default v6 relations, explicit collection positioning or shared blobs: follow the table migration below.
 - Mixed models are supported. Select the target per field and exclude retained JSON fields

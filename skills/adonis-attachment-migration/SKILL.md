@@ -66,7 +66,7 @@ leave only those untouched, then continue with the required code and configurati
 
 - A normal upload task does not authorize a major upgrade. Plan schema/data changes before
   running them. Back up database AND files, rehearse on copies, and obtain approval for production writes.
-- Choose per field: keep JSON through the experimental `/legacy` facade, or migrate
+- Choose per field: keep JSON through the `/legacy` facade, or migrate
   to default `/lucid` tables. Verify the installed build exports the needed legacy APIs.
   Legacy collections use arrays without reordering. A JSON-only cutover needs no attachment/link/lock tables.
 - `/lucid` decorators represent table relations, not JSON columns. Both originals and variants are blobs;

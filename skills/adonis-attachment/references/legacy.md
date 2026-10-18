@@ -1,6 +1,6 @@
 # Legacy JSON fields and collections
 
-Use only with a v6 build exporting `@jrmc/adonis-attachment/legacy`. This experimental
+Use only with a v6 build exporting `@jrmc/adonis-attachment/legacy`. This
 facade keeps singular attachments or arrays in owner JSON columns. It is not a JSON option
 on `/lucid` relations, a standalone store without Lucid, or complete v5 emulation.
 

@@ -5,8 +5,6 @@ For earlier versions, see the [v5 changelog](https://adonis-attachment.jrmc.dev/
 
 ## 6.0.0-beta.2
 
-> In preparation — not yet published.
-
 ### Added
 
 - Storage, store and queue share the `(app, context)` adapter factory convention.

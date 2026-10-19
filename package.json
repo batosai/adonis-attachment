@@ -1,6 +1,6 @@
 {
   "name": "@jrmc/adonis-attachment",
-  "version": "6.0.0-beta.2",
+  "version": "6.0.0-beta.3",
   "type": "module",
   "description": "Next-generation attachment primitives for AdonisJS and standalone TypeScript applications",
   "repository": {
@@ -152,7 +152,7 @@
     "@adonisjs/core": "^7.5.2",
     "@adonisjs/drive": "^4.0.0",
     "@adonisjs/lucid": "^22.4.2",
-    "@adonisjs/queue": "^0.6.2",
+    "@adonisjs/queue": "^0.7.0",
     "@japa/assert": "^4.2.0",
     "@japa/runner": "^4.5.0",
     "@libsql/sqlite3": "^0.3.1",
@@ -178,7 +178,7 @@
     "@adonisjs/core": "^7.0.0",
     "@adonisjs/drive": "^4.0.0",
     "@adonisjs/lucid": "^22.0.0",
-    "@adonisjs/queue": "^0.6.0",
+    "@adonisjs/queue": "^0.6.0 || ^0.7.0",
     "blurhash": "^2.0.5",
     "exifreader": "^4.41.3",
     "sharp": "^0.35.3"

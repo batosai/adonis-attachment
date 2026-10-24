@@ -134,7 +134,6 @@ import { AdonisDriveStorage, defineConfig } from '@jrmc/adonis-attachment'
 
 export default defineConfig({
   storage: AdonisDriveStorage.fromApp,
-  route: false,
   store: LucidAttachmentStore.configure({ legacy: { models: { users: () => import('#models/user') } } }),
   converters: {
     thumbnail: { converter: () => import('#converters/thumbnail_converter') },
@@ -205,6 +204,8 @@ keys (for example `avatar.thumbnail`), with precomputed URLs when enabled. `seri
 `serializeAs: null`, custom `serialize(value, field, model)` and Lucid field cherry-picking
 are supported. File reads use `getBytes()`/`getBuffer()`; signed URLs use
 `getSignedUrl(options)` or `getSignedUrl('thumbnail', options)`.
+The [File URLs reference](/guide/urls#legacy-json-fields) groups these methods, precomputed
+URLs, storage requirements and their differences from application route URLs.
 
 This is not a complete v5 emulation: old `keyId`, low-level mutable file
 internals, and every historical manager overload are outside this first facade. Response

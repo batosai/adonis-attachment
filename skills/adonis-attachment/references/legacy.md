@@ -36,7 +36,6 @@ export class User extends BaseModel {
 
 export const config = defineConfig({
   storage: LocalFileStorage.fromApp,
-  route: false,
   store: LucidAttachmentStore.configure({ legacy: { models: { users: async () => ({ default: User }) } } }),
   converters: { thumbnail: { resize: { width: 320 }, format: { format: 'webp' } } },
 })
@@ -132,7 +131,7 @@ are non-durable and have no automatic retry; use `onFailure` to observe failures
 `user.avatar?.getUrl()` and `getUrl('thumbnail')` use storage URLs. Signed URLs use
 `getSignedUrl(options)` or `getSignedUrl('thumbnail', options)`; authorize access first.
 The built-in blob-ID route does not resolve legacy references. For JSON-only/private
-apps use `route: false` and an authorized owner-based route, or authorized signed URLs.
+apps omit `router.attachments()` and use an authorized owner-based route, or authorized signed URLs.
 Local direct URLs need a storage `baseUrl`; methods may return undefined when unsupported.
 
 `getVariant('thumbnail')` synchronously returns a loaded variant or null, without SQL.
@@ -175,7 +174,7 @@ is no legacy `user.avatar.regenerateVariants()` method. File properties and the 
 array are read-only; do not insert/delete variants manually. Original and variant `meta`
 are editable. `serialize()` includes the avatar, `meta` and variants under their keys,
 with URLs when `preComputeUrl` is enabled. `serializeAs`, custom serialization and Lucid
-cherry-picking are supported. Old `keyId`/`getKeyId()` and `router.attachments()` are not;
+cherry-picking are supported. Old `keyId`/`getKeyId()` and key-based routes are not;
 do not promise byte-for-byte v5 response compatibility.
 
 ## Concurrency and safe cutover

@@ -140,7 +140,7 @@ user.avatar.<span class="f">set</span>(avatar) <span class="c">// stage it</span
 /* Hero */
 .aa-hero {
   display: grid;
-  grid-template-columns: 1.05fr 1fr;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
   gap: 48px;
   align-items: center;
   padding: 72px 0 40px;
@@ -347,7 +347,7 @@ user.avatar.<span class="f">set</span>(avatar) <span class="c">// stage it</span
 
 /* Responsive */
 @media (max-width: 860px) {
-  .aa-hero { grid-template-columns: 1fr; padding-top: 48px; }
+  .aa-hero { grid-template-columns: minmax(0, 1fr); padding-top: 48px; }
   .aa-title { font-size: 40px; }
   .aa-steps { grid-template-columns: repeat(2, 1fr); }
   .aa-features, .aa-persist { grid-template-columns: 1fr; }

@@ -510,7 +510,6 @@ test.group("Legacy JSON collections", (group) => {
     };
     resolved = await defineConfig({
       defaultDisk: "fs",
-      route: false,
       storage,
       queue: {
         default: "memory",

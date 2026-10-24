@@ -3,6 +3,25 @@
 New features, changes, and fixes in Adonis Attachment v6.
 For earlier versions, see the [v5 changelog](https://adonis-attachment.jrmc.dev/changelog).
 
+## 6.0.0-beta.4
+
+### Changed
+
+- **Breaking:** file routes are now declared explicitly with `router.attachments()` in
+  `start/routes.ts`. No public route is registered automatically. The returned native
+  Adonis route supports middleware, groups, names and prefixes.
+- Each route serves only `defaultDisk` unless an explicit `disks` list is provided.
+  Files outside the allowed disks return `404` before storage is read. Public and private
+  disks can be exposed through separate routes with application authorization middleware.
+- Remove the former `route` configuration key; it now raises a migration error.
+  See [Serving files](/guide/serving-files).
+
+## 6.0.0-beta.2
+
+### Changed
+
+- Support @adonisjs/queue 0.7.0
+
 ## 6.0.0-beta.2
 
 ### Added

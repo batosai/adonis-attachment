@@ -44,12 +44,6 @@ import {
 
 type Integration<T> = T | ((app: ApplicationService) => T | Promise<T>)
 
-export type AttachmentRouteConfig = false | { prefix?: string }
-
-export type ResolvedAttachmentRouteConfig = {
-  path: string
-}
-
 export type AttachmentMediaConfig = {
   /** Shared executable paths and timeouts for the built-in media adapters. */
   binaries?: AttachmentBinariesConfig
@@ -109,7 +103,6 @@ export type AttachmentConfig<
   /** Shared path prefix for generated variants. */
   variant?: VariantPathOptions
   sources?: AttachmentManagerOptions
-  route?: AttachmentRouteConfig
   media?: AttachmentMediaConfig
   events?: AttachmentEventsConfig
   converters?: KnownConverters
@@ -125,7 +118,6 @@ export type ResolvedAttachmentConfig<KnownConverters extends ConverterConfigMap 
   defaults?: AttachmentPersistenceOptions
   variant?: VariantPathOptions
   sources?: AttachmentManagerOptions
-  route: ResolvedAttachmentRouteConfig | false
   converters?: VariantConverterRegistry<Extract<keyof KnownConverters, string>>
 }
 
@@ -150,6 +142,9 @@ export function defineConfig<
       throw new AttachmentConfigurationError(
         'Attachment storage is required. Add storage: AdonisDriveStorage.fromApp to config/attachment.ts when using Adonis Drive.'
       )
+    }
+    if ('route' in config) {
+      throw new AttachmentConfigurationError('Attachment config "route" has been removed. Declare router.attachments() in start/routes.ts, or omit it to expose no route.')
     }
     const selectedQueue = selectQueue(config.queue)
     const storageContext: AttachmentStorageContext = {
@@ -231,7 +226,6 @@ export function defineConfig<
       ...(store ? { store } : {}),
       storage,
       queue,
-      route: resolveRoute(config.route),
       ...(repository ? { repository } : {}),
       ...(config.defaults ? { defaults: config.defaults } : {}),
       ...(config.variant ? { variant: config.variant } : {}),
@@ -326,22 +320,6 @@ function toAutodetectOptions(binaries: AttachmentBinariesConfig | undefined) {
     ...(binaries?.soffice?.command ? { officeCommand: binaries.soffice.command } : {}),
     ...(binaries?.soffice?.timeout !== undefined ? { officeTimeout: binaries.soffice.timeout } : {}),
   }
-}
-
-function resolveRoute(route: AttachmentRouteConfig | undefined): ResolvedAttachmentRouteConfig | false {
-  if (route === false) {
-    return false
-  }
-
-  const prefix = route?.prefix ?? '/attachments'
-
-  if (!prefix.startsWith('/') || prefix.includes(':')) {
-    throw new AttachmentError('Attachment route prefix must start with "/" and cannot contain parameters', {
-      code: 'E_INVALID_ATTACHMENT_ROUTE',
-    })
-  }
-
-  return { path: `${prefix.replace(/\/+$/, '') || ''}/:id/:name?` }
 }
 
 async function resolveIntegration<T>(

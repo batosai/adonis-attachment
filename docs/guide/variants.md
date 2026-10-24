@@ -54,19 +54,23 @@ in the application process; completion is not guaranteed when the upload respons
 In the action that displays the user, prefer the thumbnail when available:
 
 ```ts
+import { urlFor } from '@adonisjs/core/services/url_builder'
+
 const link = await user.avatar.get()
 const variants = await user.avatar.variants()
 const thumbnail = variants.find((variant) => variant.variantKey === 'thumbnail')
 const displayed = thumbnail ?? link?.attachment
 const avatarUrl = displayed
-  ? `/attachments/${displayed.id}/${encodeURIComponent(displayed.name)}`
+  ? urlFor('attachments.show', { id: displayed.id, name: displayed.name })
   : null
 
 return view.render('users/show', { user, avatarUrl })
 ```
 
-This uses the public built-in route and the quickstart Edge template. Refresh after
-processing to see the thumbnail. Private files need an [authorized route](/guide/serving-files#your-own-protected-route).
+This uses the explicit `router.attachments()` declaration from the quickstart and its
+Edge template. The route must allow the disk of the selected original or variant. Refresh
+after processing to see the thumbnail. Private files need a route restricted to their
+disk with [authorization middleware](/guide/serving-files#separate-public-and-private-disks).
 If the original remains displayed, inspect queue failures as described in
 [Background processing](/guide/queues). To rebuild an existing thumbnail, call
 `await user.avatar.regenerateVariants(['thumbnail'])`.

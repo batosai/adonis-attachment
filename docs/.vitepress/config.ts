@@ -102,6 +102,7 @@ export default withMermaid(
               { text: 'Configuration', link: '/guide/configuration' },
               { text: 'Creating attachments', link: '/guide/creating-attachments' },
               { text: 'Image variants', link: '/guide/variants' },
+              { text: 'File URLs', link: '/guide/urls' },
               { text: 'Serving files', link: '/guide/serving-files' },
               { text: 'Background processing', link: '/guide/queues' },
               { text: 'Events', link: '/guide/events' },

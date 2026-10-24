@@ -19,6 +19,8 @@ const binaries = {
 /**
  * Attachments are stored locally by default. Lucid, Drive, external queues,
  * custom storage, and read routes can be added as the application needs them.
+ * After configuring a store, declare router.attachments() in start/routes.ts.
+ * Routes allow defaultDisk unless an explicit disks list is provided.
  */
 const attachmentConfig = defineConfig({
   storage: LocalFileStorage.fromApp,

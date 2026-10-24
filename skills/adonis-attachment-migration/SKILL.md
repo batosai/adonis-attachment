@@ -20,6 +20,10 @@ it from `/lucid`. No Lucid auto-detection remains. The old root `integrations`, 
 `processor` and `media.metadataPersister` config keys must be migrated to `store`.
 External jobs use `createAttachmentProcessor(app)` from the root and the same store.
 Verify installed beta declarations before applying these newer config APIs.
+No HTTP route is registered automatically. Remove the former `route` config key and
+explicitly declare blob-ID `router.attachments()` routes for table-backed files. Each
+route allows only defaultDisk unless `disks` is specified; preserve public/private disk
+boundaries and apply application authentication and per-file authorization middleware.
 
 ## Agent execution contract
 
@@ -44,7 +48,8 @@ leave only those untouched, then continue with the required code and configurati
   rewrite it. Preserve the storage adapter, disk names, paths, converters, metadata policy,
   binaries, queue routing and routes deliberately.
 - Search application code, routes and configuration for removed v5 APIs and replace every
-  unambiguous usage; do not merely report them. This includes `router.attachments()`,
+  unambiguous usage; do not merely report them. Migrate v5 `router.attachments()` key-based
+  paths to blob IDs and explicit allowed disks. Removed APIs include
   root `attachment`/`attachments` decorators for table-backed fields, `keyId`/`getKeyId()`,
   manual variant insertion/deletion, `integrations.lucid.jsonModels`, `persistence: 'json'`,
   `AttachmentRelation<'json'>` and obsolete manager overloads. Adapt

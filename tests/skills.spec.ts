@@ -61,6 +61,20 @@ test.group('consumer skills', () => {
       }
     }
     assert.isAtLeast(sources.size, 7)
+    // Consuming Adonis apps generate this registry from their named routes. The
+    // package checkout has no application routes, so supply the example route.
+    sources.set(resolve(root, '.skill_example_routes.ts'), `
+      import '@adonisjs/core/types/http'
+      type AttachmentRoutes = {
+        'attachments.show': {
+          params: { id: string; name?: string }
+          paramsTuple: [id: string, name?: string]
+        }
+      }
+      declare module '@adonisjs/core/types/http' {
+        interface RoutesList extends Record<string, AttachmentRoutes> {}
+      }
+    `)
     const options: ts.CompilerOptions = {
       target: ts.ScriptTarget.ESNext,
       module: ts.ModuleKind.NodeNext,

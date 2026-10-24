@@ -13,13 +13,14 @@ import type { AttachmentRepository } from '../core/attachment_repository.js'
 export class AttachmentsController {
   constructor(
     private readonly attachments: Pick<AttachmentService, 'read'>,
-    private readonly repository: AttachmentRepository
+    private readonly repository: AttachmentRepository,
+    private readonly disks: readonly string[]
   ) {}
 
   async handle({ request, response }: HttpContext): Promise<unknown> {
     const attachment = await this.repository.findById(request.param('id'))
 
-    if (!attachment) {
+    if (!attachment || !this.disks.includes(attachment.disk)) {
       return response.notFound()
     }
 

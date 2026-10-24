@@ -138,7 +138,7 @@ test.group('defineConfig', () => {
     assert.equal(resolved.defaultDisk, 'public')
     assert.equal(resolved.storage, storage)
     assert.equal(resolved.queue, queue)
-    assert.deepEqual(resolved.route, { path: '/attachments/:id/:name?' })
+    assert.notProperty(resolved, 'route')
   })
 
   test('resolves integrations from the application at boot time', async ({ assert }) => {
@@ -323,30 +323,6 @@ test.group('defineConfig', () => {
     const resolved = await defineConfig({ storage, events }).resolver({} as never)
 
     assert.equal(resolved.events, events)
-  })
-
-  test('allows applications to disable or prefix the read route', async ({ assert }) => {
-    const storage: AttachmentStorage = {
-      async write() {},
-      async read() {
-        return new Uint8Array()
-      },
-      async remove() {},
-    }
-
-    const disabled = await defineConfig({
-      defaultDisk: 'public',
-      storage,
-      route: false,
-    }).resolver({} as never)
-    const prefixed = await defineConfig({
-      defaultDisk: 'public',
-      storage,
-      route: { prefix: '/media/files/' },
-    }).resolver({} as never)
-
-    assert.isFalse(disabled.route)
-    assert.deepEqual(prefixed.route, { path: '/media/files/:id/:name?' })
   })
 
   test('preserves source-manager options', async ({ assert }) => {
@@ -639,19 +615,14 @@ test.group('defineConfig', () => {
     assert.equal(resolved.repository, repository)
   })
 
-  test('rejects invalid route prefixes', async ({ assert }) => {
-    const storage: AttachmentStorage = {
-      async write() {},
-      async read() {
-        return new Uint8Array()
-      },
-      async remove() {},
+  test('rejects obsolete route configuration with migration guidance', async ({ assert }) => {
+    const storage: AttachmentStorage = { async write() {}, async read() { return new Uint8Array() }, async remove() {} }
+    for (const route of [false, { prefix: '/media' }]) {
+      await assert.rejects(
+        () => defineConfig({ storage, ...{ route } }).resolver({} as never),
+        'Attachment config "route" has been removed. Declare router.attachments() in start/routes.ts, or omit it to expose no route.'
+      )
     }
-
-    await assert.rejects(
-      () => defineConfig({ defaultDisk: 'public', storage, route: { prefix: 'attachments/:id' } }).resolver({} as never),
-      'Attachment route prefix must start with "/" and cannot contain parameters'
-    )
   })
 
   test('uses a custom processor through the jobHandler escape hatch', async ({ assert }) => {

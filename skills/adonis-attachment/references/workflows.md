@@ -144,10 +144,10 @@ is suitable for the UI before enabling fallback. Verify the installed beta expos
 
 ```ts
 import { attachmentService, type Attachment } from '@jrmc/adonis-attachment'
+import { urlFor } from '@adonisjs/core/services/url_builder'
 
-export function publicRouteUrl(attachment: Attachment) {
-  return `/attachments/${attachment.id}/${encodeURIComponent(attachment.name)}`
-}
+declare const attachment: Attachment
+const url = urlFor('attachments.show', { id: attachment.id, name: attachment.name })
 
 export async function storageUrls(attachment: Attachment) {
   return {
@@ -157,16 +157,18 @@ export async function storageUrls(attachment: Attachment) {
 }
 ```
 
-The optional route filename is cosmetic, not an authorization check. The selected store
-provides the repository for the read route. `route: { prefix: '/files' }` changes its
-prefix. URL methods may return undefined if storage does not support them; signed options
-are forwarded to that storage backend. Authorize the caller before issuing a signed URL.
+The URL example assumes `router.attachments().as('attachments.show')` is declared.
+Adonis `urlFor` follows that route's path and encodes parameters; do not concatenate
+paths or call `encodeURIComponent` yourself. The optional filename is cosmetic, not an authorization check. Read
+[read routes and disk isolation](serving.md) for public/private declarations and middleware.
+URL methods may return undefined if storage does not support them; signed options are
+forwarded to that storage backend. Authorize the caller before issuing a signed URL.
 `preComputeUrl: true` sets public `.url` in memory on relation reads, never in the database.
 It does not precompute signed URLs. Local storage needs `baseUrl` for direct public URLs;
 otherwise use the built-in public route or an authorized application route.
 
 For Edge, pass the computed URL to the view. For JSON/Inertia, return an explicit object.
-Do not use v5's `getVariant()`, `getKeyId()`, `router.attachments()`,
+Do not use v5's `getVariant()`, `getKeyId()`,
 `serializeAs`, or direct property assignment on table relations. The separate `/legacy`
 facade supports direct assignment, URL/variant getters and serialization, but not `getKeyId()`
-or `router.attachments()`.
+or key-based `router.attachments()` URLs. The current route supports persisted blob IDs only.

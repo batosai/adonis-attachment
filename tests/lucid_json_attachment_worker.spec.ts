@@ -49,7 +49,7 @@ test.group('Lucid JSON attachment workers', (group) => {
   }
   async function configure(memory = false) {
     resolved = await defineConfig({
-      defaultDisk: 'fs', defaults: { rename: false }, route: false,
+      defaultDisk: 'fs', defaults: { rename: false },
       store: LucidAttachmentStore.configure({ legacy: { models: { json_job_users: async () => { loads++; return { default: JsonJobUser } } } } }),
       media: { metadata: [{ async extract() { await duringExtraction?.(); return { inspected: true } } }], metadataPolicy: { mode: 'deferred' } },
       converters: { thumbnail: { converter: async () => ({ default: {

@@ -23,7 +23,8 @@ test.group('AttachmentsController', () => {
             mimeType: 'image/jpeg', extname: 'jpg', size: 3,
           }
         },
-      }
+      },
+      ['public']
     )
 
     await controller.handle({

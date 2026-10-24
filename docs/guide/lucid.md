@@ -146,39 +146,12 @@ declare avatar: AttachmentRelation
 
 ### Public URLs
 
-Resolve an original or named variant directly from a singular relation:
+Use `await user.avatar.getUrl()` for the original's public storage URL, or
+`await user.avatar.getUrl('thumbnail')` for a variant. It returns `string | null` and
+never constructs an application route URL.
 
-```ts
-const originalUrl = await user.avatar.getUrl()
-const thumbnailUrl = await user.avatar.getUrl('thumbnail')
-const previewUrl = await user.avatar.getUrl('thumbnail', { fallback: 'original' })
-```
-
-`getUrl()` returns `Promise<string | null>` and works without `preComputeUrl`.
-Variant keys use `AttachmentVariantKey`, including your `AttachmentVariants` augmentation.
-Without a fallback, a missing variant returns `null`. With `fallback: 'original'`, the
-original is used only when the requested variant has no persisted record, for example
-while asynchronous generation is pending. A persisted variant without a public storage
-URL still returns `null`; storage errors propagate. This does not check file existence
-or generate a URL for the built-in file route.
-
-An empty relation or storage without public URL support returns `null`. The original
-may have a different MIME type from the variant, such as a PDF instead of a thumbnail.
-
-Enable `preComputeUrl` to resolve a public URL when `get()`, `all()`, or `variants()` reads
-the relation. The URL is kept in memory on the loaded attachment model and is never stored:
-
-```ts
-@attachment({ preComputeUrl: true })
-declare avatar: AttachmentRelation
-
-const link = await user.avatar.get()
-const url = link?.attachment.url
-```
-
-The configured storage must provide a public URL, such as Adonis Drive or
-`LocalFileStorage` with `baseUrl`. Signed URLs are always generated explicitly through
-`attachmentService.getSignedUrl()` because they expire.
+[File URLs](/guide/urls) is the reference for route URLs, public and signed storage URLs,
+variant fallback, collections, and `preComputeUrl`.
 
 ## Many attachments - `@attachments`
 

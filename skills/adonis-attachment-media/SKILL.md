@@ -27,6 +27,10 @@ Verify installed beta declarations before applying these newer config APIs.
   `converter` selects autodetect; `make:converter` is for custom processing, not required setup.
 - With Lucid, drafts staged on relations or assigned to legacy fields are written on owner save; variant jobs are queued
   after commit. No variant is guaranteed to exist when the upload response arrives.
+- Preview URLs do not expose an HTTP endpoint automatically. Declare `router.attachments()`
+  explicitly when serving blobs through Adonis; each route must allow the stored disk of
+  the original or variant. Private routes require application authentication and per-file
+  authorization. Remove obsolete `route` config; do not rely on v5 `?variant=` generation.
 - For singular table relation previews, use `getUrl('thumbnail', { fallback: 'original' })`
   when the UI can display the original MIME type. Fallback covers an absent variant record
   only; a persisted variant without a public URL returns `null`, and storage errors propagate.

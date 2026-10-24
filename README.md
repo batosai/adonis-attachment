@@ -82,6 +82,7 @@ declare avatar: AttachmentRelation
 // app/controllers/users_controller.ts
 import type { HttpContext } from "@adonisjs/core/http";
 import { attachmentManager } from "@jrmc/adonis-attachment";
+import { urlFor } from "@adonisjs/core/services/url_builder";
 import User from "#models/user";
 
 export default class UsersController {
@@ -100,7 +101,7 @@ export default class UsersController {
     await user.save();
 
     const link = await user.avatar.get();
-    return { url: `/attachments/${link!.attachmentId}` };
+    return { url: urlFor("attachments.show", { id: link!.attachmentId }) };
   }
 }
 ```
@@ -116,11 +117,12 @@ import router from "@adonisjs/core/services/router";
 const UsersController = () => import("#controllers/users_controller");
 
 router.post("/users/:id/avatar", [UsersController, "updateAvatar"]);
+router.attachments().as("attachments.show");
 ```
 
 Submit a `multipart/form-data` request with an `avatar` file to `/users/:id/avatar`, using an existing user's ID. The response contains a URL you can use as an image's `src`.
 
-With the Lucid attachment store selected, the package registers `GET /attachments/:id/:name?` to serve stored files. This route is public; see [serving files](https://next.adonis-attachment.jrmc.dev/guide/serving-files) for protected attachments. Add your application's authentication, authorization, and CSRF handling to the upload route.
+With a store selected, declare `router.attachments()` in `start/routes.ts` to serve `GET /attachments/:id/:name?` from the configured default disk. No route is registered automatically. This route is public; see [serving files](https://next.adonis-attachment.jrmc.dev/guide/serving-files) for protected attachments. Add your application's authentication, authorization, and CSRF handling to the upload route.
 
 ## Go further
 

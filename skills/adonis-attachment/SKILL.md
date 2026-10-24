@@ -18,6 +18,8 @@ Read [application workflows](references/workflows.md) for installation, validate
 table-backed singular/collection relations, and URLs. Read [legacy JSON fields](references/legacy.md)
 when retaining a JSON column or using `/legacy`. Read
 [custom persistence](references/persistence.md) when Lucid is not being used for attachments.
+Read [read routes and disk isolation](references/serving.md) for explicit router declarations,
+public/private disks, middleware, or migration from the old `route` configuration.
 
 ## Decisions that matter
 
@@ -62,9 +64,12 @@ when retaining a JSON column or using `/legacy`. Read
   Configuration never renames an existing database table.
 - Table `get()` and collection `all()` return links with a preloaded `.attachment` blob.
   Collection `move/remove` take link IDs. `attachExisting/addExisting` and file routes take blob IDs.
-- The built-in `/attachments/:id/:name?` route is public and resolves table blob IDs, not
-  legacy JSON references. For private or JSON-only applications disable it
-  with `route: false`, authorize your own route, and check storage is not publicly exposed.
+- No read route is exposed automatically. Declare `router.attachments()` explicitly; it
+  allows only defaultDisk unless `disks` is provided. Name routes with `.as(...)` and use
+  AdonisJS 7 `urlFor` to generate URLs; do not concatenate paths or pre-encode parameters.
+  Remove the old `route` config key.
+  For private files, restrict allowed disks and apply authentication plus per-file
+  authorization; keep the storage private too. The route resolves blob IDs, not legacy JSON.
 - Table single `variants()` returns blob models, not links. Relations are not automatically
   serialized into API responses; construct the application's response explicitly.
 - For singular table relations, prefer `getUrl(variant?, options?)` for public storage URLs.

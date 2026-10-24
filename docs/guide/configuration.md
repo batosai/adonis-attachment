@@ -129,7 +129,7 @@ The context contains `defaultDisk`, `defaults`, and `variant`. Capabilities are 
 
 | Store member | Purpose |
 | --- | --- |
-| `repository` | Required. Read originals and variants by ID; optionally resolve contextual references. Enables the public route unless `route: false`. |
+| `repository` | Required. Read originals and variants by ID; optionally resolve contextual references. Supplies the repository for explicit `router.attachments()` routes. |
 | `persistence` | Optional. Existing `AttachmentPersistence` lifecycle/transaction contract, for application-owned lifecycle integration. |
 | `metadataPersister` | Required for `media.metadataPolicy.mode: 'deferred'`. Persists extracted metadata. |
 | `variants(service, converters, context)` | Required to persist generated variants. Returns a `VariantGenerator`, including the adapter's replacement and cleanup policy. |
@@ -145,6 +145,8 @@ then [custom persistence](/guide/custom-persistence) for lifecycle and transacti
 
 | Previous configuration | Replacement |
 | --- | --- |
+| `route: false` | Omit `router.attachments()` in `start/routes.ts` |
+| `route: { prefix }` or automatic read route | Declare `router.attachments('/media/:id/:name?')` and select allowed disks |
 | Automatic Lucid detection | `store: LucidAttachmentStore.fromApp` |
 | `integrations.lucid.tableName` | `store: LucidAttachmentStore.configure({ tableName })` |
 | `integrations.legacy.models` | `legacy.models` inside `LucidAttachmentStore.configure()` |
@@ -152,7 +154,7 @@ then [custom persistence](/guide/custom-persistence) for lifecycle and transacti
 | `media.metadataPersister` | `store.metadataPersister` |
 | Root `processor` | Store processing capabilities, or `jobHandler: () => (job) => processor.process(job)` for a fully custom processor |
 
-The removed keys fail with a migration error. `queue`, `route`, `converters`, `events`,
+The removed keys fail with a migration error. `queue`, `converters`, `events`,
 `defaults`, `variant`, and media extraction settings keep their roles. No data or schema
 migration is needed solely for this configuration change.
 
@@ -293,22 +295,12 @@ This writes the thumbnail to a path such as `variants/2026/09/thumbnail.webp`.
 
 ## URLs
 
-Use `attachmentService` to resolve URLs from any persisted attachment. Public URLs can be
-pre-calculated on Lucid relation reads with `preComputeUrl: true`; signed URLs are always
-generated on demand and are never cached or stored.
+Storage URL methods depend on adapter capabilities. `AdonisDriveStorage` uses the selected
+Drive disk; `LocalFileStorage` requires `baseUrl` for public URLs. `preComputeUrl` resolves
+public URLs during relation reads and keeps them in memory.
 
-```ts
-import { attachmentService } from '@jrmc/adonis-attachment'
-
-const url = await attachmentService.getUrl(attachment)
-const signedUrl = await attachmentService.getSignedUrl(attachment, {
-  expiresIn: '15m',
-})
-```
-
-Storage adapters without public or signed URL support return `undefined`. `AdonisDriveStorage`
-delegates to the selected Drive disk. `LocalFileStorage` can generate public URLs only when
-configured with `baseUrl`.
+See [File URLs](/guide/urls) for all ways to obtain a URL: application routes, singular
+relations, collections, the service, signed URLs, precomputed `.url`, and legacy JSON.
 
 ## Media binaries
 
@@ -516,7 +508,7 @@ and `attachment_links` schema, explicitly set `store: LucidAttachmentStore.confi
 ## Read route & background processing
 
 - **`store`** supplies the repository, metadata persistence, and variant persistence.
-- **`route`** is `false` to disable the public read route, or `{ prefix: '/media' }` to move it.
+- Declare **`router.attachments()`** in `start/routes.ts` to expose a read route. It allows only `defaultDisk` unless `disks` is specified. The former `route` config key has been removed. See [Serving files](/guide/serving-files).
 - **`queue`** controls where jobs run. Omit it for an in-memory queue, or use named
   connections and a typed default. Direct drivers, instances, and factories remain supported.
 - **`jobHandler`** is an advanced override for memory processing. It takes precedence over

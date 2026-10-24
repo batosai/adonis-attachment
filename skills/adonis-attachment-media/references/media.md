@@ -33,8 +33,13 @@ display the original MIME type while processing, use
 `await user.avatar.getUrl('thumbnail', { fallback: 'original' })`.
 The method returns `string | null` without requiring `preComputeUrl`. Fallback covers
 only an absent variant record; missing public URLs return `null` and storage errors propagate.
-Verify the installed beta exposes this method. Build route URLs from blob `.id` when needed.
-Only use the built-in `/attachments/:id/:name?` route for public files.
+Verify the installed beta exposes this method. For route URLs, pass the blob `.id` to Adonis `urlFor` with the declared route name;
+do not concatenate a URL or pre-encode the optional filename.
+Declare `router.attachments()` explicitly: it allows defaultDisk unless `disks` is supplied.
+Private routes require authentication and per-file authorization middleware, and private
+storage must have no public static access. Use the variant blob ID in route URLs; the
+route does not generate an absent variant from `?variant=`. Remove the old `route` config
+key. Verify disk filtering for both original and variant before changing preview logic.
 For legacy JSON fields, use the separate recipe below instead of these relation methods.
 
 Autodetect chooses Sharp for image inputs, ffmpeg for videos, Poppler for PDFs, and
@@ -80,7 +85,6 @@ export class User extends BaseModel {
 
 export const config = defineConfig({
   storage: LocalFileStorage.fromApp,
-  route: false,
   store: LucidAttachmentStore.configure({ legacy: { models: { users: async () => ({ default: User }) } } }),
   converters: { thumbnail: { resize: { width: 320 }, format: { format: 'webp' } } },
   media: { metadataPolicy: { mode: 'deferred' } },

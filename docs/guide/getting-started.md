@@ -100,9 +100,7 @@ after the new one is safely stored. You can also flush right away with
 this joins it.
 :::
 
-## 5. Display it
-
-First register the upload action in `start/routes.ts`:
+Register the upload action in `start/routes.ts`:
 
 ```ts
 import router from '@adonisjs/core/services/router'
@@ -111,68 +109,146 @@ const UsersController = () => import('#controllers/users_controller')
 router.post('/users/:id/avatar', [UsersController, 'updateAvatar'])
 ```
 
+::: warning Application security
+This minimal upload route does not authorize changes to a user. Add authentication and
+check that the caller may update that user. If Shield CSRF protection applies, submit
+a valid token through your application's form or authenticated test client. Do not
+disable protection globally to run this example.
+:::
+
+## 5. Serve the avatar
+
+Add the package's read route to `start/routes.ts`, alongside your upload route:
+
+```ts
+router.attachments().as('attachments.show')
+```
+
+This declares `GET /attachments/:id/:name?`. No read route is registered automatically.
+It uses the Lucid store configured in step 1 to find the file by its blob ID, checks that
+its disk is the configured `defaultDisk`, then returns the image with its MIME type.
+
 Start the application with `node ace serve --hmr`, then upload to an existing user's ID:
 
 ```sh
 curl -F 'avatar=@/absolute/path/avatar.png' http://localhost:3333/users/1/avatar
 ```
 
-The response contains the blob's `attachmentId`. Open `/attachments/<attachmentId>`
-on the same server to check the stored image. Repeat the upload to test replacement.
-Size and extension validation belongs to the application, not attachment persistence.
+The response contains `attachmentId`. Use that value to open
+`http://localhost:3333/attachments/<attachmentId>` in your browser. You can also use
+this URL as an image's `src` in your application. The optional filename is cosmetic:
+`/attachments/<attachmentId>/avatar.png` serves the same file.
 
-::: warning Application security
-This minimal test route does not authorize changes to a user. Add authentication and
-check that the caller may update that user. If Shield CSRF protection applies, submit
-a valid token through your application's form or authenticated test client. Do not
-disable protection globally to run this example.
-:::
-
-Selecting `store: LucidAttachmentStore.fromApp` supplies the read repository and enables
-the route. Lucid is never activated merely because it is installed.
+In application code, generate the URL from the route name with Adonis's helper:
 
 ```ts
-// config/attachment.ts
-import { defineConfig, LocalFileStorage } from '@jrmc/adonis-attachment'
+import { urlFor } from '@adonisjs/core/services/url_builder'
 
-export default defineConfig({
-  storage: LocalFileStorage.fromApp,
-})
+const link = await user.avatar.get()
+const avatarUrl = link ? urlFor('attachments.show', { id: link.attachmentId }) : null
 ```
 
-For an application using Edge, add this action to `UsersController`:
+`urlFor` uses the declared path and encodes parameters. In Edge templates, the same
+helper is available without an import. See [File URLs](/guide/urls#application-route-urls)
+for filenames, variants and absolute URLs.
+
+A missing blob or a blob on another disk returns `404`. Repeat the upload to test avatar
+replacement; use the new `attachmentId` returned by the upload action.
+
+::: warning Public and private files
+This route has no authorization and is intended for public avatars. For private files,
+declare a separate route with `{ disks: ['private'] }` and attach your application's
+authentication and per-file authorization middleware with `.use(...)`.
+See [Serving files](/guide/serving-files#separate-public-and-private-disks).
+:::
+
+## 6. Optional: expose the avatar through a transformer
+
+For an API or Inertia app, add the avatar URL to an Adonis transformer. This example
+reuses the public `attachments.show` route from step 5 and returns `null` when the user
+has no avatar. It does not require `preComputeUrl` or a public storage URL.
+
+```sh
+node ace make:transformer user
+```
+
+If a user transformer already exists, add the avatar field to it rather than replacing
+its existing output:
 
 ```ts
-async show({ params, view }: HttpContext) {
-  const user = await User.findOrFail(params.id)
-  const link = await user.avatar.get() // AttachmentLinkModel | null
-  const attachment = link?.attachment
-  const avatarUrl = attachment
-    ? `/attachments/${attachment.id}/${encodeURIComponent(attachment.name)}`
-    : null
+// app/transformers/user_transformer.ts
+import { BaseTransformer } from '@adonisjs/core/transformers'
+import { urlFor } from '@adonisjs/core/services/url_builder'
+import type User from '#models/user'
 
-  return view.render('users/show', { user, avatarUrl })
+export default class UserTransformer extends BaseTransformer<User> {
+  async toObject() {
+    const link = await this.resource.avatar.get()
+    const attachment = link?.attachment
+
+    return {
+      ...this.pick(this.resource, ['id']),
+      avatarUrl: attachment
+        ? urlFor('attachments.show', { id: attachment.id, name: attachment.name })
+        : null,
+    }
+  }
 }
 ```
 
-Register `router.get('/users/:id', [UsersController, 'show'])` alongside the upload route,
-and create `resources/views/users/show.edge`:
+The attachment accessor is asynchronous, so `toObject()` is asynchronous too. The
+transformer exposes only the selected user fields and the URL, rather than sending the
+attachment's disk, path or relation accessor to the client.
 
-```edge
-@if(avatarUrl)
-  <img src="{{ avatarUrl }}" alt="Avatar" />
-@end
+### API response
+
+In an application with the Adonis serializer configured, add this action to
+`UsersController` and import `UserTransformer` from `#transformers/user_transformer`:
+
+```ts
+async show({ params, serialize }: HttpContext) {
+  const user = await User.findOrFail(params.id)
+  return serialize(UserTransformer.transform(user))
+}
 ```
 
-::: warning The built-in route is public
-`GET /attachments/:id/:name?` has no authorization. It's fine for public assets. For protected
-files, build your own route. See [Serving files](/guide/serving-files).
-:::
+Register `router.get('/users/:id', [UsersController, 'show'])`. The serialized user
+contains `id` and `avatarUrl`; the response wrapper follows your application's serializer
+configuration. The client can use `avatarUrl` as an image's `src`.
+
+### Inertia page
+
+For an Inertia application, pass the same transformer directly to `inertia.render()`:
+
+```ts
+async showPage({ params, inertia }: HttpContext) {
+  const user = await User.findOrFail(params.id)
+  return inertia.render('users/show', {
+    user: UserTransformer.transform(user),
+  })
+}
+```
+
+Register `router.get('/users/:id', [UsersController, 'showPage'])` instead of the API
+route above, and create the `users/show` Inertia page. Inertia serializes the transformer;
+the page receives `user.id` and `user.avatarUrl`. For example, in a Vue page:
+
+```vue
+<img v-if="user.avatarUrl" :src="user.avatarUrl" alt="Avatar" />
+```
+
+Use your application's existing authentication and user-view authorization for either
+action. This example exposes public avatars; private files still require an authorized
+file route even when their URL is returned by a transformer.
+
+See [Adonis transformers](https://docs.adonisjs.com/guides/frontend/transformers) for
+serializer setup and Inertia type generation, and [File URLs](/guide/urls) for other URL sources.
 
 ## You're done
 
 You uploaded, stored, persisted, and served a file. From here:
 
+- **[File URLs](/guide/urls)** to choose between route URLs, storage URLs and signed URLs.
 - **[Image variants](/guide/variants)** to generate thumbnails automatically.
 - **[Core concepts](/guide/concepts)** to understand what happens under the hood.
 - **[Creating attachments](/guide/creating-attachments)** for all the input sources.

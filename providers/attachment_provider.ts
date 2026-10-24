@@ -6,11 +6,14 @@
  */
 
 import { configProvider } from '@adonisjs/core'
+import { Router } from '@adonisjs/core/http'
+import { AttachmentConfigurationError } from '../src/errors.js'
 import { AttachmentService } from '../src/core/attachment_service.js'
 import { AttachmentsController } from '../src/controllers/attachments_controller.js'
 import { AttachmentManager } from '../src/sources/attachment_manager.js'
 import { AdonisAttachmentEventEmitter } from '../src/events/adonis_attachment_event_emitter.js'
 
+import type { AttachmentRouteOptions } from '../src/routes/attachment_route.js'
 import type { ApplicationService } from '@adonisjs/core/types'
 import type { ResolvedAttachmentConfig } from '../src/define_config.js'
 import type { VariantPathOptions } from '../src/variants/variant_path.js'
@@ -114,16 +117,30 @@ export default class AttachmentProvider {
       attachmentConfig
     )
 
-    if (!config || config.route === false || !config.repository) {
-      return
-    }
-
-    const router = await this.app.container.make('router')
-    router.get(config.route.path, async (context) => {
-      const attachments = await this.app.container.make('jrmc.attachment')
-      const repository = await this.app.container.make('jrmc.attachment.repository')
-
-      return new AttachmentsController(attachments, repository).handle(context)
+    const app = this.app
+    Router.macro('attachments', function (
+      this: Router,
+      pattern = '/attachments/:id/:name?',
+      options: AttachmentRouteOptions = {}
+    ) {
+      if (!config?.repository) {
+        throw new AttachmentConfigurationError(
+          'router.attachments() requires store.repository in config/attachment.ts'
+        )
+      }
+      const disks = options.disks ?? [config.storeContext.defaultDisk]
+      if (
+        !Array.isArray(disks) || !disks.length ||
+        disks.some((disk) => typeof disk !== 'string' || !disk.trim())
+      ) {
+        throw new AttachmentConfigurationError('Attachment route disks must be a non-empty array of disk names')
+      }
+      const allowedDisks = [...disks]
+      return this.get(pattern, async (context) => {
+        const attachments = await app.container.make('jrmc.attachment')
+        const repository = await app.container.make('jrmc.attachment.repository')
+        return new AttachmentsController(attachments, repository, allowedDisks).handle(context)
+      })
     })
   }
 }

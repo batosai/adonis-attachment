@@ -57,10 +57,27 @@ export default defineConfig({
 })
 ```
 
-For table-backed fields, `store: LucidAttachmentStore.fromApp` enables the repository and the provider's automatic
-`/attachments/:id/:name?` read route. Remove v5 `router.attachments()` calls rather than keeping
-both route systems. A `Cannot read properties of undefined (reading 'defaultDisk')` error during
+For table-backed fields, `store: LucidAttachmentStore.fromApp` supplies the repository.
+Declare `router.attachments()` explicitly with blob `:id` parameters, defaultDisk or allowed
+`disks`, and native middleware. No route is exposed automatically. V5 `:key` routes and
+on-demand variant query parameters must be migrated. A `Cannot read properties of undefined (reading 'defaultDisk')` error during
 the cutover normally means `storage` was omitted, not that the stored v5 disk is invalid.
+
+For serving, audit every existing file disk before changing route declarations:
+
+- No `router.attachments()` call means no HTTP read route. The former `route` config
+  key is removed; replace its prefix with an explicit route path, and replace
+  `route: false` by omitting the route declaration.
+- With no `disks` option, only resolved defaultDisk is allowed, not every persisted disk.
+  Preserve intentional multi-disk exposure with an explicit allowlist.
+- Public and private disks require separate allowlists. Private routes need both
+  authentication and authorization of the requested blob, including variants.
+  A public route must never allow the private disk. Keep private storage inaccessible
+  through static public URLs.
+- V5 key URLs and on-demand `?variant=` processing are not preserved. Build table-backed
+  URLs with Adonis `urlFor` and the original or variant blob ID; use owner-based application routes or
+  storage URLs for retained JSON fields. Preserve existing route names explicitly
+  with `.as(...)` when the application generates URLs by name.
 
 First resolve the effective v5 option for every field. A value configured by the application or
 on its decorator takes precedence over the v5 baseline below; do not overwrite that project
@@ -234,9 +251,9 @@ Stop v5 writers AND workers before cutover. Retain file and database backups: ol
 read in place and IDs may be backfilled on mutation; full downgrade compatibility after
 new writes is not promised. Audit shared historical file paths before cleanup tests.
 Check serialization/transformers: `serializeAs` is supported, but old `keyId`/`getKeyId()`,
-`router.attachments()`, manual variant insertion/deletion and all v5 overloads are not.
+v5 key-based routes, manual variant insertion/deletion and all v5 overloads are not.
 The built-in blob-ID route cannot resolve JSON fields; use storage URLs or an authorized
-owner-based route and disable the built-in route with `route: false` for JSON-only apps.
+owner-based route and omit `router.attachments()` for JSON-only apps.
 
 ## Keep a JSON collection
 
@@ -345,7 +362,7 @@ collection links or violate singular uniqueness. Do not delete originals during 
 | Global file options | `defaults`, overridden by decorator then manager call |
 | `serializeAs`, automatic attachment JSON | Explicit application response/view data |
 | `avatar.getUrl()` / `getVariant()` | Use table `avatar.getUrl(key?)` for public URLs (`string \| null`); use `variants()` for blob metadata. Opt into `{ fallback: 'original' }` only for absent variant records. Verify the installed beta exposes `getUrl`. |
-| `router.attachments()` | Built-in public blob route, or authorized custom route with `route: false` |
+| `router.attachments()` | Explicit `router.attachments()` with defaultDisk or allowed disks and native middleware |
 | V5 queue callbacks | Memory `onFailure`, or named connections and external job processor |
 | `RegenerateService` | `/lucid` `AttachmentRegenerator` or relation `regenerateVariants()` |
 
@@ -356,9 +373,9 @@ than v5's bare input. Shared binaries belong in `media.binaries`.
 
 Root `attachment` / `attachments` decorators, `getKeyId()`, and v5 converter imports are not
 compatibility shims for table-backed fields: replace them with decorators and relation methods
-from `/lucid`, the provider route above, and a named converter configuration without `converter`
-when `AutodetectConverter` covers the former standard behavior. Do not keep root decorators or
-`router.attachments()` alongside their `/lucid` replacements.
+from `/lucid`, the explicit blob-ID route above, and a named converter configuration without `converter`
+when `AutodetectConverter` covers the former standard behavior. Do not keep root decorators alongside their `/lucid` replacements. Update existing
+`router.attachments()` paths to blob IDs and verify disk restrictions and authorization.
 
 Verify migrated original and variant `path`/`disk` values against the recorded v5 JSON samples.
 For every distinct audited convention, upload a new fixture and compare its complete original and

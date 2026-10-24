@@ -105,8 +105,8 @@ store: new ExampleAttachmentStore(),
 store: (app, context) => ExampleAttachmentStore.fromApp(app, context),
 ```
 
-No Lucid integration is activated. This store enables the built-in public read route,
-unless you set `route: false`. It cannot yet persist variants or deferred metadata;
+No Lucid integration is activated. This store supplies the repository for `router.attachments()`;
+no read route is registered automatically. It cannot yet persist variants or deferred metadata;
 requesting those jobs fails explicitly. Synchronous metadata extraction still works.
 
 ## 3. Write a file, then its record
@@ -148,8 +148,10 @@ export async function saveExampleFile(
 }
 ```
 
-The default public route can now read `/attachments/<attachment.id>`. Disable that route
-for private content and authorize an application route instead.
+Declare `router.attachments().as('attachments.show')` in `start/routes.ts`, then use
+Adonis `urlFor('attachments.show', { id: attachment.id })` to generate its URL. The route
+serves the configured default disk. For private content, select the private disk and apply
+authentication and authorization middleware. See [Serving files](/guide/serving-files).
 
 For an ORM, insertion must resolve after the transaction commits. Cleanup is safe only
 after confirmed rollback; reconcile an uncertain commit outcome before deleting files.

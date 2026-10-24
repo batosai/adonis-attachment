@@ -157,7 +157,8 @@ converters: {
 | `meta` and custom metadata extraction | `defaults.meta` or relation `meta`; retain custom extractors in `media.metadata` and deferred work in `media.metadataPolicy` only when used |
 | ffmpeg, ffprobe, Poppler or LibreOffice paths | `media.binaries`, preserving commands and timeouts |
 | Background work | `queue` and the external worker using `createAttachmentProcessor(app)` |
-| Attachment tables and serving | `LucidAttachmentStore.configure({ tableName })` before generating the schema; keep the built-in route, configure its prefix, or set `route: false` for an authorized application route |
+| HTTP read routes | Retain explicit `router.attachments()` declarations for table blobs, update `:key` to `:id`, select allowed disks and apply native middleware. JSON fields require storage URLs or owner-based routes. |
+| Attachment tables and serving | `LucidAttachmentStore.configure({ tableName })` before generating the schema; declare `router.attachments()` explicitly, select its allowed disks, and attach middleware for private access |
 
 ##### Type imports and custom converters
 
@@ -477,7 +478,7 @@ converters: {
 | `meta` and custom metadata extraction | `defaults.meta` or decorator `meta`; retain custom extractors in `media.metadata` and deferred work in `media.metadataPolicy` only when used |
 | ffmpeg, ffprobe, Poppler or LibreOffice paths | `media.binaries`, preserving commands and timeouts |
 | Background work | `queue` and the external worker; also register every JSON owner in `store: LucidAttachmentStore.configure({ legacy: { models } })` |
-| Serving URLs | `route: false` only for JSON-only applications; otherwise use a custom owner-authorized route for JSON fields and preserve any table route in mixed applications |
+| Serving URLs | Use owner-authorized application routes for JSON fields; declare `router.attachments()` explicitly for table blobs |
 
 Install only the packages required by the resulting configuration:
 
@@ -612,7 +613,6 @@ import { LucidAttachmentStore } from '@jrmc/adonis-attachment/lucid'
 
 export default defineConfig({
   storage: AdonisDriveStorage.fromApp,
-  route: false,
   store: LucidAttachmentStore.configure({
     legacy: { models: { users: () => import('#models/user') } },
   }),
@@ -626,8 +626,8 @@ the model and JSON field, including in a fresh worker process. Select the Lucid 
 explicitly for this routing. Custom repositories/processors/persisters must also
 handle JSON references if you override the defaults.
 
-The built-in ID-only HTTP route remains table-backed. For JSON, use Drive URLs or an
-application route with your own authorization; `route: false` disables the table route
+The explicitly declared `router.attachments()` HTTP route resolves table blob IDs. For JSON, use Drive URLs or an
+application route with your own authorization; omitting `router.attachments()` disables the table route
 for JSON-only applications. See [JSON persistence](/guide/json-persistence) for details.
 
 #### Verify data compatibility and cut over

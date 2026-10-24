@@ -101,3 +101,5 @@ export {
 } from "./src/queues/adonis_queue.js";
 
 export { createAttachmentProcessor, type CreateAttachmentProcessorOptions } from "./src/create_attachment_processor.js";
+
+export type { AttachmentRouteOptions } from './src/routes/attachment_route.js';

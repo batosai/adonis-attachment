@@ -47,7 +47,7 @@ blurhash. Do not persist computed URLs. Adapt the callback to the actual ORM, no
 
 Implement `AttachmentRepository.findById(id): Promise<Attachment | null>` for workers and
 the optional read route, then pass `store: { repository }` to `defineConfig`. Resolve variant IDs
-as well as original IDs if serving both. Set `route: false` for private content.
+as well as original IDs if serving both. For private content, restrict `router.attachments()` disks and attach authorization middleware, or use an owner-authorized application route.
 
 For replacement, write to a new unique path, commit the new reference, then remove the old
 file when unreferenced. A shared path with `rename: false` is not rollback-safe automatically

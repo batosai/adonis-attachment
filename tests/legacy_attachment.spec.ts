@@ -368,7 +368,6 @@ test.group("Legacy singular JSON attachments", (group) => {
     };
     resolved = await defineConfig({
       defaultDisk: "fs",
-      route: false,
       store: LucidAttachmentStore.configure({
         legacy: {
           models: { legacy_users: async () => ({ default: User }) },

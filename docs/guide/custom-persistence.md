@@ -105,7 +105,7 @@ results and scoped service instances. It delegates to the shared implementation;
 `AttachmentFileCleanupError` is the same class through the core and Lucid exports.
 
 JSON decorators, model snapshot synchronization and allowlisted JSON workers are integrated,
-with tests for mixed-mode applications. The built-in HTTP route remains table/ID-only;
+with tests for mixed-mode applications. The explicit `router.attachments()` HTTP route remains blob-ID-only;
 v5-style automatic attribute serialization is available through the singular
 [/legacy facade](/guide/legacy), not the table relation helpers. Simultaneous
 legacy v5 writers remain unsupported.
@@ -159,7 +159,7 @@ alone does not establish concurrency safety or compatibility with legacy v5 writ
 An owner type is a configured application key, not permission to query arbitrary tables.
 Reference payloads accept no model, connection, column, or lock instructions. Each adapter
 must resolve owner types/fields through an allowlist. A locator is not an authorization token.
-The built-in HTTP route remains ID-only; no contextual URL encoding or new public route is
+The explicit `router.attachments()` HTTP route remains ID-only; no contextual URL encoding or new public route is
 introduced at this stage.
 
 ## Deferred metadata
@@ -252,7 +252,7 @@ ignoring non-metadata jobs.
 
 ## Enabling jobs and the read route
 
-Variant jobs and the built-in `GET /attachments/:id/:name?` route resolve files through an
+Variant jobs and explicitly declared `router.attachments()` routes resolve files through an
 **`AttachmentRepository`**. Implement it against your data store:
 
 ```ts
@@ -279,8 +279,8 @@ export class UserMediaRepository implements AttachmentRepository {
 }
 ```
 
-Then pass it through `store` to `defineConfig`. This read-only store enables the public
-route, but does not support persisting generated variants:
+Then pass it through `store` to `defineConfig`. This read-only store supplies the read
+repository, but does not support persisting generated variants or expose an HTTP route:
 
 ```ts
 export default defineConfig({
@@ -288,6 +288,20 @@ export default defineConfig({
   store: { repository: new UserMediaRepository() },
 })
 ```
+
+Declare a read route separately in `start/routes.ts`:
+
+```ts
+import router from '@adonisjs/core/services/router'
+
+router.attachments().as('attachments.show')
+```
+
+It serves only the resolved `defaultDisk`. A custom repository must return the actual
+persisted `disk` for each blob, including variants. For separate public/private routes,
+override `disks` and apply application middleware as described in
+[Serving files](/guide/serving-files#separate-public-and-private-disks). No Lucid dependency
+is required for this routing mechanism.
 
 Variant **persistence** stays application-owned in this mode - you decide how to record the
 generated variants (the Lucid integration is what automates variant rows for you).

@@ -1,102 +1,133 @@
 # Serving files
 
-You have two ways to serve stored files back to users: the **built-in route** (quick, for
-public assets) or your **own route** (for anything that needs authorization).
+This page covers HTTP route setup and access control. For the complete URL reference,
+see [File URLs](/guide/urls).
 
-For direct public storage URLs on singular Lucid relations, use
-`await user.avatar.getUrl()` or
-`await user.avatar.getUrl('thumbnail', { fallback: 'original' })`.
-See [public URLs](/guide/lucid#public-urls) for missing-variant behavior and storage requirements.
+The package extends the Adonis router with `router.attachments()`. No HTTP route is
+registered automatically. Declare the routes you need in `start/routes.ts`.
 
-## The built-in route
+## Public files
 
-With `store: LucidAttachmentStore.fromApp`, the package uses the Lucid repository. The provider registers
-`GET /attachments/:id/:name?` at boot. It resolves the attachment, reads its bytes from storage,
-and responds with the correct `content-type`.
+Configure a store with a repository, such as `LucidAttachmentStore.fromApp`, then declare:
+
+```ts
+import router from '@adonisjs/core/services/router'
+
+router.attachments().as('attachments.show')
+// GET /attachments/:id/:name?
+```
+
+The route allows only the configured `defaultDisk` (the storage default, or `fs`, when
+not explicitly configured). It resolves the file through `store.repository.findById`,
+checks its disk, reads its bytes from storage and sends the stored MIME type.
+A missing record or a file on another disk returns `404`, without reading its bytes.
+A custom store works too; this route does not depend on Lucid.
+
+The ID is the blob ID: for a Lucid relation, use `link.attachmentId`, not `link.id`.
+Variants have their own blob IDs and use the same route. Legacy JSON fields require
+storage URLs or an owner-based application route; this route does not resolve them.
+
+```ts
+import { urlFor } from '@adonisjs/core/services/url_builder'
+
+const link = await user.avatar.get()
+const attachment = link?.attachment
+const url = attachment
+  ? urlFor('attachments.show', { id: attachment.id, name: attachment.name })
+  : null
+```
+
+Adonis encodes the parameters and follows the named route's configured path.
+The optional name is cosmetic and ignored during lookup. Both `/attachments/abc` and
+`/attachments/abc/photo.jpg` resolve the same file.
+
+For all ways to obtain a URL, see [File URLs](/guide/urls): route URLs, direct storage
+URLs, signed URLs and precomputed `.url`. Storage `getUrl()` methods do not construct
+URLs for `router.attachments()`.
+
+## Separate public and private disks
+
+Each route can override the allowed disks. Disk names have no special meaning to the
+package: configure your public and private disks in Drive and use their actual names.
+
+Use the Drive storage adapter. It inherits the default disk from `config/drive.ts`:
 
 ```ts
 // config/attachment.ts
-import { defineConfig, LocalFileStorage } from '@jrmc/adonis-attachment'
+import { defineConfig, AdonisDriveStorage } from '@jrmc/adonis-attachment'
 import { LucidAttachmentStore } from '@jrmc/adonis-attachment/lucid'
 
 export default defineConfig({
-  storage: LocalFileStorage.fromApp,
+  storage: AdonisDriveStorage.fromApp,
   store: LucidAttachmentStore.fromApp,
 })
 ```
 
-A custom `store.repository` allows another ORM or data store to serve attachments.
-Selecting a custom store does not activate Lucid.
-
-The `:id` is the **blob id** - for a Lucid relation, that's `link.attachmentId`:
-
-```ts
-const link = await user.avatar.get()
-const url = link ? `/attachments/${link.attachmentId}` : null
-```
-
-Move or disable it:
+This example assumes `config/drive.ts` declares `public` and `private` disks, with `public`
+as its default. There is no need to repeat that choice with `defaultDisk` in the attachment
+configuration; use that optional key only to override the default for attachments. The private
+disk must not serve files publicly; the disk names alone do not configure visibility.
+A custom store with a repository can replace the Lucid store in this example.
 
 ```ts
-route: false                     // no built-in route
-route: { prefix: '/media/files' } // GET /media/files/:id/:name?
+import router from '@adonisjs/core/services/router'
+import { middleware } from '#start/kernel'
+
+router
+  .attachments('/medias/:id/:name?', { disks: ['public'] })
+  .as('medias.show')
+
+router
+  .attachments('/documents/:id/:name?', { disks: ['private'] })
+  .use([middleware.auth(), middleware.canReadAttachment()])
+  .as('documents.show')
 ```
 
-The optional `name` is ignored when resolving the file: the blob id remains the only lookup
-key. It lets you expose URLs such as `/attachments/xxx/mon_fichier.jpeg` without breaking
-the shorter URL. Use the stored filename and encode it as one URL segment:
+Public uploads use `defaultDisk`. Select the private disk when creating a private draft:
 
 ```ts
-const attachment = link?.attachment
-const url = attachment
-  ? `/attachments/${attachment.id}/${encodeURIComponent(attachment.name)}`
-  : null
+const draft = await attachmentManager.createFromFile(file, { disk: 'private' })
+user.document.set(draft)
+await user.save()
 ```
 
-Without a configured store, the route is not registered. To manage attachment data yourself,
-use `store: false`, even if the rest of the application uses Lucid.
+Here `user.document` is an application-defined Lucid attachment relation. Its resulting
+blob ID belongs in `/documents/<id>`, not `/medias/<id>`. The route's `disks` option filters
+stored records; it does not change the upload disk or move any file. Existing records
+keep their disk even if you later change `defaultDisk`.
 
-::: warning No authorization
-The built-in route is **public** - anyone with an id can fetch the file, and an unknown id
-returns `404`. The optional name does not protect the file. Only use it when ids are
-acceptable as public identifiers.
+`canReadAttachment` is an application middleware you must implement and register. It
+must verify that the authenticated user may read the requested attachment (including
+variant access). Authentication alone does not grant permission to every private file.
+It can look up the attachment using `jrmc.attachment.repository` and `ctx.params.id`.
+
+The public route returns `404` for private-disk IDs, and the private route returns `404`
+for public-disk IDs. A route can allow several disks with `disks: ['photos', 'videos']`.
+An empty list or an empty disk name is rejected when declaring the route.
+
+The method returns a native Adonis `Route`: middleware, groups, prefixes, domains,
+matchers and `.as()` behave as for `router.get()`. No route name is assigned implicitly.
+
+::: warning Storage visibility
+The private disk must not expose files through a public static URL. Restrict every
+attachment route to the intended disks: any unprotected route allowing the private disk
+would expose those files. Disks select the files a route can serve; middleware controls
+who may access them.
 :::
 
-## Your own protected route
+## Application controllers
 
-First set `route: false` in `config/attachment.ts`. Adding an authorized controller does
-not disable the public built-in route: leaving it enabled would bypass your authorization.
-Also ensure the storage does not expose these private files through a public static URL.
+For owner-based authorization or custom responses, an application controller can use
+`AttachmentRepository.findById` and `AttachmentService.read` directly. Authorize the
+attachment before reading its bytes. Cache headers, download disposition and signed
+storage URLs remain under application control. Authorize before issuing a signed URL.
 
-For private files, authorize first, then reuse the same building blocks the built-in route
-uses - `AttachmentRepository.findById` and `AttachmentService.read`:
+## Migrating from automatic routes
 
-```ts
-import type { HttpContext } from '@adonisjs/core/http'
-import app from '@adonisjs/core/services/app'
-
-export default class FilesController {
-  async show({ params, response, bouncer }: HttpContext) {
-    const repository = await app.container.make('jrmc.attachment.repository')
-    const service = await app.container.make('jrmc.attachment')
-
-    const attachment = await repository.findById(params.id)
-    if (!attachment) return response.notFound()
-
-    // your authorization logic here
-    await bouncer.authorize('viewFile', attachment)
-
-    response.header('content-type', attachment.mimeType)
-    return response.send(await service.read(attachment))
-  }
-}
-```
-
-Cache headers, download disposition, and signed URLs are yours to add as needed.
-
-This example assumes Bouncer is configured and your application defines the `viewFile`
-ability. Register the controller on an authenticated route using your application's auth
-middleware. A signed storage URL grants temporary access; authorize the caller before
-issuing it, too.
+Remove `route` from `config/attachment.ts`. It is no longer supported and produces a
+migration error. Replace the automatic route or `route: { prefix: '/media' }` with an
+explicit `router.attachments('/media/:id/:name?')` declaration. For the former
+`route: false`, simply omit the declaration. Check that the route allows the disks your
+application previously served: the default now allows only `defaultDisk`.
 
 **Next:** [Background processing](/guide/queues).

@@ -16,7 +16,7 @@ For earlier versions, see the [v5 changelog](https://adonis-attachment.jrmc.dev/
 - Remove the former `route` configuration key; it now raises a migration error.
   See [Serving files](/guide/serving-files).
 
-## 6.0.0-beta.2
+## 6.0.0-beta.3
 
 ### Changed
 

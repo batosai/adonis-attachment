@@ -4,7 +4,7 @@
 
 | Symptom | Check first |
 | --- | --- |
-| No attachment tables | Run `node ace make:attachments-table`, then `node ace migration:run`; check `LucidAttachmentStore.configure({ tableName })` for custom names. |
+| No attachment tables | Run `node ace make:attachments-table`, then `node ace migration:run`; check `store.lucid({ tableName })` for custom names. |
 | `createFromFile` fails before persistence | Check that the upload exists, is valid, and has a temporary path. See the [validated upload example](/guide/getting-started). |
 | Original exists but thumbnail is absent | Confirm the key is enabled in `variants`, check the required media dependency, and report queue failures with `onFailure`. External queues also need a running worker. |
 | Invalid attachment queue default at boot | Check that `queue.default` matches a key in `queue.connections`. Validate `ATTACHMENT_QUEUE` with an enum when selecting by environment; no fallback is applied to an unknown name. |

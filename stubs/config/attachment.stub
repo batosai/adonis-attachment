@@ -3,8 +3,8 @@
 }}}
 import {
   defineConfig,
-  LocalFileStorage,
-  MemoryAttachmentQueue,
+  storage,
+  queue,
   type InferConverters,
 } from '@jrmc/adonis-attachment'
 
@@ -23,10 +23,10 @@ const binaries = {
  * Routes allow defaultDisk unless an explicit disks list is provided.
  */
 const attachmentConfig = defineConfig({
-  storage: LocalFileStorage.fromApp,
-  // Lucid: import { LucidAttachmentStore } from '@jrmc/adonis-attachment/lucid'
-  store: false, // Replace with LucidAttachmentStore.fromApp to use Lucid.
-  queue: MemoryAttachmentQueue.fromApp,
+  storage: storage.local(),
+  // Lucid: import { store } from '@jrmc/adonis-attachment'
+  store: false, // Replace with store.lucid() to use Lucid.
+  queue: queue.memory(),
   media: {
     binaries,
     // metadataPolicy: { mode: 'deferred', variants: false },

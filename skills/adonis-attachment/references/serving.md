@@ -11,17 +11,16 @@ For two Drive disks, keep their existing configuration and visibility in `config
 Select the Drive storage adapter and the application's store explicitly:
 
 ```ts
-import { defineConfig, AdonisDriveStorage } from '@jrmc/adonis-attachment'
-import { LucidAttachmentStore } from '@jrmc/adonis-attachment/lucid'
+import { defineConfig, store, storage } from '@jrmc/adonis-attachment'
 
 export default defineConfig({
-  storage: AdonisDriveStorage.fromApp,
-  store: LucidAttachmentStore.fromApp,
+  storage: storage.drive(),
+  store: store.lucid(),
 })
 ```
 
 This example assumes Drive's default disk is `public`, alongside a `private` disk.
-`AdonisDriveStorage.fromApp` inherits that default from `config/drive.ts`; do not repeat
+`storage.drive()` inherits that default from `config/drive.ts`; do not repeat
 it with `defaultDisk` unless the application intentionally overrides it for attachments.
 
 A custom store works equally well: the route requires `store.repository.findById`, not

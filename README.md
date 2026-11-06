@@ -22,11 +22,12 @@ Version 6 separates file storage, database persistence, and processing so you ca
 
 Existing v5 applications also have a legacy integration for keeping JSON fields. Configuration and APIs have changed: follow the [migration guide](https://next.adonis-attachment.jrmc.dev/migration/from-v5) before upgrading.
 
-Storage, store and queue accept instances or `(app, context)` factories. Use `fromApp`
-for defaults and `configure(options)` for overrides, for example
-`AdonisDriveStorage.configure({ disk: 's3' })`,
-`LucidAttachmentStore.configure({ tableName: 'media_attachments' })`, and
-`MemoryAttachmentQueue.configure({ concurrency: 2 })`.
+Storage, store and queue accept instances or `(app, context)` factories. Import `store`,
+`storage`, and `queue` from the package root. Prefer these helpers for configuration. Call them without options
+for defaults or pass options for overrides, for example
+`storage.drive({ disk: 's3' })`,
+`store.lucid({ tableName: 'media_attachments' })`, and
+`queue.memory({ concurrency: 2 })`.
 See the [common adapter configuration](https://next.adonis-attachment.jrmc.dev/guide/configuration#a-common-adapter-pattern).
 
 ## Quick start with Lucid
@@ -45,12 +46,11 @@ The configure command registers the provider and Ace commands and creates `confi
 Select Lucid explicitly in the generated configuration (replace `store: false`):
 
 ```ts
-import { defineConfig, LocalFileStorage } from '@jrmc/adonis-attachment'
-import { LucidAttachmentStore } from '@jrmc/adonis-attachment/lucid'
+import { defineConfig, store, storage } from '@jrmc/adonis-attachment'
 
 export default defineConfig({
-  storage: LocalFileStorage.fromApp,
-  store: LucidAttachmentStore.fromApp,
+  storage: storage.local(),
+  store: store.lucid(),
 })
 ```
 

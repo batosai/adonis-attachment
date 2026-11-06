@@ -4,6 +4,7 @@ description: Use when configuring @jrmc/adonis-attachment v6 variants, converter
 metadata:
   package: "@jrmc/adonis-attachment"
   major-version: "6"
+  version: "2026-11-06.1"
 ---
 
 # Attachment v6 media processing
@@ -14,9 +15,17 @@ Identify table-backed `/lucid` relations versus `/legacy` JSON fields and arrays
 legacy facade still uses v6 media/queue configuration, not v5 queue APIs. Read
 [media and worker recipes](references/media.md) for concrete configuration and diagnostics.
 
-Select the data store explicitly: `store: LucidAttachmentStore.fromApp` for tables, or
-`LucidAttachmentStore.configure({ legacy: { models } })` for mixed/legacy fields. Import
-it from `/lucid`. No Lucid auto-detection remains. The old root `integrations`, `repository`,
+Prefer the root `store`, `storage`, and `queue` helpers when writing or updating
+configuration: `store.lucid()`, `storage.local()`, `storage.drive()`, `queue.memory()`,
+and `queue.adonis({ job })`. Pass options to override defaults; Adonis Queue always
+requires an application job. Reserve classes and constructors for standalone processing,
+custom adapters, or APIs unavailable through these helpers. Keep existing working class
+configurations unless the task calls for updating them. Check that the installed version
+exports the helpers before using them.
+
+Select the data store explicitly: `store: store.lucid()` for tables, or
+`store.lucid({ legacy: { models } })` for mixed/legacy fields. Import
+`store` from the package root. No Lucid auto-detection remains. The old root `integrations`, `repository`,
 `processor` and `media.metadataPersister` config keys must be migrated to `store`.
 External jobs use `createAttachmentProcessor(app)` from the root and the same store.
 Verify installed beta declarations before applying these newer config APIs.
@@ -42,14 +51,14 @@ Verify installed beta declarations before applying these newer config APIs.
   LibreOffice and Poppler. No extracted metadata is different from a processing error.
 - A missing dependency or corrupt supported file raises an error; unsupported MIME types
   are skipped. Blurhash alone is best-effort and may be absent without failing the variant.
-- Queue follows storage/store: an instance, `fromApp`, or `configure(options)` factory.
-  Use `MemoryAttachmentQueue.configure({ concurrency, onFailure })` or
-  `AdonisAttachmentQueue.configure({ job, queueName })` from the root. Custom factories
+- Queue follows storage/store: prefer the `queue` helpers; instances and custom factories remain supported.
+  Use `queue.memory({ concurrency, onFailure })` or
+  `queue.adonis({ job, queueName })` from the root. Custom factories
   receive `(app, context)` and optional `context.handler`; run it only after config resolves.
 - Configure `queue.default` and `queue.connections` for environment selection. Memory is
   the fallback when queue is omitted, in-process, non-durable, and has no automatic retry.
 - Legacy supports BOTH memory and external workers. Register trusted model loaders in
-  `store: LucidAttachmentStore.configure({ legacy: { models } })` for variants/deferred metadata; keep Lucid enabled. The same
+  `store: store.lucid({ legacy: { models } })` for variants/deferred metadata; keep Lucid enabled. The same
   `createAttachmentProcessor(app)` worker factory handles both persistence modes.
 - Legacy getters read a loaded snapshot. Refresh after jobs finish, without discarding
   pending edits. Regenerate via shared `AttachmentRegenerator.row/model`, not a legacy

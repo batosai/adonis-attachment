@@ -177,7 +177,7 @@ configuration uses it to extract metadata outside the upload operation:
 // config/attachment.ts
 import {
   defineConfig,
-  LocalFileStorage,
+  storage,
   type AttachmentMetadataPersister,
 } from '@jrmc/adonis-attachment'
 
@@ -194,7 +194,7 @@ const metadataPersister: AttachmentMetadataPersister = {
 }
 
 export default defineConfig({
-  storage: LocalFileStorage.fromApp,
+  storage: storage.local(),
   store: { repository: new UserMediaRepository(), metadataPersister },
   media: { metadataPolicy: { mode: 'deferred' } },
 })
@@ -284,7 +284,7 @@ repository, but does not support persisting generated variants or expose an HTTP
 
 ```ts
 export default defineConfig({
-  storage: LocalFileStorage.fromApp,
+  storage: storage.local(),
   store: { repository: new UserMediaRepository() },
 })
 ```
@@ -317,7 +317,7 @@ This example assumes application modules for `database` and `UserMediaRepository
 and a transaction that rolls back all inserts on failure:
 
 ```ts
-import { defineConfig, LocalFileStorage, VariantGenerationService, type AttachmentStore } from '@jrmc/adonis-attachment'
+import { defineConfig, VariantGenerationService, type AttachmentStore, storage } from '@jrmc/adonis-attachment'
 import { UserMediaRepository } from '#attachments/user_media_repository'
 import database from '#services/database'
 
@@ -350,7 +350,7 @@ const store: AttachmentStore = {
 }
 
 export default defineConfig({
-  storage: LocalFileStorage.fromApp,
+  storage: storage.local(),
   store,
   converters: { thumbnail: { resize: 320, format: 'webp' } },
 })

@@ -158,7 +158,7 @@ converters: {
 | ffmpeg, ffprobe, Poppler or LibreOffice paths | `media.binaries`, preserving commands and timeouts |
 | Background work | `queue` and the external worker using `createAttachmentProcessor(app)` |
 | HTTP read routes | Retain explicit `router.attachments()` declarations for table blobs, update `:key` to `:id`, select allowed disks and apply native middleware. JSON fields require storage URLs or owner-based routes. |
-| Attachment tables and serving | `LucidAttachmentStore.configure({ tableName })` before generating the schema; declare `router.attachments()` explicitly, select its allowed disks, and attach middleware for private access |
+| Attachment tables and serving | `store.lucid({ tableName })` before generating the schema; declare `router.attachments()` explicitly, select its allowed disks, and attach middleware for private access |
 
 ##### Type imports and custom converters
 
@@ -477,7 +477,7 @@ converters: {
 | Variant keys and their options | `converters`; keep the matching `variants` option on each legacy decorator or in `defaults` |
 | `meta` and custom metadata extraction | `defaults.meta` or decorator `meta`; retain custom extractors in `media.metadata` and deferred work in `media.metadataPolicy` only when used |
 | ffmpeg, ffprobe, Poppler or LibreOffice paths | `media.binaries`, preserving commands and timeouts |
-| Background work | `queue` and the external worker; also register every JSON owner in `store: LucidAttachmentStore.configure({ legacy: { models } })` |
+| Background work | `queue` and the external worker; also register every JSON owner in `store: store.lucid({ legacy: { models } })` |
 | Serving URLs | Use owner-authorized application routes for JSON fields; declare `router.attachments()` explicitly for table blobs |
 
 Install only the packages required by the resulting configuration:
@@ -608,12 +608,11 @@ See [legacy collections](/guide/legacy#a-simple-collection) for the complete wor
 
 ```ts
 // config/attachment.ts
-import { AdonisDriveStorage, defineConfig } from '@jrmc/adonis-attachment'
-import { LucidAttachmentStore } from '@jrmc/adonis-attachment/lucid'
+import { defineConfig, store, storage } from '@jrmc/adonis-attachment'
 
 export default defineConfig({
-  storage: AdonisDriveStorage.fromApp,
-  store: LucidAttachmentStore.configure({
+  storage: storage.drive(),
+  store: store.lucid({
     legacy: { models: { users: () => import('#models/user') } },
   }),
   // Add your v6 converter, metadata and queue configuration as needed.

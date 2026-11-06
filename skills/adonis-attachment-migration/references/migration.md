@@ -44,20 +44,19 @@ Audit and update the existing configuration manually before changing models, inc
 V5 applications may rely on Drive defaults without declaring package storage. V6 does not infer
 that adapter: configure `storage` explicitly before booting an application that reads or writes
 attachments. When the audited v5 files are on Adonis Drive, preserve that behavior with
-`AdonisDriveStorage.fromApp`; do not replace it with local storage merely because v6 supports a
+`storage.drive()`; do not replace it with local storage merely because v6 supports a
 local default.
 
 ```ts
-import { AdonisDriveStorage, defineConfig } from '@jrmc/adonis-attachment'
-import { LucidAttachmentStore } from '@jrmc/adonis-attachment/lucid'
+import { defineConfig, store, storage } from '@jrmc/adonis-attachment'
 
 export default defineConfig({
-  storage: AdonisDriveStorage.fromApp,
-  store: LucidAttachmentStore.fromApp,
+  storage: storage.drive(),
+  store: store.lucid(),
 })
 ```
 
-For table-backed fields, `store: LucidAttachmentStore.fromApp` supplies the repository.
+For table-backed fields, `store: store.lucid()` supplies the repository.
 Declare `router.attachments()` explicitly with blob `:id` parameters, defaultDisk or allowed
 `disks`, and native middleware. No route is exposed automatically. V5 `:key` routes and
 on-demand variant query parameters must be migrated. A `Cannot read properties of undefined (reading 'defaultDisk')` error during
@@ -130,8 +129,7 @@ For the common v5 layout below, set both the root base path and the converter na
 ```
 
 ```ts
-import { AdonisDriveStorage, defineConfig } from '@jrmc/adonis-attachment'
-import { LucidAttachmentStore } from '@jrmc/adonis-attachment/lucid'
+import { defineConfig, storage } from '@jrmc/adonis-attachment'
 
 const legacyVariantBasePath = ({ attachment }: { attachment: { path: string } }) => {
   const separator = attachment.path.lastIndexOf('/')
@@ -140,7 +138,7 @@ const legacyVariantBasePath = ({ attachment }: { attachment: { path: string } })
 }
 
 export default defineConfig({
-  storage: AdonisDriveStorage.fromApp,
+  storage: storage.drive(),
   variant: { basePath: legacyVariantBasePath },
   converters: {
     thumbnail: { resize: 640, format: 'webp', folder: ':name' },
@@ -227,7 +225,7 @@ not through `fill`/`merge`, and save the owner. Persisted attachments cannot be 
 assignment to another field because JSON has no global file reference counts.
 
 In `config/attachment.ts`, register
-`store: LucidAttachmentStore.configure({ legacy: { models: { users: () => import('#models/user') } } })`.
+`store: store.lucid({ legacy: { models: { users: () => import('#models/user') } } })`.
 The key matches logical owner `type` (model table by default), enabling jobs to reload
 the current JSON. It creates no tables and is not a global storage-mode switch. Keep
 Lucid enabled; `integrations.lucid.jsonModels` has been removed. No `/lucid` decorator
@@ -286,7 +284,7 @@ node ace make:attachment-v5-migration
 Run `node ace configure @jrmc/adonis-attachment` before these commands only if provider/command
 registration is missing; it is not a configuration-upgrade step.
 
-Run schema/data commands only in the approved environment. `LucidAttachmentStore.configure({ tableName })`
+Run schema/data commands only in the approved environment. `store.lucid({ tableName })`
 controls the blob name; its singular form plus `_links` controls the links. The schema stub
 uses `AttachmentSchemaService`, not a hand-maintained copy of the table definitions.
 

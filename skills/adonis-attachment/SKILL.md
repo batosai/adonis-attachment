@@ -4,6 +4,7 @@ description: Use when integrating @jrmc/adonis-attachment v6 into an AdonisJS ap
 metadata:
   package: "@jrmc/adonis-attachment"
   major-version: "6"
+  version: "2026-11-06.1"
 ---
 
 # Attachment v6 application integration
@@ -21,16 +22,24 @@ when retaining a JSON column or using `/legacy`. Read
 Read [read routes and disk isolation](references/serving.md) for explicit router declarations,
 public/private disks, middleware, or migration from the old `route` configuration.
 
+Prefer the root `store`, `storage`, and `queue` helpers when writing or updating
+configuration: `store.lucid()`, `storage.local()`, `storage.drive()`, `queue.memory()`,
+and `queue.adonis({ job })`. Pass options to override defaults; Adonis Queue always
+requires an application job. Reserve classes and constructors for standalone processing,
+custom adapters, or APIs unavailable through these helpers. Keep existing working class
+configurations unless the task calls for updating them. Check that the installed version
+exports the helpers before using them.
+
 ## Decisions that matter
 
 - Storage, store and queue share instances or `(app, context)` factories. Built-ins use
-  `fromApp` for defaults and `configure(options)` for overrides. Queue defaults to memory;
+  `store`, `storage`, and `queue` helpers from the package root for defaults and overrides. Existing class factories remain supported. Queue defaults to memory;
   store defaults to disabled; storage is required. Queue driver shortcuts and named
   connections still work. Inspect the installed beta exports before using new factories.
 
 - The package is `@jrmc/adonis-attachment` (singular), even when the task says "attachments".
 - Core is required; Drive, Lucid, and Adonis Queue are optional. Default storage is
-  `LocalFileStorage.fromApp`, not Drive. Select `store: LucidAttachmentStore.fromApp` from `/lucid` explicitly for Lucid data; the default stub uses `store: false`.
+  `storage.local()`, not Drive. Select `store: store.lucid()` from the package root explicitly for Lucid data; the default stub uses `store: false`.
 - Choose the field's persistence before editing its model or schema. `/lucid` is the default
   table-backed API; `/legacy` is a JSON facade requiring Lucid.
   Verify the installed build exports `/legacy`; not every v6 beta does. Do not migrate
@@ -40,8 +49,8 @@ public/private disks, middleware, or migration from the old `route` configuratio
   from `@jrmc/adonis-attachment/lucid`. Root `Attachment` is plain persisted file data.
   The internal `src/stores/lucid/` layout does not change the public `/lucid` and `/legacy`
   entry points; use package exports in consuming applications.
-  Storage classes are root exports or available from `/storages/local-file` and
-  `/storages/adonis-drive`; beta.2 replaces the former `/adapters/...` entry points.
+  For advanced direct instantiation, storage classes remain root exports or available from
+  `/storages/local-file` and `/storages/adonis-drive`.
 - Root `attachmentService` exposes URL methods only. For read/remove/scheduling use the
   typed full service from `await app.container.make('jrmc.attachment')` inside the booted app.
 - Root `createFrom*` returns an `AttachmentDraft`, not a written file. Use `draft.persist()`
@@ -60,7 +69,7 @@ public/private disks, middleware, or migration from the old `route` configuratio
   Use `store` capabilities (`repository`, optional `persistence`, `metadataPersister`, `variants`)
   and the advanced `jobHandler` override. Never rely on Lucid auto-detection.
 - Table defaults are `adonis_attachments` and `adonis_attachment_links`. Configure their names via
-  `LucidAttachmentStore.configure({ tableName })`; the link name is its singular form plus `_links`.
+  `store.lucid({ tableName })`; the link name is its singular form plus `_links`.
   Configuration never renames an existing database table.
 - Table `get()` and collection `all()` return links with a preloaded `.attachment` blob.
   Collection `move/remove` take link IDs. `attachExisting/addExisting` and file routes take blob IDs.
@@ -76,7 +85,7 @@ public/private disks, middleware, or migration from the old `route` configuratio
   It returns `string | null`; `{ fallback: 'original' }` uses the original only when the
   variant record is absent. It does not require `preComputeUrl` or build a file-route URL.
 - Legacy serializes automatically, exposes `getUrl()` / `getVariant()` and mutable `meta`.
-  Register its model loaders in `store: LucidAttachmentStore.configure({ legacy: { models } })` for variants/deferred metadata
+  Register its model loaders in `store: store.lucid({ legacy: { models } })` for variants/deferred metadata
   with either memory or external queues; do not use the removed `integrations.lucid.jsonModels`.
 
 ## Verification

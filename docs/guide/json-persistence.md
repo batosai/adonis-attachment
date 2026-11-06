@@ -34,7 +34,7 @@ The common model coordinator only knows field callbacks for persistence, deletio
 regeneration. The common worker only knows registered processing adapters; neither imports
 the legacy implementation or selects behavior by a hard-coded JSON adapter name.
 
-`store: LucidAttachmentStore.configure({ legacy: { models } })` activates the module through the config resolver. Its logical
+`store: store.lucid({ legacy: { models } })` activates the module through the config resolver. Its logical
 job adapter remains `json`, preserving existing contextual references and queued jobs.
 The provider exposes a generic processing-adapter registry to memory and external workers.
 
@@ -46,7 +46,7 @@ tools under `lucid/migrations/legacy/` so applications retain a supported exit p
 ## Existing data and configuration
 
 The public usage and configuration are documented in [Legacy JSON fields](/guide/legacy)
-and [Migration from v5](/migration/from-v5). Use `store: LucidAttachmentStore.configure({ legacy: { models } })`, not the old
+and [Migration from v5](/migration/from-v5). Use `store: store.lucid({ legacy: { models } })`, not the old
 experimental `integrations.lucid.jsonModels`. The latter fails explicitly rather than
 silently disabling workers. The former `persistence: 'json'` relation option and
 `AttachmentRelation<'json'>` type are removed.

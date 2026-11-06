@@ -23,12 +23,12 @@ node ace make:attachments-table
 node ace migration:run
 ```
 
-Select `store: LucidAttachmentStore.fromApp` explicitly in the generated config before
-running these commands. Import `LucidAttachmentStore` from `/lucid`. The default stub
+Select `store: store.lucid()` explicitly in the generated config before
+running these commands. Import `store` from the package root. The default stub
 uses `store: false`; Lucid is never detected automatically.
 
 The generated migration delegates to `AttachmentSchemaService`. Set a custom
-`LucidAttachmentStore.configure({ tableName })` before generation and use the same name at runtime.
+`store.lucid({ tableName })` before generation and use the same name at runtime.
 Defaults are `adonis_attachments` / `adonis_attachment_links`; `media_attachments` derives
 `media_attachment_links`. Existing tables require an explicit migration or matching config.
 
@@ -40,10 +40,7 @@ Adapt this example to the application's existing model rather than replacing its
 import { BaseModel, column } from '@adonisjs/lucid/orm'
 import type { HttpContext } from '@adonisjs/core/http'
 import { attachmentManager } from '@jrmc/adonis-attachment'
-import {
-  attachment, attachments,
-  type AttachmentRelation, type AttachmentCollectionRelation,
-} from '@jrmc/adonis-attachment/lucid'
+import { attachment, attachments, type AttachmentRelation, type AttachmentCollectionRelation } from '@jrmc/adonis-attachment/lucid'
 
 export class User extends BaseModel {
   @column({ isPrimary: true })

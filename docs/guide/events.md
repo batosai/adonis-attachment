@@ -82,15 +82,15 @@ worker must give the same adapter to its own processor.
 ```ts
 import app from '@adonisjs/core/services/app'
 import emitter from '@adonisjs/core/services/emitter'
-import { createAttachmentProcessor, defineConfig, LocalFileStorage } from '@jrmc/adonis-attachment'
-import { LucidAttachmentStore } from '@jrmc/adonis-attachment/lucid'
+import { createAttachmentProcessor, defineConfig, store, storage } from '@jrmc/adonis-attachment'
+
 import { AdonisAttachmentEventEmitter } from '@jrmc/adonis-attachment/events/adonis'
 
 const events = new AdonisAttachmentEventEmitter(emitter)
 
 export default defineConfig({
-  storage: LocalFileStorage.fromApp,
-  store: LucidAttachmentStore.fromApp,
+  storage: storage.local(),
+  store: store.lucid(),
   events,
 })
 

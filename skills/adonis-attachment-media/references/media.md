@@ -3,10 +3,10 @@
 ## Shared converter configuration
 
 ```ts
-import { defineConfig, LocalFileStorage, type InferConverters } from '@jrmc/adonis-attachment'
+import { defineConfig, type InferConverters, storage } from '@jrmc/adonis-attachment'
 
 const config = defineConfig({
-  storage: LocalFileStorage.fromApp,
+  storage: storage.local(),
   converters: {
     thumbnail: {
       resize: { width: 320, fit: 'cover' },
@@ -61,7 +61,7 @@ variant insertion/deletion API. Each collection item supports `getVariant()`, `m
 blurhash. Select `attributes: ['gallery']` with `AttachmentRegenerator.row/model` to
 regenerate all items; the array itself has no `regenerateVariants()` method.
 
-Register `store: LucidAttachmentStore.configure({ legacy: { models } })` so variants/deferred metadata can reload current
+Register `store: store.lucid({ legacy: { models } })` so variants/deferred metadata can reload current
 owner JSON in the app AND a fresh worker. Keys match the decorator's logical `type`
 (the model table by default). Keep Lucid enabled. The registry creates no tables and
 does not select field persistence. Do not use removed `integrations.lucid.jsonModels`,
@@ -72,9 +72,9 @@ and use `users: () => import('#models/user')` in the config registry. Merge conv
 and storage into existing configuration rather than replacing it.
 
 ```ts
-import { LucidAttachmentStore } from '@jrmc/adonis-attachment/lucid'
+
 import { BaseModel, column } from '@adonisjs/lucid/orm'
-import { defineConfig, LocalFileStorage } from '@jrmc/adonis-attachment'
+import { defineConfig, store, storage } from '@jrmc/adonis-attachment'
 import { attachment, type Attachment } from '@jrmc/adonis-attachment/legacy'
 import { AttachmentRegenerator } from '@jrmc/adonis-attachment/lucid'
 
@@ -84,8 +84,8 @@ export class User extends BaseModel {
 }
 
 export const config = defineConfig({
-  storage: LocalFileStorage.fromApp,
-  store: LucidAttachmentStore.configure({ legacy: { models: { users: async () => ({ default: User }) } } }),
+  storage: storage.local(),
+  store: store.lucid({ legacy: { models: { users: async () => ({ default: User }) } } }),
   converters: { thumbnail: { resize: { width: 320 }, format: { format: 'webp' } } },
   media: { metadataPolicy: { mode: 'deferred' } },
 })
@@ -180,14 +180,15 @@ to skip. Use `Converter<CustomOptions>` and `ConverterConfig<CustomOptions>` for
 Add `ATTACHMENT_QUEUE: Env.schema.enum.optional(['memory', 'background'] as const)` to the
 existing `start/env.ts` schema. Import `env` from `#start/env` in attachment config, then set
 `queue.default: env.get('ATTACHMENT_QUEUE', 'memory')`. Declare `connections.memory` with
-`MemoryAttachmentQueue.configure({ concurrency: 1, onFailure(job, error) { console.error(job.type, error) } })`.
+`queue.memory({ concurrency: 1, onFailure(job, error) { console.error(job.type, error) } })`.
 Default must match a connection key; unknown names fail boot rather than silently falling back.
 
-An external connection is `AdonisAttachmentQueue.configure({ job: GenerateAttachmentVariants,
+An external connection is `queue.adonis({ job: GenerateAttachmentVariants,
 queueName: 'attachments' })`. The connection name `background` is distinct from the native
 queue destination. Only the selected connection is initialized, but top-level JS imports
 still run. Use an async connection factory with a dynamic job import returning
-`new AdonisAttachmentQueue(...)` to defer optional dependencies.
+`queue.adonis({ job: GenerateAttachmentVariants, queueName: 'attachments' })(app, context)`
+from an async `(app, context)` factory to defer the job import.
 
 Configure `@adonisjs/queue` first, create the forwarding job with
 `node ace make:job generate_attachment_variants`, and forward its `AttachmentJob` payload:
@@ -240,10 +241,10 @@ packages, binary failures, or missing workers. A SVG must never be passed to EXI
 
 ### Common queue factories
 
-Prefer `queue: MemoryAttachmentQueue.configure({ concurrency: 2, onFailure })` for local
-processing and `queue: AdonisAttachmentQueue.configure({ job: GenerateAttachmentVariants,
-queueName: 'attachments' })` for external jobs. Import these classes from the package root.
-`MemoryAttachmentQueue.fromApp` and omitted queue use default concurrency 1. Named
+Prefer `queue: queue.memory({ concurrency: 2, onFailure })` for local
+processing and `queue: queue.adonis({ job: GenerateAttachmentVariants,
+queueName: 'attachments' })` for external jobs. Import `queue` from the package root.
+`queue.memory()` and omitted queue use default concurrency 1. Named
 connections can contain the same factories; only the selected connection is resolved.
 Existing `{ driver: 'memory' }` / `{ driver: 'adonis', job }` declarations remain supported.
 Storage, store and queue share the `(app, context)` convention. Their responsibilities and

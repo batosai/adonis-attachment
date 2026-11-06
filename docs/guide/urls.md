@@ -55,7 +55,7 @@ const thumbnailUrl = thumbnail
 ```
 
 No route is registered automatically. The route allows only the resolved default disk
-unless `disks` is supplied. With `AdonisDriveStorage.fromApp`, the default is inherited
+unless `disks` is supplied. With `storage.drive()`, the default is inherited
 from Drive unless overridden for attachments. A missing blob or a blob outside the
 allowed disks returns `404`.
 

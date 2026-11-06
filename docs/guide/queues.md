@@ -12,18 +12,17 @@ when you need to.
 Queue configuration follows the same pattern as storage and store:
 
 ```ts
-import { defineConfig, LocalFileStorage, MemoryAttachmentQueue } from '@jrmc/adonis-attachment'
-import { LucidAttachmentStore } from '@jrmc/adonis-attachment/lucid'
+import { defineConfig, store, storage, queue } from '@jrmc/adonis-attachment'
 
 export default defineConfig({
-  storage: LocalFileStorage.fromApp,
-  store: LucidAttachmentStore.fromApp,
-  queue: MemoryAttachmentQueue.configure({ concurrency: 2 }),
+  storage: storage.local(),
+  store: store.lucid(),
+  queue: queue.memory({ concurrency: 2 }),
 })
 ```
 
-Use `MemoryAttachmentQueue.fromApp` for defaults, or omit `queue`. Both use the configured
-store's processor. `AdonisAttachmentQueue.configure({ job, queueName })` returns an external
+Use `queue.memory()` for defaults, or omit `queue`. Both use the configured
+store's processor. `queue.adonis({ job, queueName })` returns an external
 queue factory. Adapter instances and custom `(app, context) => queue` factories are also accepted.
 See [the shared adapter contract](/guide/configuration#a-common-adapter-pattern).
 
@@ -51,16 +50,16 @@ handler wiring. Do not resolve `jrmc.attachment` inside the factory.
 Declare several queue connections and select the one used by all attachment jobs:
 
 ```ts
-import { defineConfig, LocalFileStorage, MemoryAttachmentQueue, AdonisAttachmentQueue } from '@jrmc/adonis-attachment'
+import { defineConfig, storage, queue } from '@jrmc/adonis-attachment'
 import GenerateAttachmentVariants from '#jobs/generate_attachment_variants'
 
 export default defineConfig({
-  storage: LocalFileStorage.fromApp,
+  storage: storage.local(),
   queue: {
     default: 'memory',
     connections: {
-      memory: MemoryAttachmentQueue.configure({ concurrency: 1 }),
-      background: AdonisAttachmentQueue.configure({
+      memory: queue.memory({ concurrency: 1 }),
+      background: queue.adonis({
         job: GenerateAttachmentVariants,
         queueName: 'attachments',
       }),
@@ -101,8 +100,8 @@ Import `env` from `#start/env` in `config/attachment.ts` and use:
 queue: {
   default: env.get('ATTACHMENT_QUEUE', 'memory'),
   connections: {
-    memory: MemoryAttachmentQueue.configure({ concurrency: 1 }),
-    background: AdonisAttachmentQueue.configure({
+    memory: queue.memory({ concurrency: 1 }),
+    background: queue.adonis({
       job: GenerateAttachmentVariants,
       queueName: 'attachments',
     }),
@@ -114,7 +113,7 @@ Set `ATTACHMENT_QUEUE=memory` locally and `ATTACHMENT_QUEUE=background` in the e
 where you run the external worker. If omitted, the example selects memory. Restart the
 application after changing the variable: connection selection is fixed when configuration
 is resolved, not reevaluated for each upload. Keep the application's and worker's configuration
-consistent. The generated config uses `MemoryAttachmentQueue.fromApp` and needs no env
+consistent. The generated config uses `queue.memory()` and needs no env
 schema change until you add this environment-based selection.
 
 ### Lazy optional connections
@@ -124,15 +123,15 @@ imports still execute when the config module loads. To avoid importing an unused
 and its optional dependencies, declare that connection as a factory instead:
 
 ```ts
-import { AdonisAttachmentQueue } from '@jrmc/adonis-attachment'
+import { queue } from '@jrmc/adonis-attachment'
 
 // Inside queue.connections:
-background: async () => {
+background: async (app, context) => {
   const { default: GenerateAttachmentVariants } = await import('#jobs/generate_attachment_variants')
-  return new AdonisAttachmentQueue({
+  return queue.adonis({
     job: GenerateAttachmentVariants,
     queueName: 'attachments',
-  })
+  })(app, context)
 },
 ```
 
@@ -145,20 +144,20 @@ initialized by your code, so use a factory when initialization itself must be de
 Pending jobs are not durable: a process restart loses them, and failed jobs are not
 automatically retried. Use a persistent queue when those guarantees matter.
 
-If you configure nothing, `MemoryAttachmentQueue` runs jobs **in the same process** - great
+With `queue.memory()` or when `queue` is omitted, jobs run **in the same process** - great
 for development, tests, and simple deployments. When `store` is configured, the package
 creates a processor using that store's repository, variant persistence and metadata
 persister. No Lucid detection is performed.
 
-The default concurrency is `1`; use `configure()` only when you need to change it or
+The default concurrency is `1`; pass options to `queue.memory()` when you need to change it or
 install a failure handler:
 
 ```ts
-import { defineConfig, LocalFileStorage, MemoryAttachmentQueue } from '@jrmc/adonis-attachment'
+import { defineConfig, storage, queue } from '@jrmc/adonis-attachment'
 
 export default defineConfig({
-  storage: LocalFileStorage.fromApp,
-  queue: MemoryAttachmentQueue.configure({
+  storage: storage.local(),
+  queue: queue.memory({
     concurrency: 2,
     onFailure(job, error) {
       console.error(`Attachment job ${job.type} failed`, error)
@@ -208,12 +207,12 @@ the forwarding job with `node ace make:job generate_attachment_variants`. Comple
 queue driver's own connection and persistence setup before dispatching jobs.
 
 ```ts
-import { defineConfig, LocalFileStorage, AdonisAttachmentQueue } from '@jrmc/adonis-attachment'
+import { defineConfig, storage, queue } from '@jrmc/adonis-attachment'
 import GenerateAttachmentVariants from '#jobs/generate_attachment_variants'
 
 export default defineConfig({
-  storage: LocalFileStorage.fromApp,
-  queue: AdonisAttachmentQueue.configure({
+  storage: storage.local(),
+  queue: queue.adonis({
     job: GenerateAttachmentVariants,
     queueName: 'attachments',
   }),
@@ -260,15 +259,18 @@ storage access, configuration, optional media packages, and binary executables a
 
 ## Instantiating the built-in queues directly
 
+Prefer `queue.memory(options)` and `queue.adonis({ job, queueName })` in application
+configuration. Direct constructors are for standalone use or an application-owned processor.
+
 Both adapters can also be instantiated directly. This is useful when you build the handler yourself or reuse the queue outside the
 standard configuration factory:
 
 ```ts
-import { MemoryAttachmentQueue, defineConfig, LocalFileStorage } from '@jrmc/adonis-attachment'
+import { MemoryAttachmentQueue, defineConfig, storage } from '@jrmc/adonis-attachment'
 import attachmentProcessor from '#attachments/processor'
 
 export default defineConfig({
-  storage: LocalFileStorage.fromApp,
+  storage: storage.local(),
   queue: new MemoryAttachmentQueue({
     handler: (job) => attachmentProcessor.process(job),
     concurrency: 2,
@@ -277,11 +279,11 @@ export default defineConfig({
 ```
 
 ```ts
-import { AdonisAttachmentQueue, defineConfig, LocalFileStorage } from '@jrmc/adonis-attachment'
+import { AdonisAttachmentQueue, defineConfig, storage } from '@jrmc/adonis-attachment'
 import GenerateAttachmentVariants from '#jobs/generate_attachment_variants'
 
 export default defineConfig({
-  storage: LocalFileStorage.fromApp,
+  storage: storage.local(),
   queue: new AdonisAttachmentQueue({
     job: GenerateAttachmentVariants,
     queueName: 'attachments',
@@ -331,7 +333,7 @@ transport does not require a new core driver:
 
 ```ts
 export default defineConfig({
-  storage: LocalFileStorage.fromApp,
+  storage: storage.local(),
   queue: (app) => new BullMqAttachmentQueue({
     connection: app.config.get('redis'),
   }),

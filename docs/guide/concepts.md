@@ -42,8 +42,8 @@ the right moment. You call it manually only in the
 The package never talks to a filesystem or S3 directly. It talks to an **`AttachmentStorage`**
 interface with three methods: `write`, `read`, `remove`. Three implementations ship:
 
-- **`LocalFileStorage`** - writes to the local disk (the default).
-- **`AdonisDriveStorage`** - delegates to Adonis Drive (S3, GCS, local...).
+- **`storage.local()`** - writes to the local disk (the default).
+- **`storage.drive()`** - delegates to Adonis Drive (S3, GCS, local...).
 - **your own** - anything implementing the interface.
 
 This is why switching from local files to S3 is a one-line config change.

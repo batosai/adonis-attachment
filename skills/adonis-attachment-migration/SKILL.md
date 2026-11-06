@@ -4,6 +4,7 @@ description: Use when explicitly upgrading an AdonisJS application from @jrmc/ad
 metadata:
   package: "@jrmc/adonis-attachment"
   major-version: "6"
+  version: "2026-11-06.1"
 ---
 
 # Migrate an application from v5 to v6
@@ -14,9 +15,17 @@ storage disks/paths, owner models, converters, and queue before choosing a mappi
 For other source versions, determine the intermediate migration first; do not assume the
 v5 mapping applies. Read [migration procedure](references/migration.md).
 
-Select the data store explicitly: `store: LucidAttachmentStore.fromApp` for tables, or
-`LucidAttachmentStore.configure({ legacy: { models } })` for mixed/legacy fields. Import
-it from `/lucid`. No Lucid auto-detection remains. The old root `integrations`, `repository`,
+Prefer the root `store`, `storage`, and `queue` helpers when writing or updating
+configuration: `store.lucid()`, `storage.local()`, `storage.drive()`, `queue.memory()`,
+and `queue.adonis({ job })`. Pass options to override defaults; Adonis Queue always
+requires an application job. Reserve classes and constructors for standalone processing,
+custom adapters, or APIs unavailable through these helpers. Keep existing working class
+configurations unless the task calls for updating them. Check that the installed version
+exports the helpers before using them.
+
+Select the data store explicitly: `store: store.lucid()` for tables, or
+`store.lucid({ legacy: { models } })` for mixed/legacy fields. Import
+`store` from the package root. No Lucid auto-detection remains. The old root `integrations`, `repository`,
 `processor` and `media.metadataPersister` config keys must be migrated to `store`.
 External jobs use `createAttachmentProcessor(app)` from the root and the same store.
 Verify installed beta declarations before applying these newer config APIs.
@@ -43,7 +52,7 @@ leave only those untouched, then continue with the required code and configurati
 - Update `config/attachment.ts`; do not leave a migration TODO. Compare the effective v5
   defaults, including omitted values, with v6 defaults and configure any behaviour the project
   relies on when it differs. V6 requires an explicit `storage` adapter: when v5 files are on
-  Drive, set `storage: AdonisDriveStorage.fromApp` rather than assuming the v5 Drive default is
+  Drive, set `storage: storage.drive()` rather than assuming the v5 Drive default is
   inferred. On an existing v5 config, make that upgrade manually; `node ace configure` does not
   rewrite it. Preserve the storage adapter, disk names, paths, converters, metadata policy,
   binaries, queue routing and routes deliberately.
@@ -77,11 +86,11 @@ leave only those untouched, then continue with the required code and configurati
 - `/lucid` decorators represent table relations, not JSON columns. Both originals and variants are blobs;
   separate links carry owner type, ID, field, singular uniqueness, and collection position.
 - Default tables are `adonis_attachments` / `adonis_attachment_links`. Respect any explicit
-  `LucidAttachmentStore.configure({ tableName })`; configuration does not rename existing tables or move files.
+  `store.lucid({ tableName })`; configuration does not rename existing tables or move files.
 - For a JSON-to-table migration, read source JSON through the query builder or a separate
   legacy model, not the new `/lucid` accessor. Migrate only the fields selected for tables.
 - For retained JSON, import the decorator, type and manager from `/legacy` and register
-  `store: LucidAttachmentStore.configure({ legacy: { models } })` for processing. The decorator takes over a matching `@column()`
+  `store: store.lucid({ legacy: { models } })` for processing. The decorator takes over a matching `@column()`
   inherited from generated schema base classes or mixins, so keep the SQL column and generated
   TypeScript field without adding `skipColumns` rules.
   Do not use removed `integrations.lucid.jsonModels` or `AttachmentRelation<'json'>` APIs.

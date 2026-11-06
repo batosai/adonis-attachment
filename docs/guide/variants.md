@@ -13,10 +13,10 @@ the converter instance as `options`. When `converter` is omitted, the package us
 `AutodetectConverter` by default.
 
 ```ts
-import { defineConfig, LocalFileStorage, type InferConverters } from '@jrmc/adonis-attachment'
+import { defineConfig, type InferConverters, storage } from '@jrmc/adonis-attachment'
 
 const attachmentConfig = defineConfig({
-  storage: LocalFileStorage.fromApp,
+  storage: storage.local(),
   converters: {
     thumbnail: {
       resize: { width: 320, fit: 'cover' },

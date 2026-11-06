@@ -19,9 +19,9 @@ The `add` command runs the configure hook, which:
 
 That's enough to start creating attachments. Everything below is optional.
 
-The generated config declares `storage: LocalFileStorage.fromApp` and `store: false`.
-For Lucid attachments, import `LucidAttachmentStore` from `@jrmc/adonis-attachment/lucid`
-and set `store: LucidAttachmentStore.fromApp` before generating attachment tables.
+The generated config declares `storage: storage.local()` and `store: false`.
+For Lucid attachments, import `store` from `@jrmc/adonis-attachment`
+and set `store: store.lucid()` before generating attachment tables.
 See [store configuration](/guide/configuration#store) for legacy JSON and custom stores.
 
 ## Optional integrations

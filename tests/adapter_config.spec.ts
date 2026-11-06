@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import {
   defineConfig, LocalFileStorage, AdonisDriveStorage, MemoryAttachmentQueue,
-  AdonisAttachmentQueue,
+  storage as storageAliases, queue as queueAliases, store as storeAliases,
   type AttachmentStorage, type AttachmentQueueContext, type AttachmentJob,
 } from '../index.js'
 
@@ -19,6 +19,26 @@ const storage: AttachmentStorage = {
 const job: AttachmentJob = { type: 'generate-variants', attachmentId: 'original' }
 
 test.group('Common adapter configuration', () => {
+  test('default storage and queue aliases retain the native factories', ({ assert }) => {
+    assert.strictEqual(storageAliases.local(), LocalFileStorage.fromApp)
+    assert.strictEqual(storageAliases.drive(), AdonisDriveStorage.fromApp)
+    assert.strictEqual(queueAliases.memory(), MemoryAttachmentQueue.fromApp)
+  })
+
+  test('Lucid aliases resolve defaults and custom tables through defineConfig', async ({ assert }) => {
+    const { LucidAttachmentStore, configureLucidAttachmentTables } = await import('../src/lucid.js')
+    try {
+      for (const options of [undefined, { tableName: 'alias_attachments' }]) {
+        const resolved = await defineConfig({ storage, store: storeAliases.lucid(options) }).resolver({} as never)
+        assert.instanceOf(resolved.store, LucidAttachmentStore)
+        assert.equal((resolved.store as InstanceType<typeof LucidAttachmentStore>).tableName,
+          options?.tableName ?? 'adonis_attachments')
+        assert.exists(resolved.repository)
+        assert.exists(resolved.store?.metadataPersister)
+      }
+    } finally { configureLucidAttachmentTables() }
+  })
+
   test('resolves factories in order with role-specific context and a usable store processor', async ({ assert }) => {
     const order: string[] = []
     const defaults = { folder: 'uploads' }
@@ -76,6 +96,9 @@ test.group('Common adapter configuration', () => {
     const processed: AttachmentJob[] = []
     for (const queue of [
       MemoryAttachmentQueue.fromApp,
+      queueAliases.memory(),
+      queueAliases.memory({ concurrency: 2 }),
+      { default: 'local' as const, connections: { local: queueAliases.memory() } },
       MemoryAttachmentQueue.configure({ concurrency: 2 }),
       { default: 'local' as const, connections: { local: MemoryAttachmentQueue.configure() } },
     ]) {
@@ -85,7 +108,7 @@ test.group('Common adapter configuration', () => {
       await resolved.queue.enqueue(job)
       await (resolved.queue as MemoryAttachmentQueue).drain()
     }
-    assert.deepEqual(processed, [job, job, job])
+    assert.deepEqual(processed, [job, job, job, job, job, job])
   })
 
   test('memory factories retain failure reporting and missing-handler rejection', async ({ assert }) => {
@@ -118,7 +141,7 @@ test.group('Common adapter configuration', () => {
   test('local configure derives the app directory and preserves disk and public URL options', async ({ assert }) => {
     const location = await mkdtemp(join(tmpdir(), 'attachment-adapter-'))
     try {
-      const resolved = await defineConfig({ storage: LocalFileStorage.configure({ disk: 'uploads', baseUrl: 'https://example.test/files' }) }).resolver({
+      const resolved = await defineConfig({ storage: storageAliases.local({ disk: 'uploads', baseUrl: 'https://example.test/files' }) }).resolver({
         makePath(path: string) { assert.equal(path, 'storage/attachments'); return location },
       } as never)
       assert.equal(resolved.defaultDisk, 'uploads')
@@ -133,8 +156,8 @@ test.group('Common adapter configuration', () => {
     const disks: string[] = []
     const calls: string[] = []
     const resolved = await defineConfig({
-      storage: AdonisDriveStorage.configure({ disk: 'uploads' }),
-      queue: AdonisAttachmentQueue.configure({ queueName: 'media', job: {
+      storage: storageAliases.drive({ disk: 'uploads' }),
+      queue: queueAliases.adonis({ queueName: 'media', job: {
         dispatch(payload) {
           assert.deepEqual(payload, job)
           return { toQueue(name) { calls.push(name); return this }, async run() { calls.push('run') } }

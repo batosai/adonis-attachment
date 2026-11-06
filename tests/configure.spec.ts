@@ -38,7 +38,7 @@ test.group('configure', () => {
     await access(join(stubsRoot, 'config/attachment.stub'))
     assert.include(
       await readFile(join(stubsRoot, 'config/attachment.stub'), 'utf8'),
-      'storage: LocalFileStorage.fromApp'
+      'storage: storage.local()'
     )
     assert.notInclude(
       await readFile(join(stubsRoot, 'config/attachment.stub'), 'utf8'),
@@ -47,7 +47,7 @@ test.group('configure', () => {
     assert.include(await readFile(join(stubsRoot, 'config/attachment.stub'), 'utf8'), 'binaries,')
     assert.include(
       await readFile(join(stubsRoot, 'config/attachment.stub'), 'utf8'),
-      'queue: MemoryAttachmentQueue.fromApp'
+      'queue: queue.memory()'
     )
     assert.notInclude(await readFile(join(stubsRoot, 'config/attachment.stub'), 'utf8'), 'maxBytes')
   })

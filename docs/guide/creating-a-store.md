@@ -3,7 +3,8 @@
 A store connects attachment **data** to your application. Storage handles the file bytes;
 the store lets routes and workers find files and persist processing results.
 
-This guide builds a complete `ExampleAttachmentStore` class with a `fromApp` factory,
+For built-in Lucid persistence, prefer `store.lucid(options)` from the package root.
+This guide covers custom adapters and builds a complete `ExampleAttachmentStore` class with a `fromApp` factory,
 then adds metadata and variant persistence. All classes used below are defined here.
 The example keeps records in memory so you can follow it without installing another ORM.
 For Prisma, Kysely, another ORM, or SQL, replace the record operations with your data client.
@@ -88,11 +89,11 @@ Replace the generated `store: false` with the class factory. Keep the rest of yo
 configuration. This minimal example uses local storage and the default memory queue:
 
 ```ts [config/attachment.ts]
-import { defineConfig, LocalFileStorage } from '@jrmc/adonis-attachment'
+import { defineConfig, storage } from '@jrmc/adonis-attachment'
 import ExampleAttachmentStore from '../app/attachments/example_attachment_store.js'
 
 export default defineConfig({
-  storage: LocalFileStorage.fromApp,
+  storage: storage.local(),
   store: ExampleAttachmentStore.fromApp,
 })
 ```
@@ -269,11 +270,11 @@ Enable `media.metadataPolicy.mode: 'deferred'` only after selecting a store with
 `metadataPersister`. Register a named converter before scheduling its key:
 
 ```ts [config/processing_attachment.ts]
-import { defineConfig, LocalFileStorage } from '@jrmc/adonis-attachment'
+import { defineConfig, storage } from '@jrmc/adonis-attachment'
 import ProcessingExampleStore from '../app/attachments/processing_example_store.js'
 
 export default defineConfig({
-  storage: LocalFileStorage.fromApp,
+  storage: storage.local(),
   store: ProcessingExampleStore.fromApp,
   converters: { thumbnail: { resize: 320, format: 'webp' } },
   media: { metadataPolicy: { mode: 'deferred', variants: false } },

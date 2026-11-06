@@ -73,10 +73,10 @@ ID and variant key and remove old files only after commit. Expose that wrapper a
 ## Shared adapter factories
 
 Storage, store and queue accept instances or sync/async `(app, context)` factories.
-Use `LocalFileStorage.configure({ baseUrl })`, `AdonisDriveStorage.configure({ disk })`,
-`LucidAttachmentStore.configure({ tableName })`, and `MemoryAttachmentQueue.configure({ concurrency })`
-for native overrides. Import Lucid from `/lucid` and the other classes from the root.
-`fromApp` uses defaults. `AdonisAttachmentQueue.configure({ job, queueName })` requires
+Use `storage.local({ baseUrl })`, `storage.drive({ disk })`,
+`store.lucid({ tableName })`, and `queue.memory({ concurrency })`
+for native overrides. Import `store`, `storage`, and `queue` from the package root.
+Calling these helpers without options uses defaults. Existing class `fromApp` and `configure` methods remain supported. `queue.adonis({ job, queueName })` requires
 an application forwarding job; there is no implicit default job.
 Factories resolve storage first, then store, then queue. All receive `defaults` and `variant`;
 storage receives optional explicit `defaultDisk`, the others the resolved disk.

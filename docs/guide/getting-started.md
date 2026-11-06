@@ -21,12 +21,11 @@ package commands. The default config stores files on the **local filesystem** un
 Select Lucid explicitly in the generated configuration (replace `store: false`):
 
 ```ts
-import { defineConfig, LocalFileStorage } from '@jrmc/adonis-attachment'
-import { LucidAttachmentStore } from '@jrmc/adonis-attachment/lucid'
+import { defineConfig, store, storage } from '@jrmc/adonis-attachment'
 
 export default defineConfig({
-  storage: LocalFileStorage.fromApp,
-  store: LucidAttachmentStore.fromApp,
+  storage: storage.local(),
+  store: store.lucid(),
 })
 ```
 

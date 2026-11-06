@@ -1,5 +1,5 @@
 import {
-  defineConfig, LocalFileStorage, AdonisDriveStorage, MemoryAttachmentQueue, AdonisAttachmentQueue,
+  store, storage, queue, defineConfig, LocalFileStorage, AdonisDriveStorage, MemoryAttachmentQueue, AdonisAttachmentQueue,
   type AttachmentAdapterFactory, type AttachmentStorage, type AttachmentStorageConfig,
   type AttachmentStoreConfig, type AttachmentQueueAdapterConfig, type AttachmentQueueContext,
 } from '@jrmc/adonis-attachment'
@@ -32,3 +32,20 @@ const incompleteContext: AttachmentQueueContext = {}
 // @ts-expect-error Memory configure obtains its handler from context, rather than overriding configuration.
 MemoryAttachmentQueue.configure({ handler: async () => {} })
 void [storages, stores, queues, shared, oldOneArgumentFactory, disabledStorage, disabledQueue, incompleteContext]
+
+// Aliases use the same public adapter contracts, including named queues.
+const aliasStorages: AttachmentStorageConfig[] = [storage.local(), storage.local({ location: '/tmp/uploads', baseUrl: '/files' }), storage.drive(), storage.drive({ disk: 's3' })]
+const aliasStores: AttachmentStoreConfig[] = [store.lucid(), store.lucid({ tableName: 'media', legacy: { models: {} } })]
+const aliasQueues: AttachmentQueueAdapterConfig[] = [queue.memory(), queue.memory({ concurrency: 2 }), queue.adonis({ job: { dispatch() { return { toQueue() { return this }, async run() {} } } } })]
+defineConfig({ storage: storage.local(), store: store.lucid(), queue: { default: 'local', connections: { local: queue.memory() } } })
+// @ts-expect-error Adonis still requires an application job.
+queue.adonis()
+// @ts-expect-error Adonis options must include a job.
+queue.adonis({ queueName: 'media' })
+// @ts-expect-error Memory handlers are supplied by configuration.
+queue.memory({ handler: async () => {} })
+// @ts-expect-error Drive has no local storage location option.
+storage.drive({ location: '/tmp/uploads' })
+// @ts-expect-error Lucid table names are strings.
+store.lucid({ tableName: 123 })
+void [aliasStorages, aliasStores, aliasQueues]

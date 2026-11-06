@@ -30,6 +30,7 @@ declare module "@adonisjs/core/types" {
 }
 
 export * from "./src/core/index.js";
+export { store, storage, queue } from './src/config_aliases.js';
 export { configure } from "./configure.js";
 export { attachmentManager };
 export { attachmentConverters };

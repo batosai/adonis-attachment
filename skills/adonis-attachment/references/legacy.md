@@ -16,10 +16,10 @@ the application, keep them in their usual files and use the lazy model loader
 `users: () => import('#models/user')` in `config/attachment.ts`.
 
 ```ts
-import { LucidAttachmentStore } from '@jrmc/adonis-attachment/lucid'
+
 import { BaseModel, column } from '@adonisjs/lucid/orm'
 import type { HttpContext } from '@adonisjs/core/http'
-import { defineConfig, LocalFileStorage } from '@jrmc/adonis-attachment'
+import { defineConfig, store, storage } from '@jrmc/adonis-attachment'
 import { attachment, attachmentManager, type Attachment } from '@jrmc/adonis-attachment/legacy'
 
 export class User extends BaseModel {
@@ -35,8 +35,8 @@ export class User extends BaseModel {
 }
 
 export const config = defineConfig({
-  storage: LocalFileStorage.fromApp,
-  store: LucidAttachmentStore.configure({ legacy: { models: { users: async () => ({ default: User }) } } }),
+  storage: storage.local(),
+  store: store.lucid({ legacy: { models: { users: async () => ({ default: User }) } } }),
   converters: { thumbnail: { resize: { width: 320 }, format: { format: 'webp' } } },
 })
 
@@ -113,7 +113,7 @@ for all items, not `gallery.regenerateVariants()`. The array is mutable, unlike 
 
 ## What the registry and queue do
 
-`store: LucidAttachmentStore.configure({ legacy: { models } })` maps trusted owner types to lazy model modules. The key
+`store: store.lucid({ legacy: { models } })` maps trusted owner types to lazy model modules. The key
 matches the decorator's `type`, which defaults to the model table (`users` here). It
 enables legacy processing and lets jobs reload the current JSON, even in a fresh worker
 process. It does not scan all users, create tables, or choose the decorator's storage.

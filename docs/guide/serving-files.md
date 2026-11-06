@@ -8,7 +8,7 @@ registered automatically. Declare the routes you need in `start/routes.ts`.
 
 ## Public files
 
-Configure a store with a repository, such as `LucidAttachmentStore.fromApp`, then declare:
+Configure a store with a repository, such as `store.lucid()`, then declare:
 
 ```ts
 import router from '@adonisjs/core/services/router'
@@ -54,12 +54,11 @@ Use the Drive storage adapter. It inherits the default disk from `config/drive.t
 
 ```ts
 // config/attachment.ts
-import { defineConfig, AdonisDriveStorage } from '@jrmc/adonis-attachment'
-import { LucidAttachmentStore } from '@jrmc/adonis-attachment/lucid'
+import { defineConfig, store, storage } from '@jrmc/adonis-attachment'
 
 export default defineConfig({
-  storage: AdonisDriveStorage.fromApp,
-  store: LucidAttachmentStore.fromApp,
+  storage: storage.drive(),
+  store: store.lucid(),
 })
 ```
 

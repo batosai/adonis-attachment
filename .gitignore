@@ -2,3 +2,5 @@ build/
 node_modules/
 docs/.vitepress/cache/
 docs/.vitepress/dist/
+deploy.config.json
+Caddyfile

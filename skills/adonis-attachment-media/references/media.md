@@ -3,10 +3,11 @@
 ## Shared converter configuration
 
 ```ts
-import { defineConfig, type InferConverters, storage } from '@jrmc/adonis-attachment'
+import { defineConfig, type InferConverters, store, storage } from '@jrmc/adonis-attachment'
 
 const config = defineConfig({
   storage: storage.local(),
+  store: store.lucid(),
   converters: {
     thumbnail: {
       resize: { width: 320, fit: 'cover' },

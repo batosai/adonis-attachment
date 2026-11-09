@@ -34,6 +34,8 @@ export type AttachmentSourceResponse = {
   status: number
   statusText: string
   headers: Pick<Headers, 'get'>
+  /** Provide a body stream to enforce maxBytes during download. */
+  body?: ReadableStream<Uint8Array> | null
   arrayBuffer(): Promise<ArrayBuffer>
 }
 
@@ -118,31 +120,55 @@ export class AttachmentManager {
   }
 
   async createFromUrl(input: URL | string, options: AttachmentSourceOptions = {}): Promise<AttachmentDraft> {
+    this.#assertSize(0, options.maxBytes)
     const response = await this.#fetch(input)
 
-    if (!response.ok) {
-      throw new AttachmentSourceError(
-        `Unable to download attachment source: ${response.status} ${response.statusText}`,
-        { code: 'E_ATTACHMENT_SOURCE_DOWNLOAD_FAILED', status: 502 }
-      )
+    try {
+      if (!response.ok) {
+        throw new AttachmentSourceError(
+          `Unable to download attachment source: ${response.status} ${response.statusText}`,
+          { code: 'E_ATTACHMENT_SOURCE_DOWNLOAD_FAILED', status: 502 }
+        )
+      }
+
+      const contentLength = response.headers.get('content-length')
+      if (contentLength && Number.isSafeInteger(Number(contentLength))) {
+        this.#assertSize(Number(contentLength), options.maxBytes)
+      }
+
+      const body = await this.#readResponse(response, options.maxBytes)
+      const url = typeof input === 'string' ? new URL(input) : input
+      const inferredName = basename(url.pathname)
+      const mimeType = options.mimeType ?? normalizeMimeType(response.headers.get('content-type')) ?? mimeTypeFromName(inferredName)
+      const originalName = options.originalName ?? inferUrlOriginalName(inferredName, mimeType)
+
+      return await this.#create(body, { originalName, mimeType, options })
+    } catch (error) {
+      // Also stop downloads rejected from headers, before acquiring a reader.
+      await response.body?.cancel(error).catch(() => undefined)
+      throw error
     }
+  }
 
-    const contentLength = response.headers.get('content-length')
-    if (contentLength && Number.isSafeInteger(Number(contentLength))) {
-      this.#assertSize(Number(contentLength), options.maxBytes)
+  async #readResponse(response: AttachmentSourceResponse, maxBytes: number | undefined): Promise<Uint8Array> {
+    // Preserve existing injected clients exposing only arrayBuffer(). Such clients
+    // own buffering; native fetch and streaming clients are bounded below.
+    if (!response.body) return new Uint8Array(await response.arrayBuffer())
+    const reader = response.body.getReader()
+    const chunks: Uint8Array[] = []
+    let size = 0
+    try {
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        size += value.byteLength
+        this.#assertSize(size, maxBytes)
+        chunks.push(value)
+      }
+      return Buffer.concat(chunks, size)
+    } finally {
+      reader.releaseLock()
     }
-
-    const body = new Uint8Array(await response.arrayBuffer())
-    const url = typeof input === 'string' ? new URL(input) : input
-    const inferredName = basename(url.pathname)
-    const mimeType = options.mimeType ?? normalizeMimeType(response.headers.get('content-type')) ?? mimeTypeFromName(inferredName)
-    const originalName = options.originalName ?? inferUrlOriginalName(inferredName, mimeType)
-
-    return this.#create(body, {
-      originalName,
-      mimeType,
-      options,
-    })
   }
 
   createFromFile(input: MultipartAttachmentFile, options: AttachmentSourceOptions = {}): Promise<AttachmentDraft> {

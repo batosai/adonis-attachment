@@ -5,6 +5,7 @@
  * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
  */
 
+import sharp from 'sharp'
 import { test } from '@japa/runner'
 
 import type { Attachment } from '../src/core/attachment.js'
@@ -26,6 +27,25 @@ const attachment: Attachment = {
 }
 
 test.group('Sharp media adapters', () => {
+  test('describes actual encoded images when input names or requested formats differ', async ({ assert }) => {
+    const svg = Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"><rect width="20" height="20" fill="red"/></svg>')
+    for (const format of [undefined, { format: 'webp' as const, options: { force: false } }]) {
+      const converter = createSharpVariantConverter({ key: 'thumb', sharp, width: 10, ...(format ? { format } : {}) })
+      const output = await converter.convert({
+        attachment: { ...attachment, extname: 'svg', mimeType: 'image/svg+xml' }, body: svg,
+      })
+      assert.equal(output?.fileName, 'thumb.png')
+      assert.equal(output?.mimeType, 'image/png')
+      const actual = await sharp(output!.body).metadata()
+      assert.equal(actual.format, 'png')
+      assert.equal(actual.width, 10)
+    }
+    const converter = createSharpVariantConverter({ key: 'thumb', sharp, width: 10 })
+    const output = await converter.convert({ attachment, body: await sharp(svg).jpeg().toBuffer() })
+    assert.equal(output?.fileName, 'thumb.jpeg')
+    assert.equal(output?.mimeType, 'image/jpeg')
+  })
+
   test('extracts defined image metadata only', async ({ assert }) => {
     const extractor = createSharpMetadataExtractor((() => ({
       async metadata() {

@@ -144,6 +144,68 @@ test.group('AttachmentManager', () => {
     assert.equal(inputs[0]?.input.mimeType, 'image/webp')
   })
 
+  test('stops URL streams at the byte limit without trusting content-length', async ({ assert }) => {
+    for (const contentLength of [undefined, '1']) {
+      let reads = 0
+      let cancelled = false
+      const body = new ReadableStream<Uint8Array>({
+        pull(controller) { reads++; controller.enqueue(new Uint8Array([1, 2])) },
+        cancel() { cancelled = true },
+      }, { highWaterMark: 0 })
+      const response = new Response(body, { headers: contentLength ? { 'content-length': contentLength } : {} })
+      const { manager, inputs } = createManager({ maxBytes: 3, fetch: async () => response })
+      await assert.rejects(() => manager.createFromUrl('https://example.test/file', { maxBytes: 10 }),
+        'Attachment source exceeds the 3-byte limit')
+      assert.equal(reads, 2)
+      assert.isTrue(cancelled)
+      assert.isFalse(body.locked)
+      assert.lengthOf(inputs, 0)
+    }
+  })
+
+  test('cancels rejected responses before downloading their body', async ({ assert }) => {
+    for (const status of [200, 503]) {
+      let reads = 0
+      let cancelled = false
+      const body = new ReadableStream<Uint8Array>({
+        pull(controller) { reads++; controller.enqueue(new Uint8Array([1])) },
+        cancel() { cancelled = true },
+      }, { highWaterMark: 0 })
+      const { manager } = createManager({ maxBytes: 3,
+        fetch: async () => new Response(body, { status, headers: { 'content-length': '100' } }),
+      })
+      await assert.rejects(() => manager.createFromUrl('https://example.test/file'), AttachmentSourceError)
+      assert.equal(reads, 0)
+      assert.isTrue(cancelled)
+    }
+  })
+
+  test('assembles URL streams at the limit and preserves source options', async ({ assert }) => {
+    let reads = 0
+    const body = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        if (reads++ < 2) controller.enqueue(new Uint8Array([1, 2]))
+        else controller.close()
+      },
+    }, { highWaterMark: 0 })
+    const { manager, inputs } = createManager({ maxBytes: 10,
+      fetch: async () => new Response(body, { headers: { 'content-type': 'image/png' } }),
+    })
+    await manager.createFromUrl('https://example.test/file', { maxBytes: 4, folder: 'imports' })
+    assert.deepEqual(inputs[0]?.input.body, Buffer.from([1, 2, 1, 2]))
+    assert.equal(inputs[0]?.input.originalName, 'file.png')
+    assert.equal(inputs[0]?.options?.folder, 'imports')
+    assert.isFalse(body.locked)
+  })
+
+  test('preserves read errors and releases the response reader', async ({ assert }) => {
+    const failure = new Error('download interrupted')
+    const body = new ReadableStream<Uint8Array>({ pull(controller) { controller.error(failure) } })
+    const { manager } = createManager({ fetch: async () => new Response(body) })
+    await assert.rejects(() => manager.createFromUrl('https://example.test/file'), 'download interrupted')
+    assert.isFalse(body.locked)
+  })
+
   test('adds an extension from the response MIME type when a URL has no filename extension', async ({ assert }) => {
     const { manager, inputs } = createManager({
       fetch: async () => ({

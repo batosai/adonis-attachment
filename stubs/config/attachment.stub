@@ -33,7 +33,7 @@ const attachmentConfig = defineConfig({
   },
   // converters: {
   //   thumbnail: {
-  //     width: 320,
+  //     resize: { width: 320 },
   //     format: 'webp',
   //   },
   // },

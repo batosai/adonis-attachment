@@ -482,6 +482,12 @@ export default defineConfig({
 })
 ```
 
+URL downloads using native `fetch` are read progressively and cancelled as soon as
+`maxBytes` is exceeded, even without a `Content-Length` header. Custom `sources.fetch`
+clients should expose a `body` readable stream for the same protection. Legacy clients
+exposing only `arrayBuffer()` remain supported, but own their buffering: the size check
+then happens after the buffer is returned.
+
 ## Lucid table names
 
 By default the Lucid integration uses `adonis_attachments` (blobs) and `adonis_attachment_links`

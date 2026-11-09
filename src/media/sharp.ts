@@ -23,6 +23,7 @@ export type SharpMetadata = {
   width?: number | undefined
   height?: number | undefined
   format?: string | undefined
+  compression?: string | undefined
   size?: number | undefined
   density?: number | undefined
   hasAlpha?: boolean | undefined
@@ -35,11 +36,11 @@ export interface SharpImage {
   metadata(): Promise<SharpMetadata>
   autoOrient?(): SharpImage
   resize(width?: number, height?: number, options?: SharpResizeOptions): SharpImage
-  toFormat(format: string, options?: SharpFormatOptions): SharpImage
+  toFormat(format: Exclude<SharpOutputFormat, 'jpg'>, options?: SharpFormatOptions): SharpImage
   toBuffer(): Promise<Uint8Array>
 }
 
-export type SharpFactory = (input: Uint8Array) => SharpImage
+export type SharpFactory = (input: Buffer) => SharpImage
 export type SharpMetadataFactory = (input: Buffer) => Pick<SharpImage, 'metadata'>
 
 const sharpMetadataMimeTypes = new Set([
@@ -86,7 +87,7 @@ export function createSharpVariantConverter(options: SharpVariantOptions): Varia
   return {
     key: options.key,
     async convert(input) {
-      let image = options.sharp(input.body)
+      let image = options.sharp(Buffer.from(input.body))
       if (options.autoOrient && image.autoOrient) {
         image = image.autoOrient()
       }
@@ -102,11 +103,17 @@ export function createSharpVariantConverter(options: SharpVariantOptions): Varia
         image = image.toFormat(outputFormat.format, outputFormat.options)
       }
 
-      const format = outputFormat?.format ?? input.attachment.extname
+      const body = await image.toBuffer()
+      // Sharp can rasterize SVG (and custom transforms can change the format).
+      // Read the encoded output instead of assuming the input extension survived.
+      const metadata = outputFormat?.format === 'raw' ? undefined : await options.sharp(Buffer.from(body)).metadata()
+      const encodedFormat = metadata?.format === 'heif' && metadata.compression === 'av1'
+        ? 'avif' : metadata?.format
+      const format = encodedFormat ?? outputFormat?.format ?? input.attachment.extname
       const extension = format || 'bin'
 
       return {
-        body: await image.toBuffer(),
+        body,
         fileName: `${options.key}.${extension}`,
         mimeType: mimeTypeForFormat(format) ?? input.attachment.mimeType,
         ...(options.folder ? { folder: options.folder } : {}),

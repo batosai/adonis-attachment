@@ -80,3 +80,8 @@ export function toAttachmentEventFailure(error: unknown): AttachmentEventFailure
 
   return { message: String(error) }
 }
+
+/** Register every emitted event for native Adonis emitter subscriptions. */
+declare module '@adonisjs/core/types' {
+  interface EventsList extends Record<AttachmentEventName, AttachmentEventPayload> {}
+}

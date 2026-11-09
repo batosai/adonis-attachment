@@ -167,7 +167,8 @@ export default defineConfig({
 ```
 
 `onFailure` is called when the processor throws. It can be synchronous or asynchronous and
-receives both the failed job and the original error. Without this callback, the in-memory queue
+receives both the failed job and the original error. If the callback itself fails, the queue
+emits a Node.js warning containing both errors and continues processing subsequent jobs. Without this callback, the in-memory queue
 finishes the failed job silently, so production applications should report failures explicitly.
 
 Outside Lucid, the package cannot infer how originals and generated variants are persisted.

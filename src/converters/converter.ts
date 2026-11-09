@@ -24,10 +24,10 @@ export type SharpBackground =
 export type SharpResizeOptions = {
   width?: number
   height?: number
-  fit?: string
+  fit?: 'cover' | 'contain' | 'fill' | 'inside' | 'outside'
   position?: string
   background?: SharpBackground
-  kernel?: string
+  kernel?: 'nearest' | 'cubic' | 'linear' | 'mitchell' | 'lanczos2' | 'lanczos3' | 'mks2013' | 'mks2021'
   withoutEnlargement?: boolean
   withoutReduction?: boolean
   fastShrinkOnLoad?: boolean
@@ -93,7 +93,7 @@ type WebpFormatOptions = {
   lossless?: boolean
   nearLossless?: boolean
   smartSubsample?: boolean
-  preset?: string
+  preset?: 'default' | 'picture' | 'photo' | 'drawing' | 'icon' | 'text'
   effort?: number
   loop?: number
   delay?: number | number[]
@@ -111,7 +111,7 @@ type AvifFormatOptions = {
 }
 
 type HeifFormatOptions = {
-  compression?: string
+  compression?: 'av1' | 'hevc'
   quality?: number
   lossless?: boolean
   effort?: number

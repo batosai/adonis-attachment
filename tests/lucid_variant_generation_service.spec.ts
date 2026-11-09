@@ -7,6 +7,7 @@
 
 import { test } from '@japa/runner'
 
+import { AttachmentCommitError, AttachmentPostCommitError } from '../src/stores/lucid/persistence/attachment_transaction.js'
 import type { Attachment } from '../src/core/attachment.js'
 import type { AttachmentModel } from '../src/stores/lucid/models/attachment_model.js'
 import {
@@ -50,6 +51,28 @@ test.group('LucidVariantGenerationService', () => {
     })
     await assert.rejects(() => service.generate({ attachment: original }), 'database unavailable')
     assert.deepEqual(removed, ['variant-id'])
+  })
+
+  test('retains possibly committed files while cleaning variants not yet published', async ({ assert }) => {
+    for (const mode of ['create', 'replace'] as const) {
+      for (const error of [new AttachmentCommitError(new Error('lost acknowledgement')), new AttachmentPostCommitError([new Error('observer failed')])]) {
+        const removed: string[] = []
+        const later = { ...variant, id: 'later-id', path: 'later.webp' }
+        const service = new LucidVariantGenerationService({
+          generator: { async generateAll() { return [
+            { key: 'thumbnail', attachment: variant }, { key: 'later', attachment: later },
+          ] } },
+          attachments: { async remove(file) { removed.push(file.id) } },
+          store: {
+            async findById() { return { id: original.id } as AttachmentModel },
+            async createVariant() { throw error },
+            async replaceVariant() { throw error },
+          },
+        })
+        await assert.rejects(() => service.generate({ attachment: original, mode }), error.message)
+        assert.deepEqual(removed, ['later-id'])
+      }
+    }
   })
 
   test('schedules metadata after a deferred variant is persisted', async ({ assert }) => {

@@ -13,6 +13,7 @@ import type { GeneratedVariant, VariantGenerationService } from '../../../varian
 import { AttachmentModel } from '../models/attachment_model.js'
 import { LucidAttachmentStore } from './lucid_attachment_store.js'
 import { AttachmentError } from '../../../errors.js'
+import { AttachmentCommitError, AttachmentPostCommitError } from './attachment_transaction.js'
 
 export type LucidVariantGenerationServiceOptions = {
   generator: Pick<VariantGenerationService, 'generateAll'>
@@ -73,6 +74,11 @@ export class LucidVariantGenerationService implements VariantGenerator {
         ? await this.#store.replaceVariant(original, variant.key, variant.attachment)
         : { variant: await this.#store.createVariant(original, variant.key, variant.attachment), replaced: undefined }
     } catch (error) {
+      // A failed acknowledgement can follow a successful commit. Keep its file
+      // until the database outcome is reconciled, including post-commit failures.
+      if (error instanceof AttachmentCommitError || error instanceof AttachmentPostCommitError) {
+        throw error
+      }
       await this.#attachments.remove(variant.attachment)
       throw error
     }

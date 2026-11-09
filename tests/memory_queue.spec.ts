@@ -5,6 +5,8 @@
  * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
  */
 
+import { execFile } from 'node:child_process'
+import { promisify } from 'node:util'
 import { test } from '@japa/runner'
 
 import { MemoryAttachmentQueue } from '../index.js'
@@ -56,4 +58,30 @@ test('reports failures and continues with subsequent jobs', async ({ assert }) =
 
   assert.deepEqual(failures, ['broken'])
   assert.deepEqual(completed, ['valid'])
+})
+
+test('reports broken failure callbacks without crashing or blocking subsequent jobs', async ({ assert }) => {
+  // A child process catches fatal unhandled rejections without masking them in Japa.
+  const { stdout, stderr } = await promisify(execFile)(process.execPath, ['--input-type=module', '-e', `
+    const { MemoryAttachmentQueue } = await import(${JSON.stringify(new URL('../src/queues/memory_queue.js', import.meta.url).href)})
+    for (const asynchronous of [false, true]) {
+      const completed = []
+      const queue = new MemoryAttachmentQueue({
+        async handler(job) {
+          if (job.attachmentId === 'broken') throw new Error('job failed')
+          completed.push(job.attachmentId)
+        },
+        onFailure() {
+          if (asynchronous) return Promise.reject(new Error('reporter failed'))
+          throw new Error('reporter failed')
+        },
+      })
+      await queue.enqueue({ type: 'generate-variants', attachmentId: 'broken' })
+      await queue.enqueue({ type: 'generate-variants', attachmentId: 'valid' })
+      await queue.drain()
+      console.log(JSON.stringify(completed))
+    }
+  `])
+  assert.deepEqual(stdout.trim().split('\n'), ['["valid"]', '["valid"]'])
+  assert.include(stderr, 'Attachment queue failure handler failed')
 })

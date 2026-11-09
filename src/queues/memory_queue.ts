@@ -95,7 +95,14 @@ export class MemoryAttachmentQueue implements AttachmentQueue {
     try {
       await this.#handler(job)
     } catch (error) {
-      await this.#onFailure?.(job, error)
+      try {
+        await this.#onFailure?.(job, error)
+      } catch (reportingError) {
+        // Reporting must not reject the detached worker promise or stop the queue.
+        process.emitWarning(new AggregateError(
+          [error, reportingError], 'Attachment queue failure handler failed'
+        ))
+      }
     } finally {
       this.#active -= 1
       this.#process()

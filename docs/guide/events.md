@@ -11,6 +11,9 @@ configured emitter is then injected into the processor by `defineConfig`.
 
 ## Variant events
 
+The package registers its event names and payload types in Adonis `EventsList`.
+Importing the package types is sufficient; no application-side augmentation is needed.
+
 These three event names and their Lucid fields are retained from v5:
 
 | Event | When it is emitted |
@@ -19,7 +22,7 @@ These three event names and their Lucid fields are retained from v5:
 | `attachment:variant_completed` | All requested variants have been generated. |
 | `attachment:variant_failed` | Variant generation fails. |
 
-```ts
+```ts [start/events.ts]
 import emitter from '@adonisjs/core/services/emitter'
 import type { AttachmentEventPayload } from '@jrmc/adonis-attachment'
 
@@ -53,8 +56,8 @@ type AttachmentEventPayload = {
 ```
 
 `tableName`, `attributeName`, and `primary` are undefined outside a Lucid relation. Use
-`attachment.id` as the common identifier in application code. The `error` field is only
-present on `attachment:variant_failed`; it is new in v6 and does not break v5 listeners.
+`attachment.id` as the common identifier in application code. The `error` field is present on failed variant and metadata events;
+it is new in v6 and does not break v5 listeners.
 
 ## File and metadata events
 

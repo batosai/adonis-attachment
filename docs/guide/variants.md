@@ -12,11 +12,12 @@ v5. The configuration key is the variant key, and the remaining properties are p
 the converter instance as `options`. When `converter` is omitted, the package uses its
 `AutodetectConverter` by default.
 
-```ts
-import { defineConfig, type InferConverters, storage } from '@jrmc/adonis-attachment'
+```ts [config/attachment.ts]
+import { defineConfig, type InferConverters, store, storage } from '@jrmc/adonis-attachment'
 
 const attachmentConfig = defineConfig({
   storage: storage.local(),
+  store: store.lucid(),
   converters: {
     thumbnail: {
       resize: { width: 320, fit: 'cover' },
@@ -252,7 +253,7 @@ It receives the original's bytes and returns the generated file:
 
 Install `sharp`, then use the package adapter to define common resize-and-format variants:
 
-```ts
+```ts [app/attachments/sharp_adapter.ts]
 import sharp from 'sharp'
 import { createSharpVariantConverter } from '@jrmc/adonis-attachment/media/sharp'
 
@@ -334,14 +335,21 @@ or timeout overrides that shared value.
 
 ## Generate them
 
+Run this low-level orchestration after the application has booted. The root
+`attachmentService` export only exposes URL methods; resolve the full service from
+the container for reading, creating, and deleting files.
+
 `VariantGenerationService` reads the original and writes each generated file. On its own,
 it produces `Attachment` values but doesn't record them anywhere.
 
-```ts
-import { VariantGenerationService, attachmentConverters, attachmentService } from '@jrmc/adonis-attachment'
+```ts [app/attachments/variant_generator.ts]
+import app from '@adonisjs/core/services/app'
+import { VariantGenerationService, attachmentConverters } from '@jrmc/adonis-attachment'
 
-const generator = new VariantGenerationService({
-  attachments: attachmentService, // the jrmc.attachment service
+export const attachments = await app.container.make('jrmc.attachment')
+
+export const generator = new VariantGenerationService({
+  attachments,
   converters: attachmentConverters,
 })
 ```
@@ -350,12 +358,13 @@ The automatic Lucid workflow above already handles this wiring. For custom low-l
 orchestration with **Lucid**, wrap it so each variant becomes a row in the `adonis_attachments` table
 (`parent_id` pointing at the original blob):
 
-```ts
+```ts [app/attachments/lucid_variants.ts]
+import { generator, attachments } from './variant_generator.js'
 import { LucidVariantGenerationService, LucidAttachmentStore } from '@jrmc/adonis-attachment/lucid'
 
 const variants = new LucidVariantGenerationService({
   generator,
-  attachments: attachmentService,
+  attachments,
   store: new LucidAttachmentStore(),
 })
 ```

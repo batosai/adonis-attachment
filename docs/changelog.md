@@ -3,6 +3,44 @@
 New features, changes, and fixes in Adonis Attachment v6.
 For earlier versions, see the [v5 changelog](https://adonis-attachment.jrmc.dev/changelog).
 
+## 6.0.0-beta.5
+
+### Added
+
+- Root configuration helpers: `store.lucid()`, `storage.local()`, `storage.drive()`,
+  `queue.memory()` and `queue.adonis(options)`, available from `@jrmc/adonis-attachment`.
+  Without options, helpers use application defaults; with options, they configure the
+  adapter explicitly. `queue.adonis()` requires options containing an application-defined job.
+  Existing classes, `fromApp`, `configure`, adapter instances and named queues remain supported.
+  See [Configuration](/guide/configuration).
+
+### Fixed
+
+- Preserve generated variant files when a Lucid commit has an uncertain outcome or a
+  post-commit operation fails, preventing persisted variants from losing their files.
+- Prevent a throwing or rejecting memory queue `onFailure` callback from causing an
+  unhandled rejection. The queue emits a warning and continues processing pending jobs.
+- Enforce `sources.maxBytes` while downloading URL sources with native fetch or a streaming
+  client, including responses with missing or inaccurate `Content-Length` headers.
+  Rejected downloads are cancelled. Custom clients exposing only `arrayBuffer()` remain
+  supported, with size validation after buffering.
+- Derive Sharp variant filenames and MIME types from the encoded output, including SVG
+  rasterization and format options that preserve the input format.
+- Accept the native Sharp factory directly in converter helpers without TypeScript casts,
+  and align supported option types with Sharp.
+- Register attachment events with the Adonis emitter types so `emitter.on()` subscriptions
+  infer their payloads without application-level type declarations.
+- Use `resize: { width: 320 }` in the generated thumbnail configuration example so enabling
+  it actually resizes the image.
+
+### Documentation
+
+- Prefer the configuration helpers throughout the guides, README, generated configuration
+  and bundled skills. Skills now include a date-based revision in their metadata.
+- Correct variant examples to configure the Lucid store and resolve the full attachment
+  service from the container for low-level generation. Clarify event payloads, URL download
+  limits and memory queue failure handling.
+
 ## 6.0.0-beta.4
 
 ### Changed

@@ -5,7 +5,7 @@
  * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
  */
 
-import os from 'node:os'
+import { createTemporaryDirectory } from '../utils/temporary_files.js'
 import path from 'node:path'
 import { $ } from 'execa'
 import { uuid } from '../utils/helpers.js'
@@ -44,7 +44,12 @@ export default class Poppler {
   }
 
   async pdfToPpm(options: { page: number; dpi: number }) {
-    const output = path.join(os.tmpdir(), uuid())
+    const output = path.join(await createTemporaryDirectory(), uuid())
+    const pdfInfo = await this.pdfInfo()
+    const pageNumberFormat = '0'.repeat(
+      Math.max(0, String(pdfInfo.pages).length - String(options.page).length)
+    )
+    const imagePath = `${output}-${pageNumberFormat}${options.page}.jpg`
     try {
       await $({
         cancelSignal: this.#createAbortController().signal,
@@ -52,12 +57,7 @@ export default class Poppler {
         timeout: this.#TIMEOUT,
       })`${this.#pdfToPpmPath} -f ${options.page.toString()} -l ${options.page.toString()} -r ${options.dpi.toString()} -jpeg ${this.input} ${output}`
 
-      const pdfInfo = await this.pdfInfo()
-      const pageNumberFormat = '0'.repeat(
-        String(pdfInfo.pages).length - String(options.page).length
-      )
-
-      return `${output}-${pageNumberFormat}${options.page}.jpg`
+      return imagePath
     } catch (error) {
       logger.error('Error while converting PDF to PPM:', error)
       throw error

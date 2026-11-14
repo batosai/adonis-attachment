@@ -100,6 +100,7 @@ export type LucidOptions<T = LucidRow> = {
   meta?: boolean
   serialize?: (value?: Attachment) => unknown
   serializeAs?: string | null
+  columnName?: string
 }
 
 export type AttachmentBaseAttributes = {

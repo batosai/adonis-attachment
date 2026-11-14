@@ -13,6 +13,10 @@ export interface TransactionOptions {
   enabledRollback?: boolean
 }
 
+type Operation = { attached: AttachmentType[]; detached: AttachmentType[]; rollback: boolean }
+const registered = new WeakSet<object>()
+const transactions = new WeakMap<object, Operation[]>()
+
 export class AttachmentTransactionService {
   /**
    * During commit, we should cleanup the old detached files
@@ -26,12 +30,15 @@ export class AttachmentTransactionService {
   /**
    * During rollback we should remove the attached files.
    */
-  async rollback(attachedAttachments: AttachmentType[]): Promise<void> {
+  async rollback(
+    attachedAttachments: AttachmentType[],
+    detachedAttachments: AttachmentType[] = []
+  ): Promise<void> {
     await Promise.allSettled(
-      attachedAttachments.map(async (attachment: AttachmentType) => {
-        await attachment.rollbackMoveFileForDelete()
-        await attachmentManager.remove(attachment)
-      })
+      attachedAttachments.map((attachment) => attachmentManager.remove(attachment))
+    )
+    await Promise.allSettled(
+      detachedAttachments.map((attachment) => attachment.rollbackMoveFileForDelete())
     )
   }
 
@@ -42,18 +49,45 @@ export class AttachmentTransactionService {
     record: RecordWithAttachmentImplementation,
     options: TransactionOptions = { enabledRollback: true }
   ): Promise<void> {
+    const { attached, detached } = record.row.$attachments
     try {
       if (record.row.$trx) {
-        record.row.$trx.after('commit', () => this.commit(record.row.$attachments.detached))
-        if (options.enabledRollback) {
-          record.row.$trx.after('rollback', () => this.rollback(record.row.$attachments.attached))
+        if (registered.has(record.row.$attachments)) return
+        registered.add(record.row.$attachments)
+        const trx = record.row.$trx
+        let operations = transactions.get(trx)
+        if (!operations) {
+          operations = []
+          transactions.set(trx, operations)
+          const journal = operations
+          trx.after('commit', async () => {
+            try {
+              for (const operation of journal) await this.commit(operation.detached)
+            } finally {
+              transactions.delete(trx)
+            }
+          })
+          trx.after('rollback', async () => {
+            try {
+              for (const operation of [...journal].reverse()) {
+                if (operation.rollback) await this.rollback(operation.attached, operation.detached)
+              }
+            } finally {
+              transactions.delete(trx)
+            }
+          })
         }
+        operations.push({
+          attached,
+          detached,
+          rollback: options.enabledRollback !== false,
+        })
       } else {
-        await this.commit(record.row.$attachments.detached)
+        await this.commit(detached)
       }
     } catch (error: unknown) {
       if (options.enabledRollback) {
-        await this.rollback(record.row.$attachments.attached)
+        await this.rollback(attached, detached)
       }
       throw error
     }

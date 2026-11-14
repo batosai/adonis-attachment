@@ -5,7 +5,7 @@
  * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
  */
 
-import os from 'node:os'
+import { createTemporaryDirectory } from '../utils/temporary_files.js'
 import path from 'node:path'
 import { $ } from 'execa'
 import logger from '@adonisjs/core/services/logger'
@@ -39,7 +39,10 @@ export default class Soffice {
   }
 
   async convert() {
-    const output = os.tmpdir()
+    const output = await createTemporaryDirectory()
+    const ext = path.extname(this.input)
+    const baseName = path.basename(this.input, ext)
+    const imagePath = path.join(output, baseName + '.jpg')
     try {
       const { stderr } = await $({
         cancelSignal: this.#createAbortController().signal,
@@ -51,10 +54,6 @@ export default class Soffice {
         logger.error('Error while converting Document to Image:', stderr)
         throw stderr
       }
-
-      const ext = path.extname(this.input)
-      const baseName = path.basename(this.input, ext)
-      const imagePath = path.join(output, baseName + '.jpg')
 
       return imagePath
     } catch (error) {

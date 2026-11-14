@@ -19,7 +19,12 @@ import {
   beforeSaveHook,
   afterSaveHook,
   beforeDeleteHook,
+  afterDeleteHook,
 } from '../utils/hooks.js'
+
+import AttachmentRecordService from '../services/attachment_service.js'
+
+const wrapped = Symbol('attachmentLifecycleWrapped')
 
 import { defaultStateAttributeMixin } from '../utils/default_values.js'
 
@@ -29,6 +34,26 @@ export const bootModel = (
   }
 ) => {
   model.boot()
+  if (!model.prototype[wrapped]) {
+    Object.defineProperty(model.prototype, wrapped, { value: true })
+    for (const method of ['save', 'delete'] as const) {
+      const original = model.prototype[method]
+      model.prototype[method] = async function (...args: unknown[]) {
+        this.$attachments = structuredClone(defaultStateAttributeMixin)
+        const originals = this.$original
+        try {
+          return await original.apply(this, args)
+        } catch (error) {
+          if (this.$original === originals && !this.$isDeleted) {
+            await new AttachmentRecordService(this).rollback()
+          } else if (!this.$trx) {
+            await new AttachmentRecordService(this).transaction()
+          }
+          throw error
+        }
+      }
+    }
+  }
 
   model.$attachments = structuredClone(defaultStateAttributeMixin)
   /**
@@ -48,6 +73,9 @@ export const bootModel = (
   }
   if (!model.$hooks.has('save', afterSaveHook)) {
     model.after('save', afterSaveHook)
+  }
+  if (!model.$hooks.has('delete', afterDeleteHook)) {
+    model.after('delete', afterDeleteHook)
   }
   if (!model.$hooks.has('delete', beforeDeleteHook)) {
     model.before('delete', beforeDeleteHook)
@@ -96,8 +124,8 @@ const makeAttachmentDecorator =
   (columnOptionsTransformer?: (columnOptions: any) => any) =>
   <T = LucidRow>(options?: LucidOptions<T>) => {
     return function (target: any, attributeName: string) {
-      if (!target[optionsSym]) {
-        target[optionsSym] = {}
+      if (!Object.prototype.hasOwnProperty.call(target, optionsSym)) {
+        target[optionsSym] = { ...target[optionsSym] }
       }
 
       target[optionsSym][attributeName] = options
@@ -118,6 +146,7 @@ const makeAttachmentDecorator =
 
 export const attachment = makeAttachmentDecorator()
 export const attachments = makeAttachmentDecorator((columnOptions) => ({
+  ...columnOptions,
   consume: (value?: string | JSON) => {
     if (value) {
       const data = typeof value === 'string' ? JSON.parse(value) : value

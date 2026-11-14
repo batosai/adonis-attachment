@@ -12,7 +12,7 @@ import type { ConverterInitializeAttributes } from '../types/converter.js'
 
 import logger from '@adonisjs/core/services/logger'
 import VariantGeneratorService from './variant/variant_generator_service.js'
-import VariantPurgerService from './variant/variant_purger_service.js'
+import attachmentManager from '../../services/main.js'
 import VariantPersisterService from './variant/variant_persister_service.js'
 
 export default class VariantService {
@@ -21,7 +21,6 @@ export default class VariantService {
   #options: LucidOptions
   #filters?: { variants?: string[] }
   #variantGenerator: VariantGeneratorService
-  #variantPurger: VariantPurgerService
   #variantPersister: VariantPersisterService
 
   constructor({ record, attributeName, options, filters }: ConverterInitializeAttributes) {
@@ -30,14 +29,14 @@ export default class VariantService {
     this.#options = options
     this.#filters = filters
 
+    const model = record.row.constructor as LucidModel
     this.#variantGenerator = new VariantGeneratorService()
-    this.#variantPurger = new VariantPurgerService(filters)
     this.#variantPersister = new VariantPersisterService({
       id: record.row.$primaryKeyValue?.toString() || record.row.$attributes['id'],
       modelTable: (record.row.constructor as LucidModel).table,
-      attributeName,
+      attributeName: (record.row.constructor as LucidModel).$getColumn(attributeName)!.columnName,
       multiple: Array.isArray(record.row.$original[attributeName]),
-      primaryKey: (record.row.constructor as LucidModel).primaryKey ?? 'id',
+      primaryKey: model.$getColumn(model.primaryKey)?.columnName ?? model.primaryKey ?? 'id',
     })
   }
 
@@ -49,13 +48,42 @@ export default class VariantService {
         return
       }
 
-      await this.#variantPurger.purge(attachments)
-      const variants = await this.#variantGenerator.generate({
-        attachments,
-        options: this.#options,
-        filters: this.#filters,
+      const expected = Array.isArray(this.#record.row.$original[this.#attributeName])
+        ? JSON.stringify(attachments.map((attachment) => JSON.parse(attachment.toDbString())))
+        : attachments[0].toDbString()
+      const previous = attachments.map((attachment) => [...(attachment.variants ?? [])])
+      const selected = (key: string) =>
+        this.#filters?.variants === undefined || this.#filters.variants.includes(key)
+      attachments.forEach((attachment) => {
+        attachment.variants = attachment.variants?.filter((variant) => !selected(variant.key))
       })
-      await this.#variantPersister.persist({ attachments, variants })
+      let variants
+      try {
+        variants = await this.#variantGenerator.generate({
+          attachments,
+          options: this.#options,
+          filters: this.#filters,
+        })
+        await this.#variantPersister.persist({ attachments, variants, expected })
+      } catch (error) {
+        await Promise.all(
+          attachments.flatMap((attachment, index) =>
+            (attachment.variants ?? [])
+              .filter((variant) => !previous[index].includes(variant))
+              .map((variant) => attachmentManager.remove(variant))
+          )
+        )
+        attachments.forEach((attachment, index) => {
+          attachment.variants = previous[index]
+        })
+        throw error
+      }
+      await Promise.all(
+        previous
+          .flat()
+          .filter((variant) => selected(variant.key))
+          .map((variant) => attachmentManager.remove(variant))
+      )
 
       return variants
     } catch (error) {

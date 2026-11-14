@@ -89,16 +89,16 @@ test.group('variants', () => {
 
     const variants = user.avatar?.variants
 
-    variants?.forEach(async (variant) => {
+    for (const variant of variants ?? []) {
       await assert.fileExists(variant.path!)
-    })
+    }
 
     user.avatar = null
     await user.save()
 
-    variants?.forEach(async (variant) => {
+    for (const variant of variants ?? []) {
       await assert.fileNotExists(variant.path!)
-    })
+    }
   })
 
   test('delete files after remove attribute Attachment[]', async ({ assert, cleanup }) => {
@@ -118,24 +118,24 @@ test.group('variants', () => {
     const weekendPicsVariants0 = user.weekendPics![0]?.variants
     const weekendPicsVariants1 = user.weekendPics![1]?.variants
 
-    weekendPicsVariants0?.forEach(async (variant) => {
+    for (const variant of weekendPicsVariants0 ?? []) {
       await assert.fileExists(variant.path!)
-    })
+    }
 
-    weekendPicsVariants1?.forEach(async (variant) => {
+    for (const variant of weekendPicsVariants1 ?? []) {
       await assert.fileExists(variant.path!)
-    })
+    }
 
     user.weekendPics = null
     await user.save()
 
-    weekendPicsVariants0?.forEach(async (variant) => {
+    for (const variant of weekendPicsVariants0 ?? []) {
       await assert.fileNotExists(variant.path!)
-    })
+    }
 
-    weekendPicsVariants1?.forEach(async (variant) => {
+    for (const variant of weekendPicsVariants1 ?? []) {
       await assert.fileNotExists(variant.path!)
-    })
+    }
   })
 
   test('delete files after remove partial attribute Attachment[]', async ({ assert, cleanup }) => {
@@ -156,30 +156,34 @@ test.group('variants', () => {
     const weekendPicsVariants1 = user.weekendPics![1]?.variants
 
     // 0 is regenerate
-    weekendPicsVariants0?.forEach(async (variant) => {
+    for (const variant of weekendPicsVariants0 ?? []) {
       await assert.fileExists(variant.path!)
-    })
+    }
 
     // 1 is delete
-    weekendPicsVariants1?.forEach(async (variant) => {
+    for (const variant of weekendPicsVariants1 ?? []) {
       await assert.fileExists(variant.path!)
-    })
+    }
 
+    const updated = new Promise((resolve) => {
+      attachmentManager.queue.drained = resolve
+    })
     user.weekendPics = [user.weekendPics![0]]
     await user.save()
+    await updated
 
     const data = await user.serialize()
 
-    // 0 is regenerate
-    weekendPicsVariants0?.forEach(async (variant) => {
+    // Check the newly generated variants, since the old files were purged.
+    for (const variant of user.weekendPics![0].variants ?? []) {
       await assert.fileExists(variant.path!)
-    })
+    }
     assert.exists(data.weekendPics[0].thumbnail)
 
     // 1 is delete
-    weekendPicsVariants1?.forEach(async (variant) => {
+    for (const variant of weekendPicsVariants1 ?? []) {
       await assert.fileNotExists(variant.path!)
-    })
+    }
     assert.lengthOf(data.weekendPics, 1)
   })
 
@@ -201,31 +205,31 @@ test.group('variants', () => {
     const weekendPicsVariants0 = user.weekendPics![0]?.variants
     const weekendPicsVariants1 = user.weekendPics![1]?.variants
 
-    variants?.forEach(async (variant) => {
+    for (const variant of variants ?? []) {
       await assert.fileExists(variant.path!)
-    })
+    }
 
-    weekendPicsVariants0?.forEach(async (variant) => {
+    for (const variant of weekendPicsVariants0 ?? []) {
       await assert.fileExists(variant.path!)
-    })
+    }
 
-    weekendPicsVariants1?.forEach(async (variant) => {
+    for (const variant of weekendPicsVariants1 ?? []) {
       await assert.fileExists(variant.path!)
-    })
+    }
 
     await user.delete()
 
-    variants?.forEach(async (variant) => {
+    for (const variant of variants ?? []) {
       await assert.fileNotExists(variant.path!)
-    })
+    }
 
-    weekendPicsVariants0?.forEach(async (variant) => {
+    for (const variant of weekendPicsVariants0 ?? []) {
       await assert.fileNotExists(variant.path!)
-    })
+    }
 
-    weekendPicsVariants1?.forEach(async (variant) => {
+    for (const variant of weekendPicsVariants1 ?? []) {
       await assert.fileNotExists(variant.path!)
-    })
+    }
   })
 
   test('blurhash', async ({ assert, cleanup }) => {

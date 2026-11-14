@@ -19,6 +19,8 @@ import { createWriteStream, WriteStream } from 'node:fs'
 import BlurhashAdapter from '../adapters/blurhash.js'
 import * as errors from '../errors.js'
 
+import { trackTemporaryFile } from './temporary_files.js'
+
 const streamPipeline = promisify(pipeline)
 
 export function cleanObject(obj: any) {
@@ -62,14 +64,19 @@ export async function use(module: string) {
 
 export async function bufferToTempFile(input: Buffer) {
   const folder = os.tmpdir()
-  const tempFilePath = path.join(folder, `tempfile-${Date.now()}.tmp`)
-  await fs.writeFile(tempFilePath, input)
-  return tempFilePath
+  const tempFilePath = trackTemporaryFile(path.join(folder, `tempfile-${crypto.randomUUID()}.tmp`))
+  try {
+    await fs.writeFile(tempFilePath, input)
+    return tempFilePath
+  } catch (error) {
+    await fs.rm(tempFilePath, { force: true })
+    throw error
+  }
 }
 
 export async function streamToTempFile(input: NodeJS.ReadableStream): Promise<string> {
   const folder = os.tmpdir()
-  const tempFilePath = path.join(folder, `tempfile-${Date.now()}.tmp`)
+  const tempFilePath = trackTemporaryFile(path.join(folder, `tempfile-${crypto.randomUUID()}.tmp`))
 
   const writeStream: WriteStream = createWriteStream(tempFilePath)
 
@@ -77,23 +84,24 @@ export async function streamToTempFile(input: NodeJS.ReadableStream): Promise<st
     await streamPipeline(input, writeStream)
     return tempFilePath
   } catch (err) {
+    await fs.rm(tempFilePath, { force: true })
     throw new errors.E_CANNOT_GENERATE_TEMP_FILE([err.message])
   }
 }
 
 export async function downloadToTempFile(input: URL): Promise<string> {
-  return await new Promise((resolve) => {
+  return await new Promise((resolve, reject) => {
     https
       .get(input, (response) => {
         if (response.statusCode === 200) {
           resolve(streamToTempFile(response))
         } else {
-          // reject(`${response.statusCode}`)
-          throw new errors.E_CANNOT_GENERATE_TEMP_FILE([''])
+          response.resume()
+          reject(new errors.E_CANNOT_GENERATE_TEMP_FILE([`HTTP ${response.statusCode}`]))
         }
       })
       .on('error', (err) => {
-        throw new errors.E_CANNOT_GENERATE_TEMP_FILE([err.message])
+        reject(new errors.E_CANNOT_GENERATE_TEMP_FILE([err.message]))
       })
   })
 }
@@ -160,7 +168,13 @@ export function secondsToTimeFormat(seconds: number) {
   return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`
 }
 
-
 export function uuid() {
   return crypto.randomUUID()
+}
+
+/** Wait for every storage operation before letting callers start rollback. */
+export async function settleOperations(operations: Promise<unknown>[]): Promise<void> {
+  const results = await Promise.allSettled(operations)
+  const failure = results.find((result) => result.status === 'rejected')
+  if (failure?.status === 'rejected') throw failure.reason
 }

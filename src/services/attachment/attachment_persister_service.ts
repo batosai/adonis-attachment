@@ -9,6 +9,7 @@ import type { LucidModel } from '@adonisjs/lucid/types/model'
 import type { RecordWithAttachment as RecordWithAttachmentImplementation } from '../../types/service.js'
 import encryption from '@adonisjs/core/services/encryption'
 import attachmentManager from '../../../services/main.js'
+import { settleOperations } from '../../utils/helpers.js'
 import { AttachmentUtils } from './attachment_utils.js'
 
 export class AttachmentPersisterService {
@@ -18,7 +19,7 @@ export class AttachmentPersisterService {
   async persistAttachments(record: RecordWithAttachmentImplementation): Promise<void> {
     const attachmentAttributeNames = AttachmentUtils.getDirtyAttributeNamesOfAttachment(record.row)
 
-    await Promise.all(
+    await settleOperations(
       attachmentAttributeNames.map(async (name) => {
         const originalAttachments = AttachmentUtils.getOriginalAttachmentsByAttributeName(
           record.row,
@@ -101,8 +102,10 @@ export class AttachmentPersisterService {
             const key = encryption.encrypt({
               model: model.table,
               id: record.row.$primaryKeyValue?.toString() || record.row.$attributes['id'],
-              primaryKey: (record.row.constructor as LucidModel).primaryKey ?? 'id',
-              attribute: model.namingStrategy.columnName(model, name),
+              primaryKey:
+                model.$getColumn(model.primaryKey)?.columnName ?? model.primaryKey ?? 'id',
+              attribute:
+                model.$getColumn(name)?.columnName ?? model.namingStrategy.columnName(model, name),
               index: i,
               options: {
                 disk,

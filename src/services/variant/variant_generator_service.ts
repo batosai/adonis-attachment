@@ -10,6 +10,7 @@ import type { Converter } from '../../types/converter.js'
 import type { Input } from '../../types/input.js'
 import type { AttachmentService } from '../../types/config.js'
 
+import { withTemporaryFiles } from '../../utils/temporary_files.js'
 import app from '@adonisjs/core/services/app'
 import logger from '@adonisjs/core/services/logger'
 import { streamToTempFile } from '../../utils/helpers.js'
@@ -33,10 +34,11 @@ export default class VariantGeneratorService {
 
     for (const key of variantKeys) {
       const converter = await this.#getConverter(key)
-      if (!converter) continue
+      if (!converter) throw new Error(`Unknown converter: ${key}`)
 
       for (const attachment of attachments) {
         const variant = await this.generateVariant({ key, attachment, converter })
+        if (!variant) throw new Error(`Converter returned no output: ${key}`)
         if (variant) {
           variants.push(variant)
         }
@@ -46,7 +48,15 @@ export default class VariantGeneratorService {
     return variants
   }
 
-  async generateVariant({
+  async generateVariant(args: {
+    key: string
+    attachment: Attachment
+    converter: Converter
+  }): Promise<Variant | null> {
+    return withTemporaryFiles(() => this.#generateVariant(args))
+  }
+
+  async #generateVariant({
     key,
     attachment,
     converter,
@@ -75,7 +85,7 @@ export default class VariantGeneratorService {
       return variant
     } catch (error) {
       logger.error(`Failed to generate variant ${key} for attachment: ${error.message}`)
-      return null
+      throw error
     }
   }
 

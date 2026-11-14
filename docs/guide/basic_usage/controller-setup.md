@@ -152,3 +152,15 @@ await user.save()
 ```
 
 :::
+
+### Temporary files
+
+Files created internally by `createFromUrl()` and `createFromStream()` are removed after the
+attachment is written to storage, including when writing fails. Variant generation then reads
+from storage when needed. Temporary conversion inputs and outputs are cleaned up after each
+conversion, including failed conversions.
+
+Files supplied through `createFromPath()` or multipart uploads remain owned by the caller or
+the upload framework and are not deleted by this cleanup. An attachment created from a URL or
+stream must be persisted to complete its temporary file lifecycle. Existing temporary files
+left by older package versions are not automatically removed.

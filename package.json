@@ -53,7 +53,6 @@
   "exports": {
     ".": "./build/index.js",
     "./types/*": "./build/src/types/*.js",
-    "./mixins": "./build/src/mixins/attachmentable.js",
     "./decorators": "./build/src/decorators/attachment.js",
     "./services/*": "./build/services/*.js",
     "./converters/*": "./build/src/converters/*.js",
@@ -61,7 +60,7 @@
     "./commands": "./build/commands/main.js",
     "./commands/*": "./build/commands/*.js",
     "./controllers/*": "./build/src/controllers/*.js",
-    "./attachment_service": "./build/services/attachment_service.js",
+    "./attachment_service": "./build/src/services/attachment_service.js",
     "./attachment_provider": "./build/providers/attachment_provider.js"
   },
   "dependencies": {

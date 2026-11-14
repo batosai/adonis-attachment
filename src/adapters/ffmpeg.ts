@@ -5,6 +5,7 @@
  * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
  */
 
+import { trackTemporaryFile } from '../utils/temporary_files.js'
 import os from 'node:os'
 import path from 'node:path'
 import { $, ExecaError } from 'execa'
@@ -47,7 +48,7 @@ export default class FFmpeg {
     const folder = os.tmpdir()
     const filename = `${uuid()}.jpg`
     const { time } = options
-    const output = path.join(folder, filename)
+    const output = trackTemporaryFile(path.join(folder, filename))
     const timestamp = secondsToTimeFormat(time)
 
     try {

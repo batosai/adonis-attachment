@@ -25,7 +25,10 @@ export default class AttachmentsController {
     const format = request.qs()?.variant
 
     let multiple = false
-    const data = encryption.decrypt(key) as Data
+    const data = encryption.decrypt(key) as Data | null
+    if (!data || !data.model || !data.attribute || !data.primaryKey || data.id == null) {
+      return response.notFound()
+    }
 
     await attachmentManager.lock
       .createLock(`attachment.${data.model}-${data.attribute}`)
@@ -39,10 +42,15 @@ export default class AttachmentsController {
         /*
          * 1. Get the Attachment(s)
          */
+        if (!queryWithTableSelection || queryWithTableSelection[data.attribute] == null) {
+          return response.notFound()
+        }
         const result =
           typeof queryWithTableSelection[data.attribute] === 'string'
             ? JSON.parse(queryWithTableSelection[data.attribute])
             : queryWithTableSelection[data.attribute]
+        if (!result) return response.notFound()
+        const expected = JSON.stringify(result)
         const attachments: Attachment[] = []
         let currentAttachment: Attachment | null = null
 
@@ -103,6 +111,7 @@ export default class AttachmentsController {
             await variantPersister.persist({
               attachments: attachmentsOrCurrent,
               variants: [variant],
+              expected,
             })
           }
         }

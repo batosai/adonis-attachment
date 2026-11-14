@@ -14,6 +14,7 @@ import type {
 import type { Input } from '../types/input.js'
 
 import path from 'node:path'
+import crypto from 'node:crypto'
 import { AttachmentBase } from './attachment_base.js'
 import { Variant } from './variant_attachment.js'
 import { metaFromBuffer, metaFromFile } from '../adapters/meta.js'
@@ -182,39 +183,56 @@ export class Attachment extends AttachmentBase implements AttachmentInterface {
     return super.makeName(record, attributeName, this.originalName)
   }
 
+  #restorePath?: string
+
+  /**
+   * Some S3-compatible providers cannot move/copy objects because those
+   * operations request ACLs. Fall back to the normal streaming upload path.
+   * Never delete the source until the backup has been fully written.
+   */
+  async #moveWithStreamFallback(source: string, destination: string) {
+    const disk = this.getDisk()
+    try {
+      await disk.move(source, destination)
+    } catch {
+      const stream = await disk.getStream(source)
+      try {
+        await disk.putStream(destination, stream)
+      } finally {
+        stream.destroy()
+      }
+      await disk.delete(source)
+    }
+  }
+
   async moveFileForDelete() {
     if (this.options && this.options.rename !== true) {
       const originalPath = this.path
-      this.name = `${this.name}.trash`
-      const trashPath = this.path
-      this.originalPath = trashPath
-
+      const originalName = this.name
+      this.name = `${this.name}.${crypto.randomUUID()}.trash`
       try {
-        await this.getDisk().move(originalPath, trashPath)
-      } catch {
-        // move() failed (e.g. S3 provider without ACL support): delete the original directly
-        // so the file is cleaned up without relying on the .trash mechanism
-        try {
-          await this.getDisk().delete(originalPath)
-        } catch (_) {}
+        await this.#moveWithStreamFallback(originalPath, this.path)
+        this.#restorePath = originalPath
+        this.originalPath = this.path
+      } catch (error) {
+        this.name = originalName
+        throw error
       }
     }
   }
 
   async rollbackMoveFileForDelete() {
-    if (this.options && this.options.rename !== true) {
-      const trashPath = this.path
-      this.name = this.name.replace('.trash', '')
-      const originalPath = this.path
-      this.originalPath = originalPath
-
-      await this.getDisk().move(trashPath, originalPath)
+    if (this.#restorePath) {
+      await this.#moveWithStreamFallback(this.path, this.#restorePath)
+      this.name = path.basename(this.#restorePath)
+      this.originalPath = this.#restorePath
+      this.#restorePath = undefined
     }
   }
 
   async remove() {
     await super.remove()
-    if (this.variants) {
+    if (this.variants?.length) {
       for (const key in this.variants) {
         if (Object.prototype.hasOwnProperty.call(this.variants, key)) {
           await this.variants[key].remove()

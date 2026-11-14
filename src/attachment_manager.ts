@@ -18,6 +18,8 @@ import type {
 import type { ResolvedAttachmentConfig } from './define_config.js'
 
 import path from 'node:path'
+import { rm } from 'node:fs/promises'
+import { withTemporaryFiles } from './utils/temporary_files.js'
 import { DeferQueue } from '@poppinss/defer'
 import * as errors from './errors.js'
 import { Attachment } from './attachments/attachment.js'
@@ -33,6 +35,7 @@ export class AttachmentManager<KnownConverters extends Record<string, Converter>
   queue
   #config: ResolvedAttachmentConfig<KnownConverters>
   #drive: Drive
+  #temporaryInputs = new WeakMap<AttachmentBase, string>()
   #lock: LockService
 
   constructor(config: ResolvedAttachmentConfig<KnownConverters>, drive: Drive, lock: LockService) {
@@ -129,13 +132,24 @@ export class AttachmentManager<KnownConverters extends Record<string, Converter>
   async createFromUrl(input: URL, name?: string) {
     const tmpPath = await downloadToTempFile(input)
 
-    return this.createFromPath(tmpPath, name || path.basename(input.pathname))
+    return this.#createFromTemporaryPath(tmpPath, name || path.basename(input.pathname))
   }
 
   async createFromStream(stream: NodeJS.ReadableStream, name?: string) {
     const tmpPath = await streamToTempFile(stream)
 
-    return this.createFromPath(tmpPath, name || path.basename(tmpPath))
+    return this.#createFromTemporaryPath(tmpPath, name || path.basename(tmpPath))
+  }
+
+  async #createFromTemporaryPath(tmpPath: string, name: string) {
+    try {
+      const attachment = await this.createFromPath(tmpPath, name)
+      this.#temporaryInputs.set(attachment, tmpPath)
+      return attachment
+    } catch (error) {
+      await rm(tmpPath, { force: true })
+      throw error
+    }
   }
 
   async computeUrl(
@@ -150,6 +164,19 @@ export class AttachmentManager<KnownConverters extends Record<string, Converter>
   }
 
   async write(attachment: AttachmentBase) {
+    try {
+      await withTemporaryFiles(() => this.#write(attachment))
+    } finally {
+      const temporaryInput = this.#temporaryInputs.get(attachment)
+      if (temporaryInput) {
+        await rm(temporaryInput, { force: true })
+        this.#temporaryInputs.delete(attachment)
+        if (attachment.input === temporaryInput) attachment.input = undefined
+      }
+    }
+  }
+
+  async #write(attachment: AttachmentBase) {
     if (attachment.options?.meta) {
       attachment.meta = await ExifAdapter.exif(attachment.input!, this.#config)
     } else {

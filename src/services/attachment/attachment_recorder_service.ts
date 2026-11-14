@@ -50,7 +50,12 @@ export default class AttachmentRecorderService implements RecordWithAttachmentIm
    * During rollback we should remove the attached files.
    */
   async rollback(): Promise<void> {
-    await this.#transactionService.rollback(this.#row.$attachments.attached)
+    await this.#transactionService.rollback(
+      this.#row.$attachments.attached,
+      this.#row.$attachments.detached
+    )
+    this.#row.$attachments.attached.length = 0
+    this.#row.$attachments.detached.length = 0
   }
 
   /**
@@ -141,13 +146,15 @@ export default class AttachmentRecorderService implements RecordWithAttachmentIm
     }
 
     const opts = AttachmentUtils.getOptionsByAttributeName(this.#row, options.attributeName)
-    attachments.forEach(async (attachment) => {
-      if (attachment) {
-        attachment.setOptions(opts)
-        await attachment.makeFolder(this.#row)
-        // await attachment.makeName(this.#row, options.attributeName, attachment.originalName)
-      }
-    })
+    await Promise.all(
+      attachments.map(async (attachment) => {
+        if (attachment) {
+          attachment.setOptions(opts)
+          await attachment.makeFolder(this.#row)
+          // await attachment.makeName(this.#row, options.attributeName, attachment.originalName)
+        }
+      })
+    )
 
     return attachments
   }

@@ -1,5 +1,32 @@
 # Changelog
 
+## Unreleased
+
+* fix: defer deletion of replaced attachments until the SQL save or delete succeeds, and until commit when using an explicit transaction
+* fix: restore original files on transaction rollback, including multiple replacements at the same path and failures in application `afterCreate` or `afterUpdate` hooks
+* fix: wait for all in-flight uploads and file moves before rolling back a failed operation
+* fix: preserve S3-compatible storage support when `move()` fails by streaming a backup before deleting the source, with the same fallback when restoring files
+* fix: generate variants after transaction commit, retaining and deduplicating pending attributes across successive model saves
+* fix: keep existing variants until regenerated files are successfully converted and persisted; restore their metadata and remove new files when regeneration fails
+* fix: reject obsolete variant updates when the attachment has changed or the record has been deleted during conversion
+* fix: report conversion failures through the variant failure lifecycle instead of treating them as successful generation
+* fix: await asynchronous attachment folders before generating variants
+* fix: preserve Lucid column options on `@attachments()`, including `columnName` and `serializeAs`, and support `columnName` in the attachment decorator types
+* fix: use declared SQL column and primary key names when generating attachment keys and persisting variants
+* fix: isolate inherited attachment options so child models cannot change the configuration of their parent or siblings
+* fix: return 404 for invalid attachment keys, deleted records, and cleared attachment fields
+* fix: reject failed downloads and non-success HTTP responses through the returned promise
+* fix: use unique temporary filenames to prevent collisions between simultaneous imports or conversions
+* fix([#27](https://github.com/batosai/adonis-attachment/issues/27)): clean up package-owned temporary files after URL/stream imports and variant conversion, including failed writes, downloads, and conversions
+  * Caller-owned files supplied through `createFromPath()` or multipart uploads are preserved
+  * Conversion scopes are isolated, and native PDF/document converter outputs use separate temporary directories
+  * Existing temporary files left by older versions are not removed automatically
+* fix: correct the `/attachment_service` export and remove the stale `/mixins` export pointing to the previously removed mixin
+* test: add regression coverage for transactions, concurrent variant updates, storage failures, model inheritance, and temporary file cleanup; await asynchronous assertions in variant tests
+* docs: document temporary file ownership and cleanup for URL and stream imports
+
+> Unreleased — release date to be announced.
+
 ## 5.2.0
 
 * feat: persist `disk` in attachment data to preserve storage location across config changes

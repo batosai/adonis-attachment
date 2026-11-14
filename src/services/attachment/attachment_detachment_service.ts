@@ -7,6 +7,7 @@
 
 import type { RecordWithAttachment as RecordWithAttachmentImplementation } from '../../types/service.js'
 import type { Attachment as AttachmentType } from '../../types/attachment.js'
+import { settleOperations } from '../../utils/helpers.js'
 import { AttachmentUtils } from './attachment_utils.js'
 
 export class AttachmentDetachmentService {
@@ -16,7 +17,7 @@ export class AttachmentDetachmentService {
   async detach(record: RecordWithAttachmentImplementation): Promise<void> {
     const attachmentAttributeNames = AttachmentUtils.getDirtyAttributeNamesOfAttachment(record.row)
 
-    await Promise.allSettled(
+    await settleOperations(
       attachmentAttributeNames.map(async (name) => {
         let attachments: AttachmentType[] = []
         const options = AttachmentUtils.getOptionsByAttributeName(record.row, name)
@@ -48,8 +49,8 @@ export class AttachmentDetachmentService {
           }
         }
 
-        await this.#moveForDeletion(attachments)
         await this.#markForDeletion(attachments, record)
+        await this.#moveForDeletion(attachments)
       })
     )
   }
@@ -60,8 +61,8 @@ export class AttachmentDetachmentService {
   async detachAll(record: RecordWithAttachmentImplementation): Promise<void> {
     const attachmentAttributeNames = AttachmentUtils.getAttributeNamesOfAttachment(record.row)
 
-    await Promise.allSettled(
-      attachmentAttributeNames.map((name) => {
+    await settleOperations(
+      attachmentAttributeNames.map(async (name) => {
         const options = AttachmentUtils.getOptionsByAttributeName(record.row, name)
         const attachments = AttachmentUtils.getAttachmentsByAttributeName(record.row, name)
 
@@ -69,7 +70,7 @@ export class AttachmentDetachmentService {
           attachments[i].setOptions(options)
         }
 
-        this.#markForDeletion(attachments, record)
+        await this.#markForDeletion(attachments, record)
       })
     )
   }
@@ -81,12 +82,14 @@ export class AttachmentDetachmentService {
     attachments: AttachmentType[],
     record: RecordWithAttachmentImplementation
   ): Promise<void> {
-    await Promise.allSettled(
-      attachments.map((attachment) => record.row.$attachments.detached.push(attachment))
+    await settleOperations(
+      attachments.map(async (attachment) => {
+        record.row.$attachments.detached.push(attachment)
+      })
     )
   }
 
   async #moveForDeletion(attachments: AttachmentType[]): Promise<void> {
-    await Promise.allSettled(attachments.map((attachment) => attachment.moveFileForDelete()))
+    await settleOperations(attachments.map((attachment) => attachment.moveFileForDelete()))
   }
 }

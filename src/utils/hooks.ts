@@ -8,6 +8,8 @@
 import type { RowWithAttachment } from '../types/mixin.js'
 import AttachmentRecordService from '../services/attachment_service.js'
 
+const pendingVariants = new WeakMap<object, Map<RowWithAttachment, Set<string>>>()
+
 // @afterFind()
 export const afterFindHook = async (instance: unknown) => {
   const modelInstance = instance as RowWithAttachment
@@ -27,16 +29,41 @@ export const afterFetchHook = async (instance: unknown) => {
 export const beforeSaveHook = async (instance: unknown) => {
   const modelInstance = instance as RowWithAttachment
   const model = new AttachmentRecordService(modelInstance)
+  if (modelInstance.$trx) await model.transaction()
   await model.detach()
   await model.persist()
-  await model.transaction()
 }
 
 // @afterSave()
 export const afterSaveHook = async (instance: unknown) => {
   const modelInstance = instance as RowWithAttachment
   const model = new AttachmentRecordService(modelInstance)
-  await model.generateVariants()
+  await model.transaction()
+  if (modelInstance.$trx) {
+    const trx = modelInstance.$trx
+    let rows = pendingVariants.get(trx)
+    if (!rows) {
+      rows = new Map()
+      pendingVariants.set(trx, rows)
+      const pending = rows
+      trx.after('commit', async () => {
+        pendingVariants.delete(trx)
+        for (const [row, names] of pending) {
+          if (!row.$isDeleted && names.size) {
+            await new AttachmentRecordService(row).regenerateVariants({ attributes: [...names] })
+          }
+        }
+      })
+      trx.after('rollback', () => {
+        pendingVariants.delete(trx)
+      })
+    }
+    const names = rows.get(modelInstance) ?? new Set<string>()
+    for (const name of modelInstance.$attachments.dirtied) names.add(name)
+    rows.set(modelInstance, names)
+  } else {
+    await model.generateVariants()
+  }
   await model.setKeyId()
 }
 
@@ -44,6 +71,10 @@ export const afterSaveHook = async (instance: unknown) => {
 export const beforeDeleteHook = async (instance: unknown) => {
   const modelInstance = instance as RowWithAttachment
   const model = new AttachmentRecordService(modelInstance)
+  if (modelInstance.$trx) await model.transaction()
   await model.detachAll()
-  await model.transaction({ enabledRollback: false })
+}
+
+export const afterDeleteHook = async (instance: unknown) => {
+  await new AttachmentRecordService(instance as RowWithAttachment).transaction()
 }

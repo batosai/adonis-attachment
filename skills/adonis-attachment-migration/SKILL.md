@@ -1,6 +1,10 @@
 ---
 name: adonis-attachment-migration
 description: Use when upgrading @jrmc/adonis-attachment between major versions (v1→v2, v2→v3, v3→v4, v4→v5) or migrating from attachment-advanced — breaking changes in config structure, converter options, binary paths, URL/serialization APIs, and the JSON data structure stored in database.
+metadata:
+  package: "@jrmc/adonis-attachment"
+  major-version: "5"
+  version: "2026-11-14.1"
 ---
 
 # AdonisJS Attachment — version migrations

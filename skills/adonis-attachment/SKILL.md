@@ -1,6 +1,10 @@
 ---
 name: adonis-attachment
 description: Use when adding file or image upload to an AdonisJS Lucid model with @jrmc/adonis-attachment — installation, the @attachment/@attachments decorators and their options, creating attachments from file/buffer/base64/path/URL/stream, deleting files, and serving/displaying them (getUrl, signed URLs, preComputeUrl, attachments route, Inertia/Edge).
+metadata:
+  package: "@jrmc/adonis-attachment"
+  major-version: "5"
+  version: "2026-11-14.1"
 ---
 
 # AdonisJS Attachment — core usage

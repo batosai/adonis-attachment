@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 5.2.2
 
 * fix: defer deletion of replaced attachments until the SQL save or delete succeeds, and until commit when using an explicit transaction
 * fix: restore original files on transaction rollback, including multiple replacements at the same path and failures in application `afterCreate` or `afterUpdate` hooks
@@ -27,6 +27,13 @@
 
 > Unreleased — release date to be announced.
 
+## 5.2.1
+
+* feat: add agent skills for attachment integration, variant generation, and migration, with [installation instructions](/agent-skills)
+* chore: update dependencies
+
+> Released at *2026-07-05*
+
 ## 5.2.0
 
 * feat: persist `disk` in attachment data to preserve storage location across config changes
@@ -35,7 +42,7 @@
   * New uploads will use the updated config as expected
   * Variants inherit the `disk` from their parent attachment
 
-> Released at *2026-01-*
+> Released at *2026-06-08*
 
 ## 5.1.5
 

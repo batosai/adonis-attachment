@@ -1,6 +1,10 @@
 ---
 name: adonis-attachment-variants
 description: Use when configuring or debugging variants and converters with @jrmc/adonis-attachment — image resize/format/blurhash (sharp), video/PDF/document thumbnails (ffmpeg, poppler, LibreOffice), custom converters, variant storage paths, processing queue, variant lifecycle events, and regenerating variants.
+metadata:
+  package: "@jrmc/adonis-attachment"
+  major-version: "5"
+  version: "2026-11-14.1"
 ---
 
 # AdonisJS Attachment — variants & converters

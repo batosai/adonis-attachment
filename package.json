@@ -1,6 +1,6 @@
 {
   "name": "@jrmc/adonis-attachment",
-  "version": "5.2.1",
+  "version": "5.2.2",
   "type": "module",
   "description": "File and media management, featuring image transformations and video, PDF and document thumbnails.",
   "engines": {

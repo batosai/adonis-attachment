@@ -6,7 +6,7 @@ import path from 'node:path'
 import { Readable } from 'node:stream'
 import encryption from '@adonisjs/core/services/encryption'
 import db from '@adonisjs/lucid/services/db'
-import { attachmentManager } from '@jrmc/adonis-attachment'
+import attachmentManager from '../../services/main.js'
 import VariantGeneratorService from '../services/variant/variant_generator_service.js'
 import VariantPersisterService from '../services/variant/variant_persister_service.js'
 

@@ -175,9 +175,9 @@ returns an object, not a bare `Buffer`:
 ```ts
 import type { ConverterAttributes } from '@jrmc/adonis-attachment/converters/converter'
 
-async function convert({ body }: ConverterAttributes) {
+async function convert({ input }: ConverterAttributes) {
   return {
-    body,
+    data: { type: 'buffer' as const, buffer: await input.toBuffer() },
     fileName: 'thumbnail.webp',
     mimeType: 'image/webp',
   }
@@ -366,8 +366,8 @@ collection links or violate singular uniqueness. Do not delete originals during 
 
 Drive is optional; local filesystem is now the default. Preserve Drive configuration if
 legacy disk/path values depend on it. Converter config retains named lazy loaders, but v6
-handlers receive `{ attachment, body, options }` and return bytes with filename/MIME rather
-than v5's bare input. Shared binaries belong in `media.binaries`.
+handlers receive `{ attachment, input, context, options }` and return a file, stream or
+buffer in `data` with a filename and MIME type. Shared binaries belong in `media.binaries`.
 
 Root `attachment` / `attachments` decorators, `getKeyId()`, and v5 converter imports are not
 compatibility shims for table-backed fields: replace them with decorators and relation methods

@@ -98,7 +98,7 @@ export class AttachmentLifecycleService<
       throw error
     }
 
-    this.#completePersistence(owner, persisted)
+    await this.#completePersistence(owner, persisted)
 
     await this.#scheduleVariants(owner, persisted, options)
     await this.#scheduleMetadata(owner, persisted, options)
@@ -143,7 +143,7 @@ export class AttachmentLifecycleService<
       throw error
     }
 
-    this.#completePersistence(owner, persisted)
+    await this.#completePersistence(owner, persisted)
     await this.#removeOnCommit(owner, removed.map((item) => item.toAttachment()))
     await this.#scheduleVariants(owner, persisted, options)
     await this.#scheduleMetadata(owner, persisted, options)
@@ -185,7 +185,7 @@ export class AttachmentLifecycleService<
   ): Promise<Entry> {
     if (this.#needsTransaction) return this.transaction(owner, (service) => service.add(owner, input, position, options))
     const created = await this.#add(owner, input, position, options)
-    this.#completePersistence(owner, created.persisted)
+    await this.#completePersistence(owner, created.persisted)
     await this.#scheduleVariants(owner, created.persisted, options)
     await this.#scheduleMetadata(owner, created.persisted, options)
 
@@ -278,7 +278,7 @@ export class AttachmentLifecycleService<
     }
 
     for (const { persisted } of created) {
-      this.#completePersistence(owner, persisted)
+      await this.#completePersistence(owner, persisted)
     }
 
     for (const item of previous) {
@@ -335,7 +335,7 @@ export class AttachmentLifecycleService<
     if (reference) persisted.attachment = withAttachmentReference(persisted.attachment, reference)
   }
 
-  #completePersistence(owner: AttachmentOwner, persisted: PersistedAttachment): void {
+  async #completePersistence(owner: AttachmentOwner, persisted: PersistedAttachment): Promise<void> {
     if (persisted.managed) return
     if (hasAttachmentTransactions(this.#store) && this.#store.isScoped) {
       persisted.managed = true
@@ -349,7 +349,7 @@ export class AttachmentLifecycleService<
       transaction.after('rollback', () => this.#discardPersisted(persisted))
       transaction.after('commit', () => persisted.checkpoint?.release())
     } else {
-      persisted.checkpoint?.release()
+      await persisted.checkpoint?.release()
     }
   }
 
@@ -438,16 +438,20 @@ export class AttachmentLifecycleService<
             ...(protectedLocations ? { protectedLocations } : {}),
           }),
         }
-        if (hasAttachmentTransactions(this.#store) && this.#store.isScoped) this.#completePersistence(owner, persisted)
+        if (hasAttachmentTransactions(this.#store) && this.#store.isScoped) {
+          await this.#completePersistence(owner, persisted)
+        }
         return persisted
       } catch (error) {
-        checkpoint.release()
+        await checkpoint.release()
         throw error
       }
     }
 
     const persisted = { attachment: await this.#attachments.create(input as CreateAttachmentInput) }
-    if (hasAttachmentTransactions(this.#store) && this.#store.isScoped) this.#completePersistence(owner, persisted)
+    if (hasAttachmentTransactions(this.#store) && this.#store.isScoped) {
+      await this.#completePersistence(owner, persisted)
+    }
     return persisted
   }
 

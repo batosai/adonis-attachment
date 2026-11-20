@@ -5,6 +5,7 @@
  * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
  */
 
+import { ConversionWorkspace, createConversionSource } from '../variants/conversion_source.js'
 import {
   AttachmentDraft,
   AttachmentFactory,
@@ -34,6 +35,10 @@ import {
   type AttachmentEventEmitter,
 } from '../events/attachment_events.js'
 import string from '@adonisjs/core/helpers/string'
+import { createReadStream } from 'node:fs'
+import { stat } from 'node:fs/promises'
+import { buffer } from 'node:stream/consumers'
+import { Readable } from 'node:stream'
 import { extname } from 'node:path'
 import { randomUUID } from 'node:crypto'
 
@@ -144,10 +149,14 @@ export class AttachmentService {
       attachment = { ...attachment, path: `${directory}${randomUUID()}/${attachment.name}` }
     }
 
+    if (source.file) assertSourceSize((await stat(source.file.path)).size, source.file.size)
+
     if (options.meta && this.#metadata && this.#metadataMode === 'sync') {
       this.#emit('attachment:metadata_started', attachment)
       try {
-        const metadata = await this.#metadata.extract({ attachment, body: source.body })
+        const metadata = source.file
+          ? await this.#extractMetadataFromStream(attachment, async () => createReadStream(source.file!.path), source.file.path)
+          : await this.#metadata.extract({ attachment, body: source.body })
 
         if (metadata) {
           attachment = {
@@ -162,12 +171,22 @@ export class AttachmentService {
       }
     }
 
-    await this.#storage.write({
+    const location = {
       disk: attachment.disk,
       path: attachment.path,
-      body: source.body,
       mimeType: attachment.mimeType,
-    })
+    }
+    if (source.file) {
+      const stream = Readable.from(readSizedFile(source.file.path, source.file.size), { objectMode: false })
+      try {
+        if (this.#storage.writeStream) await this.#storage.writeStream({ ...location, stream })
+        else await this.#storage.write({ ...location, body: await buffer(stream) })
+      } finally {
+        stream.destroy()
+      }
+    } else {
+      await this.#storage.write({ ...location, body: source.body })
+    }
 
     markAttachmentPending(draft)
     this.#emit('attachment:created', attachment)
@@ -181,6 +200,12 @@ export class AttachmentService {
 
   read(attachment: Attachment): Promise<Uint8Array> {
     return this.#storage.read({ disk: attachment.disk, path: attachment.path })
+  }
+
+  async readStream(attachment: Attachment): Promise<Readable> {
+    const location = { disk: attachment.disk, path: attachment.path }
+    if (this.#storage.readStream) return this.#storage.readStream(location)
+    return Readable.from([await this.read(attachment)])
   }
 
   getUrl(attachment: Attachment): Promise<string | undefined> {
@@ -216,13 +241,24 @@ export class AttachmentService {
       throw new DeferredMetadataNotConfiguredError()
     }
 
-    return this.#queue.enqueue({
-      type: 'extract-metadata',
-      attachmentId: attachment.id,
-      ...(attachment.reference !== undefined ? { reference: validateAttachmentReference(attachment.id, attachment.reference) } : {}),
-      attachment,
-      ...(eventContext ? { eventContext } : {}),
-    })
+    return this.#queue.enqueue(
+      {
+        type: 'extract-metadata',
+        attachmentId: attachment.id,
+        ...(attachment.reference !== undefined ? { reference: validateAttachmentReference(attachment.id, attachment.reference) } : {}),
+        attachment,
+        ...(eventContext ? { eventContext } : {}),
+      },
+      { mimeType: attachment.mimeType }
+    )
+  }
+
+  #extractMetadataFromStream(attachment: Attachment, open: () => Promise<Readable>, path?: string) {
+    const workspace = new ConversionWorkspace()
+    const source = createConversionSource(attachment.size, attachment.extname, open, workspace)
+    return workspace.use(() => this.#metadata!.extractSource(
+      attachment, path === undefined ? source : { ...source, toFile: async () => path }
+    ))
   }
 
   async extractAndPersistMetadata(attachment: Attachment): Promise<void> {
@@ -230,7 +266,7 @@ export class AttachmentService {
       throw new DeferredMetadataNotConfiguredError()
     }
 
-    const extracted = await this.#metadata.extract({ attachment, body: await this.read(attachment) })
+    const extracted = await this.#extractMetadataFromStream(attachment, () => this.readStream(attachment))
     if (!extracted) {
       return
     }
@@ -248,15 +284,18 @@ export class AttachmentService {
     eventContext?: AttachmentEventContext,
     mode?: VariantGenerationMode
   ): Promise<void> {
-    return this.#queue.enqueue({
-      type: 'generate-variants',
-      attachmentId: attachment.id,
-      ...(attachment.reference !== undefined ? { reference: validateAttachmentReference(attachment.id, attachment.reference) } : {}),
-      ...(variantKeys ? { variantKeys } : {}),
-      ...(meta !== undefined ? { meta } : {}),
-      ...(eventContext ? { eventContext } : {}),
-      ...(mode ? { mode } : {}),
-    })
+    return this.#queue.enqueue(
+      {
+        type: 'generate-variants',
+        attachmentId: attachment.id,
+        ...(attachment.reference !== undefined ? { reference: validateAttachmentReference(attachment.id, attachment.reference) } : {}),
+        ...(variantKeys ? { variantKeys } : {}),
+        ...(meta !== undefined ? { meta } : {}),
+        ...(eventContext ? { eventContext } : {}),
+        ...(mode ? { mode } : {}),
+      },
+      { mimeType: attachment.mimeType }
+    )
   }
 
   /** Resolves automatic variant keys with manager options taking precedence. */
@@ -393,4 +432,23 @@ function normalizeStorageSegment(value: string): string {
     .toLowerCase()
     .replace(/[^a-z0-9!._-]+/g, '-')
     .replace(/^-+|-+$/g, '')
+}
+
+function assertSourceSize(actual: number, expected: number): void {
+  if (actual !== expected) {
+    throw new AttachmentError('Attachment source size changed before or during persistence', {
+      code: 'E_ATTACHMENT_SOURCE_SIZE_CHANGED',
+      status: 422,
+    })
+  }
+}
+
+async function* readSizedFile(path: string, expected: number) {
+  let size = 0
+  for await (const chunk of createReadStream(path)) {
+    size += chunk.length
+    if (size > expected) assertSourceSize(size, expected)
+    yield chunk
+  }
+  assertSourceSize(size, expected)
 }

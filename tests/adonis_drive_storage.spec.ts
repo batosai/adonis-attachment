@@ -5,6 +5,8 @@
  * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
  */
 
+import { Readable } from 'node:stream'
+import { buffer } from 'node:stream/consumers'
 import { test } from '@japa/runner'
 
 import { AdonisDriveStorage } from '../index.js'
@@ -36,6 +38,20 @@ test.group('AdonisDriveStorage', () => {
     assert.deepEqual(calls, [
       { disk: 's3', path: 'users/42/avatar.jpg', contents: new Uint8Array([1, 2, 3]) },
     ])
+  })
+
+  test('falls back to bytes for disks without streaming methods', async ({ assert }) => {
+    let bytes: Uint8Array = Buffer.alloc(0)
+    const storage = new AdonisDriveStorage({
+      use: () => ({
+        async put(_path, body) { bytes = body },
+        async getBytes() { return bytes },
+        async delete() {},
+      }),
+    })
+    const location = { disk: 'fs', path: 'file.txt' }
+    await storage.writeStream({ ...location, mimeType: 'text/plain', stream: Readable.from(['data']) })
+    assert.equal((await buffer(await storage.readStream(location))).toString(), 'data')
   })
 
   test('deletes an attachment through the selected Drive disk', async ({ assert }) => {

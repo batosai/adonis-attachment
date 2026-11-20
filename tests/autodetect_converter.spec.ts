@@ -1,3 +1,5 @@
+import { Readable } from 'node:stream'
+import { ConversionWorkspace, createConversionSource } from '../src/variants/conversion_source.js'
 /**
  * @jrmc/adonis-attachment
  *
@@ -5,7 +7,7 @@
  * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
  */
 
-import { writeFile } from 'node:fs/promises'
+import { readFile, writeFile } from 'node:fs/promises'
 
 import { test } from '@japa/runner'
 
@@ -40,7 +42,14 @@ test.group('AutodetectConverter', () => {
     const runner = new FakeRunner()
     const converter = new AutodetectConverter({ runner, resize: 320, startPage: 2, folder: 'variants' })
 
-    const output = await converter.handle({ attachment: pdf, body: new Uint8Array([1, 2, 3]), options: converter.options })
+    const workspace = new ConversionWorkspace()
+    const input = createConversionSource(3, 'pdf', async () => Readable.from([Buffer.from([1, 2, 3])]), workspace)
+    const output = await workspace.use(async () => {
+      const result = await converter.handle({ attachment: pdf, input, context: workspace, options: converter.options })
+      if (result?.data.type !== 'file') throw new Error('Expected file output')
+      const { data, ...attributes } = result
+      return { ...attributes, body: await readFile(data.path) }
+    })
 
     assert.deepEqual(output, {
       body: new Uint8Array([4, 5]),

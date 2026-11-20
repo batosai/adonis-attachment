@@ -5,7 +5,7 @@
  * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
  */
 
-import type { VariantConversionInput, VariantConversionOutput } from '../variants/variant_converter.js'
+import type { SourceConversionInput, SourceConversionOutput } from '../variants/variant_converter.js'
 import type { VariantFolder } from '../variants/variant_path.js'
 import type { BlurhashOptions } from '../media/blurhash.js'
 
@@ -151,7 +151,7 @@ export type ConverterOptions = {
   [key: string]: unknown
 }
 
-export type ConverterAttributes<Options extends ConverterOptions = ConverterOptions> = VariantConversionInput & {
+export type ConverterAttributes<Options extends ConverterOptions = ConverterOptions> = SourceConversionInput & {
   options: Readonly<Options>
 }
 
@@ -166,7 +166,7 @@ export default abstract class Converter<Options extends ConverterOptions = Conve
     this.options = options
   }
 
-  abstract handle(attributes: ConverterAttributes<Options>): Promise<VariantConversionOutput | undefined>
+  abstract handle(attributes: ConverterAttributes<Options>): Promise<SourceConversionOutput | undefined>
 }
 
 export function normalizeSharpFormat(format: SharpFormat): {

@@ -5,6 +5,8 @@
  * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
  */
 
+import { Readable } from 'node:stream'
+import { buffer } from 'node:stream/consumers'
 import { configProvider } from '@adonisjs/core'
 import type { ApplicationService } from '@adonisjs/core/types'
 
@@ -21,6 +23,8 @@ import { loadOptionalDependency } from '../utils/optional_dependency.js'
 export type AdonisDriveDisk = {
   put(path: string, contents: Uint8Array): Promise<void>
   getBytes(path: string): Promise<Uint8Array>
+  getStream?(path: string): Promise<Readable>
+  putStream?(path: string, contents: Readable): Promise<void>
   delete(path: string): Promise<void>
   getUrl?(path: string): Promise<string>
   getSignedUrl?(path: string, options?: AttachmentSignedUrlOptions): Promise<string>
@@ -83,6 +87,17 @@ export class AdonisDriveStorage implements AttachmentStorage {
 
   read(location: StorageLocation): Promise<Uint8Array> {
     return this.#drive.use(location.disk).getBytes(location.path)
+  }
+
+  async readStream(location: StorageLocation): Promise<Readable> {
+    const disk = this.#drive.use(location.disk)
+    return disk.getStream ? disk.getStream(location.path) : Readable.from([await disk.getBytes(location.path)])
+  }
+
+  async writeStream(input: Omit<WriteAttachmentInput, 'body'> & { stream: Readable }): Promise<void> {
+    const disk = this.#drive.use(input.disk)
+    if (disk.putStream) await disk.putStream(input.path, input.stream)
+    else await disk.put(input.path, await buffer(input.stream))
   }
 
   async remove(location: StorageLocation): Promise<void> {

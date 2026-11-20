@@ -3,6 +3,41 @@
 New features, changes, and fixes in Adonis Attachment v6.
 For earlier versions, see the [v5 changelog](https://adonis-attachment.jrmc.dev/changelog).
 
+## 6.0.0-beta.6
+
+### Breaking changes
+
+- `Converter.handle()` now receives `{ attachment, input, context, options }`.
+  Replace reads of `body` with `await input.toBuffer()` for byte-oriented libraries,
+  or use `input.toFile()` or `input.toStream()`. Return
+  `data: { type: 'buffer', buffer }` in place of `body`, or return a file or stream.
+  The `make:converter` stub uses the new contract.
+
+### Added
+
+- Set `variant.concurrency` to a positive integer or a function of the attachment
+  to limit how many variants it generates in parallel.
+- Use a `queueName(job, { mimeType })` callback to route Attachment jobs to different
+  Adonis Queue destinations.
+
+- Stage Node streams and streaming URL responses on disk with byte limits enforced during transfer. Temporary sources survive rollback and are released after saving. Use `draft.discard()` for abandoned drafts.
+
+- Path and multipart drafts now borrow the source until persistence. Keep it available and unchanged until the draft is saved. Built-in video and PDF metadata extraction can probe file-backed inputs directly, including streamed reads for deferred metadata.
+
+- Add source-based custom converters with `defineSourceConverter()`. They can read a source as a file, stream, or explicitly bounded buffer and return a file or stream for persistence. The package cleans up paths allocated by the conversion context after processing. See [Variants](/guide/variants#file-and-stream-converters).
+- `CreateAttachmentInput` now accepts either `body` or `file`. Code inspecting this type must narrow the input before accessing `body`. The local and Drive adapters support streaming reads and writes.
+
+### Changed
+
+- The built-in command runner keeps the last 64 KiB of stderr and stops commands whose stdout exceeds 4 MiB.
+
+### Fixed
+
+- Legacy drafts expose `discard()` to release temporary sources from abandoned imports.
+- Attachment saves outside a transaction wait for their temporary source to be released.
+
+> Released at *2026-11-20*
+
 ## 6.0.0-beta.5
 
 ### Added
@@ -41,6 +76,8 @@ For earlier versions, see the [v5 changelog](https://adonis-attachment.jrmc.dev/
   service from the container for low-level generation. Clarify event payloads, URL download
   limits and memory queue failure handling.
 
+> Released at *2026-11-10*
+
 ## 6.0.0-beta.4
 
 ### Changed
@@ -54,11 +91,15 @@ For earlier versions, see the [v5 changelog](https://adonis-attachment.jrmc.dev/
 - Remove the former `route` configuration key; it now raises a migration error.
   See [Serving files](/guide/serving-files).
 
+> Released at *2026-10-24*
+
 ## 6.0.0-beta.3
 
 ### Changed
 
 - Support @adonisjs/queue 0.7.0
+
+> Released at *2026-10-19*
 
 ## 6.0.0-beta.2
 
@@ -127,6 +168,8 @@ Update existing configurations before booting beta.2. Follow the
 The store refactor requires no data or schema migration. Existing URL APIs continue to work. To replace an application helper that falls back to the original, use
 `await user.avatar.getUrl('thumbnail', { fallback: 'original' })`.
 
+> Released at *2026-10-18*
+
 ## 6.0.0-beta.1
 
 First v6 beta, following the alpha releases. Version 6 introduces breaking changes from
@@ -141,3 +184,5 @@ v5; follow the [migration guide](/migration/from-v5) before upgrading an existin
 - Included [installable agent skills](/guide/agent-skills) for application integration, media processing, and v5 migration.
 
 Requires AdonisJS 7 and Node.js 24. Pre-releases use the npm `next` tag.
+
+> Released at *2026-09-26*

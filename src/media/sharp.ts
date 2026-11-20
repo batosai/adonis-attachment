@@ -87,38 +87,55 @@ export function createSharpVariantConverter(options: SharpVariantOptions): Varia
   return {
     key: options.key,
     async convert(input) {
-      let image = options.sharp(Buffer.from(input.body))
-      if (options.autoOrient && image.autoOrient) {
-        image = image.autoOrient()
-      }
-
-      if (options.transform) {
-        image = await options.transform(image, input)
-      } else if (options.width !== undefined || options.height !== undefined) {
-        image = image.resize(options.width, options.height, options.resize)
-      }
-
-      const outputFormat = options.format ? normalizeSharpFormat(options.format) : undefined
-      if (outputFormat) {
-        image = image.toFormat(outputFormat.format, outputFormat.options)
-      }
-
-      const body = await image.toBuffer()
-      // Sharp can rasterize SVG (and custom transforms can change the format).
-      // Read the encoded output instead of assuming the input extension survived.
-      const metadata = outputFormat?.format === 'raw' ? undefined : await options.sharp(Buffer.from(body)).metadata()
-      const encodedFormat = metadata?.format === 'heif' && metadata.compression === 'av1'
-        ? 'avif' : metadata?.format
-      const format = encodedFormat ?? outputFormat?.format ?? input.attachment.extname
-      const extension = format || 'bin'
-
-      return {
-        body,
-        fileName: `${options.key}.${extension}`,
-        mimeType: mimeTypeForFormat(format) ?? input.attachment.mimeType,
-        ...(options.folder ? { folder: options.folder } : {}),
-      }
+      return renderSharpVariant(options, options.sharp(Buffer.from(input.body)), input.attachment,
+        options.transform ? (image) => options.transform!(image, input) : undefined)
     },
+  }
+}
+
+/** Renders a file-backed source with Sharp without allocating an input buffer. */
+export function renderSharpVariantFromFile(
+  options: Omit<SharpVariantOptions, 'transform' | 'sharp'> & { sharp: (input: Buffer | string) => SharpImage },
+  path: string,
+  attachment: VariantConversionInput['attachment']
+) {
+  return renderSharpVariant(options, options.sharp(path), attachment)
+}
+
+async function renderSharpVariant(
+  options: SharpVariantOptions,
+  image: SharpImage,
+  attachment: VariantConversionInput['attachment'],
+  transform?: (image: SharpImage) => SharpImage | Promise<SharpImage>
+) {
+  if (options.autoOrient && image.autoOrient) {
+    image = image.autoOrient()
+  }
+  if (transform) {
+    image = await transform(image)
+  } else if (options.width !== undefined || options.height !== undefined) {
+    image = image.resize(options.width, options.height, options.resize)
+  }
+
+  const outputFormat = options.format ? normalizeSharpFormat(options.format) : undefined
+  if (outputFormat) {
+    image = image.toFormat(outputFormat.format, outputFormat.options)
+  }
+
+  const body = await image.toBuffer()
+  // Sharp can rasterize SVG (and custom transforms can change the format).
+  // Read the encoded output instead of assuming the input extension survived.
+  const metadata = outputFormat?.format === 'raw' ? undefined : await options.sharp(Buffer.from(body)).metadata()
+  const encodedFormat = metadata?.format === 'heif' && metadata.compression === 'av1'
+    ? 'avif' : metadata?.format
+  const format = encodedFormat ?? outputFormat?.format ?? attachment.extname
+  const extension = format || 'bin'
+
+  return {
+    body,
+    fileName: `${options.key}.${extension}`,
+    mimeType: mimeTypeForFormat(format) ?? attachment.mimeType,
+    ...(options.folder ? { folder: options.folder } : {}),
   }
 }
 

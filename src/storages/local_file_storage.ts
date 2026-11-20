@@ -5,6 +5,9 @@
  * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
  */
 
+import { createReadStream, createWriteStream } from 'node:fs'
+import type { Readable } from 'node:stream'
+import { pipeline } from 'node:stream/promises'
 import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises'
 import { dirname, relative, resolve, sep } from 'node:path'
 import { randomUUID } from 'node:crypto'
@@ -45,13 +48,29 @@ export class LocalFileStorage implements AttachmentStorage {
   }
 
   async write(input: WriteAttachmentInput): Promise<void> {
-    const filePath = this.#resolve(input)
+    await this.#write(input, (path) => writeFile(path, input.body, { flag: 'wx' }))
+  }
+
+  async readStream(location: StorageLocation): Promise<Readable> {
+    return createReadStream(this.#resolve(location))
+  }
+
+  async writeStream(input: Omit<WriteAttachmentInput, 'body'> & { stream: Readable }): Promise<void> {
+    try {
+      await this.#write(input, (path) => pipeline(input.stream, createWriteStream(path, { flags: 'wx' })))
+    } finally {
+      input.stream.destroy()
+    }
+  }
+
+  async #write(location: StorageLocation, write: (path: string) => Promise<void>): Promise<void> {
+    const filePath = this.#resolve(location)
     const temporaryPath = `${filePath}.${randomUUID()}.tmp`
 
     await mkdir(dirname(filePath), { recursive: true })
 
     try {
-      await writeFile(temporaryPath, input.body)
+      await write(temporaryPath)
       await rename(temporaryPath, filePath)
     } catch (error) {
       await rm(temporaryPath, { force: true }).catch(() => undefined)

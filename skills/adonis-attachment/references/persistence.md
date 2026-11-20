@@ -78,6 +78,9 @@ Use `storage.local({ baseUrl })`, `storage.drive({ disk })`,
 for native overrides. Import `store`, `storage`, and `queue` from the package root.
 Calling these helpers without options uses defaults. Existing class `fromApp` and `configure` methods remain supported. `queue.adonis({ job, queueName })` requires
 an application forwarding job; there is no implicit default job.
+Use a `queueName(job, { mimeType })` callback for routing by job type or original MIME
+type when the forwarding job leaves `Job.options.queue` unset. Set `variant.concurrency`
+to a number or a function of the attachment to limit parallel variants within one job.
 Factories resolve storage first, then store, then queue. All receive `defaults` and `variant`;
 storage receives optional explicit `defaultDisk`, the others the resolved disk.
 A queue factory also receives optional `context.handler` assembled from the store or

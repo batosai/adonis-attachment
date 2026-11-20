@@ -4,7 +4,7 @@ description: Use when explicitly upgrading an AdonisJS application from @jrmc/ad
 metadata:
   package: "@jrmc/adonis-attachment"
   major-version: "6"
-  version: "2026-11-06.1"
+  version: "2026-11-20.1"
 ---
 
 # Migrate an application from v5 to v6

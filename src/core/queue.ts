@@ -42,11 +42,14 @@ export type ExtractMetadataJob = {
 
 export type AttachmentJob = GenerateVariantsJob | ExtractMetadataJob
 
-/**
- * Dispatch boundary. External queues only need to accept an AttachmentJob.
- */
+/** Routing information available at enqueue time. It is separate from the job payload. */
+export type AttachmentQueueDispatchContext = {
+  mimeType?: string
+}
+
+/** Dispatch boundary. The optional context is available to adapters for routing. */
 export interface AttachmentQueue {
-  enqueue(job: AttachmentJob): Promise<void>
+  enqueue(job: AttachmentJob, context?: AttachmentQueueDispatchContext): Promise<void>
 }
 
 export type AttachmentJobHandler = (job: AttachmentJob) => Promise<void>

@@ -76,6 +76,9 @@ export {
 } from "./src/variants/variant_generation_service.js";
 export {
   type VariantConverter,
+  defineSourceConverter,
+  type SourceConversionInput,
+  type SourceConversionOutput,
   type VariantConversionInput,
   type VariantConversionOutput,
 } from "./src/variants/variant_converter.js";
@@ -104,3 +107,5 @@ export {
 export { createAttachmentProcessor, type CreateAttachmentProcessorOptions } from "./src/create_attachment_processor.js";
 
 export type { AttachmentRouteOptions } from './src/routes/attachment_route.js';
+
+export type { AttachmentInput, ConversionContext } from "./src/variants/conversion_source.js";

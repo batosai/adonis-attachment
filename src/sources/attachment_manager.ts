@@ -5,8 +5,11 @@
  * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
  */
 
-import { basename, extname } from 'node:path'
-import { readFile, stat } from 'node:fs/promises'
+import { basename, extname, join, resolve } from 'node:path'
+import { createWriteStream } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { pipeline } from 'node:stream/promises'
+import { mkdtemp, rm, stat } from 'node:fs/promises'
 
 import type { Readable } from 'node:stream'
 
@@ -88,35 +91,55 @@ export class AttachmentManager {
   }
 
   async createFromPath(input: string, options: AttachmentSourceOptions = {}): Promise<AttachmentDraft> {
-    const file = await stat(input)
+    const path = resolve(input)
+    const file = await stat(path)
     this.#assertSize(file.size, options.maxBytes)
-    const body = await readFile(input)
+    if (!file.isFile()) throw new AttachmentSourceError('Attachment source must be a regular file')
     const originalName = options.originalName ?? basename(input)
 
-    return this.#create(body, {
+    return this.#attachments.createDraft({
+      file: { path, size: file.size },
       originalName,
       mimeType: options.mimeType ?? mimeTypeFromName(originalName),
-      options,
-    })
+      ...(options.metadata ? { metadata: options.metadata } : {}),
+    }, toPersistenceOptions(options))
   }
 
   async createFromStream(input: Readable, options: AttachmentSourceOptions = {}): Promise<AttachmentDraft> {
-    const chunks: Uint8Array[] = []
-    let size = 0
+    const originalName = options.originalName ?? 'attachment.bin'
+    return this.#stage(input, originalName, options.mimeType ?? mimeTypeFromName(originalName), options)
+  }
 
-    for await (const chunk of input) {
-      const bytes = typeof chunk === 'string' ? Buffer.from(chunk) : new Uint8Array(chunk)
-      size += bytes.byteLength
+  async #stage(input: AsyncIterable<Uint8Array | string>, originalName: string, mimeType: string, options: AttachmentSourceOptions) {
+    this.#assertSize(0, options.maxBytes)
+    const directory = await mkdtemp(join(tmpdir(), 'adonis-attachment-import-'))
+    const extension = extname(originalName)
+    const path = join(directory, /^[.][a-z0-9]+$/i.test(extension) ? `source${extension}` : 'source')
+    const cleanup = () => rm(directory, { recursive: true, force: true })
+    let size = 0
+    const count = (bytes: number) => {
+      size += bytes
       this.#assertSize(size, options.maxBytes)
-      chunks.push(bytes)
     }
 
-    const originalName = options.originalName ?? 'attachment.bin'
-    return this.#create(Buffer.concat(chunks), {
-      originalName,
-      mimeType: options.mimeType ?? mimeTypeFromName(originalName),
-      options,
-    })
+    try {
+      await pipeline(async function* () {
+        for await (const chunk of input) {
+          const bytes = typeof chunk === 'string' ? Buffer.from(chunk) : chunk
+          count(bytes.byteLength)
+          yield bytes
+        }
+      }, createWriteStream(path, { flags: 'wx', mode: 0o600 }))
+      return this.#attachments.createDraft({
+        file: { path, size, cleanup },
+        originalName,
+        mimeType,
+        ...(options.metadata ? { metadata: options.metadata } : {}),
+      }, toPersistenceOptions(options))
+    } catch (error) {
+      await cleanup().catch(() => undefined)
+      throw error
+    }
   }
 
   async createFromUrl(input: URL | string, options: AttachmentSourceOptions = {}): Promise<AttachmentDraft> {
@@ -136,38 +159,19 @@ export class AttachmentManager {
         this.#assertSize(Number(contentLength), options.maxBytes)
       }
 
-      const body = await this.#readResponse(response, options.maxBytes)
       const url = typeof input === 'string' ? new URL(input) : input
       const inferredName = basename(url.pathname)
       const mimeType = options.mimeType ?? normalizeMimeType(response.headers.get('content-type')) ?? mimeTypeFromName(inferredName)
       const originalName = options.originalName ?? inferUrlOriginalName(inferredName, mimeType)
 
-      return await this.#create(body, { originalName, mimeType, options })
+      if (response.body) {
+        return await this.#stage(readResponseStream(response.body), originalName, mimeType, options)
+      }
+      return await this.#create(new Uint8Array(await response.arrayBuffer()), { originalName, mimeType, options })
     } catch (error) {
       // Also stop downloads rejected from headers, before acquiring a reader.
       await response.body?.cancel(error).catch(() => undefined)
       throw error
-    }
-  }
-
-  async #readResponse(response: AttachmentSourceResponse, maxBytes: number | undefined): Promise<Uint8Array> {
-    // Preserve existing injected clients exposing only arrayBuffer(). Such clients
-    // own buffering; native fetch and streaming clients are bounded below.
-    if (!response.body) return new Uint8Array(await response.arrayBuffer())
-    const reader = response.body.getReader()
-    const chunks: Uint8Array[] = []
-    let size = 0
-    try {
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
-        size += value.byteLength
-        this.#assertSize(size, maxBytes)
-        chunks.push(value)
-      }
-      return Buffer.concat(chunks, size)
-    } finally {
-      reader.releaseLock()
     }
   }
 
@@ -226,6 +230,19 @@ export class AttachmentManager {
         status: 413,
       })
     }
+  }
+}
+
+async function* readResponseStream(stream: ReadableStream<Uint8Array>) {
+  const reader = stream.getReader()
+  try {
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) return
+      yield value
+    }
+  } finally {
+    reader.releaseLock()
   }
 }
 

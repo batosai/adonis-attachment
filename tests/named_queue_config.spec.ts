@@ -91,7 +91,7 @@ test.group('named attachment queues', () => {
     assert.strictEqual(resolved.queue, queue)
   })
 
-  test('selects the Adonis driver and preserves its destination', async ({ assert }) => {
+  test('selects the Adonis driver and preserves its destination callback', async ({ assert }) => {
     const calls: string[] = []
     const resolved = await defineConfig({
       storage,
@@ -100,7 +100,8 @@ test.group('named attachment queues', () => {
         connections: {
           memory: { driver: 'memory', concurrency: 0 },
           background: {
-            driver: 'adonis', queueName: 'attachments',
+            driver: 'adonis',
+            queueName: (_job, { mimeType }) => mimeType?.startsWith('video/') ? 'videos' : 'attachments',
             job: {
               dispatch() {
                 return {
@@ -114,8 +115,11 @@ test.group('named attachment queues', () => {
       },
     }).resolver({} as never)
     assert.instanceOf(resolved.queue, AdonisAttachmentQueue)
-    await resolved.queue.enqueue({ type: 'generate-variants', attachmentId: 'original' })
-    assert.deepEqual(calls, ['attachments', 'run'])
+    await resolved.queue.enqueue(
+      { type: 'generate-variants', attachmentId: 'original' },
+      { mimeType: 'video/mp4' }
+    )
+    assert.deepEqual(calls, ['videos', 'run'])
   })
 
   test('rejects invalid defaults at boot without initializing integrations', async ({ assert }) => {

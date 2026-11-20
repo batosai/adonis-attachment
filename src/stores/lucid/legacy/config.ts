@@ -29,6 +29,7 @@ export function createLegacyAttachmentAdapter(
         ...(options.variant ? { variant: options.variant } : {}),
         attachments: {
           read: attachments.read.bind(attachments),
+          readStream: attachments.readStream.bind(attachments),
           remove: attachments.remove.bind(attachments),
           getVariantMetadataEnabled:
             attachments.getVariantMetadataEnabled.bind(attachments),

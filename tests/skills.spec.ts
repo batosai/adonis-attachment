@@ -1,8 +1,7 @@
 import { readdir, readFile, stat } from 'node:fs/promises'
 import { dirname, resolve, relative, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { execFile } from 'node:child_process'
-import { promisify } from 'node:util'
+import { runCommand } from './helpers/run_command.js'
 import ts from 'typescript'
 import { test } from '@japa/runner'
 
@@ -21,8 +20,8 @@ async function markdownFiles(directory: string): Promise<string[]> {
 
 test.group('consumer skills', () => {
   test('includes every skill and reference in the npm package', async ({ assert }) => {
-    const { stdout } = await promisify(execFile)('npm', ['pack', '--dry-run', '--ignore-scripts', '--json'], {
-      cwd: root, maxBuffer: 10 * 1024 * 1024,
+    const { stdout } = await runCommand('npm', ['pack', '--dry-run', '--ignore-scripts', '--json'], {
+      cwd: root, temporaryNpmCache: true,
     })
     const [archive] = JSON.parse(stdout) as Array<{ files: Array<{ path: string }> }>
     const paths = new Set(archive!.files.map((file) => file.path))

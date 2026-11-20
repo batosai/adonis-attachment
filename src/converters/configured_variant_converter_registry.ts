@@ -7,7 +7,7 @@
 
 import Converter, { type ConverterOptions } from './converter.js'
 import AutodetectConverter, { type AutodetectConverterOptions } from './autodetect_converter.js'
-import type { VariantConverter } from '../variants/variant_converter.js'
+import { defineSourceConverter, type VariantConverter } from '../variants/variant_converter.js'
 import { AttachmentError } from '../errors.js'
 
 export type ConverterConstructor = new (options?: any) => Converter<any>
@@ -120,6 +120,14 @@ function asVariantConverter(
 ): VariantConverter {
   const inheritedBlurhash = converter instanceof Converter ? undefined : converter.blurhash
 
+  const implementation = converter instanceof Converter
+    ? defineSourceConverter({
+        key,
+        convertSource: (input) => converter.handle({ ...input, options: converter.options }),
+      })
+    : converter
+  const convertSource = implementation.convertSource?.bind(implementation)
+
   return {
     key,
     ...(options?.blurhash !== undefined
@@ -127,10 +135,18 @@ function asVariantConverter(
       : inheritedBlurhash !== undefined
         ? { blurhash: inheritedBlurhash }
         : {}),
+    ...(convertSource
+      ? {
+          async convertSource(input) {
+            const output = await convertSource(input)
+            return output && output.folder === undefined && options?.folder !== undefined
+              ? { ...output, folder: options.folder }
+              : output
+          },
+        }
+      : {}),
     convert(input) {
-      const converted = converter instanceof Converter
-        ? converter.handle({ ...input, options: converter.options })
-        : converter.convert(input)
+      const converted = implementation.convert(input)
       return Promise.resolve(converted).then((output) => output && output.folder === undefined && options?.folder !== undefined
         ? { ...output, folder: options.folder }
         : output)

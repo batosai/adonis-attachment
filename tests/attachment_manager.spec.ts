@@ -5,7 +5,7 @@
  * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
  */
 
-import { mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { Readable } from 'node:stream'
@@ -33,7 +33,7 @@ function createManager(options: ConstructorParameters<typeof AttachmentManager>[
           name: input.originalName,
           originalName: input.originalName,
           path: input.originalName,
-          size: input.body.byteLength,
+          size: input.file ? input.file.size : input.body.byteLength,
           extname: input.originalName.split('.').at(-1) ?? '',
           mimeType: input.mimeType ?? 'application/octet-stream',
           isPersisted: false,
@@ -82,7 +82,7 @@ test.group('AttachmentManager', () => {
 
       assert.equal(inputs[0]?.input.originalName, 'report.pdf')
       assert.equal(inputs[0]?.input.mimeType, 'application/pdf')
-      assert.deepEqual(inputs[0]?.input.body, new Uint8Array([1, 2]))
+      assert.deepEqual(inputs[0]?.input.file, { path, size: 2 })
     } finally {
       await rm(directory, { recursive: true, force: true })
     }
@@ -192,7 +192,13 @@ test.group('AttachmentManager', () => {
       fetch: async () => new Response(body, { headers: { 'content-type': 'image/png' } }),
     })
     await manager.createFromUrl('https://example.test/file', { maxBytes: 4, folder: 'imports' })
-    assert.deepEqual(inputs[0]?.input.body, Buffer.from([1, 2, 1, 2]))
+    const file = inputs[0]?.input.file
+    assert.equal(file?.size, 4)
+    try {
+      assert.deepEqual(await readFile(file!.path), Buffer.from([1, 2, 1, 2]))
+    } finally {
+      await file?.cleanup?.()
+    }
     assert.equal(inputs[0]?.input.originalName, 'file.png')
     assert.equal(inputs[0]?.options?.folder, 'imports')
     assert.isFalse(body.locked)

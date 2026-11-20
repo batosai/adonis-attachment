@@ -5,6 +5,7 @@
  * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
  */
 
+import type { AttachmentInput } from '../variants/conversion_source.js'
 import type { Attachment } from '../core/attachment.js'
 
 /** Stable metadata shape preserved from v5, with room for application-specific fields. */
@@ -48,6 +49,7 @@ export type MediaMetadataInput = {
  */
 export interface MediaMetadataExtractor {
   supports?(input: Pick<MediaMetadataInput, 'attachment'>): boolean | Promise<boolean>
+  extractFile?(path: string): Promise<AttachmentMetadata | undefined>
   extract(input: MediaMetadataInput): Promise<AttachmentMetadata | undefined>
 }
 
@@ -60,14 +62,25 @@ export class MediaMetadataService {
   }
 
   async extract(input: MediaMetadataInput): Promise<AttachmentMetadata | undefined> {
+    return this.#extract(input.attachment, (extractor) => extractor.extract(input))
+  }
+
+  async extractSource(attachment: Attachment, source: AttachmentInput): Promise<AttachmentMetadata | undefined> {
+    let body: Promise<Buffer> | undefined
+    return this.#extract(attachment, async (extractor) => extractor.extractFile
+      ? extractor.extractFile(await source.toFile())
+      : extractor.extract({ attachment, body: await (body ??= source.toBuffer()) }))
+  }
+
+  async #extract(attachment: Attachment, run: (extractor: MediaMetadataExtractor) => Promise<AttachmentMetadata | undefined>) {
     let metadata: AttachmentMetadata | undefined
 
     for (const extractor of this.#extractors) {
-      if (extractor.supports && !(await extractor.supports({ attachment: input.attachment }))) {
+      if (extractor.supports && !(await extractor.supports({ attachment }))) {
         continue
       }
 
-      const extracted = await extractor.extract(input)
+      const extracted = await run(extractor)
 
       if (extracted) {
         metadata = { ...metadata, ...extracted }

@@ -76,6 +76,10 @@ export class Attachment {
   async getBuffer(): Promise<Buffer> {
     return Buffer.from(await this.getBytes());
   }
+  /** Discards an unsaved attachment and releases its temporary source. */
+  async discard(): Promise<void> {
+    await this.draft()?.discard();
+  }
   async preComputeUrl(): Promise<void> {
     this.url = await this.getUrl();
     await Promise.all(this.variants.map((variant) => variant.preComputeUrl()));

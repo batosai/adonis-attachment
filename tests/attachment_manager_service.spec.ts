@@ -23,7 +23,7 @@ test.group('attachmentManager service', () => {
           name: input.originalName,
           path: input.originalName,
           originalName: input.originalName,
-          size: input.body.byteLength,
+          size: input.file ? input.file.size : input.body.byteLength,
           extname: '.txt',
           mimeType: input.mimeType ?? 'application/octet-stream',
           isPersisted: false,

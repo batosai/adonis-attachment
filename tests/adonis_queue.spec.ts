@@ -10,6 +10,7 @@ import { test } from '@japa/runner'
 import {
   AdonisAttachmentQueue,
   AttachmentJobProcessor,
+  AttachmentService,
   type Attachment,
   type AttachmentJob,
   type VariantGenerationRequest,
@@ -70,10 +71,57 @@ test.group('AdonisAttachmentQueue', () => {
     assert.deepEqual(calls, ['run'])
   })
 
+  test('routes a scheduled variant job using the original MIME type without changing the payload', async ({ assert }) => {
+    const attachment: Attachment = {
+      id: 'video-id',
+      disk: 'public',
+      name: 'video-id.mp4',
+      originalName: 'clip.mp4',
+      path: 'videos/video-id.mp4',
+      size: 12,
+      extname: 'mp4',
+      mimeType: 'video/mp4',
+    }
+    const destinations: string[] = []
+    const payloads: AttachmentJob[] = []
+    const queue = new AdonisAttachmentQueue({
+      queueName: (job, { mimeType }) =>
+        job.type === 'generate-variants' && mimeType?.startsWith('video/') ? 'videos' : undefined,
+      job: {
+        dispatch(job) {
+          payloads.push(job)
+          return {
+            toQueue(name) {
+              destinations.push(name)
+              return this
+            },
+            async run() {},
+          }
+        },
+      },
+    })
+    const service = new AttachmentService({
+      defaultDisk: 'public',
+      queue,
+      storage: { async read() { return new Uint8Array() }, async write() {}, async remove() {} },
+    })
+
+    await service.scheduleVariantGeneration(attachment)
+    await queue.enqueue({ type: 'generate-variants', attachmentId: 'manual-id' })
+
+    assert.deepEqual(destinations, ['videos'])
+    assert.deepEqual(payloads, [
+      { type: 'generate-variants', attachmentId: 'video-id' },
+      { type: 'generate-variants', attachmentId: 'manual-id' },
+    ])
+  })
+
   test('gives the job queue precedence over the configured queue name', async ({ assert }) => {
     const calls: string[] = []
     const queue = new AdonisAttachmentQueue({
-      queueName: 'attachments',
+      queueName() {
+        throw new Error('should not resolve a destination when the job declares one')
+      },
       job: {
         options: {
           queue: 'priority-attachments',

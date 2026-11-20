@@ -230,6 +230,25 @@ precedence, so the resolution order is:
 
 Omit `queueName` when every job should rely entirely on its own Adonis Queue configuration.
 
+Set `queueName` to a function to route each job. Leave `Job.options.queue` unset
+to let Attachment select the destination:
+
+```ts
+queue: queue.adonis({
+  job: GenerateAttachmentVariants,
+  queueName: (job, { mimeType }) =>
+    job.type === 'generate-variants' && mimeType?.startsWith('video/')
+      ? 'videos'
+      : 'attachments',
+}),
+```
+
+The callback runs when the job is enqueued. Attachment supplies the original
+MIME type in the dispatch context, outside the serialized job payload. When
+calling `enqueue(job)` directly for variant generation, pass `{ mimeType }` as
+the second argument to provide it. Return `undefined` to use the native
+`default` queue. The destination applies to the entire job.
+
 Your job owns dependency injection and simply forwards its payload to the processor:
 
 ```ts
@@ -248,10 +267,16 @@ This keeps the package independent of how and where your workers are deployed. V
 contain an id and optional keys; metadata jobs also contain the serializable attachment target
 but never its file bytes. The worker reads the stored file before extracting metadata.
 
-Start a worker in another terminal, listening to the same queue as the configuration:
+With the fixed `attachments` destination, start a worker in another terminal:
 
 ```sh
 node ace queue:work --queue=attachments
+```
+
+If you use the routing callback above, start a worker that listens to both destinations:
+
+```sh
+node ace queue:work --queue=attachments,videos
 ```
 
 Upload an original with `variants: ['thumbnail']`, then read the relation's `variants()`

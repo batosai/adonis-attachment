@@ -4,7 +4,7 @@ description: Use when configuring @jrmc/adonis-attachment v6 variants, converter
 metadata:
   package: "@jrmc/adonis-attachment"
   major-version: "6"
-  version: "2026-11-06.1"
+  version: "2026-11-20.1"
 ---
 
 # Attachment v6 media processing
@@ -55,6 +55,8 @@ Verify installed beta declarations before applying these newer config APIs.
   Use `queue.memory({ concurrency, onFailure })` or
   `queue.adonis({ job, queueName })` from the root. Custom factories
   receive `(app, context)` and optional `context.handler`; run it only after config resolves.
+- Use `variant.concurrency` to limit parallel variants per attachment. Use a
+  `queueName(job, { mimeType })` callback to route whole Adonis jobs by media type.
 - Configure `queue.default` and `queue.connections` for environment selection. Memory is
   the fallback when queue is omitted, in-process, non-durable, and has no automatic retry.
 - Legacy supports BOTH memory and external workers. Register trusted model loaders in
@@ -73,3 +75,6 @@ variant rows or owner JSON, stored bytes, and extracted fields. Test missing/cor
 and queue errors, including a fresh worker with no previously loaded owner model.
 Use `MemoryAttachmentQueue.drain()` with `onFailure` assertions in queue tests, not sleeps.
 Do not hide failures with blanket catches or add SVG to EXIF support to make a test pass.
+
+For custom video processing with file-backed input and output, see the
+`defineSourceConverter()` workflow in [the media reference](references/media.md).

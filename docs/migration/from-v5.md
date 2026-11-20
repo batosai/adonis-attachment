@@ -170,9 +170,9 @@ the generated file, not a bare `Buffer`:
 ```ts
 import type { ConverterAttributes } from '@jrmc/adonis-attachment/converters/converter'
 
-async function convert({ body }: ConverterAttributes) {
+async function convert({ input }: ConverterAttributes) {
   return {
-    body,
+    data: { type: 'buffer' as const, buffer: await input.toBuffer() },
     fileName: 'thumbnail.webp',
     mimeType: 'image/webp',
   }

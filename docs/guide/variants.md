@@ -100,10 +100,10 @@ type ThumbnailOptions = ConverterOptions & {
 }
 
 export default class ThumbnailConverter extends Converter<ThumbnailOptions> {
-  async handle({ body, options }: ConverterAttributes<ThumbnailOptions>) {
+  async handle({ input, options }: ConverterAttributes<ThumbnailOptions>) {
     const { default: sharp } = await import('sharp')
     return {
-      body: await sharp(body).rotate().resize({ width: options.width }).webp().toBuffer(),
+      data: { type: 'buffer' as const, buffer: await sharp(await input.toBuffer()).rotate().resize({ width: options.width }).webp().toBuffer() },
       fileName: `thumbnail-${String(options.width)}.webp`,
       mimeType: 'image/webp',
     }
@@ -164,6 +164,21 @@ createFfmpegThumbnailConverter({
 })
 ```
 
+Set `variant: { concurrency: 1 }` to generate variants sequentially for each
+attachment. Use a function to choose a different limit for each attachment:
+
+```ts
+variant: {
+  concurrency: ({ mimeType }) => mimeType.startsWith('image/') ? 2 : 1,
+},
+```
+
+The function runs once per generation request and must return a positive
+integer. Omit the option to run all selected variants in parallel. Queue worker
+concurrency controls how many jobs can run at the same time. If an image job
+and a video job run together with this configuration, they can run up to three
+variants in parallel.
+
 `folder` is the converter's subfolder below `variant.basePath`. It accepts an attachment
 template such as `images/:id` or an async `({ attachment }) => string` callback. See
 [variant folders](/guide/configuration#variant-folders) for the shared prefix and available
@@ -221,9 +236,9 @@ type WatermarkOptions = ConverterOptions & {
 }
 
 export default class WatermarkConverter extends Converter<WatermarkOptions> {
-  async handle({ attachment, body, options }: ConverterAttributes<WatermarkOptions>) {
+  async handle({ attachment, input, options }: ConverterAttributes<WatermarkOptions>) {
     return {
-      body,
+      data: { type: 'file' as const, path: await input.toFile() },
       fileName: `${options.label}-${attachment.name}`,
       mimeType: attachment.mimeType,
     }
@@ -413,3 +428,27 @@ Custom services passed to `VariantGenerationService` must implement `remove` as 
   variants across every record that links to it.
 
 **Next:** [Serving files](/guide/serving-files).
+
+## File and stream converters
+
+Class converters receive `{ attachment, input, context, options }` in `handle()`.
+For an object converter, default-export the result of `defineSourceConverter()`
+and use the same source API in `convertSource({ attachment, input, context })`. Both can use:
+
+- `await input.toFile()` to get a read-only source path. Parallel calls share a single materialization.
+- `await input.toStream()` to open an independent stream.
+- `await input.toBuffer({ maxBytes })` when a library needs the entire source in memory.
+- `await context.createTempFile({ extension: 'mp4' })` to allocate a path for an output or intermediate file.
+
+For FFmpeg, await the command with the input path from `toFile()`, then return
+`{ data: { type: 'file', path: output }, fileName: 'video.mp4', mimeType: 'video/mp4' }`.
+The output remains available through persistence. The package removes paths allocated
+by the context on success or failure. Caller-owned paths remain the caller's responsibility.
+
+A converter may also return `data: { type: 'stream', stream }` or
+`data: { type: 'buffer', buffer }`. Stream outputs are staged on disk to determine
+their size. With a streaming storage adapter, a file output can be stored without
+loading it into memory. Built-in blurhash generation opens image files directly and
+reduces them before encoding. Custom blurhash generators that accept only bytes and
+buffer-only metadata extractors can still load the image into memory. Class converters
+use the same source and output contract in `Converter.handle()`.

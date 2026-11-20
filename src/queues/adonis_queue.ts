@@ -6,7 +6,12 @@
  */
 
 import type { ApplicationService } from '@adonisjs/core/types'
-import type { AttachmentJob, AttachmentQueue, AttachmentQueueContext } from '../core/queue.js'
+import type {
+  AttachmentJob,
+  AttachmentQueue,
+  AttachmentQueueContext,
+  AttachmentQueueDispatchContext,
+} from '../core/queue.js'
 import { AttachmentConfigurationError } from '../errors.js'
 import { loadOptionalDependency } from '../utils/optional_dependency.js'
 
@@ -24,7 +29,9 @@ export type AdonisAttachmentJob = {
 
 export type AdonisAttachmentQueueOptions = {
   job: AdonisAttachmentJob
-  queueName?: string
+  queueName?:
+    | string
+    | ((job: AttachmentJob, context: AttachmentQueueDispatchContext) => string | undefined)
 }
 
 /**
@@ -32,7 +39,7 @@ export type AdonisAttachmentQueueOptions = {
  */
 export class AdonisAttachmentQueue implements AttachmentQueue {
   readonly #job: AdonisAttachmentJob
-  readonly #queueName: string | undefined
+  readonly #queueName: AdonisAttachmentQueueOptions['queueName']
   #dependency: Promise<unknown> | undefined
 
   /** A forwarding job is application-specific and must be supplied explicitly. */
@@ -52,12 +59,20 @@ export class AdonisAttachmentQueue implements AttachmentQueue {
     this.#queueName = options.queueName
   }
 
-  async enqueue(job: AttachmentJob): Promise<void> {
+  async enqueue(job: AttachmentJob, context?: AttachmentQueueDispatchContext): Promise<void> {
     this.#dependency ??= loadOptionalDependency('@adonisjs/queue')
     await this.#dependency
 
+    let destination: string | undefined
+    if (!this.#job.options?.queue) {
+      const mimeType = context?.mimeType
+        ?? (job.type === 'extract-metadata' ? job.attachment.mimeType : undefined)
+      destination = typeof this.#queueName === 'function'
+        ? this.#queueName(job, mimeType === undefined ? {} : { mimeType })
+        : this.#queueName
+    }
+
     const dispatcher = this.#job.dispatch(job)
-    const hasJobQueue = Boolean(this.#job.options?.queue)
-    await (!hasJobQueue && this.#queueName ? dispatcher.toQueue(this.#queueName) : dispatcher).run()
+    await (destination ? dispatcher.toQueue(destination) : dispatcher).run()
   }
 }

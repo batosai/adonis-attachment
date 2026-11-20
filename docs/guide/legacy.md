@@ -56,6 +56,8 @@ await user.save()
 The manager also provides `createFromBuffer(bytes, 'avatar.jpg')`, `createFromPath`,
 `createFromBase64`, `createFromUrl` and `createFromStream`. The latter methods accept
 the v6 source-options object; not every historical v5 overload is reproduced.
+If you abandon a draft created from a stream or URL before saving it, call
+`await draft.discard()` to release its temporary source.
 For singular fields, only new legacy drafts or `null` can be assigned. Copying an already persisted attachment
 to another owner is rejected because JSON fields have no global file reference counts.
 Use direct field assignment, not Lucid `fill`/`merge` for the attachment itself.

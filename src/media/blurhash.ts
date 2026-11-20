@@ -28,9 +28,11 @@ export type BlurhashGeneratorInput = {
 /** Generates a blurhash from the final bytes of an image variant. */
 export interface BlurhashGenerator {
   generate(input: BlurhashGeneratorInput): Promise<string>
+  generateFile?(input: Omit<BlurhashGeneratorInput, 'body'> & { path: string }): Promise<string>
 }
 
 type SharpRawImage = {
+  resize?(width: number, height: number, options: { fit: 'inside'; withoutEnlargement: true }): SharpRawImage
   raw(): SharpRawImage
   ensureAlpha(): SharpRawImage
   toBuffer(options: { resolveWithObject: true }): Promise<{
@@ -54,12 +56,14 @@ export function createSharpBlurhashGenerator(
   encode: BlurhashEncoder
 ): BlurhashGenerator {
   return {
-    async generate({ body, componentX, componentY }) {
-      const { data, info } = await sharp(body).raw().ensureAlpha().toBuffer({ resolveWithObject: true })
-
-      return encode(new Uint8ClampedArray(data), info.width, info.height, componentX, componentY)
-    },
+    generate: ({ body, componentX, componentY }) => encodeImage(sharp(body), encode, componentX, componentY),
   }
+}
+
+async function encodeImage(image: SharpRawImage, encode: BlurhashEncoder, x: BlurhashComponent, y: BlurhashComponent) {
+  const resized = image.resize?.(64, 64, { fit: 'inside', withoutEnlargement: true }) ?? image
+  const { data, info } = await resized.raw().ensureAlpha().toBuffer({ resolveWithObject: true })
+  return encode(new Uint8ClampedArray(data), info.width, info.height, x, y)
 }
 
 /** Loads the optional Sharp and blurhash dependencies only when a converter enables blurhash. */
@@ -70,6 +74,11 @@ export class DynamicBlurhashGenerator implements BlurhashGenerator {
     this.#generator ??= loadGenerator()
     return this.#generator.then((generator) => generator.generate(input))
   }
+  generateFile(input: Omit<BlurhashGeneratorInput, 'body'> & { path: string }): Promise<string> {
+    this.#generator ??= loadGenerator()
+    return this.#generator.then((generator) => generator.generateFile!(input))
+  }
+
 }
 
 export function isBlurhashEnabled(options: BlurhashOptions | undefined): boolean {
@@ -95,8 +104,10 @@ async function loadGenerator(): Promise<BlurhashGenerator> {
     throw new MissingOptionalDependencyError(['sharp', 'blurhash'])
   }
 
-  return createSharpBlurhashGenerator(
-    sharpModule.default as BlurhashSharpFactory,
-    blurhashModule.encode as BlurhashEncoder
-  )
+  const sharp = sharpModule.default as (input: Uint8Array | string) => SharpRawImage
+  const encode = blurhashModule.encode as BlurhashEncoder
+  return {
+    ...createSharpBlurhashGenerator(sharp, encode),
+    generateFile: ({ path, componentX, componentY }) => encodeImage(sharp(path), encode, componentX, componentY),
+  }
 }

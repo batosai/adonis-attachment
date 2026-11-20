@@ -125,3 +125,23 @@ callback on the [relation decorator](/guide/lucid#paths-from-model-attributes) i
 - **Streams** are read chunk by chunk and the size limit is enforced as bytes arrive.
 
 **Next:** [Image variants](/guide/variants).
+
+For low-level `AttachmentService.create()` calls, use
+`file: { path, size }` in place of `body` to persist a file from disk.
+Keep the source readable until persistence completes. The caller owns the source
+file, and must supply its size in bytes. A streaming storage adapter avoids
+buffering the write. Metadata extraction may still read the whole file.
+
+`createFromPath()` and `createFromFile()` borrow the source path until persistence.
+Keep that file available and unchanged until the draft is saved, including any
+retry after rollback. For multipart uploads, persist while the upload's temporary
+file is still available. Persistence rejects a file whose size has changed.
+The package leaves ownership of these paths with the caller.
+Built-in video and PDF metadata extraction can read these paths directly.
+
+`createFromStream()` and streaming `createFromUrl()` responses are copied to a
+private temporary file with the byte limit enforced as the data arrives.
+The draft owns the temporary file. Persistence releases it after a successful
+save and retains it for retries on failure or rollback. If you abandon an unsaved
+draft, call `await draft.discard()` to release its source. A custom HTTP client
+that only implements `arrayBuffer()` still reads the response into memory.

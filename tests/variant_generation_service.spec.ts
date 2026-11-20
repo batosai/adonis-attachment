@@ -9,7 +9,11 @@ import { test } from '@japa/runner'
 
 import type { Attachment, AttachmentPersistRequest } from '../src/core/attachment.js'
 import { AttachmentService } from '../src/core/attachment_service.js'
-import { UnknownVariantConverterError, VariantGenerationService } from '../index.js'
+import {
+  AttachmentConfigurationError,
+  UnknownVariantConverterError,
+  VariantGenerationService,
+} from '../index.js'
 
 const sourceAttachment: Attachment = {
   id: 'original-id',
@@ -23,6 +27,89 @@ const sourceAttachment: Attachment = {
 }
 
 test.group('VariantGenerationService', () => {
+  test('limits concurrent variants and preserves request order', async ({ assert }) => {
+    const keys = ['first', 'second', 'third']
+    let active = 0
+    let peak = 0
+    const service = new VariantGenerationService({
+      variant: { concurrency: 2 },
+      attachments: {
+        async read() { return new Uint8Array([1]) },
+        async create(input) { return { ...sourceAttachment, name: input.originalName } },
+        async remove() {},
+      },
+      converters: keys.map((key) => ({
+        key,
+        async convert() {
+          peak = Math.max(peak, ++active)
+          await new Promise((resolve) => setTimeout(resolve, key === 'first' ? 20 : 1))
+          active--
+          return { body: new Uint8Array([1]), fileName: key, mimeType: 'image/jpeg' }
+        },
+      })),
+    })
+    const variants = await service.generateAll({ attachment: sourceAttachment, variantKeys: keys })
+    assert.equal(peak, 2)
+    assert.deepEqual(variants.map(({ key }) => key), keys)
+  })
+
+  test('resolves the concurrency limit independently for simultaneous variant jobs', async ({ assert }) => {
+    const active = new Map<string, number>()
+    const peaks = new Map<string, number>()
+    const service = new VariantGenerationService({
+      variant: { concurrency: ({ mimeType }) => mimeType.startsWith('image/') ? 2 : 1 },
+      attachments: {
+        async read() { return new Uint8Array([1]) },
+        async create() { throw new Error('no variants to persist') },
+        async remove() {},
+      },
+      converters: ['first', 'second', 'third'].map((key) => ({
+        key,
+        async convert({ attachment: { id } }) {
+          const count = (active.get(id) ?? 0) + 1
+          active.set(id, count)
+          peaks.set(id, Math.max(peaks.get(id) ?? 0, count))
+          await new Promise((resolve) => setTimeout(resolve, 1))
+          active.set(id, active.get(id)! - 1)
+          return undefined
+        },
+      })),
+    })
+
+    await Promise.all([
+      service.generateAll({ attachment: sourceAttachment }),
+      service.generateAll({ attachment: { ...sourceAttachment, id: 'video', mimeType: 'video/mp4' } }),
+    ])
+
+    assert.equal(peaks.get(sourceAttachment.id), 2)
+    assert.equal(peaks.get('video'), 1)
+  })
+
+  test('rejects a concurrency callback returning zero before running converters', async ({ assert }) => {
+    let conversions = 0
+    const service = new VariantGenerationService({
+      variant: { concurrency: () => 0 },
+      attachments: {
+        async read() { return new Uint8Array([1]) },
+        async create() { return sourceAttachment },
+        async remove() {},
+      },
+      converters: [{
+        key: 'thumbnail',
+        async convert() {
+          conversions++
+          return undefined
+        },
+      }],
+    })
+
+    await assert.rejects(
+      () => service.generate({ attachment: sourceAttachment, variantKeys: ['thumbnail'] }),
+      AttachmentConfigurationError
+    )
+    assert.equal(conversions, 0)
+  })
+
   for (const scenario of [
     { name: 'explicit false', meta: false, metadataVariants: true, expected: 0 },
     { name: 'disabled variant policy', meta: undefined, metadataVariants: false, expected: 0 },
@@ -65,7 +152,7 @@ test.group('VariantGenerationService', () => {
             originalName: input.originalName,
             mimeType: input.mimeType ?? 'application/octet-stream',
             extname: 'webp',
-            size: input.body.byteLength,
+            size: input.file ? input.file.size : input.body.byteLength,
           }
           generated.push(attachment)
           return attachment

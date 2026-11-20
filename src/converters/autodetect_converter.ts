@@ -12,7 +12,7 @@ import {
   createPdfThumbnailConverter,
   type CommandRunner,
 } from '../media/binaries.js'
-import { createSharpVariantConverter, type SharpFactory, type SharpResizeOptions } from '../media/sharp.js'
+import { renderSharpVariantFromFile, type SharpImage, type SharpResizeOptions } from '../media/sharp.js'
 import { MissingOptionalDependencyError } from '../errors.js'
 import { loadOptionalDependency } from '../utils/optional_dependency.js'
 
@@ -34,39 +34,46 @@ export type AutodetectConverterOptions = ConverterOptions & {
 export default class AutodetectConverter extends Converter {
   declare readonly options: Readonly<AutodetectConverterOptions>
 
-  async handle({ attachment, body }: ConverterAttributes) {
+  #videoConverter() {
+    const options = this.options
+    const resize = normalizeResize(options.resize)
+    const format = binaryFormat(options.format)
+
+    return createFfmpegThumbnailConverter({
+      key: 'autodetect',
+      ...(options.runner ? { runner: options.runner } : {}),
+      ...(options.ffmpegCommand ? { command: options.ffmpegCommand } : {}),
+      ...(options.startTime !== undefined ? { time: options.startTime } : {}),
+      ...(resize.width !== undefined ? { width: resize.width } : {}),
+      ...(resize.height !== undefined ? { height: resize.height } : {}),
+      ...(format ? { format } : {}),
+      ...(typeof options.folder === 'string' ? { folder: options.folder } : {}),
+      ...(options.ffmpegTimeout ?? options.timeout) !== undefined
+        ? { timeout: options.ffmpegTimeout ?? options.timeout }
+        : {},
+    })
+  }
+
+  async handle({ options: _options, ...source }: ConverterAttributes) {
+    if (source.attachment.mimeType.startsWith('video/')) {
+      return this.#videoConverter().convertSource!(source)
+    }
+    const { attachment } = source
     const options = this.options
     const resize = normalizeResize(options.resize)
 
     if (attachment.mimeType.startsWith('image/')) {
       const sharp = await loadSharp()
-      return createSharpVariantConverter({
+      const output = await renderSharpVariantFromFile({
         key: 'autodetect',
         sharp,
         ...resize,
         ...(options.format ? { format: options.format } : {}),
         autoOrient: options.autoOrient ?? true,
         ...(typeof options.folder === 'string' ? { folder: options.folder } : {}),
-        ...(options.timeout !== undefined ? { timeout: options.timeout } : {}),
-      }).convert({ attachment, body })
-    }
-
-    if (attachment.mimeType.startsWith('video/')) {
-      const format = binaryFormat(options.format)
-
-      return createFfmpegThumbnailConverter({
-        key: 'autodetect',
-        ...(options.runner ? { runner: options.runner } : {}),
-        ...(options.ffmpegCommand ? { command: options.ffmpegCommand } : {}),
-        ...(options.startTime !== undefined ? { time: options.startTime } : {}),
-        ...(resize.width !== undefined ? { width: resize.width } : {}),
-        ...(resize.height !== undefined ? { height: resize.height } : {}),
-        ...(format ? { format } : {}),
-        ...(typeof options.folder === 'string' ? { folder: options.folder } : {}),
-        ...(options.ffmpegTimeout ?? options.timeout) !== undefined
-          ? { timeout: options.ffmpegTimeout ?? options.timeout }
-          : {},
-      }).convert({ attachment, body })
+      }, await source.input.toFile(), attachment)
+      const { body, ...attributes } = output
+      return { ...attributes, data: { type: 'buffer' as const, buffer: body } }
     }
 
     if (attachment.mimeType === 'application/pdf') {
@@ -80,7 +87,7 @@ export default class AutodetectConverter extends Converter {
         ...(options.pdftoppmTimeout ?? options.timeout) !== undefined
           ? { timeout: options.pdftoppmTimeout ?? options.timeout }
           : {},
-      }).convert({ attachment, body })
+      }).convertSource!(source)
     }
 
     if (isOfficeDocument(attachment.mimeType)) {
@@ -98,7 +105,7 @@ export default class AutodetectConverter extends Converter {
         ...(options.pdftoppmTimeout ?? options.timeout) !== undefined
           ? { pdfTimeout: options.pdftoppmTimeout ?? options.timeout }
           : {},
-      }).convert({ attachment, body })
+      }).convertSource!(source)
     }
 
     return undefined
@@ -152,12 +159,12 @@ function isOfficeDocument(mimeType: string): boolean {
   ].includes(mimeType)
 }
 
-async function loadSharp(): Promise<SharpFactory> {
+async function loadSharp(): Promise<(input: Buffer | string) => SharpImage> {
   const module = await loadOptionalDependency<{ default?: unknown }>('sharp')
 
   if (typeof module.default !== 'function') {
     throw new MissingOptionalDependencyError('sharp')
   }
 
-  return module.default as SharpFactory
+  return module.default as (input: Buffer | string) => SharpImage
 }

@@ -1,3 +1,5 @@
+import { Readable } from 'node:stream'
+import { defineSourceConverter } from '../src/variants/variant_converter.js'
 import { createAttachmentProcessor } from '../src/create_attachment_processor.js'
 import { LucidAttachmentStore } from '../src/stores/lucid/persistence/lucid_attachment_store.js'
 import { setApp } from '@adonisjs/core/services/app'
@@ -47,12 +49,17 @@ test.group('Lucid JSON attachment workers', (group) => {
       },
     },
   }
-  async function configure(memory = false) {
+  async function configure(memory = false, streaming = false) {
     resolved = await defineConfig({
       defaultDisk: 'fs', defaults: { rename: false },
       store: LucidAttachmentStore.configure({ legacy: { models: { json_job_users: async () => { loads++; return { default: JsonJobUser } } } } }),
       media: { metadata: [{ async extract() { await duringExtraction?.(); return { inspected: true } } }], metadataPolicy: { mode: 'deferred' } },
-      converters: { thumbnail: { converter: async () => ({ default: {
+      converters: { thumbnail: { converter: async () => ({ default: streaming ? defineSourceConverter({
+        key: 'thumbnail',
+        async convertSource({ input }) {
+          return { data: { type: 'file', path: await input.toFile() }, fileName: 'thumb.jpg', mimeType: 'image/jpeg' }
+        },
+      }) : {
         key: 'thumbnail',
         async convert() {
           converted++
@@ -63,7 +70,10 @@ test.group('Lucid JSON attachment workers', (group) => {
       ...(!memory ? { queue: { async enqueue(job: AttachmentJob) { jobs.push(job) } } } : {}),
       storage: {
         async write(value) { files.set(value.path, value.body) },
-        async read(value) { const body = files.get(value.path); if (!body) throw new Error('Missing file'); return body },
+        ...(streaming ? { async readStream(value: { path: string }) {
+          return Readable.from([files.get(value.path)!])
+        } } : {}),
+        async read(value) { if (streaming) throw new Error('Unexpected buffered read'); const body = files.get(value.path); if (!body) throw new Error('Missing file'); return body },
         async remove(value) { files.delete(value.path) },
       },
     }).resolver(app as never)
@@ -109,6 +119,13 @@ test.group('Lucid JSON attachment workers', (group) => {
     assert.deepEqual((await loadOriginal(stale))!.toAttachment().metadata, { inspected: true })
     assert.deepEqual((await loadVariants(stale))[0]!.toAttachment().metadata, { inspected: true })
     assert.isFalse(await db.connection().schema.hasTable('adonis_attachments'))
+  })
+
+  test('streams the original in source converters running through the JSON worker', async ({ assert }) => {
+    await configure(false, true)
+    const row = await create()
+    await processor().process(variantJob())
+    assert.lengthOf(await loadVariants(row), 1)
   })
 
   test('automatically processes JSON variants and metadata on the default memory queue', async ({ assert }) => {

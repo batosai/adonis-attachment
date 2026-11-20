@@ -23,9 +23,9 @@ const attachment: Attachment = {
 }
 
 class ThumbnailConverter extends Converter {
-  async handle({ body, options }: Parameters<Converter['handle']>[0]) {
+  async handle({ input, options }: Parameters<Converter['handle']>[0]) {
     return {
-      body,
+      data: { type: 'file' as const, path: await input.toFile() },
       fileName: `thumbnail-${String(options.width)}.webp`,
       mimeType: 'image/webp',
     }

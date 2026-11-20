@@ -161,9 +161,9 @@ import { Converter, type ConverterAttributes } from '@jrmc/adonis-attachment'
 import sharp from 'sharp'
 
 export default class ThumbnailConverter extends Converter {
-  async handle({ body }: ConverterAttributes) {
+  async handle({ input }: ConverterAttributes) {
     return {
-      body: await sharp(Buffer.from(body)).rotate().resize(320).webp().toBuffer(),
+      data: { type: 'buffer' as const, buffer: await sharp(await input.toBuffer()).rotate().resize(320).webp().toBuffer() },
       fileName: 'thumbnail.webp',
       mimeType: 'image/webp',
     }
@@ -173,7 +173,7 @@ export default class ThumbnailConverter extends Converter {
 
 Register with `converter: () => import('#converters/thumbnail_converter')` under a named
 converter key. `Converter` is a named root export, not the root default export. A handler
-receives `{ attachment, body, options }`, returns output bytes with filename/MIME, or undefined
+receives `{ attachment, input, context, options }`, returns a `data` payload with filename/MIME, or undefined
 to skip. Use `Converter<CustomOptions>` and `ConverterConfig<CustomOptions>` for typed options.
 
 ## Connections and workers
@@ -213,6 +213,14 @@ dependencies must match the application. A native `Job.options.queue` takes prec
 over Attachment's `queueName`. The default memory driver automatically wires processing through the selected store;
 external workers need the factory above. Direct queue instances own their handlers. Factories receive optional `context.handler` from the store or `jobHandler`; invoke it only after configuration finishes.
 
+Route whole jobs at dispatch time with `queueName: (job, { mimeType }) =>
+job.type === 'generate-variants' && mimeType?.startsWith('video/') ? 'videos' : 'attachments'`.
+Use this callback with a forwarding job that leaves `Job.options.queue` unset.
+MIME type comes from the original attachment and travels outside the serialized payload.
+Use `variant.concurrency: ({ mimeType }) => mimeType.startsWith('image/') ? 2 : 1`
+to limit parallel variants per generation request. The worker's concurrency controls
+how many jobs run together.
+
 Without Lucid, use a custom store with a repository and a variant-persistence factory
 (`variants(service, converters, context)`). Persist `VariantGenerationService.generateAll()` results; rollback
 must clean new files, and regeneration must replace rows and clean old files after commit.
@@ -250,3 +258,21 @@ connections can contain the same factories; only the selected connection is reso
 Existing `{ driver: 'memory' }` / `{ driver: 'adonis', job }` declarations remain supported.
 Storage, store and queue share the `(app, context)` convention. Their responsibilities and
 defaults remain distinct: bytes (required), data persistence (disabled), dispatch (memory).
+
+For custom video converters, default-export an object created with
+`defineSourceConverter({ key, async convertSource({ input, context }) { ... } })`.
+Use `input.toFile()` for seekable input and `context.createTempFile({ extension: 'mp4' })`
+for the output path. Await the tool, then return `data: { type: 'file', path }` with
+`fileName` and `mimeType`. The package owns cleanup of context paths after
+persistence. Use `input.toStream()` for independent reads and `input.toBuffer({ maxBytes })`
+when a dependency needs bytes. The built-in blurhash generator opens image files
+directly and resizes them before encoding. Custom generators or extractors that
+accept only bytes can still buffer image output.
+
+When importing an existing video for this workflow, keep the source path from
+`createFromPath()` or `createFromFile()` available and unchanged until persistence.
+The built-in ffprobe extractor reads the original or generated file by path.
+
+Stream and URL imports with a streaming response stage bytes on disk and enforce
+the source size limit during transfer. Save the draft or call `draft.discard()`
+when abandoning it. Custom HTTP clients exposing only `arrayBuffer()` still buffer.

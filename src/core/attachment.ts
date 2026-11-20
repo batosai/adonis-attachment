@@ -45,8 +45,10 @@ export type AttachmentDraftPersistence = (
   request?: AttachmentPersistRequest<any>
 ) => Promise<Attachment>
 
-export type CreateAttachmentInput = {
-  body: Uint8Array
+export type CreateAttachmentInput = (
+  | { body: Uint8Array; file?: never }
+  | { body?: never; file: { path: string; size: number; cleanup?: () => Promise<void> } }
+) & {
   originalName: string
   mimeType?: string
   blurhash?: string
@@ -73,6 +75,7 @@ export class AttachmentDraft implements Attachment {
 
   readonly #options: AttachmentPersistenceOptions
   #source: CreateAttachmentInput | undefined
+  #retained = 0
   #persisted = false
   #persisting: Promise<Attachment> | undefined
   readonly #persistence: AttachmentDraftPersistence
@@ -122,19 +125,47 @@ export class AttachmentDraft implements Attachment {
   }
 
   /** Internal integration checkpoint. Release it on commit, restore it after file cleanup. */
-  retainForRollback(): { release(): void; rollback(): void } {
+  retainForRollback(): { release(): Promise<void>; rollback(): void } {
     let source = this.#source
+    if (source) this.#retained++
     return {
-      release() { source = undefined },
+      release: async () => {
+        if (!source) return
+        const previous = source
+        source = undefined
+        this.#retained--
+        await this.#cleanup(previous)
+      },
       rollback: () => {
         if (source) {
           this.#source = source
           this.#persisted = false
           this.#persisting = undefined
           source = undefined
+          this.#retained--
         }
       },
     }
+  }
+
+  async #cleanup(source?: CreateAttachmentInput): Promise<void> {
+    if (!this.#source && this.#retained === 0) {
+      try {
+        await source?.file?.cleanup?.()
+      } catch (error) {
+        process.emitWarning(`Attachment source cleanup failed: ${String(error)}`)
+      }
+    }
+  }
+
+  /** Discards an unsaved draft and releases any temporary source it owns. */
+  async discard(): Promise<void> {
+    if ((this.#persisting && !this.#persisted) || this.#retained) {
+      throw new AttachmentError('Cannot discard an attachment draft while it is being saved')
+    }
+    const source = this.#source
+    this.#source = undefined
+    await this.#cleanup(source)
   }
 
   persist(request?: AttachmentPersistRequest<any>): Promise<Attachment> {
@@ -143,8 +174,10 @@ export class AttachmentDraft implements Attachment {
     }
 
     if (!this.#persisting) {
+      if (!this.#source) return Promise.reject(new AttachmentError('Attachment draft source is unavailable'))
+      const source = this.#source
       this.#persisting = this.#persistence(this, request)
-        .then((attachment) => {
+        .then(async (attachment) => {
           this.disk = attachment.disk
           this.name = attachment.name
           this.path = attachment.path
@@ -162,6 +195,7 @@ export class AttachmentDraft implements Attachment {
             delete this.metadata
           }
           this.#source = undefined
+          await this.#cleanup(source)
           this.#persisted = true
           return this
         })
@@ -240,7 +274,7 @@ export class AttachmentFactory {
       name,
       originalName: input.originalName,
       path,
-      size: input.body.byteLength,
+      size: input.file ? input.file.size : input.body.byteLength,
       extname: extension,
       mimeType: input.mimeType ?? 'application/octet-stream',
       ...(input.blurhash ? { blurhash: input.blurhash } : {}),

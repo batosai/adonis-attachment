@@ -16,10 +16,12 @@ export type VariantFolder =
   | string
   | ((context: VariantPathContext) => string | Promise<string>)
 
-/** Global generated-variant path settings. */
+/** Global settings for generated variants. */
 export type VariantPathOptions = {
   /** Prefix added before the converter's variant folder. */
   basePath?: VariantFolder | null
+  /** Maximum variants processed at once for one attachment. Omit to run all in parallel. */
+  concurrency?: number | ((attachment: Attachment) => number)
 }
 
 export async function resolveVariantFolder(

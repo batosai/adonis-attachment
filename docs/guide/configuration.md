@@ -301,6 +301,10 @@ This writes the thumbnail to a path such as `variants/2026/09/thumbnail.webp`.
 
 ## URLs
 
+Drive disks with `getStream()` and `putStream()` can transfer files without
+buffering their full contents. Custom disks that only provide `getBytes()` or
+`put()` use the corresponding in-memory fallback.
+
 Storage URL methods depend on adapter capabilities. `AdonisDriveStorage` uses the selected
 Drive disk; `LocalFileStorage` requires `baseUrl` for public URLs. `preComputeUrl` resolves
 public URLs during relation reads and keeps them in memory.

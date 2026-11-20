@@ -93,9 +93,9 @@ type WatermarkOptions = ConverterOptions & {
 }
 
 class WatermarkConverter extends Converter<WatermarkOptions> {
-  async handle({ body, options }: ConverterAttributes<WatermarkOptions>) {
+  async handle({ input, options }: ConverterAttributes<WatermarkOptions>) {
     return {
-      body,
+      data: { type: 'file' as const, path: await input.toFile() },
       fileName: `${options.label}.png`,
       mimeType: 'image/png',
     }

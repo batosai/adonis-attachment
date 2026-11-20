@@ -66,6 +66,8 @@ The manager must come from `/legacy`, not the root. It also accepts
 sources use modern options; not every v5 overload exists. On singular fields only a new legacy draft or
 `null` can be assigned, using direct assignment rather than `fill`/`merge`. Do not reuse
 a persisted attachment on another owner or assign the same draft to multiple fields.
+Call `await draft.discard()` when abandoning an unsaved legacy stream or URL import
+to release its temporary source.
 
 ## Simple collections, without reordering
 

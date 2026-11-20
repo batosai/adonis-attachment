@@ -6,6 +6,9 @@
  */
 
 import { test } from '@japa/runner'
+import { stat } from 'node:fs/promises'
+import { setImmediate } from 'node:timers/promises'
+import { fileURLToPath } from 'node:url'
 
 import type { Attachment } from '../src/core/attachment.js'
 import { AttachmentService } from '../src/core/attachment_service.js'
@@ -115,6 +118,37 @@ test.group('LucidAttachmentLifecycleService', () => {
 
     assert.isTrue(draft.isPersisted)
     assert.deepEqual(events, ['write', 'link'])
+  })
+
+  test('waits for source cleanup before returning from a save outside a transaction', async ({ assert }) => {
+    const attachments = new AttachmentService({
+      defaultDisk: 'fs',
+      queue: { async enqueue() {} },
+      storage: {
+        async write() {},
+        async read() { return new Uint8Array() },
+        async remove() {},
+      },
+    })
+    const path = fileURLToPath(import.meta.url)
+    const size = (await stat(path)).size
+    let cleaned = false
+    const draft = attachments.createDraft({
+      originalName: 'fixture.bin',
+      file: {
+        path,
+        size,
+        async cleanup() {
+          await setImmediate()
+          cleaned = true
+        },
+      },
+    })
+    const service = new LucidAttachmentLifecycleService(attachments, makeStore())
+
+    await service.attach({ type: 'users', id: '42', field: 'avatar' }, draft)
+
+    assert.isTrue(cleaned)
   })
 
   test('schedules deferred metadata after the attachment blob exists', async ({ assert }) => {

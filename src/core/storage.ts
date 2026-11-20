@@ -5,6 +5,7 @@
  * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
  */
 
+import type { Readable } from 'node:stream'
 import type { Attachment } from './attachment.js'
 import type { AttachmentAdapterConfig, AttachmentAdapterContext, AttachmentAdapterFactory } from './attachment_adapter.js'
 
@@ -30,6 +31,8 @@ export interface AttachmentStorage {
   defaultDisk?: string | undefined
   write(input: WriteAttachmentInput): Promise<void>
   read(location: StorageLocation): Promise<Uint8Array>
+  readStream?(location: StorageLocation): Promise<Readable>
+  writeStream?(input: Omit<WriteAttachmentInput, 'body'> & { stream: Readable }): Promise<void>
   remove(location: StorageLocation): Promise<void>
   /** Returns a public URL when the storage backend has one. */
   getUrl?(location: StorageLocation): Promise<string | undefined>

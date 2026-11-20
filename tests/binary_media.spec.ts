@@ -5,6 +5,7 @@
  * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
  */
 
+import { basename, join } from 'node:path'
 import { readFile, writeFile } from 'node:fs/promises'
 import { test } from '@japa/runner'
 
@@ -47,7 +48,7 @@ class FakeRunner implements CommandRunner {
     }
     if (execution.command === 'libreoffice') {
       const source = execution.args.at(-1)!
-      await writeFile(source.replace(/\.[^.]+$/, '.pdf'), await readFile(source))
+      await writeFile(join(execution.args.at(-2)!, basename(source).replace(/\.[^.]+$/, '.pdf')), await readFile(source))
     }
 
     return { stdout: this.stdout, stderr: new Uint8Array() }
@@ -55,6 +56,24 @@ class FakeRunner implements CommandRunner {
 }
 
 test.group('Binary media adapters', () => {
+  test('bounds stderr and keeps the latest diagnostics', async ({ assert }) => {
+    const result = await new NodeCommandRunner().run({
+      command: process.execPath,
+      args: ['-e', "const { writeSync } = require('node:fs'); for (let i = 0; i < 16; i++) writeSync(2, Buffer.alloc(8192, 120)); writeSync(2, ':last')"],
+      timeout: 5_000,
+    })
+    assert.equal(result.stderr.length, 64 * 1024)
+    assert.isTrue(Buffer.from(result.stderr).toString().endsWith(':last'))
+  })
+
+  test('rejects oversized stdout without returning truncated structured output', async ({ assert }) => {
+    await assert.rejects(() => new NodeCommandRunner().run({
+      command: process.execPath,
+      args: ['-e', "const { writeSync } = require('node:fs'); const chunk = Buffer.alloc(8192, 120); for (let i = 0; i < 640; i++) writeSync(1, chunk)"],
+      timeout: 5_000,
+    }), /stdout limit/)
+  })
+
   test('extracts normalized ffprobe metadata', async ({ assert }) => {
     const runner = new FakeRunner()
     runner.stdout = Buffer.from(JSON.stringify({

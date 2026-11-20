@@ -1,6 +1,6 @@
 {
   "name": "@jrmc/adonis-attachment",
-  "version": "6.0.0-beta.5",
+  "version": "6.0.0-beta.6",
   "type": "module",
   "description": "Next-generation attachment primitives for AdonisJS and standalone TypeScript applications",
   "repository": {
@@ -149,9 +149,9 @@
     "docs:preview": "vitepress preview docs"
   },
   "devDependencies": {
-    "@adonisjs/core": "^7.6.0",
+    "@adonisjs/core": "^7.7.0",
     "@adonisjs/drive": "^4.0.0",
-    "@adonisjs/lucid": "^22.4.2",
+    "@adonisjs/lucid": "^22.5.0",
     "@adonisjs/queue": "^0.7.0",
     "@japa/assert": "^4.2.0",
     "@japa/runner": "^4.5.0",
@@ -161,15 +161,15 @@
     "better-sqlite3": "^12.11.1",
     "copyfiles": "^2.4.1",
     "del-cli": "^7.0.0",
-    "exifreader": "^4.52.0",
+    "exifreader": "^4.54.0",
     "mermaid": "11.16.0",
     "mysql2": "^3.24.6",
     "oracledb": "^7.0.1",
     "pg": "^8.23.1",
-    "prettier": "^3.9.10",
+    "prettier": "^3.10.1",
     "sharp": "^0.35.5",
     "sqlite3": "^6.0.1",
-    "tedious": "^20.3.8",
+    "tedious": "^20.3.9",
     "typescript": "^5.9.3",
     "vitepress": "^1.6.4",
     "vitepress-plugin-mermaid": "^2.0.17"

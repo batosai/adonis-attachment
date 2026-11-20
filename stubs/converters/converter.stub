@@ -9,9 +9,9 @@ import {
 } from '@jrmc/adonis-attachment'
 
 export default class {{ className }} extends Converter {
-  async handle({ attachment, body }: ConverterAttributes) {
+  async handle({ attachment, input }: ConverterAttributes) {
     return {
-      body,
+      data: { type: 'file' as const, path: await input.toFile() },
       fileName: attachment.name,
       mimeType: attachment.mimeType,
     }

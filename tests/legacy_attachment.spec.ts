@@ -1,4 +1,6 @@
 import { LucidAttachmentStore } from '../src/stores/lucid/persistence/lucid_attachment_store.js'
+import { stat } from "node:fs/promises";
+import { Readable } from "node:stream";
 import { setApp } from "@adonisjs/core/services/app";
 import { BaseModel, column } from "@adonisjs/lucid/orm";
 import { test } from "@japa/runner";
@@ -113,6 +115,21 @@ test.group("Legacy singular JSON attachments", (group) => {
   });
   group.teardown(async () => {
     await db.manager.closeAll();
+  });
+
+  test("discards the temporary source of an unsaved legacy stream import", async ({
+    assert,
+  }) => {
+    const attachment = await manager.createFromStream(Readable.from([Buffer.from("upload")]));
+    const path = attachment.draft()!.source.file!.path;
+    try {
+      assert.isTrue((await stat(path)).isFile());
+      await attachment.discard();
+      await assert.rejects(() => stat(path), /ENOENT/);
+      assert.equal(files.size, 0);
+    } finally {
+      await attachment.draft()!.discard();
+    }
   });
 
   test("assigns a draft, writes only on save and serializes a synchronous loaded avatar", async ({

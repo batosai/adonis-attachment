@@ -4,7 +4,7 @@ description: Use when integrating @jrmc/adonis-attachment v6 into an AdonisJS ap
 metadata:
   package: "@jrmc/adonis-attachment"
   major-version: "6"
-  version: "2026-11-06.1"
+  version: "2026-11-20.1"
 ---
 
 # Attachment v6 application integration

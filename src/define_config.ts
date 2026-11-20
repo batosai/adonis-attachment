@@ -13,7 +13,7 @@ import {
 } from './queues/memory_queue.js'
 import {
   AdonisAttachmentQueue,
-  type AdonisAttachmentJob,
+  type AdonisAttachmentQueueOptions,
 } from './queues/adonis_queue.js'
 import {
   AttachmentError,
@@ -67,10 +67,8 @@ export type MemoryAttachmentQueueConfig = {
   onFailure?: AttachmentQueueFailureHandler
 }
 
-export type AdonisAttachmentQueueConfig = {
+export type AdonisAttachmentQueueConfig = AdonisAttachmentQueueOptions & {
   driver: 'adonis'
-  job: AdonisAttachmentJob
-  queueName?: string
 }
 
 export type AttachmentQueueConfig =
@@ -100,7 +98,7 @@ export type AttachmentConfig<
   store?: AttachmentStoreConfig
   /** Lowest-priority defaults for file persistence. */
   defaults?: AttachmentPersistenceOptions
-  /** Shared path prefix for generated variants. */
+  /** Shared path and generation settings for variants. */
   variant?: VariantPathOptions
   sources?: AttachmentManagerOptions
   media?: AttachmentMediaConfig

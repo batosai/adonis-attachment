@@ -5,14 +5,14 @@
  * @copyright Jeremy Chaufourier <jeremy@chaufourier.fr>
  */
 
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { basename, extname, join } from 'node:path'
 import { spawn } from 'node:child_process'
 
 import type { MediaMetadataExtractor } from './media_metadata.js'
 import type { AttachmentMetadata } from './media_metadata.js'
-import type { VariantConverter } from '../variants/variant_converter.js'
+import { defineSourceConverter, type SourceConversionInput, type VariantConverter } from '../variants/variant_converter.js'
 import { AttachmentError } from '../errors.js'
 
 export type CommandExecution = {
@@ -31,7 +31,10 @@ export interface CommandRunner {
   run(execution: CommandExecution): Promise<CommandResult>
 }
 
-/** Executes a command without a shell and rejects when it returns a non-zero status. */
+const MAX_STDOUT_BYTES = 4 * 1024 * 1024
+const MAX_STDERR_BYTES = 64 * 1024
+
+/** Executes a command without a shell and bounds the captured output. */
 export class NodeCommandRunner implements CommandRunner {
   run(execution: CommandExecution): Promise<CommandResult> {
     return new Promise((resolve, reject) => {
@@ -42,51 +45,75 @@ export class NodeCommandRunner implements CommandRunner {
       const child = spawn(execution.command, execution.args, {
         ...(execution.cwd ? { cwd: execution.cwd } : {}),
         signal: controller.signal,
+        killSignal: 'SIGKILL',
         stdio: ['ignore', 'pipe', 'pipe'],
       })
-      const stdout: Uint8Array[] = []
-      const stderr: Uint8Array[] = []
-      let settled = false
+      const stdout: Buffer[] = []
+      let stdoutSize = 0
+      let stdoutOverflow = false
+      const stderr = new StderrTail()
+      let processError: Error | undefined
 
-      const finish = (callback: () => void) => {
-        if (settled) {
+      child.stdout.on('data', (chunk: Buffer) => {
+        if (stdoutOverflow) return
+        if (stdoutSize + chunk.length > MAX_STDOUT_BYTES) {
+          stdoutOverflow = true
+          controller.abort()
           return
         }
-
-        settled = true
-        if (timeout) {
-          clearTimeout(timeout)
+        stdoutSize += chunk.length
+        stdout.push(chunk)
+      })
+      child.stderr.on('data', (chunk: Buffer) => stderr.append(chunk))
+      child.once('error', (error) => { processError = error })
+      child.once('close', (code) => {
+        if (timeout) clearTimeout(timeout)
+        if (stdoutOverflow) {
+          reject(new AttachmentError(`Command "${execution.command}" exceeded the ${MAX_STDOUT_BYTES}-byte stdout limit`, {
+            code: 'E_COMMAND_OUTPUT_TOO_LARGE',
+          }))
+          return
         }
-        callback()
-      }
-
-      child.stdout.on('data', (chunk: Uint8Array) => stdout.push(chunk))
-      child.stderr.on('data', (chunk: Uint8Array) => stderr.push(chunk))
-      child.once('error', (error) => finish(() => {
-        if (controller.signal.aborted && execution.timeout !== undefined) {
+        if (controller.signal.aborted) {
           reject(new CommandTimeoutError(execution))
           return
         }
-
-        reject(new CommandExecutionError(execution, null, error.message, { cause: error }))
-      }))
-      child.once('close', (code) => {
-        const result = { stdout: Buffer.concat(stdout), stderr: Buffer.concat(stderr) }
-
-        finish(() => {
-          if (controller.signal.aborted && execution.timeout !== undefined) {
-            reject(new CommandTimeoutError(execution))
-            return
-          }
-          if (code === 0) {
-            resolve(result)
-            return
-          }
-
-          reject(new CommandExecutionError(execution, code, Buffer.from(result.stderr).toString()))
-        })
+        if (processError) {
+          reject(new CommandExecutionError(execution, null, processError.message, { cause: processError }))
+          return
+        }
+        const capturedStderr = stderr.read()
+        if (code === 0) {
+          resolve({ stdout: Buffer.concat(stdout, stdoutSize), stderr: capturedStderr })
+          return
+        }
+        reject(new CommandExecutionError(execution, code, capturedStderr.toString()))
       })
     })
+  }
+}
+
+/** Keeps the most recent diagnostics even when a command logs continuously. */
+class StderrTail {
+  #buffer?: Buffer
+  #offset = 0
+  #full = false
+
+  append(chunk: Buffer): void {
+    this.#buffer ??= Buffer.allocUnsafe(MAX_STDERR_BYTES)
+    const bytes = chunk.subarray(Math.max(0, chunk.length - MAX_STDERR_BYTES))
+    const first = Math.min(bytes.length, MAX_STDERR_BYTES - this.#offset)
+    bytes.copy(this.#buffer, this.#offset, 0, first)
+    bytes.copy(this.#buffer, 0, first)
+    const end = this.#offset + bytes.length
+    this.#full ||= end >= MAX_STDERR_BYTES
+    this.#offset = end % MAX_STDERR_BYTES
+  }
+
+  read(): Buffer {
+    if (!this.#buffer) return Buffer.alloc(0)
+    if (!this.#full) return this.#buffer.subarray(0, this.#offset)
+    return Buffer.concat([this.#buffer.subarray(this.#offset), this.#buffer.subarray(0, this.#offset)])
   }
 }
 
@@ -133,19 +160,22 @@ export function createPdfInfoMetadataExtractor(
   const runner = options.runner ?? new NodeCommandRunner()
   const command = options.command ?? 'pdfinfo'
 
+  async function extractFile(source: string) {
+    const result = await runner.run({
+      command,
+      args: [source],
+      ...(options.timeout !== undefined ? { timeout: options.timeout } : {}),
+    })
+    return mapPdfInfoMetadata(Buffer.from(result.stdout).toString())
+  }
+
   return {
     supports({ attachment }) {
       return attachment.mimeType === 'application/pdf'
     },
-    async extract({ attachment, body }) {
-      return withTemporarySource(attachment.name, body, async (source) => {
-        const result = await runner.run({
-          command,
-          args: [source],
-          ...(options.timeout !== undefined ? { timeout: options.timeout } : {}),
-        })
-        return mapPdfInfoMetadata(Buffer.from(result.stdout).toString())
-      })
+    extractFile,
+    extract({ attachment, body }) {
+      return withTemporarySource(attachment.name, body, extractFile)
     },
   }
 }
@@ -157,20 +187,23 @@ export function createFfprobeMetadataExtractor(
   const runner = options.runner ?? new NodeCommandRunner()
   const command = options.command ?? 'ffprobe'
 
+  async function extractFile(source: string) {
+    const result = await runner.run({
+      command,
+      args: ['-v', 'error', '-show_format', '-show_streams', '-of', 'json', source],
+      ...(options.timeout !== undefined ? { timeout: options.timeout } : {}),
+    })
+
+    return mapFfprobeMetadata(JSON.parse(Buffer.from(result.stdout).toString()) as FfprobeResult)
+  }
+
   return {
     supports({ attachment }) {
       return attachment.mimeType.startsWith('audio/') || attachment.mimeType.startsWith('video/')
     },
-    async extract({ attachment, body }) {
-      return withTemporarySource(attachment.name, body, async (source) => {
-        const result = await runner.run({
-          command,
-          args: ['-v', 'error', '-show_format', '-show_streams', '-of', 'json', source],
-          ...(options.timeout !== undefined ? { timeout: options.timeout } : {}),
-        })
-
-        return mapFfprobeMetadata(JSON.parse(Buffer.from(result.stdout).toString()) as FfprobeResult)
-      })
+    extractFile,
+    extract({ attachment, body }) {
+      return withTemporarySource(attachment.name, body, extractFile)
     },
   }
 }
@@ -195,23 +228,31 @@ export function createFfmpegThumbnailConverter(
   const command = options.command ?? 'ffmpeg'
   const format = options.format ?? 'jpeg'
 
-  return createTemporaryThumbnailConverter(options.key, options.folder, async ({ attachment, body }, directory) => {
-    const source = await writeSource(directory, attachment.name, body)
-    const output = join(directory, `thumbnail.${format}`)
-    const args = ['-y']
+  return defineSourceConverter({
+    key: options.key,
+    async convertSource({ input, context }) {
+      const source = await input.toFile()
+      const output = await context.createTempFile({ extension: format })
+      const args = ['-y']
 
-    if (options.time !== undefined) {
-      args.push('-ss', String(options.time))
-    }
+      if (options.time !== undefined) {
+        args.push('-ss', String(options.time))
+      }
 
-    args.push('-i', source, '-frames:v', '1')
-    if (options.width !== undefined || options.height !== undefined) {
-      args.push('-vf', `scale=${options.width ?? -1}:${options.height ?? -1}`)
-    }
-    args.push(output)
-    await runner.run({ command, args, ...(options.timeout !== undefined ? { timeout: options.timeout } : {}) })
+      args.push('-i', source, '-frames:v', '1')
+      if (options.width !== undefined || options.height !== undefined) {
+        args.push('-vf', `scale=${options.width ?? -1}:${options.height ?? -1}`)
+      }
+      args.push(output)
+      await runner.run({ command, args, ...(options.timeout !== undefined ? { timeout: options.timeout } : {}) })
 
-    return { output, format }
+      return {
+        data: { type: 'file', path: output },
+        fileName: `${options.key}.${format}`,
+        mimeType: mimeTypeForFormat(format),
+        ...(options.folder ? { folder: options.folder } : {}),
+      }
+    },
   })
 }
 
@@ -230,9 +271,10 @@ export function createPdfThumbnailConverter(options: PdfThumbnailConverterOption
   const runner = options.runner ?? new NodeCommandRunner()
   const command = options.command ?? 'pdftoppm'
 
-  return createTemporaryThumbnailConverter(options.key, options.folder, async ({ attachment, body }, directory) => {
-    const source = await writeSource(directory, attachment.name, body)
-    const outputBase = join(directory, 'thumbnail')
+  return createTemporaryThumbnailConverter(options.key, options.folder, async ({ input, context }) => {
+    const source = await input.toFile()
+    const output = await context.createTempFile({ extension: 'png' })
+    const outputBase = output.slice(0, -4)
     const args = ['-f', String(options.page ?? 1), '-singlefile', '-png']
 
     if (options.width !== undefined) {
@@ -242,7 +284,7 @@ export function createPdfThumbnailConverter(options: PdfThumbnailConverterOption
     args.push(source, outputBase)
     await runner.run({ command, args, ...(options.timeout !== undefined ? { timeout: options.timeout } : {}) })
 
-    return { output: `${outputBase}.png`, format: 'png' }
+    return output
   })
 }
 
@@ -260,60 +302,55 @@ export function createDocumentThumbnailConverter(
   const officeCommand = options.officeCommand ?? 'libreoffice'
   const pdfCommand = options.command ?? 'pdftoppm'
 
-  return createTemporaryThumbnailConverter(options.key, options.folder, async ({ attachment, body }, directory) => {
-    const source = await writeSource(directory, attachment.name, body)
-    const converted = join(directory, `${basename(source, extname(source))}.pdf`)
-    const outputBase = join(directory, 'thumbnail')
+  return createTemporaryThumbnailConverter(options.key, options.folder, async ({ input, context }) => {
+    const source = await input.toFile()
+    const output = await context.createTempFile({ extension: 'png' })
+    const outputBase = output.slice(0, -4)
+    return withTemporaryDirectory(async (directory) => {
+      const converted = join(directory, `${basename(source, extname(source))}.pdf`)
 
-    await runner.run({
-      command: officeCommand,
-      args: ['--headless', '--convert-to', 'pdf', '--outdir', directory, source],
-      ...(options.officeTimeout ?? options.timeout) !== undefined
-        ? { timeout: options.officeTimeout ?? options.timeout }
-        : {},
+      await runner.run({
+        command: officeCommand,
+        args: ['--headless', '--convert-to', 'pdf', '--outdir', directory, source],
+        ...(options.officeTimeout ?? options.timeout) !== undefined
+          ? { timeout: options.officeTimeout ?? options.timeout }
+          : {},
+      })
+
+      const args = ['-f', String(options.page ?? 1), '-singlefile', '-png']
+      if (options.width !== undefined) {
+        args.push('-scale-to-x', String(options.width), '-scale-to-y', '-1')
+      }
+      args.push(converted, outputBase)
+      await runner.run({
+        command: pdfCommand,
+        args,
+        ...(options.pdfTimeout ?? options.timeout) !== undefined
+          ? { timeout: options.pdfTimeout ?? options.timeout }
+          : {},
+      })
+
+      return output
     })
-
-    const args = ['-f', String(options.page ?? 1), '-singlefile', '-png']
-    if (options.width !== undefined) {
-      args.push('-scale-to-x', String(options.width), '-scale-to-y', '-1')
-    }
-    args.push(converted, outputBase)
-    await runner.run({
-      command: pdfCommand,
-      args,
-      ...(options.pdfTimeout ?? options.timeout) !== undefined
-        ? { timeout: options.pdfTimeout ?? options.timeout }
-        : {},
-    })
-
-    return { output: `${outputBase}.png`, format: 'png' }
   })
 }
 
 function createTemporaryThumbnailConverter(
   key: string,
   folder: string | undefined,
-  convert: (
-    input: Parameters<VariantConverter['convert']>[0],
-    directory: string
-  ) => Promise<{ output: string; format: 'jpeg' | 'png' | 'webp' }>
+  convert: (input: SourceConversionInput) => Promise<string>
 ): VariantConverter {
-  return {
+  return defineSourceConverter({
     key,
-    async convert(input) {
-      return withTemporaryDirectory(async (directory) => {
-        const result = await convert(input, directory)
-        const body = await readFile(result.output)
-
-        return {
-          body,
-          fileName: `${key}.${result.format}`,
-          mimeType: mimeTypeForFormat(result.format),
-          ...(folder ? { folder } : {}),
-        }
-      })
+    async convertSource(input) {
+      return {
+        data: { type: 'file', path: await convert(input) },
+        fileName: `${key}.png`,
+        mimeType: 'image/png',
+        ...(folder ? { folder } : {}),
+      }
     },
-  }
+  })
 }
 
 async function withTemporarySource<T>(name: string, body: Uint8Array, callback: (source: string) => Promise<T>): Promise<T> {

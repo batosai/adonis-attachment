@@ -138,4 +138,9 @@ export type { AttachmentStore, AttachmentStoreContext, AttachmentStoreFactory, A
 
 export type { AttachmentAdapterContext, AttachmentAdapterFactory, AttachmentAdapterConfig } from './attachment_adapter.js'
 export type { AttachmentStorageContext, AttachmentStorageFactory, AttachmentStorageConfig } from './storage.js'
-export type { AttachmentQueueContext, AttachmentQueueFactory, AttachmentQueueAdapterConfig } from './queue.js'
+export type {
+  AttachmentQueueContext,
+  AttachmentQueueDispatchContext,
+  AttachmentQueueFactory,
+  AttachmentQueueAdapterConfig,
+} from './queue.js'

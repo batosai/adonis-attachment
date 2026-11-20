@@ -2,7 +2,7 @@
 
 File attachments for AdonisJS: upload files, generate image variants, and serve them from local or cloud storage. Use the optional Lucid integration to attach files to models, or manage persistence with your own data store.
 
-> **Compatible with AdonisJS 7 only. Requires Node.js 24 or later.**
+> **Requires AdonisJS 7 and Node.js 24.x.**
 
 Version 6 is currently in **beta**, published under the `next` tag.
 
@@ -18,7 +18,9 @@ Version 6 separates file storage, database persistence, and processing so you ca
 - **Storage works independently of Drive.** Local filesystem storage is included by default. Use AdonisJS Drive for cloud disks, or provide your own storage adapter.
 - **Creation and storage happen in two steps.** The manager creates a draft; `draft.persist()` writes the file and returns its attachment data. With Lucid, saving the model handles this step for you.
 - **Lucid gets a relation API.** Dedicated attachment and ownership tables support singular attachments, collections, and sharing a file between records. Use methods such as `set()`, `get()`, and `detach()` to manage relations.
-- **Queue integrations are optional.** An in-memory queue is included for variant processing; connect AdonisJS Queue when you need separate workers.
+- **Custom converters can process large files.** Starting with beta.6, `Converter.handle()` receives `{ attachment, input, context, options }`. Use `await input.toFile()` for FFmpeg, `await input.toStream()` for a streaming pipeline, or `await input.toBuffer({ maxBytes })` when a library needs bytes. Return the result through `data` as a file, stream, or buffer. Attachment cleans up paths allocated by `context.createTempFile()` after processing. See [file and stream converters](https://next.adonis-attachment.jrmc.dev/guide/variants#file-and-stream-converters).
+- **Variant concurrency can vary by attachment.** Set `variant.concurrency` to a number or a function of the original attachment to control how many variants one job generates in parallel.
+- **Queue integrations are optional.** An in-memory queue is included. With AdonisJS Queue, a `queueName(job, { mimeType })` callback can route video jobs to a dedicated worker. See [background processing](https://next.adonis-attachment.jrmc.dev/guide/queues).
 
 Existing v5 applications also have a legacy integration for keeping JSON fields. Configuration and APIs have changed: follow the [migration guide](https://next.adonis-attachment.jrmc.dev/migration/from-v5) before upgrading.
 
@@ -106,7 +108,7 @@ export default class UsersController {
 }
 ```
 
-`set()` stages the attachment; `user.save()` stores the file and persists the relation. Uploading again replaces the previous avatar.
+`set()` stages the attachment. Keep the multipart file available until `user.save()` finishes writing the file and persisting the relation. Uploading again replaces the previous avatar. For stream and URL imports, call `await draft.discard()` if you abandon the draft before saving. See [creating attachments](https://next.adonis-attachment.jrmc.dev/guide/creating-attachments).
 
 ### 5. Register the route and display the avatar
 
